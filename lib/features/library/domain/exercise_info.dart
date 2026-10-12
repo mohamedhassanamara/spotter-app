@@ -1,5 +1,5 @@
 import '../../../core/domain/equipment.dart';
-import '../../../core/domain/muscle_group.dart';
+import '../../../core/domain/muscles.dart';
 import '../../../core/domain/training.dart';
 import 'muscle_mapping.dart';
 
@@ -21,7 +21,7 @@ class ExerciseInfo {
     required this.isCustom,
     required this.isFavorite,
     required this.notes,
-  })  : targets = targetsFor(primaryMuscles, secondaryMuscles),
+  })  : targets = targetsFor(id, name, primaryMuscles, secondaryMuscles),
         equipmentKind = EquipmentKind.fromDataset(equipment);
 
   final String id;

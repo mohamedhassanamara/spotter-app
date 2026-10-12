@@ -2,31 +2,48 @@ import '../../../core/db/database.dart';
 import '../../gamification/data/gamification_repository.dart';
 import '../../gamification/domain/achievements.dart';
 
-/// Current rank ladder. v1: 7 tiers × 3 divisions. v2: League-style 10-tier ladder.
-const int rankLadderVersion = 2;
+/// Current rank model. v1: 7 tiers × 3 divisions. v2: League-style 10-tier ladder.
+/// v3: per-exercise standards (machines and cables stricter, apex tiers above "elite").
+const int rankLadderVersion = 3;
 const String rankLadderVersionKey = 'rank_ladder_version';
 
-/// Moves an existing install onto the current ladder.
+class LadderMigration {
+  const LadderMigration({this.unlocked = const [], this.revoked = const []});
+  final List<String> unlocked;
+  final List<String> revoked;
+}
+
+/// Moves an existing install onto the current rank model.
 ///
 /// Ranks themselves are never stored: they're derived from logged sets every time they're shown, so
-/// all history re-ranks on the new ladder automatically. The only persisted rank-dependent state is
-/// achievements. Earned achievements are kept; ones that the new ladder now qualifies for (e.g. a lift
-/// that is Platinum on the new ladder) are unlocked. Returns the keys unlocked by the migration.
-Future<List<String>> migrateRankLadder({
+/// history re-ranks automatically. The only persisted rank-dependent state is achievements:
+/// - rank achievements the new standards now qualify for are unlocked;
+/// - from v3, rank achievements the *old* standards handed out and the new ones don't support are
+///   revoked, silently (no notification, no rank-down animation). Achievements of every other
+///   type were earned by real criteria and stay.
+///
+/// [ranksKnown] is false when ranks couldn't be computed (no bodyweight yet). Then nothing is revoked
+/// and the migration stays pending, so a missing bodyweight never takes badges away.
+Future<LadderMigration> migrateRankLadder({
   required AppDatabase db,
   required AchievementStats stats,
   required List<AchievementDef> defs,
   required DateTime now,
+  bool ranksKnown = true,
 }) async {
   final current = int.tryParse(await db.getSetting(rankLadderVersionKey) ?? '') ?? 1;
-  if (current >= rankLadderVersion) return const [];
+  if (current >= rankLadderVersion) return const LadderMigration();
+  if (!ranksKnown) return const LadderMigration();
   final repo = GamificationRepository(db);
-  final unlocked = await repo.unlockedKeys();
-  final fresh = const AchievementEvaluator()
-      .newlyUnlocked(defs.where((d) => d.type == AchievementType.bestExerciseTier).toList(), stats, unlocked)
-      .map((d) => d.key)
-      .toList();
+  final have = await repo.unlockedKeys();
+  final tierDefs = defs.where((d) => d.type == AchievementType.bestExerciseTier).toList();
+  final fresh = const AchievementEvaluator().newlyUnlocked(tierDefs, stats, have).map((d) => d.key).toList();
   if (fresh.isNotEmpty) await repo.unlock(fresh, now);
+  final revoked = [
+    for (final d in tierDefs)
+      if (have.contains(d.key) && stats.bestExerciseTierIndex < d.threshold) d.key,
+  ];
+  if (revoked.isNotEmpty) await repo.revoke(revoked);
   await db.putSetting(rankLadderVersionKey, '$rankLadderVersion');
-  return fresh;
+  return LadderMigration(unlocked: fresh, revoked: revoked);
 }

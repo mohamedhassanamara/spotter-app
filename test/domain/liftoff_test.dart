@@ -59,6 +59,9 @@ void main() {
       expect(parseNote('4-6. M').techniqueLetter, 'M');
       expect(parseNote('10 per leg').perSide, isTrue);
       expect(parseNote('10 per leg').ranges, const [RepRange(10, 10)]);
+      expect(parseNote('10 per leg').repsFor(0, 20), 10, reason: 'both legs logged → per leg');
+      expect(parseNote('10 per leg').repsFor(0, 10), 10);
+      expect(parseNote('10-12').repsFor(0, 24), 24);
       expect(parseNote('Pause').pause, isTrue);
       expect(parseNote('Failure').failure, isTrue);
       expect(parseNote('Failure').ranges, isEmpty);

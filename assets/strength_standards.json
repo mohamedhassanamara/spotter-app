@@ -1,1117 +1,1648 @@
 {
-  "schema_version": 2,
-  "description": "Strength standards for a male lifter. thresholds = e1RM / bodyweight at which each tier starts: Iron, Bronze, Silver, Gold, Platinum, Emerald, Diamond, Master, Grandmaster, Challenger. Derived from the anchors (widely used beginner/novice/intermediate/advanced/elite 1RM standards): Iron 0, Bronze = beginner, Silver = novice, Gold = midpoint novice-intermediate, Platinum = intermediate, Emerald and Diamond split intermediate-advanced in thirds, Master = advanced, Grandmaster = midpoint advanced-elite, Challenger = elite. Divisions IV-I split each of the first 7 tiers evenly. bodyweight_loaded lifts use (bodyweight + added load). per_hand lifts are per dumbbell.",
-  "tiers": [
-    "Iron",
-    "Bronze",
-    "Silver",
-    "Gold",
-    "Platinum",
-    "Emerald",
-    "Diamond",
-    "Master",
-    "Grandmaster",
-    "Challenger"
-  ],
-  "standards": [
-    {
-      "id": "bench_press",
-      "name": "Bench press",
-      "exercise_ids": [
-        "Barbell_Bench_Press_-_Medium_Grip",
-        "Bench_Press_-_Powerlifting",
-        "Wide-Grip_Barbell_Bench_Press",
-        "Smith_Machine_Bench_Press"
-      ],
-      "bodyweight_loaded": false,
-      "per_hand": false,
-      "primary": [
-        "chest"
-      ],
-      "secondary": [
-        "shoulders",
-        "triceps"
-      ],
-      "thresholds": [
-        0.0,
-        0.5,
-        0.75,
-        0.875,
-        1.0,
-        1.167,
-        1.333,
-        1.5,
-        1.75,
-        2.0
-      ],
-      "anchors": {
-        "beginner": 0.5,
-        "novice": 0.75,
-        "intermediate": 1.0,
-        "advanced": 1.5,
-        "elite": 2.0
-      }
-    },
-    {
-      "id": "incline_bench_press",
-      "name": "Incline bench press",
-      "exercise_ids": [
-        "Barbell_Incline_Bench_Press_-_Medium_Grip",
-        "Smith_Machine_Incline_Bench_Press"
-      ],
-      "bodyweight_loaded": false,
-      "per_hand": false,
-      "primary": [
-        "chest"
-      ],
-      "secondary": [
-        "shoulders",
-        "triceps"
-      ],
-      "thresholds": [
-        0.0,
-        0.4,
-        0.65,
-        0.75,
-        0.85,
-        0.967,
-        1.083,
-        1.2,
-        1.4,
-        1.6
-      ],
-      "anchors": {
-        "beginner": 0.4,
-        "novice": 0.65,
-        "intermediate": 0.85,
-        "advanced": 1.2,
-        "elite": 1.6
-      }
-    },
-    {
-      "id": "dumbbell_bench_press",
-      "name": "Dumbbell bench press (per dumbbell)",
-      "exercise_ids": [
-        "Dumbbell_Bench_Press",
-        "Incline_Dumbbell_Press"
-      ],
-      "bodyweight_loaded": false,
-      "per_hand": true,
-      "primary": [
-        "chest"
-      ],
-      "secondary": [
-        "shoulders",
-        "triceps"
-      ],
-      "thresholds": [
-        0.0,
-        0.2,
-        0.35,
-        0.425,
-        0.5,
-        0.567,
-        0.633,
-        0.7,
-        0.8,
-        0.9
-      ],
-      "anchors": {
-        "beginner": 0.2,
-        "novice": 0.35,
-        "intermediate": 0.5,
-        "advanced": 0.7,
-        "elite": 0.9
-      }
-    },
-    {
-      "id": "machine_chest_press",
-      "name": "Machine chest press",
-      "exercise_ids": [
-        "Machine_Bench_Press",
-        "Leverage_Incline_Chest_Press"
-      ],
-      "bodyweight_loaded": false,
-      "per_hand": false,
-      "primary": [
-        "chest"
-      ],
-      "secondary": [
-        "shoulders",
-        "triceps"
-      ],
-      "thresholds": [
-        0.0,
-        0.5,
-        0.75,
-        0.925,
-        1.1,
-        1.233,
-        1.367,
-        1.5,
-        1.75,
-        2.0
-      ],
-      "anchors": {
-        "beginner": 0.5,
-        "novice": 0.75,
-        "intermediate": 1.1,
-        "advanced": 1.5,
-        "elite": 2.0
-      }
-    },
-    {
-      "id": "overhead_press",
-      "name": "Overhead press",
-      "exercise_ids": [
-        "Standing_Military_Press",
-        "Barbell_Shoulder_Press",
-        "Seated_Barbell_Military_Press"
-      ],
-      "bodyweight_loaded": false,
-      "per_hand": false,
-      "primary": [
-        "shoulders"
-      ],
-      "secondary": [
-        "triceps",
-        "traps"
-      ],
-      "thresholds": [
-        0.0,
-        0.35,
-        0.55,
-        0.65,
-        0.75,
-        0.833,
-        0.917,
-        1.0,
-        1.125,
-        1.25
-      ],
-      "anchors": {
-        "beginner": 0.35,
-        "novice": 0.55,
-        "intermediate": 0.75,
-        "advanced": 1.0,
-        "elite": 1.25
-      }
-    },
-    {
-      "id": "dumbbell_shoulder_press",
-      "name": "Dumbbell shoulder press (per dumbbell)",
-      "exercise_ids": [
-        "Dumbbell_Shoulder_Press"
-      ],
-      "bodyweight_loaded": false,
-      "per_hand": true,
-      "primary": [
-        "shoulders"
-      ],
-      "secondary": [
-        "triceps"
-      ],
-      "thresholds": [
-        0.0,
-        0.15,
-        0.25,
-        0.325,
-        0.4,
-        0.45,
-        0.5,
-        0.55,
-        0.625,
-        0.7
-      ],
-      "anchors": {
-        "beginner": 0.15,
-        "novice": 0.25,
-        "intermediate": 0.4,
-        "advanced": 0.55,
-        "elite": 0.7
-      }
-    },
-    {
-      "id": "lateral_raise",
-      "name": "Lateral raise (per dumbbell)",
-      "exercise_ids": [
-        "Side_Lateral_Raise",
-        "Seated_Side_Lateral_Raise"
-      ],
-      "bodyweight_loaded": false,
-      "per_hand": true,
-      "primary": [
-        "shoulders"
-      ],
-      "secondary": [
-        "traps"
-      ],
-      "thresholds": [
-        0.0,
-        0.05,
-        0.1,
-        0.15,
-        0.2,
-        0.233,
-        0.267,
-        0.3,
-        0.35,
-        0.4
-      ],
-      "anchors": {
-        "beginner": 0.05,
-        "novice": 0.1,
-        "intermediate": 0.2,
-        "advanced": 0.3,
-        "elite": 0.4
-      }
-    },
-    {
-      "id": "squat",
-      "name": "Back squat",
-      "exercise_ids": [
-        "Barbell_Squat",
-        "Barbell_Full_Squat",
-        "Smith_Machine_Squat"
-      ],
-      "bodyweight_loaded": false,
-      "per_hand": false,
-      "primary": [
-        "quads",
-        "glutes"
-      ],
-      "secondary": [
-        "hamstrings",
-        "calves"
-      ],
-      "thresholds": [
-        0.0,
-        0.75,
-        1.25,
-        1.375,
-        1.5,
-        1.75,
-        2.0,
-        2.25,
-        2.5,
-        2.75
-      ],
-      "anchors": {
-        "beginner": 0.75,
-        "novice": 1.25,
-        "intermediate": 1.5,
-        "advanced": 2.25,
-        "elite": 2.75
-      }
-    },
-    {
-      "id": "front_squat",
-      "name": "Front squat",
-      "exercise_ids": [
-        "Front_Barbell_Squat",
-        "Front_Squat_Clean_Grip"
-      ],
-      "bodyweight_loaded": false,
-      "per_hand": false,
-      "primary": [
-        "quads"
-      ],
-      "secondary": [
-        "glutes",
-        "abs"
-      ],
-      "thresholds": [
-        0.0,
-        0.6,
-        0.9,
-        1.075,
-        1.25,
-        1.417,
-        1.583,
-        1.75,
-        1.975,
-        2.2
-      ],
-      "anchors": {
-        "beginner": 0.6,
-        "novice": 0.9,
-        "intermediate": 1.25,
-        "advanced": 1.75,
-        "elite": 2.2
-      }
-    },
-    {
-      "id": "hack_squat",
-      "name": "Hack squat (machine)",
-      "exercise_ids": [
-        "Hack_Squat",
-        "Barbell_Hack_Squat"
-      ],
-      "bodyweight_loaded": false,
-      "per_hand": false,
-      "primary": [
-        "quads"
-      ],
-      "secondary": [
-        "glutes",
-        "hamstrings"
-      ],
-      "thresholds": [
-        0.0,
-        0.75,
-        1.25,
-        1.5,
-        1.75,
-        2.0,
-        2.25,
-        2.5,
-        2.875,
-        3.25
-      ],
-      "anchors": {
-        "beginner": 0.75,
-        "novice": 1.25,
-        "intermediate": 1.75,
-        "advanced": 2.5,
-        "elite": 3.25
-      }
-    },
-    {
-      "id": "leg_press",
-      "name": "Leg press",
-      "exercise_ids": [
-        "Leg_Press",
-        "Smith_Machine_Leg_Press"
-      ],
-      "bodyweight_loaded": false,
-      "per_hand": false,
-      "primary": [
-        "quads"
-      ],
-      "secondary": [
-        "glutes",
-        "hamstrings"
-      ],
-      "thresholds": [
-        0.0,
-        1.5,
-        2.25,
-        2.625,
-        3.0,
-        3.417,
-        3.833,
-        4.25,
-        4.875,
-        5.5
-      ],
-      "anchors": {
-        "beginner": 1.5,
-        "novice": 2.25,
-        "intermediate": 3.0,
-        "advanced": 4.25,
-        "elite": 5.5
-      }
-    },
-    {
-      "id": "leg_extension",
-      "name": "Leg extension",
-      "exercise_ids": [
-        "Leg_Extensions"
-      ],
-      "bodyweight_loaded": false,
-      "per_hand": false,
-      "primary": [
-        "quads"
-      ],
-      "secondary": [],
-      "thresholds": [
-        0.0,
-        0.5,
-        0.8,
-        0.975,
-        1.15,
-        1.3,
-        1.45,
-        1.6,
-        1.85,
-        2.1
-      ],
-      "anchors": {
-        "beginner": 0.5,
-        "novice": 0.8,
-        "intermediate": 1.15,
-        "advanced": 1.6,
-        "elite": 2.1
-      }
-    },
-    {
-      "id": "deadlift",
-      "name": "Deadlift",
-      "exercise_ids": [
-        "Barbell_Deadlift",
-        "Trap_Bar_Deadlift",
-        "Sumo_Deadlift"
-      ],
-      "bodyweight_loaded": false,
-      "per_hand": false,
-      "primary": [
-        "back",
-        "hamstrings",
-        "glutes"
-      ],
-      "secondary": [
-        "traps",
-        "forearms",
-        "quads"
-      ],
-      "thresholds": [
-        0.0,
-        1.0,
-        1.5,
-        1.75,
-        2.0,
-        2.167,
-        2.333,
-        2.5,
-        2.75,
-        3.0
-      ],
-      "anchors": {
-        "beginner": 1.0,
-        "novice": 1.5,
-        "intermediate": 2.0,
-        "advanced": 2.5,
-        "elite": 3.0
-      }
-    },
-    {
-      "id": "romanian_deadlift",
-      "name": "Romanian deadlift",
-      "exercise_ids": [
-        "Romanian_Deadlift",
-        "Stiff-Legged_Barbell_Deadlift"
-      ],
-      "bodyweight_loaded": false,
-      "per_hand": false,
-      "primary": [
-        "hamstrings"
-      ],
-      "secondary": [
-        "glutes",
-        "back",
-        "forearms"
-      ],
-      "thresholds": [
-        0.0,
-        0.6,
-        1.0,
-        1.2,
-        1.4,
-        1.567,
-        1.733,
-        1.9,
-        2.15,
-        2.4
-      ],
-      "anchors": {
-        "beginner": 0.6,
-        "novice": 1.0,
-        "intermediate": 1.4,
-        "advanced": 1.9,
-        "elite": 2.4
-      }
-    },
-    {
-      "id": "lying_leg_curl",
-      "name": "Lying leg curl",
-      "exercise_ids": [
-        "Lying_Leg_Curls"
-      ],
-      "bodyweight_loaded": false,
-      "per_hand": false,
-      "primary": [
-        "hamstrings"
-      ],
-      "secondary": [
-        "calves"
-      ],
-      "thresholds": [
-        0.0,
-        0.35,
-        0.55,
-        0.675,
-        0.8,
-        0.9,
-        1.0,
-        1.1,
-        1.275,
-        1.45
-      ],
-      "anchors": {
-        "beginner": 0.35,
-        "novice": 0.55,
-        "intermediate": 0.8,
-        "advanced": 1.1,
-        "elite": 1.45
-      }
-    },
-    {
-      "id": "seated_leg_curl",
-      "name": "Seated leg curl",
-      "exercise_ids": [
-        "Seated_Leg_Curl"
-      ],
-      "bodyweight_loaded": false,
-      "per_hand": false,
-      "primary": [
-        "hamstrings"
-      ],
-      "secondary": [],
-      "thresholds": [
-        0.0,
-        0.4,
-        0.6,
-        0.725,
-        0.85,
-        0.967,
-        1.083,
-        1.2,
-        1.375,
-        1.55
-      ],
-      "anchors": {
-        "beginner": 0.4,
-        "novice": 0.6,
-        "intermediate": 0.85,
-        "advanced": 1.2,
-        "elite": 1.55
-      }
-    },
-    {
-      "id": "hip_thrust",
-      "name": "Hip thrust",
-      "exercise_ids": [
-        "Barbell_Hip_Thrust"
-      ],
-      "bodyweight_loaded": false,
-      "per_hand": false,
-      "primary": [
-        "glutes"
-      ],
-      "secondary": [
-        "hamstrings"
-      ],
-      "thresholds": [
-        0.0,
-        0.75,
-        1.25,
-        1.5,
-        1.75,
-        2.0,
-        2.25,
-        2.5,
-        2.875,
-        3.25
-      ],
-      "anchors": {
-        "beginner": 0.75,
-        "novice": 1.25,
-        "intermediate": 1.75,
-        "advanced": 2.5,
-        "elite": 3.25
-      }
-    },
-    {
-      "id": "barbell_row",
-      "name": "Barbell row",
-      "exercise_ids": [
-        "Bent_Over_Barbell_Row",
-        "T-Bar_Row_with_Handle",
-        "Smith_Machine_Bent_Over_Row"
-      ],
-      "bodyweight_loaded": false,
-      "per_hand": false,
-      "primary": [
-        "back"
-      ],
-      "secondary": [
-        "biceps",
-        "shoulders",
-        "traps"
-      ],
-      "thresholds": [
-        0.0,
-        0.5,
-        0.75,
-        0.875,
-        1.0,
-        1.167,
-        1.333,
-        1.5,
-        1.625,
-        1.75
-      ],
-      "anchors": {
-        "beginner": 0.5,
-        "novice": 0.75,
-        "intermediate": 1.0,
-        "advanced": 1.5,
-        "elite": 1.75
-      }
-    },
-    {
-      "id": "seated_cable_row",
-      "name": "Seated cable row",
-      "exercise_ids": [
-        "Seated_Cable_Rows"
-      ],
-      "bodyweight_loaded": false,
-      "per_hand": false,
-      "primary": [
-        "back"
-      ],
-      "secondary": [
-        "biceps",
-        "shoulders"
-      ],
-      "thresholds": [
-        0.0,
-        0.5,
-        0.75,
-        0.875,
-        1.0,
-        1.133,
-        1.267,
-        1.4,
-        1.575,
-        1.75
-      ],
-      "anchors": {
-        "beginner": 0.5,
-        "novice": 0.75,
-        "intermediate": 1.0,
-        "advanced": 1.4,
-        "elite": 1.75
-      }
-    },
-    {
-      "id": "pull_up",
-      "name": "Pull-up / chin-up (bodyweight + added)",
-      "exercise_ids": [
-        "Pullups",
-        "Chin-Up",
-        "V-Bar_Pullup",
-        "Wide-Grip_Rear_Pull-Up"
-      ],
-      "bodyweight_loaded": true,
-      "per_hand": false,
-      "primary": [
-        "back"
-      ],
-      "secondary": [
-        "biceps",
-        "forearms"
-      ],
-      "thresholds": [
-        0.0,
-        1.0,
-        1.15,
-        1.25,
-        1.35,
-        1.433,
-        1.517,
-        1.6,
-        1.725,
-        1.85
-      ],
-      "anchors": {
-        "beginner": 1.0,
-        "novice": 1.15,
-        "intermediate": 1.35,
-        "advanced": 1.6,
-        "elite": 1.85
-      }
-    },
-    {
-      "id": "lat_pulldown",
-      "name": "Lat pulldown",
-      "exercise_ids": [
-        "Wide-Grip_Lat_Pulldown",
-        "Close-Grip_Front_Lat_Pulldown",
-        "Full_Range-Of-Motion_Lat_Pulldown",
-        "V-Bar_Pulldown",
-        "Underhand_Cable_Pulldowns"
-      ],
-      "bodyweight_loaded": false,
-      "per_hand": false,
-      "primary": [
-        "back"
-      ],
-      "secondary": [
-        "biceps"
-      ],
-      "thresholds": [
-        0.0,
-        0.5,
-        0.75,
-        0.875,
-        1.0,
-        1.083,
-        1.167,
-        1.25,
-        1.375,
-        1.5
-      ],
-      "anchors": {
-        "beginner": 0.5,
-        "novice": 0.75,
-        "intermediate": 1.0,
-        "advanced": 1.25,
-        "elite": 1.5
-      }
-    },
-    {
-      "id": "dips",
-      "name": "Dips (bodyweight + added)",
-      "exercise_ids": [
-        "Dips_-_Triceps_Version",
-        "Dips_-_Chest_Version",
-        "Parallel_Bar_Dip"
-      ],
-      "bodyweight_loaded": true,
-      "per_hand": false,
-      "primary": [
-        "triceps",
-        "chest"
-      ],
-      "secondary": [
-        "shoulders"
-      ],
-      "thresholds": [
-        0.0,
-        1.0,
-        1.2,
-        1.35,
-        1.5,
-        1.6,
-        1.7,
-        1.8,
-        1.95,
-        2.1
-      ],
-      "anchors": {
-        "beginner": 1.0,
-        "novice": 1.2,
-        "intermediate": 1.5,
-        "advanced": 1.8,
-        "elite": 2.1
-      }
-    },
-    {
-      "id": "barbell_curl",
-      "name": "Barbell curl",
-      "exercise_ids": [
-        "Barbell_Curl",
-        "EZ-Bar_Curl",
-        "Close-Grip_EZ_Bar_Curl"
-      ],
-      "bodyweight_loaded": false,
-      "per_hand": false,
-      "primary": [
-        "biceps"
-      ],
-      "secondary": [
-        "forearms"
-      ],
-      "thresholds": [
-        0.0,
-        0.2,
-        0.4,
-        0.5,
-        0.6,
-        0.683,
-        0.767,
-        0.85,
-        1.0,
-        1.15
-      ],
-      "anchors": {
-        "beginner": 0.2,
-        "novice": 0.4,
-        "intermediate": 0.6,
-        "advanced": 0.85,
-        "elite": 1.15
-      }
-    },
-    {
-      "id": "dumbbell_curl",
-      "name": "Dumbbell curl (per dumbbell)",
-      "exercise_ids": [
-        "Dumbbell_Bicep_Curl",
-        "Dumbbell_Alternate_Bicep_Curl",
-        "Hammer_Curls",
-        "Incline_Dumbbell_Curl"
-      ],
-      "bodyweight_loaded": false,
-      "per_hand": true,
-      "primary": [
-        "biceps"
-      ],
-      "secondary": [
-        "forearms"
-      ],
-      "thresholds": [
-        0.0,
-        0.1,
-        0.2,
-        0.25,
-        0.3,
-        0.35,
-        0.4,
-        0.45,
-        0.525,
-        0.6
-      ],
-      "anchors": {
-        "beginner": 0.1,
-        "novice": 0.2,
-        "intermediate": 0.3,
-        "advanced": 0.45,
-        "elite": 0.6
-      }
-    },
-    {
-      "id": "triceps_pushdown",
-      "name": "Triceps pushdown",
-      "exercise_ids": [
-        "Triceps_Pushdown",
-        "Triceps_Pushdown_-_Rope_Attachment",
-        "Triceps_Pushdown_-_V-Bar_Attachment"
-      ],
-      "bodyweight_loaded": false,
-      "per_hand": false,
-      "primary": [
-        "triceps"
-      ],
-      "secondary": [],
-      "thresholds": [
-        0.0,
-        0.25,
-        0.4,
-        0.5,
-        0.6,
-        0.683,
-        0.767,
-        0.85,
-        0.975,
-        1.1
-      ],
-      "anchors": {
-        "beginner": 0.25,
-        "novice": 0.4,
-        "intermediate": 0.6,
-        "advanced": 0.85,
-        "elite": 1.1
-      }
-    },
-    {
-      "id": "skull_crusher",
-      "name": "Skull crusher",
-      "exercise_ids": [
-        "EZ-Bar_Skullcrusher"
-      ],
-      "bodyweight_loaded": false,
-      "per_hand": false,
-      "primary": [
-        "triceps"
-      ],
-      "secondary": [],
-      "thresholds": [
-        0.0,
-        0.15,
-        0.3,
-        0.4,
-        0.5,
-        0.567,
-        0.633,
-        0.7,
-        0.825,
-        0.95
-      ],
-      "anchors": {
-        "beginner": 0.15,
-        "novice": 0.3,
-        "intermediate": 0.5,
-        "advanced": 0.7,
-        "elite": 0.95
-      }
-    },
-    {
-      "id": "shrug",
-      "name": "Barbell shrug",
-      "exercise_ids": [
-        "Barbell_Shrug",
-        "Dumbbell_Shrug"
-      ],
-      "bodyweight_loaded": false,
-      "per_hand": false,
-      "primary": [
-        "traps"
-      ],
-      "secondary": [
-        "forearms"
-      ],
-      "thresholds": [
-        0.0,
-        0.75,
-        1.0,
-        1.25,
-        1.5,
-        1.667,
-        1.833,
-        2.0,
-        2.25,
-        2.5
-      ],
-      "anchors": {
-        "beginner": 0.75,
-        "novice": 1.0,
-        "intermediate": 1.5,
-        "advanced": 2.0,
-        "elite": 2.5
-      }
-    },
-    {
-      "id": "standing_calf_raise",
-      "name": "Standing calf raise",
-      "exercise_ids": [
-        "Standing_Calf_Raises",
-        "Smith_Machine_Calf_Raise",
-        "Standing_Barbell_Calf_Raise"
-      ],
-      "bodyweight_loaded": false,
-      "per_hand": false,
-      "primary": [
-        "calves"
-      ],
-      "secondary": [],
-      "thresholds": [
-        0.0,
-        0.75,
-        1.25,
-        1.5,
-        1.75,
-        2.0,
-        2.25,
-        2.5,
-        2.875,
-        3.25
-      ],
-      "anchors": {
-        "beginner": 0.75,
-        "novice": 1.25,
-        "intermediate": 1.75,
-        "advanced": 2.5,
-        "elite": 3.25
-      }
-    },
-    {
-      "id": "seated_calf_raise",
-      "name": "Seated calf raise",
-      "exercise_ids": [
-        "Seated_Calf_Raise"
-      ],
-      "bodyweight_loaded": false,
-      "per_hand": false,
-      "primary": [
-        "calves"
-      ],
-      "secondary": [],
-      "thresholds": [
-        0.0,
-        0.5,
-        0.8,
-        1.0,
-        1.2,
-        1.367,
-        1.533,
-        1.7,
-        1.95,
-        2.2
-      ],
-      "anchors": {
-        "beginner": 0.5,
-        "novice": 0.8,
-        "intermediate": 1.2,
-        "advanced": 1.7,
-        "elite": 2.2
-      }
-    },
-    {
-      "id": "wrist_curl",
-      "name": "Barbell wrist curl",
-      "exercise_ids": [
-        "Palms-Up_Barbell_Wrist_Curl_Over_A_Bench",
-        "Seated_Palm-Up_Barbell_Wrist_Curl"
-      ],
-      "bodyweight_loaded": false,
-      "per_hand": false,
-      "primary": [
-        "forearms"
-      ],
-      "secondary": [],
-      "thresholds": [
-        0.0,
-        0.15,
-        0.3,
-        0.375,
-        0.45,
-        0.517,
-        0.583,
-        0.65,
-        0.75,
-        0.85
-      ],
-      "anchors": {
-        "beginner": 0.15,
-        "novice": 0.3,
-        "intermediate": 0.45,
-        "advanced": 0.65,
-        "elite": 0.85
-      }
-    },
-    {
-      "id": "cable_crunch",
-      "name": "Cable crunch / ab machine",
-      "exercise_ids": [
-        "Cable_Crunch",
-        "Ab_Crunch_Machine"
-      ],
-      "bodyweight_loaded": false,
-      "per_hand": false,
-      "primary": [
-        "abs"
-      ],
-      "secondary": [],
-      "thresholds": [
-        0.0,
-        0.3,
-        0.5,
-        0.625,
-        0.75,
-        0.833,
-        0.917,
-        1.0,
-        1.15,
-        1.3
-      ],
-      "anchors": {
-        "beginner": 0.3,
-        "novice": 0.5,
-        "intermediate": 0.75,
-        "advanced": 1.0,
-        "elite": 1.3
-      }
-    }
-  ]
+ "schema_version": 3,
+ "description": "Strength standards per exercise. anchors = e1RM / bodyweight at the beginner, novice, intermediate, advanced and elite levels for a male lifter around 100 kg. Machine and cable anchors are multiplied by machine_strictness. Tier entry points: Iron 0, Bronze = beginner, Silver = novice, Gold = midpoint novice-intermediate, Platinum = intermediate, Emerald = midpoint intermediate-advanced, Diamond = advanced, Master = elite, Grandmaster = elite x 1.15, Challenger = elite x 1.30. kind bodyweight: e1RM includes bodyweight (assisted machines subtract the assistance). per_hand: per dumbbell or per side. Source: tool/standards/exercise_data.py.",
+ "machine_strictness": 1.1,
+ "standards": [
+  {
+   "id": "bench_press",
+   "name": "Bench press",
+   "kind": "free",
+   "per_hand": false,
+   "exercise_ids": [
+    "Barbell_Bench_Press_-_Medium_Grip"
+   ],
+   "anchors": {
+    "beginner": 0.6,
+    "novice": 0.85,
+    "intermediate": 1.15,
+    "advanced": 1.5,
+    "elite": 1.9
+   }
+  },
+  {
+   "id": "smith_machine_bench_press",
+   "name": "Smith machine bench press",
+   "kind": "machine",
+   "per_hand": false,
+   "exercise_ids": [
+    "Smith_Machine_Bench_Press"
+   ],
+   "anchors": {
+    "beginner": 0.6,
+    "novice": 0.85,
+    "intermediate": 1.15,
+    "advanced": 1.5,
+    "elite": 1.9
+   }
+  },
+  {
+   "id": "incline_bench_press",
+   "name": "Incline bench press",
+   "kind": "free",
+   "per_hand": false,
+   "exercise_ids": [
+    "Barbell_Incline_Bench_Press_-_Medium_Grip"
+   ],
+   "anchors": {
+    "beginner": 0.5,
+    "novice": 0.7,
+    "intermediate": 0.95,
+    "advanced": 1.25,
+    "elite": 1.6
+   }
+  },
+  {
+   "id": "dumbbell_bench_press",
+   "name": "Dumbbell bench press",
+   "kind": "free",
+   "per_hand": true,
+   "exercise_ids": [
+    "Dumbbell_Bench_Press"
+   ],
+   "anchors": {
+    "beginner": 0.2,
+    "novice": 0.3,
+    "intermediate": 0.42,
+    "advanced": 0.57,
+    "elite": 0.73
+   }
+  },
+  {
+   "id": "incline_dumbbell_press",
+   "name": "Incline dumbbell press",
+   "kind": "free",
+   "per_hand": true,
+   "exercise_ids": [
+    "Incline_Dumbbell_Press"
+   ],
+   "anchors": {
+    "beginner": 0.18,
+    "novice": 0.27,
+    "intermediate": 0.38,
+    "advanced": 0.52,
+    "elite": 0.67
+   }
+  },
+  {
+   "id": "close_grip_dumbbell_press",
+   "name": "Close-grip dumbbell press",
+   "kind": "free",
+   "per_hand": true,
+   "exercise_ids": [
+    "Close-Grip_Dumbbell_Press"
+   ],
+   "anchors": {
+    "beginner": 0.15,
+    "novice": 0.23,
+    "intermediate": 0.33,
+    "advanced": 0.45,
+    "elite": 0.58
+   }
+  },
+  {
+   "id": "supine_dumbbell_press",
+   "name": "Supine dumbbell press",
+   "kind": "free",
+   "per_hand": true,
+   "exercise_ids": [
+    "liftoff_supine_bench_press"
+   ],
+   "anchors": {
+    "beginner": 0.12,
+    "novice": 0.19,
+    "intermediate": 0.28,
+    "advanced": 0.38,
+    "elite": 0.5
+   }
+  },
+  {
+   "id": "machine_chest_press",
+   "name": "Machine chest press",
+   "kind": "machine",
+   "per_hand": false,
+   "exercise_ids": [
+    "Leverage_Chest_Press"
+   ],
+   "anchors": {
+    "beginner": 0.55,
+    "novice": 0.85,
+    "intermediate": 1.2,
+    "advanced": 1.6,
+    "elite": 2.05
+   }
+  },
+  {
+   "id": "machine_incline_chest_press",
+   "name": "Machine incline chest press",
+   "kind": "machine",
+   "per_hand": false,
+   "exercise_ids": [
+    "Leverage_Incline_Chest_Press"
+   ],
+   "anchors": {
+    "beginner": 0.45,
+    "novice": 0.7,
+    "intermediate": 1.0,
+    "advanced": 1.35,
+    "elite": 1.75
+   }
+  },
+  {
+   "id": "pec_deck",
+   "name": "Pec deck",
+   "kind": "machine",
+   "per_hand": false,
+   "exercise_ids": [
+    "Butterfly"
+   ],
+   "anchors": {
+    "beginner": 0.4,
+    "novice": 0.7,
+    "intermediate": 1.05,
+    "advanced": 1.5,
+    "elite": 2.0
+   }
+  },
+  {
+   "id": "cable_fly",
+   "name": "Cable fly",
+   "kind": "cable",
+   "per_hand": true,
+   "exercise_ids": [
+    "Cable_Crossover"
+   ],
+   "anchors": {
+    "beginner": 0.12,
+    "novice": 0.22,
+    "intermediate": 0.36,
+    "advanced": 0.54,
+    "elite": 0.75
+   }
+  },
+  {
+   "id": "assisted_dip",
+   "name": "Assisted dip",
+   "kind": "bodyweight",
+   "per_hand": false,
+   "exercise_ids": [
+    "sp_assisted_dip_machine"
+   ],
+   "anchors": {
+    "beginner": 0.9,
+    "novice": 1.1,
+    "intermediate": 1.35,
+    "advanced": 1.65,
+    "elite": 1.95
+   }
+  },
+  {
+   "id": "overhead_press",
+   "name": "Overhead press",
+   "kind": "free",
+   "per_hand": false,
+   "exercise_ids": [
+    "Barbell_Shoulder_Press"
+   ],
+   "anchors": {
+    "beginner": 0.38,
+    "novice": 0.52,
+    "intermediate": 0.7,
+    "advanced": 0.92,
+    "elite": 1.17
+   }
+  },
+  {
+   "id": "smith_machine_shoulder_press",
+   "name": "Smith machine shoulder press",
+   "kind": "machine",
+   "per_hand": false,
+   "exercise_ids": [
+    "Smith_Machine_Overhead_Shoulder_Press"
+   ],
+   "anchors": {
+    "beginner": 0.38,
+    "novice": 0.52,
+    "intermediate": 0.7,
+    "advanced": 0.92,
+    "elite": 1.17
+   }
+  },
+  {
+   "id": "machine_shoulder_press",
+   "name": "Machine shoulder press",
+   "kind": "machine",
+   "per_hand": false,
+   "exercise_ids": [
+    "Machine_Shoulder_Military_Press"
+   ],
+   "anchors": {
+    "beginner": 0.4,
+    "novice": 0.65,
+    "intermediate": 0.95,
+    "advanced": 1.3,
+    "elite": 1.7
+   }
+  },
+  {
+   "id": "seated_dumbbell_press",
+   "name": "Seated dumbbell press",
+   "kind": "free",
+   "per_hand": true,
+   "exercise_ids": [
+    "Seated_Dumbbell_Press"
+   ],
+   "anchors": {
+    "beginner": 0.13,
+    "novice": 0.2,
+    "intermediate": 0.3,
+    "advanced": 0.41,
+    "elite": 0.53
+   }
+  },
+  {
+   "id": "dumbbell_lateral_raise",
+   "name": "Dumbbell lateral raise",
+   "kind": "free",
+   "per_hand": true,
+   "exercise_ids": [
+    "Side_Lateral_Raise"
+   ],
+   "anchors": {
+    "beginner": 0.05,
+    "novice": 0.09,
+    "intermediate": 0.14,
+    "advanced": 0.2,
+    "elite": 0.27
+   }
+  },
+  {
+   "id": "cable_lateral_raise",
+   "name": "Cable lateral raise",
+   "kind": "cable",
+   "per_hand": true,
+   "exercise_ids": [
+    "sp_cable_lateral_raise"
+   ],
+   "anchors": {
+    "beginner": 0.035,
+    "novice": 0.065,
+    "intermediate": 0.1,
+    "advanced": 0.15,
+    "elite": 0.21
+   }
+  },
+  {
+   "id": "machine_lateral_raise",
+   "name": "Machine lateral raise",
+   "kind": "machine",
+   "per_hand": false,
+   "exercise_ids": [
+    "sp_standing_machine_lateral_raise"
+   ],
+   "anchors": {
+    "beginner": 0.15,
+    "novice": 0.28,
+    "intermediate": 0.45,
+    "advanced": 0.66,
+    "elite": 0.9
+   }
+  },
+  {
+   "id": "incline_y_raise",
+   "name": "Incline Y raise",
+   "kind": "free",
+   "per_hand": true,
+   "exercise_ids": [
+    "sp_db_incline_y_raise"
+   ],
+   "anchors": {
+    "beginner": 0.04,
+    "novice": 0.065,
+    "intermediate": 0.1,
+    "advanced": 0.14,
+    "elite": 0.19
+   }
+  },
+  {
+   "id": "cable_front_raise",
+   "name": "Cable front raise",
+   "kind": "cable",
+   "per_hand": true,
+   "exercise_ids": [
+    "Front_Cable_Raise"
+   ],
+   "anchors": {
+    "beginner": 0.06,
+    "novice": 0.1,
+    "intermediate": 0.16,
+    "advanced": 0.23,
+    "elite": 0.31
+   }
+  },
+  {
+   "id": "cable_upright_row",
+   "name": "Cable upright row",
+   "kind": "cable",
+   "per_hand": false,
+   "exercise_ids": [
+    "Upright_Cable_Row"
+   ],
+   "anchors": {
+    "beginner": 0.25,
+    "novice": 0.4,
+    "intermediate": 0.58,
+    "advanced": 0.8,
+    "elite": 1.05
+   }
+  },
+  {
+   "id": "reverse_pec_deck",
+   "name": "Reverse pec deck",
+   "kind": "machine",
+   "per_hand": false,
+   "exercise_ids": [
+    "Reverse_Machine_Flyes"
+   ],
+   "anchors": {
+    "beginner": 0.2,
+    "novice": 0.38,
+    "intermediate": 0.6,
+    "advanced": 0.88,
+    "elite": 1.2
+   }
+  },
+  {
+   "id": "one_arm_reverse_pec_deck",
+   "name": "One-arm reverse pec deck",
+   "kind": "machine",
+   "per_hand": true,
+   "exercise_ids": [
+    "liftoff_one_arm_machine_reverse_fly"
+   ],
+   "anchors": {
+    "beginner": 0.1,
+    "novice": 0.19,
+    "intermediate": 0.3,
+    "advanced": 0.44,
+    "elite": 0.6
+   }
+  },
+  {
+   "id": "dumbbell_reverse_fly",
+   "name": "Dumbbell reverse fly",
+   "kind": "free",
+   "per_hand": true,
+   "exercise_ids": [
+    "Reverse_Flyes"
+   ],
+   "anchors": {
+    "beginner": 0.04,
+    "novice": 0.08,
+    "intermediate": 0.13,
+    "advanced": 0.19,
+    "elite": 0.26
+   }
+  },
+  {
+   "id": "cable_reverse_fly",
+   "name": "Cable reverse fly",
+   "kind": "cable",
+   "per_hand": true,
+   "exercise_ids": [
+    "Cable_Rear_Delt_Fly",
+    "liftoff_one_arm_cable_reverse_fly"
+   ],
+   "anchors": {
+    "beginner": 0.04,
+    "novice": 0.08,
+    "intermediate": 0.13,
+    "advanced": 0.2,
+    "elite": 0.28
+   }
+  },
+  {
+   "id": "face_pull",
+   "name": "Face pull",
+   "kind": "cable",
+   "per_hand": false,
+   "exercise_ids": [
+    "Face_Pull"
+   ],
+   "anchors": {
+    "beginner": 0.2,
+    "novice": 0.33,
+    "intermediate": 0.5,
+    "advanced": 0.7,
+    "elite": 0.95
+   }
+  },
+  {
+   "id": "lat_pulldown",
+   "name": "Lat pulldown",
+   "kind": "cable",
+   "per_hand": false,
+   "exercise_ids": [
+    "Wide-Grip_Lat_Pulldown"
+   ],
+   "anchors": {
+    "beginner": 0.45,
+    "novice": 0.65,
+    "intermediate": 0.9,
+    "advanced": 1.2,
+    "elite": 1.55
+   }
+  },
+  {
+   "id": "close_grip_lat_pulldown",
+   "name": "Close-grip lat pulldown",
+   "kind": "cable",
+   "per_hand": false,
+   "exercise_ids": [
+    "Close-Grip_Front_Lat_Pulldown",
+    "V-Bar_Pulldown"
+   ],
+   "anchors": {
+    "beginner": 0.48,
+    "novice": 0.7,
+    "intermediate": 0.95,
+    "advanced": 1.27,
+    "elite": 1.63
+   }
+  },
+  {
+   "id": "underhand_lat_pulldown",
+   "name": "Underhand lat pulldown",
+   "kind": "cable",
+   "per_hand": false,
+   "exercise_ids": [
+    "Underhand_Cable_Pulldowns"
+   ],
+   "anchors": {
+    "beginner": 0.48,
+    "novice": 0.7,
+    "intermediate": 0.95,
+    "advanced": 1.27,
+    "elite": 1.63
+   }
+  },
+  {
+   "id": "assisted_pull_up",
+   "name": "Assisted pull-up",
+   "kind": "bodyweight",
+   "per_hand": false,
+   "exercise_ids": [
+    "sp_assisted_pull_up_machine"
+   ],
+   "anchors": {
+    "beginner": 0.85,
+    "novice": 1.0,
+    "intermediate": 1.25,
+    "advanced": 1.5,
+    "elite": 1.75
+   }
+  },
+  {
+   "id": "straight_arm_pulldown",
+   "name": "Straight-arm pulldown",
+   "kind": "cable",
+   "per_hand": false,
+   "exercise_ids": [
+    "Straight-Arm_Pulldown"
+   ],
+   "anchors": {
+    "beginner": 0.18,
+    "novice": 0.3,
+    "intermediate": 0.45,
+    "advanced": 0.63,
+    "elite": 0.85
+   }
+  },
+  {
+   "id": "seated_cable_row",
+   "name": "Seated cable row",
+   "kind": "cable",
+   "per_hand": false,
+   "exercise_ids": [
+    "Seated_Cable_Rows"
+   ],
+   "anchors": {
+    "beginner": 0.45,
+    "novice": 0.68,
+    "intermediate": 0.98,
+    "advanced": 1.33,
+    "elite": 1.73
+   }
+  },
+  {
+   "id": "chest_supported_t_bar_row",
+   "name": "Chest-supported T-bar row",
+   "kind": "machine",
+   "per_hand": false,
+   "exercise_ids": [
+    "Lying_T-Bar_Row"
+   ],
+   "anchors": {
+    "beginner": 0.4,
+    "novice": 0.65,
+    "intermediate": 0.95,
+    "advanced": 1.3,
+    "elite": 1.7
+   }
+  },
+  {
+   "id": "t_bar_row",
+   "name": "T-bar row",
+   "kind": "free",
+   "per_hand": false,
+   "exercise_ids": [
+    "T-Bar_Row_with_Handle"
+   ],
+   "anchors": {
+    "beginner": 0.5,
+    "novice": 0.75,
+    "intermediate": 1.0,
+    "advanced": 1.3,
+    "elite": 1.65
+   }
+  },
+  {
+   "id": "barbell_row",
+   "name": "Barbell row",
+   "kind": "free",
+   "per_hand": false,
+   "exercise_ids": [
+    "Bent_Over_Barbell_Row"
+   ],
+   "anchors": {
+    "beginner": 0.45,
+    "novice": 0.65,
+    "intermediate": 0.9,
+    "advanced": 1.2,
+    "elite": 1.5
+   }
+  },
+  {
+   "id": "dumbbell_row",
+   "name": "Dumbbell row",
+   "kind": "free",
+   "per_hand": true,
+   "exercise_ids": [
+    "One-Arm_Dumbbell_Row"
+   ],
+   "anchors": {
+    "beginner": 0.2,
+    "novice": 0.32,
+    "intermediate": 0.48,
+    "advanced": 0.66,
+    "elite": 0.86
+   }
+  },
+  {
+   "id": "machine_row",
+   "name": "Machine row",
+   "kind": "machine",
+   "per_hand": false,
+   "exercise_ids": [
+    "Leverage_Iso_Row",
+    "liftoff_machine_row"
+   ],
+   "anchors": {
+    "beginner": 0.5,
+    "novice": 0.8,
+    "intermediate": 1.15,
+    "advanced": 1.55,
+    "elite": 2.0
+   }
+  },
+  {
+   "id": "machine_high_row",
+   "name": "Machine high row",
+   "kind": "machine",
+   "per_hand": false,
+   "exercise_ids": [
+    "Leverage_High_Row"
+   ],
+   "anchors": {
+    "beginner": 0.45,
+    "novice": 0.72,
+    "intermediate": 1.05,
+    "advanced": 1.42,
+    "elite": 1.85
+   }
+  },
+  {
+   "id": "dumbbell_shrug",
+   "name": "Dumbbell shrug",
+   "kind": "free",
+   "per_hand": true,
+   "exercise_ids": [
+    "Dumbbell_Shrug"
+   ],
+   "anchors": {
+    "beginner": 0.2,
+    "novice": 0.35,
+    "intermediate": 0.55,
+    "advanced": 0.78,
+    "elite": 1.02
+   }
+  },
+  {
+   "id": "back_extension",
+   "name": "Back extension",
+   "kind": "bodyweight",
+   "per_hand": false,
+   "exercise_ids": [
+    "Hyperextensions_Back_Extensions"
+   ],
+   "anchors": {
+    "beginner": 1.27,
+    "novice": 1.4,
+    "intermediate": 1.53,
+    "advanced": 1.75,
+    "elite": 2.0
+   }
+  },
+  {
+   "id": "deadlift",
+   "name": "Deadlift",
+   "kind": "free",
+   "per_hand": false,
+   "exercise_ids": [
+    "Barbell_Deadlift"
+   ],
+   "anchors": {
+    "beginner": 0.9,
+    "novice": 1.25,
+    "intermediate": 1.6,
+    "advanced": 2.1,
+    "elite": 2.6
+   }
+  },
+  {
+   "id": "ez_bar_curl",
+   "name": "EZ-bar curl",
+   "kind": "free",
+   "per_hand": false,
+   "exercise_ids": [
+    "EZ-Bar_Curl"
+   ],
+   "anchors": {
+    "beginner": 0.25,
+    "novice": 0.38,
+    "intermediate": 0.52,
+    "advanced": 0.7,
+    "elite": 0.9
+   }
+  },
+  {
+   "id": "dumbbell_curl",
+   "name": "Dumbbell curl",
+   "kind": "free",
+   "per_hand": true,
+   "exercise_ids": [
+    "Dumbbell_Bicep_Curl"
+   ],
+   "anchors": {
+    "beginner": 0.09,
+    "novice": 0.14,
+    "intermediate": 0.21,
+    "advanced": 0.3,
+    "elite": 0.4
+   }
+  },
+  {
+   "id": "incline_dumbbell_curl",
+   "name": "Incline dumbbell curl",
+   "kind": "free",
+   "per_hand": true,
+   "exercise_ids": [
+    "Incline_Dumbbell_Curl"
+   ],
+   "anchors": {
+    "beginner": 0.08,
+    "novice": 0.12,
+    "intermediate": 0.18,
+    "advanced": 0.26,
+    "elite": 0.35
+   }
+  },
+  {
+   "id": "preacher_curl",
+   "name": "Preacher curl",
+   "kind": "free",
+   "per_hand": true,
+   "exercise_ids": [
+    "One_Arm_Dumbbell_Preacher_Curl"
+   ],
+   "anchors": {
+    "beginner": 0.08,
+    "novice": 0.12,
+    "intermediate": 0.18,
+    "advanced": 0.26,
+    "elite": 0.34
+   }
+  },
+  {
+   "id": "hammer_curl",
+   "name": "Hammer curl",
+   "kind": "free",
+   "per_hand": true,
+   "exercise_ids": [
+    "Cross_Body_Hammer_Curl",
+    "Preacher_Hammer_Dumbbell_Curl"
+   ],
+   "anchors": {
+    "beginner": 0.09,
+    "novice": 0.14,
+    "intermediate": 0.21,
+    "advanced": 0.3,
+    "elite": 0.39
+   }
+  },
+  {
+   "id": "incline_hammer_curl",
+   "name": "Incline hammer curl",
+   "kind": "free",
+   "per_hand": true,
+   "exercise_ids": [
+    "Incline_Hammer_Curls"
+   ],
+   "anchors": {
+    "beginner": 0.08,
+    "novice": 0.12,
+    "intermediate": 0.18,
+    "advanced": 0.26,
+    "elite": 0.35
+   }
+  },
+  {
+   "id": "cable_curl",
+   "name": "Cable curl",
+   "kind": "cable",
+   "per_hand": false,
+   "exercise_ids": [
+    "Standing_Biceps_Cable_Curl"
+   ],
+   "anchors": {
+    "beginner": 0.2,
+    "novice": 0.33,
+    "intermediate": 0.5,
+    "advanced": 0.7,
+    "elite": 0.95
+   }
+  },
+  {
+   "id": "cable_hammer_curl",
+   "name": "Cable hammer curl",
+   "kind": "cable",
+   "per_hand": false,
+   "exercise_ids": [
+    "Cable_Hammer_Curls_-_Rope_Attachment"
+   ],
+   "anchors": {
+    "beginner": 0.2,
+    "novice": 0.33,
+    "intermediate": 0.5,
+    "advanced": 0.7,
+    "elite": 0.95
+   }
+  },
+  {
+   "id": "one_arm_cable_curl",
+   "name": "One-arm cable curl",
+   "kind": "cable",
+   "per_hand": true,
+   "exercise_ids": [
+    "Standing_One-Arm_Cable_Curl"
+   ],
+   "anchors": {
+    "beginner": 0.1,
+    "novice": 0.17,
+    "intermediate": 0.25,
+    "advanced": 0.36,
+    "elite": 0.48
+   }
+  },
+  {
+   "id": "triceps_pushdown",
+   "name": "Triceps pushdown",
+   "kind": "cable",
+   "per_hand": false,
+   "exercise_ids": [
+    "Triceps_Pushdown"
+   ],
+   "anchors": {
+    "beginner": 0.25,
+    "novice": 0.42,
+    "intermediate": 0.65,
+    "advanced": 0.95,
+    "elite": 1.3
+   }
+  },
+  {
+   "id": "rope_pushdown",
+   "name": "Rope pushdown",
+   "kind": "cable",
+   "per_hand": false,
+   "exercise_ids": [
+    "Triceps_Pushdown_-_Rope_Attachment"
+   ],
+   "anchors": {
+    "beginner": 0.22,
+    "novice": 0.38,
+    "intermediate": 0.58,
+    "advanced": 0.85,
+    "elite": 1.15
+   }
+  },
+  {
+   "id": "overhead_cable_triceps_extension",
+   "name": "Overhead cable triceps extension",
+   "kind": "cable",
+   "per_hand": false,
+   "exercise_ids": [
+    "Cable_Rope_Overhead_Triceps_Extension"
+   ],
+   "anchors": {
+    "beginner": 0.2,
+    "novice": 0.35,
+    "intermediate": 0.55,
+    "advanced": 0.8,
+    "elite": 1.1
+   }
+  },
+  {
+   "id": "one_arm_cable_triceps_extension",
+   "name": "One-arm cable triceps extension",
+   "kind": "cable",
+   "per_hand": true,
+   "exercise_ids": [
+    "Cable_One_Arm_Tricep_Extension"
+   ],
+   "anchors": {
+    "beginner": 0.11,
+    "novice": 0.19,
+    "intermediate": 0.29,
+    "advanced": 0.43,
+    "elite": 0.58
+   }
+  },
+  {
+   "id": "machine_triceps_extension",
+   "name": "Machine triceps extension",
+   "kind": "machine",
+   "per_hand": false,
+   "exercise_ids": [
+    "Machine_Triceps_Extension"
+   ],
+   "anchors": {
+    "beginner": 0.3,
+    "novice": 0.5,
+    "intermediate": 0.75,
+    "advanced": 1.05,
+    "elite": 1.4
+   }
+  },
+  {
+   "id": "skull_crusher",
+   "name": "Skull crusher",
+   "kind": "free",
+   "per_hand": false,
+   "exercise_ids": [
+    "EZ-Bar_Skullcrusher",
+    "Lying_Triceps_Press"
+   ],
+   "anchors": {
+    "beginner": 0.2,
+    "novice": 0.32,
+    "intermediate": 0.48,
+    "advanced": 0.66,
+    "elite": 0.88
+   }
+  },
+  {
+   "id": "cable_wrist_curl",
+   "name": "Cable wrist curl",
+   "kind": "cable",
+   "per_hand": false,
+   "exercise_ids": [
+    "Cable_Wrist_Curl"
+   ],
+   "anchors": {
+    "beginner": 0.2,
+    "novice": 0.35,
+    "intermediate": 0.55,
+    "advanced": 0.8,
+    "elite": 1.05
+   }
+  },
+  {
+   "id": "cable_reverse_wrist_curl",
+   "name": "Cable reverse wrist curl",
+   "kind": "cable",
+   "per_hand": false,
+   "exercise_ids": [
+    "sp_cable_reverse_wrist_curl"
+   ],
+   "anchors": {
+    "beginner": 0.12,
+    "novice": 0.2,
+    "intermediate": 0.32,
+    "advanced": 0.46,
+    "elite": 0.62
+   }
+  },
+  {
+   "id": "barbell_wrist_curl",
+   "name": "Barbell wrist curl",
+   "kind": "free",
+   "per_hand": false,
+   "exercise_ids": [
+    "Palms-Up_Barbell_Wrist_Curl_Over_A_Bench"
+   ],
+   "anchors": {
+    "beginner": 0.2,
+    "novice": 0.35,
+    "intermediate": 0.55,
+    "advanced": 0.8,
+    "elite": 1.05
+   }
+  },
+  {
+   "id": "barbell_reverse_wrist_curl",
+   "name": "Barbell reverse wrist curl",
+   "kind": "free",
+   "per_hand": false,
+   "exercise_ids": [
+    "Palms-Down_Wrist_Curl_Over_A_Bench"
+   ],
+   "anchors": {
+    "beginner": 0.12,
+    "novice": 0.2,
+    "intermediate": 0.32,
+    "advanced": 0.46,
+    "elite": 0.62
+   }
+  },
+  {
+   "id": "dumbbell_wrist_curl",
+   "name": "Dumbbell wrist curl",
+   "kind": "free",
+   "per_hand": true,
+   "exercise_ids": [
+    "Palms-Up_Dumbbell_Wrist_Curl_Over_A_Bench"
+   ],
+   "anchors": {
+    "beginner": 0.08,
+    "novice": 0.13,
+    "intermediate": 0.2,
+    "advanced": 0.29,
+    "elite": 0.38
+   }
+  },
+  {
+   "id": "dumbbell_reverse_wrist_curl",
+   "name": "Dumbbell reverse wrist curl",
+   "kind": "free",
+   "per_hand": true,
+   "exercise_ids": [
+    "Palms-Down_Dumbbell_Wrist_Curl_Over_A_Bench"
+   ],
+   "anchors": {
+    "beginner": 0.05,
+    "novice": 0.08,
+    "intermediate": 0.12,
+    "advanced": 0.17,
+    "elite": 0.23
+   }
+  },
+  {
+   "id": "hand_gripper",
+   "name": "Hand gripper",
+   "kind": "free",
+   "per_hand": false,
+   "exercise_ids": [
+    "liftoff_hand_grippers"
+   ],
+   "anchors": {
+    "beginner": 0.2,
+    "novice": 0.35,
+    "intermediate": 0.55,
+    "advanced": 0.8,
+    "elite": 1.1
+   }
+  },
+  {
+   "id": "back_squat",
+   "name": "Back squat",
+   "kind": "free",
+   "per_hand": false,
+   "exercise_ids": [
+    "Barbell_Squat"
+   ],
+   "anchors": {
+    "beginner": 0.75,
+    "novice": 1.05,
+    "intermediate": 1.4,
+    "advanced": 1.85,
+    "elite": 2.35
+   }
+  },
+  {
+   "id": "smith_machine_squat",
+   "name": "Smith machine squat",
+   "kind": "machine",
+   "per_hand": false,
+   "exercise_ids": [
+    "Smith_Machine_Squat"
+   ],
+   "anchors": {
+    "beginner": 0.75,
+    "novice": 1.05,
+    "intermediate": 1.4,
+    "advanced": 1.85,
+    "elite": 2.35
+   }
+  },
+  {
+   "id": "pendulum_squat",
+   "name": "Pendulum squat",
+   "kind": "machine",
+   "per_hand": false,
+   "exercise_ids": [
+    "sp_pendulum_squat"
+   ],
+   "anchors": {
+    "beginner": 0.6,
+    "novice": 1.0,
+    "intermediate": 1.5,
+    "advanced": 2.1,
+    "elite": 2.8
+   }
+  },
+  {
+   "id": "leg_press",
+   "name": "Leg press",
+   "kind": "machine",
+   "per_hand": false,
+   "exercise_ids": [
+    "Leg_Press"
+   ],
+   "anchors": {
+    "beginner": 1.0,
+    "novice": 1.7,
+    "intermediate": 2.6,
+    "advanced": 3.7,
+    "elite": 5.0
+   }
+  },
+  {
+   "id": "leg_extension",
+   "name": "Leg extension",
+   "kind": "machine",
+   "per_hand": false,
+   "exercise_ids": [
+    "Leg_Extensions"
+   ],
+   "anchors": {
+    "beginner": 0.5,
+    "novice": 0.85,
+    "intermediate": 1.25,
+    "advanced": 1.75,
+    "elite": 2.3
+   }
+  },
+  {
+   "id": "single_leg_extension",
+   "name": "Single-leg extension",
+   "kind": "machine",
+   "per_hand": true,
+   "exercise_ids": [
+    "Single-Leg_Leg_Extension"
+   ],
+   "anchors": {
+    "beginner": 0.25,
+    "novice": 0.43,
+    "intermediate": 0.63,
+    "advanced": 0.88,
+    "elite": 1.15
+   }
+  },
+  {
+   "id": "barbell_lunge",
+   "name": "Barbell lunge",
+   "kind": "free",
+   "per_hand": false,
+   "exercise_ids": [
+    "Barbell_Lunge"
+   ],
+   "anchors": {
+    "beginner": 0.4,
+    "novice": 0.6,
+    "intermediate": 0.85,
+    "advanced": 1.15,
+    "elite": 1.45
+   }
+  },
+  {
+   "id": "dumbbell_lunge",
+   "name": "Dumbbell lunge",
+   "kind": "free",
+   "per_hand": true,
+   "exercise_ids": [
+    "Dumbbell_Lunges",
+    "sp_db_walking_lunge"
+   ],
+   "anchors": {
+    "beginner": 0.1,
+    "novice": 0.18,
+    "intermediate": 0.28,
+    "advanced": 0.4,
+    "elite": 0.52
+   }
+  },
+  {
+   "id": "dumbbell_split_squat",
+   "name": "Dumbbell split squat",
+   "kind": "free",
+   "per_hand": true,
+   "exercise_ids": [
+    "Split_Squat_with_Dumbbells"
+   ],
+   "anchors": {
+    "beginner": 0.08,
+    "novice": 0.15,
+    "intermediate": 0.24,
+    "advanced": 0.34,
+    "elite": 0.45
+   }
+  },
+  {
+   "id": "smith_split_squat",
+   "name": "Smith split squat",
+   "kind": "machine",
+   "per_hand": false,
+   "exercise_ids": [
+    "Smith_Single-Leg_Split_Squat"
+   ],
+   "anchors": {
+    "beginner": 0.35,
+    "novice": 0.55,
+    "intermediate": 0.8,
+    "advanced": 1.1,
+    "elite": 1.45
+   }
+  },
+  {
+   "id": "side_lunge",
+   "name": "Side lunge",
+   "kind": "bodyweight",
+   "per_hand": false,
+   "exercise_ids": [
+    "liftoff_side_lunge"
+   ],
+   "anchors": {
+    "beginner": 1.2,
+    "novice": 1.33,
+    "intermediate": 1.5,
+    "advanced": 1.67,
+    "elite": 1.9
+   }
+  },
+  {
+   "id": "lying_leg_curl",
+   "name": "Lying leg curl",
+   "kind": "machine",
+   "per_hand": false,
+   "exercise_ids": [
+    "Lying_Leg_Curls"
+   ],
+   "anchors": {
+    "beginner": 0.35,
+    "novice": 0.58,
+    "intermediate": 0.85,
+    "advanced": 1.2,
+    "elite": 1.6
+   }
+  },
+  {
+   "id": "romanian_deadlift",
+   "name": "Romanian deadlift",
+   "kind": "free",
+   "per_hand": false,
+   "exercise_ids": [
+    "Romanian_Deadlift"
+   ],
+   "anchors": {
+    "beginner": 0.6,
+    "novice": 0.9,
+    "intermediate": 1.25,
+    "advanced": 1.65,
+    "elite": 2.05
+   }
+  },
+  {
+   "id": "stiff_leg_deadlift",
+   "name": "Stiff-leg deadlift",
+   "kind": "free",
+   "per_hand": false,
+   "exercise_ids": [
+    "Stiff-Legged_Barbell_Deadlift"
+   ],
+   "anchors": {
+    "beginner": 0.6,
+    "novice": 0.9,
+    "intermediate": 1.25,
+    "advanced": 1.65,
+    "elite": 2.05
+   }
+  },
+  {
+   "id": "dumbbell_romanian_deadlift",
+   "name": "Dumbbell Romanian deadlift",
+   "kind": "free",
+   "per_hand": true,
+   "exercise_ids": [
+    "liftoff_dumbbell_romanian_deadlift"
+   ],
+   "anchors": {
+    "beginner": 0.2,
+    "novice": 0.32,
+    "intermediate": 0.48,
+    "advanced": 0.66,
+    "elite": 0.85
+   }
+  },
+  {
+   "id": "hip_thrust",
+   "name": "Hip thrust",
+   "kind": "free",
+   "per_hand": false,
+   "exercise_ids": [
+    "Barbell_Hip_Thrust"
+   ],
+   "anchors": {
+    "beginner": 0.6,
+    "novice": 1.0,
+    "intermediate": 1.5,
+    "advanced": 2.1,
+    "elite": 2.8
+   }
+  },
+  {
+   "id": "machine_hip_thrust",
+   "name": "Machine hip thrust",
+   "kind": "machine",
+   "per_hand": false,
+   "exercise_ids": [
+    "liftoff_machine_hip_thrust"
+   ],
+   "anchors": {
+    "beginner": 0.7,
+    "novice": 1.15,
+    "intermediate": 1.7,
+    "advanced": 2.4,
+    "elite": 3.2
+   }
+  },
+  {
+   "id": "cable_glute_kickback",
+   "name": "Cable glute kickback",
+   "kind": "cable",
+   "per_hand": true,
+   "exercise_ids": [
+    "One-Legged_Cable_Kickback"
+   ],
+   "anchors": {
+    "beginner": 0.06,
+    "novice": 0.12,
+    "intermediate": 0.2,
+    "advanced": 0.3,
+    "elite": 0.42
+   }
+  },
+  {
+   "id": "hip_abduction_machine",
+   "name": "Hip abduction machine",
+   "kind": "machine",
+   "per_hand": false,
+   "exercise_ids": [
+    "Thigh_Abductor"
+   ],
+   "anchors": {
+    "beginner": 0.45,
+    "novice": 0.8,
+    "intermediate": 1.25,
+    "advanced": 1.8,
+    "elite": 2.5
+   }
+  },
+  {
+   "id": "cable_hip_abduction",
+   "name": "Cable hip abduction",
+   "kind": "cable",
+   "per_hand": true,
+   "exercise_ids": [
+    "liftoff_cable_standing_hip_abduction"
+   ],
+   "anchors": {
+    "beginner": 0.05,
+    "novice": 0.1,
+    "intermediate": 0.17,
+    "advanced": 0.26,
+    "elite": 0.37
+   }
+  },
+  {
+   "id": "side_leg_raise",
+   "name": "Side leg raise",
+   "kind": "bodyweight",
+   "per_hand": false,
+   "exercise_ids": [
+    "Side_Leg_Raises"
+   ],
+   "anchors": {
+    "beginner": 1.33,
+    "novice": 1.5,
+    "intermediate": 1.67,
+    "advanced": 1.9,
+    "elite": 2.2
+   }
+  },
+  {
+   "id": "hip_adduction_machine",
+   "name": "Hip adduction machine",
+   "kind": "machine",
+   "per_hand": false,
+   "exercise_ids": [
+    "Thigh_Adductor"
+   ],
+   "anchors": {
+    "beginner": 0.45,
+    "novice": 0.8,
+    "intermediate": 1.25,
+    "advanced": 1.8,
+    "elite": 2.5
+   }
+  },
+  {
+   "id": "side_lying_hip_adduction",
+   "name": "Side-lying hip adduction",
+   "kind": "bodyweight",
+   "per_hand": false,
+   "exercise_ids": [
+    "liftoff_side_lying_hip_adduction"
+   ],
+   "anchors": {
+    "beginner": 1.33,
+    "novice": 1.5,
+    "intermediate": 1.67,
+    "advanced": 1.9,
+    "elite": 2.2
+   }
+  },
+  {
+   "id": "leg_press_calf_raise",
+   "name": "Leg press calf raise",
+   "kind": "machine",
+   "per_hand": false,
+   "exercise_ids": [
+    "Calf_Press_On_The_Leg_Press_Machine"
+   ],
+   "anchors": {
+    "beginner": 1.0,
+    "novice": 1.8,
+    "intermediate": 2.8,
+    "advanced": 4.0,
+    "elite": 5.4
+   }
+  },
+  {
+   "id": "standing_calf_raise_machine",
+   "name": "Standing calf raise machine",
+   "kind": "machine",
+   "per_hand": false,
+   "exercise_ids": [
+    "Standing_Calf_Raises"
+   ],
+   "anchors": {
+    "beginner": 0.7,
+    "novice": 1.2,
+    "intermediate": 1.8,
+    "advanced": 2.6,
+    "elite": 3.5
+   }
+  },
+  {
+   "id": "smith_machine_calf_raise",
+   "name": "Smith machine calf raise",
+   "kind": "machine",
+   "per_hand": false,
+   "exercise_ids": [
+    "Smith_Machine_Calf_Raise"
+   ],
+   "anchors": {
+    "beginner": 0.7,
+    "novice": 1.15,
+    "intermediate": 1.7,
+    "advanced": 2.4,
+    "elite": 3.2
+   }
+  },
+  {
+   "id": "barbell_calf_raise",
+   "name": "Barbell calf raise",
+   "kind": "free",
+   "per_hand": false,
+   "exercise_ids": [
+    "Standing_Barbell_Calf_Raise"
+   ],
+   "anchors": {
+    "beginner": 0.5,
+    "novice": 0.8,
+    "intermediate": 1.15,
+    "advanced": 1.55,
+    "elite": 2.0
+   }
+  },
+  {
+   "id": "dumbbell_calf_raise",
+   "name": "Dumbbell calf raise",
+   "kind": "free",
+   "per_hand": true,
+   "exercise_ids": [
+    "Standing_Dumbbell_Calf_Raise"
+   ],
+   "anchors": {
+    "beginner": 0.15,
+    "novice": 0.25,
+    "intermediate": 0.38,
+    "advanced": 0.55,
+    "elite": 0.72
+   }
+  },
+  {
+   "id": "cable_crunch",
+   "name": "Cable crunch",
+   "kind": "cable",
+   "per_hand": false,
+   "exercise_ids": [
+    "Cable_Crunch"
+   ],
+   "anchors": {
+    "beginner": 0.3,
+    "novice": 0.5,
+    "intermediate": 0.75,
+    "advanced": 1.05,
+    "elite": 1.4
+   }
+  },
+  {
+   "id": "standing_cable_crunch",
+   "name": "Standing cable crunch",
+   "kind": "cable",
+   "per_hand": false,
+   "exercise_ids": [
+    "liftoff_standing_cable_crunch"
+   ],
+   "anchors": {
+    "beginner": 0.25,
+    "novice": 0.42,
+    "intermediate": 0.62,
+    "advanced": 0.88,
+    "elite": 1.17
+   }
+  },
+  {
+   "id": "crunch",
+   "name": "Crunch",
+   "kind": "bodyweight",
+   "per_hand": false,
+   "exercise_ids": [
+    "Crunches",
+    "Decline_Crunch",
+    "Reverse_Crunch",
+    "Flat_Bench_Lying_Leg_Raise"
+   ],
+   "anchors": {
+    "beginner": 1.27,
+    "novice": 1.4,
+    "intermediate": 1.53,
+    "advanced": 1.8,
+    "elite": 2.1
+   }
+  },
+  {
+   "id": "hanging_leg_raise",
+   "name": "Hanging leg raise",
+   "kind": "bodyweight",
+   "per_hand": false,
+   "exercise_ids": [
+    "Hanging_Leg_Raise"
+   ],
+   "anchors": {
+    "beginner": 1.07,
+    "novice": 1.2,
+    "intermediate": 1.33,
+    "advanced": 1.5,
+    "elite": 1.67
+   }
+  },
+  {
+   "id": "dragon_flag",
+   "name": "Dragon flag",
+   "kind": "bodyweight",
+   "per_hand": false,
+   "exercise_ids": [
+    "liftoff_dragon_flag"
+   ],
+   "anchors": {
+    "beginner": 1.07,
+    "novice": 1.17,
+    "intermediate": 1.27,
+    "advanced": 1.4,
+    "elite": 1.55
+   }
+  },
+  {
+   "id": "russian_twist",
+   "name": "Russian twist",
+   "kind": "bodyweight",
+   "per_hand": false,
+   "exercise_ids": [
+    "Russian_Twist"
+   ],
+   "anchors": {
+    "beginner": 1.27,
+    "novice": 1.4,
+    "intermediate": 1.53,
+    "advanced": 1.8,
+    "elite": 2.1
+   }
+  },
+  {
+   "id": "roman_chair_side_bend",
+   "name": "Roman chair side bend",
+   "kind": "bodyweight",
+   "per_hand": false,
+   "exercise_ids": [
+    "liftoff_roman_chair_side_bend"
+   ],
+   "anchors": {
+    "beginner": 1.27,
+    "novice": 1.4,
+    "intermediate": 1.53,
+    "advanced": 1.8,
+    "elite": 2.1
+   }
+  },
+  {
+   "id": "dumbbell_side_bend",
+   "name": "Dumbbell side bend",
+   "kind": "free",
+   "per_hand": true,
+   "exercise_ids": [
+    "Dumbbell_Side_Bend"
+   ],
+   "anchors": {
+    "beginner": 0.15,
+    "novice": 0.25,
+    "intermediate": 0.38,
+    "advanced": 0.52,
+    "elite": 0.68
+   }
+  },
+  {
+   "id": "cable_wood_chop",
+   "name": "Cable wood chop",
+   "kind": "cable",
+   "per_hand": false,
+   "exercise_ids": [
+    "Standing_Cable_Wood_Chop"
+   ],
+   "anchors": {
+    "beginner": 0.15,
+    "novice": 0.25,
+    "intermediate": 0.38,
+    "advanced": 0.53,
+    "elite": 0.7
+   }
+  },
+  {
+   "id": "pallof_press",
+   "name": "Pallof press",
+   "kind": "cable",
+   "per_hand": false,
+   "exercise_ids": [
+    "Pallof_Press"
+   ],
+   "anchors": {
+    "beginner": 0.1,
+    "novice": 0.17,
+    "intermediate": 0.26,
+    "advanced": 0.36,
+    "elite": 0.48
+   }
+  }
+ ]
 }

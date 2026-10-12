@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 
 import '../../../core/db/database.dart';
 import '../../../core/domain/dates.dart';
+import '../../../core/domain/history.dart';
 import '../../../core/health/health_data_source.dart';
 import '../../../core/settings/app_settings.dart';
 import '../../coach/data/coach_context.dart';
@@ -21,7 +22,7 @@ import '../../ranks/domain/ranks.dart';
 import '../../readiness/data/readiness_repository.dart';
 import 'history_repository.dart';
 
-enum RankChangeScope { exercise, group, overall }
+enum RankChangeScope { exercise, muscle, region, overall }
 
 class RankChange {
   const RankChange({required this.name, required this.fromScore, required this.toScore, required this.scope});
@@ -126,6 +127,17 @@ class FinishService {
     }
   }
 
+  Future<RankSummary> _ranks(TrainingHistory history, List<StrengthStandard> standards, Map<String, ExerciseInfo> catalog, DateTime now, Set<String> excluded) async =>
+      RanksRepository.compute(
+        history: history,
+        standards: standards,
+        catalog: catalog,
+        bodyweights: RanksRepository.timeline(await _bodyweights.all()),
+        now: now,
+        excluded: excluded,
+        myExerciseIds: {for (final r in await _db.select(_db.routineExercises).get()) r.exerciseId},
+      );
+
   /// Unlocks achievements earned by sessions that didn't go through [finish] (the Liftoff import).
   /// Awards no XP.
   Future<List<AchievementDef>> reevaluateAchievements({
@@ -139,13 +151,13 @@ class FinishService {
     final bodyweight = (await _bodyweights.latest())?.kg ?? 0;
     final excluded = await RankExclusions(_db).load();
     final history = await _history.load(catalog);
-    final ranks = RanksRepository.compute(history: history, standards: standards, bodyweightLoaded: bwLoaded, bodyweight: bodyweight, now: now, excluded: excluded);
+    final ranks = await _ranks(history, standards, catalog, now, excluded);
     final stats = buildAchievementStats(
       history: history,
       redDays: await _readiness.redDays(),
       weeklyGoal: settings.weeklyGoal,
       now: now,
-      bestTierIndex: ranks.exercises.fold<int>(-1, (m, r) => r.score.tier.index > m ? r.score.tier.index : m),
+      bestTierIndex: RanksRepository.bestTierIndex(ranks),
       totalXp: await _gami.totalXp(),
       prCount: findPrs(history, bodyweightLoaded: bwLoaded, bodyweight: bodyweight).length,
       plannedRestWeekdays: (await ProgramRepository.load()).plannedRestWeekdays,
@@ -242,15 +254,11 @@ class FinishService {
     final overrideSets = session.workingSets.where((s) => s.isOverride).length;
 
     // Rank changes.
-    final rankChanges = _rankChanges(
-      RanksRepository.compute(history: before, standards: standards, bodyweightLoaded: bwLoaded, bodyweight: bodyweight, now: now, excluded: excluded),
-      RanksRepository.compute(history: after, standards: standards, bodyweightLoaded: bwLoaded, bodyweight: bodyweight, now: now, excluded: excluded),
-    );
+    final ranksAfter = await _ranks(after, standards, catalog, now, excluded);
+    final rankChanges = _rankChanges(await _ranks(before, standards, catalog, now, excluded), ranksAfter);
 
     // Achievements.
-    final ranksAfter =
-        RanksRepository.compute(history: after, standards: standards, bodyweightLoaded: bwLoaded, bodyweight: bodyweight, now: now, excluded: excluded);
-    final bestTier = ranksAfter.exercises.fold<int>(-1, (m, r) => r.score.tier.index > m ? r.score.tier.index : m);
+    final bestTier = RanksRepository.bestTierIndex(ranksAfter);
     final allPrs = findPrs(after, bodyweightLoaded: bwLoaded, bodyweight: bodyweight).length;
     final stats = buildAchievementStats(
       history: after,
@@ -308,17 +316,25 @@ class FinishService {
 
   static List<RankChange> _rankChanges(RankSummary before, RankSummary after) {
     final out = <RankChange>[];
-    final beforeEx = {for (final r in before.exercises) r.standard.id: r.score};
+    final beforeEx = {for (final r in before.exercises) r.exerciseId: r.score};
     for (final r in after.exercises) {
-      final prev = beforeEx[r.standard.id];
+      final prev = beforeEx[r.exerciseId];
       if (prev == null || prev.label != r.score.label) {
-        out.add(RankChange(name: r.standard.name, fromScore: prev, toScore: r.score, scope: RankChangeScope.exercise));
+        out.add(RankChange(name: r.name, fromScore: prev, toScore: r.score, scope: RankChangeScope.exercise));
       }
     }
-    for (final g in after.groups.values) {
-      final prev = before.groups[g.group]?.score;
-      if (prev == null || prev.label != g.score.label) {
-        out.add(RankChange(name: g.group.label, fromScore: prev, toScore: g.score, scope: RankChangeScope.group));
+    for (final m in after.muscles.values) {
+      final prev = before.muscles[m.muscle]?.score;
+      if (prev == null || prev.label != m.score.label) {
+        out.add(RankChange(name: m.muscle.label, fromScore: prev, toScore: m.score, scope: RankChangeScope.muscle));
+      }
+    }
+    for (final r in after.regions.values) {
+      final now = r.score;
+      if (now == null) continue;
+      final prev = before.regions[r.region]?.score;
+      if (prev == null || prev.label != now.label) {
+        out.add(RankChange(name: r.region.label, fromScore: prev, toScore: now, scope: RankChangeScope.region));
       }
     }
     final o = after.overall, p = before.overall;

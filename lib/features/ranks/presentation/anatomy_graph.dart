@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/domain/muscle_group.dart';
+import '../../../core/domain/muscles.dart';
 import '../../../core/theme/app_theme.dart';
 import '../data/body_map.dart';
 import '../domain/body_regions.dart';
@@ -48,10 +48,10 @@ class AnatomyGraph extends ConsumerStatefulWidget {
 
   final bool back;
   final BodyGraphMode mode;
-  final Map<MuscleGroup, RankScore?> scores;
-  final Map<MuscleGroup, GroupVolume> volume;
-  final MuscleGroup? selected;
-  final ValueChanged<MuscleGroup> onTap;
+  final Map<Muscle, RankScore?> scores;
+  final Map<Muscle, GroupVolume> volume;
+  final Muscle? selected;
+  final ValueChanged<Muscle> onTap;
 
   @override
   ConsumerState<AnatomyGraph> createState() => _AnatomyGraphState();
@@ -123,10 +123,10 @@ class _ViewCanvas extends StatelessWidget {
 
   final BodyView view;
   final BodyGraphMode mode;
-  final Map<MuscleGroup, RankScore?> scores;
-  final Map<MuscleGroup, GroupVolume> volume;
-  final MuscleGroup? selected;
-  final ValueChanged<MuscleGroup> onTap;
+  final Map<Muscle, RankScore?> scores;
+  final Map<Muscle, GroupVolume> volume;
+  final Muscle? selected;
+  final ValueChanged<Muscle> onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -138,7 +138,7 @@ class _ViewCanvas extends StatelessWidget {
           final painter = _AnatomyPainter(view: view, mode: mode, scores: scores, volume: volume, selected: selected);
           return GestureDetector(
             onTapUp: (d) {
-              final g = painter.groupAt(d.localPosition, c.biggest);
+              final g = painter.muscleAt(d.localPosition, c.biggest);
               if (g != null) {
                 HapticFeedback.selectionClick();
                 onTap(g);
@@ -157,9 +157,9 @@ class _AnatomyPainter extends CustomPainter {
 
   final BodyView view;
   final BodyGraphMode mode;
-  final Map<MuscleGroup, RankScore?> scores;
-  final Map<MuscleGroup, GroupVolume> volume;
-  final MuscleGroup? selected;
+  final Map<Muscle, RankScore?> scores;
+  final Map<Muscle, GroupVolume> volume;
+  final Muscle? selected;
 
   static const _structure = Color(0xFF232A3A);
   static const _neutral = Color(0xFF30384A);
@@ -174,33 +174,33 @@ class _AnatomyPainter extends CustomPainter {
       ..scaleByDouble(s, s, 1, 1);
   }
 
-  MuscleGroup? groupAt(Offset p, Size size) {
+  Muscle? muscleAt(Offset p, Size size) {
     final inv = Matrix4.inverted(_transform(size));
     final local = MatrixUtils.transformPoint(inv, p);
-    for (final r in view.regions.reversed) {
-      if (r.group != null && r.path.contains(local)) return r.group;
+    for (final r in view.parts.reversed) {
+      if (r.muscle != null && r.path.contains(local)) return r.muscle;
     }
     // Forgiving taps: nearest muscle region within a small radius.
-    MuscleGroup? best;
+    Muscle? best;
     var bestD = 28.0;
-    for (final r in view.regions) {
-      if (r.group == null) continue;
+    for (final r in view.parts) {
+      if (r.muscle == null) continue;
       final d = (r.path.getBounds().center - local).distance;
       if (d < bestD) {
         bestD = d;
-        best = r.group;
+        best = r.muscle;
       }
     }
     return best;
   }
 
-  Color _colorFor(MuscleGroup g) {
+  Color _colorFor(Muscle g) {
     if (mode == BodyGraphMode.volume) return volumeColor(volumeLevel(volume[g]));
     final s = scores[g];
     return s == null ? AppColors.unranked : tierColors[s.tier.index];
   }
 
-  bool _glows(MuscleGroup g) {
+  bool _glows(Muscle g) {
     if (mode == BodyGraphMode.volume) return false;
     final s = scores[g];
     return s != null && s.tier.index >= Tier.platinum.index;
@@ -212,8 +212,8 @@ class _AnatomyPainter extends CustomPainter {
     canvas.transform(_transform(size).storage);
 
     // Glow layer first, so it sits behind every region.
-    for (final r in view.regions) {
-      final g = r.group;
+    for (final r in view.parts) {
+      final g = r.muscle;
       if (g == null || !_glows(g)) continue;
       final color = _colorFor(g);
       final tierBoost = (scores[g]!.tier.index - Tier.platinum.index) * 2.0;
@@ -225,7 +225,7 @@ class _AnatomyPainter extends CustomPainter {
       );
     }
 
-    for (final r in view.regions) {
+    for (final r in view.parts) {
       final bounds = r.path.getBounds();
       switch (r.role) {
         case RegionRole.structure:
@@ -233,7 +233,11 @@ class _AnatomyPainter extends CustomPainter {
         case RegionRole.neutral:
           canvas.drawPath(r.path, Paint()..color = _neutral);
         case RegionRole.muscle:
-          final g = r.group!;
+          final g = r.muscle;
+          if (g == null) {
+            canvas.drawPath(r.path, Paint()..color = _neutral);
+            break;
+          }
           final base = _colorFor(g);
           final ranked = mode == BodyGraphMode.volume || scores[g] != null;
           final hsl = HSLColor.fromColor(base);
@@ -258,8 +262,8 @@ class _AnatomyPainter extends CustomPainter {
         r.path,
         Paint()
           ..style = PaintingStyle.stroke
-          ..strokeWidth = r.group != null && r.group == selected ? 5 : 1.4
-          ..color = r.group != null && r.group == selected ? Colors.white : AppColors.background.withValues(alpha: 0.8),
+          ..strokeWidth = r.muscle != null && r.muscle == selected ? 5 : 1.4
+          ..color = r.muscle != null && r.muscle == selected ? Colors.white : AppColors.background.withValues(alpha: 0.8),
       );
     }
     canvas.restore();
@@ -268,4 +272,58 @@ class _AnatomyPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant _AnatomyPainter old) =>
       old.view != view || old.mode != mode || old.scores != scores || old.volume != volume || old.selected != selected;
+}
+
+
+/// Small body silhouette (the view that shows [muscle]) with that muscle highlighted in [color],
+/// cropped around the torso or legs so the muscle is visible at thumbnail size.
+class MuscleThumbnail extends ConsumerWidget {
+  const MuscleThumbnail({super.key, required this.muscle, required this.color, this.size = 44});
+
+  final Muscle muscle;
+  final Color color;
+  final double size;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final map = ref.watch(bodyMapProvider).value;
+    return SizedBox(
+      width: size,
+      height: size,
+      child: map == null ? null : CustomPaint(painter: _ThumbPainter(map.viewFor(muscle), muscle, color)),
+    );
+  }
+}
+
+class _ThumbPainter extends CustomPainter {
+  _ThumbPainter(this.view, this.muscle, this.color);
+  final BodyView view;
+  final Muscle muscle;
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final target = view.boundsOf(muscle) ?? view.bounds;
+    // A square window centred on the muscle, at least a third of the body tall.
+    final side = math.max(view.bounds.height / 3, math.max(target.width, target.height) * 1.6);
+    final win = Rect.fromCenter(center: target.center, width: side, height: side);
+    final s = size.width / side;
+    canvas.save();
+    canvas.clipRect(Offset.zero & size);
+    canvas.translate(-win.left * s, -win.top * s);
+    canvas.scale(s);
+    for (final p in view.parts) {
+      final c = p.muscle == muscle
+          ? color
+          : switch (p.role) {
+              RegionRole.structure => const Color(0xFF232A3A),
+              _ => const Color(0xFF3A4255),
+            };
+      canvas.drawPath(p.path, Paint()..color = c);
+    }
+    canvas.restore();
+  }
+
+  @override
+  bool shouldRepaint(covariant _ThumbPainter old) => old.view != view || old.muscle != muscle || old.color != color;
 }

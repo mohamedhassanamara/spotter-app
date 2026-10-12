@@ -261,6 +261,6 @@ List<RankChange> demoRankUps() => [
         name: 'Chest',
         fromScore: RankScore.of(Tier.emerald, division: 2, lp: 70),
         toScore: RankScore.of(Tier.emerald, division: 1, lp: 3),
-        scope: RankChangeScope.group,
+        scope: RankChangeScope.muscle,
       ),
     ];

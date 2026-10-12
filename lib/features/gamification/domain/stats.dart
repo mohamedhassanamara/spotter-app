@@ -2,7 +2,7 @@ import 'dart:math' as math;
 
 import '../../../core/domain/dates.dart';
 import '../../../core/domain/history.dart';
-import '../../../core/domain/muscle_group.dart';
+import '../../../core/domain/muscles.dart';
 import '../../coach/domain/guardrail.dart';
 import 'achievements.dart';
 import 'quests.dart';
@@ -78,7 +78,7 @@ List<SessionActivity> weekActivity(TrainingHistory history, DateTime anyDayInWee
       for (final s in history.inWeek(anyDayInWeek))
         SessionActivity(date: s.startedAt, exercises: [
           for (final e in s.exercises)
-            ExerciseActivity(exerciseId: e.exerciseId, primaryGroups: e.targets.primary, repMax: e.range.max, sets: e.loggedSets),
+            ExerciseActivity(exerciseId: e.exerciseId, primaryRegions: e.targets.primaryRegions, repMax: e.range.max, sets: e.loggedSets),
         ]),
     ];
 
@@ -89,14 +89,14 @@ double? rpeLoggedPct(TrainingHistory history, DateTime now) {
   return sets.where((s) => s.rpe != null).length / sets.length * 100;
 }
 
-/// Working sets per primary group over the 4 weeks before [now].
-Map<MuscleGroup, int> groupSetsLast4Weeks(TrainingHistory history, DateTime now) {
+/// Working sets per body region over the 4 weeks before [now] (regions of the primary muscles).
+Map<BodyRegion, int> regionSetsLast4Weeks(TrainingHistory history, DateTime now) {
   final from = addDays(dateOnly(now), -28);
-  final out = <MuscleGroup, int>{};
+  final out = <BodyRegion, int>{};
   for (final s in history.inRange(from, now)) {
     for (final e in s.exercises) {
-      for (final g in e.targets.primary) {
-        out[g] = (out[g] ?? 0) + e.workingSets.length;
+      for (final r in e.targets.primaryRegions) {
+        out[r] = (out[r] ?? 0) + e.workingSets.length;
       }
     }
   }

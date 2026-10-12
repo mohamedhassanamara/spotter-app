@@ -33,7 +33,7 @@ SessionSummary demoSummary() => SessionSummary(
           name: 'Triceps',
           fromScore: RankScore.of(Tier.gold, division: 3, lp: 10),
           toScore: RankScore.of(Tier.gold, division: 4, lp: 92),
-          scope: RankChangeScope.group,
+          scope: RankChangeScope.muscle,
         ),
       ],
       overrideSets: 1,

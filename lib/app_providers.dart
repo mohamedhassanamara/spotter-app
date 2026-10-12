@@ -5,7 +5,7 @@ import 'core/db/database.dart';
 import 'core/diagnostics/error_log.dart';
 import 'core/domain/dates.dart';
 import 'core/domain/history.dart';
-import 'core/domain/muscle_group.dart';
+import 'core/domain/muscles.dart';
 import 'core/health/fake_health_data_source.dart';
 import 'core/health/health_data_source.dart';
 import 'core/health/healthkit_data_source.dart';
@@ -118,7 +118,7 @@ final latestBodyWeightProvider = StreamProvider<BodyWeight?>(
   (ref) => ref.watch(bodyWeightRepositoryProvider).watchLatest(),
 );
 
-final overloadedGroupsProvider = Provider<Set<MuscleGroup>>((ref) {
+final overloadedGroupsProvider = Provider<Set<Muscle>>((ref) {
   final history = ref.watch(historyProvider).value;
   if (history == null) return const {};
   return const TrainingLoad().overloaded(ref.watch(clockProvider)(), groupSetEntries(history));
@@ -171,18 +171,24 @@ final bodyweightLoadedIdsProvider = FutureProvider<Set<String>>((ref) async {
 /// Exercises hidden from ranking.
 final rankExclusionsProvider = StreamProvider<Set<String>>((ref) => RankExclusions(ref.watch(databaseProvider)).watch());
 
+/// Every weigh-in, for scoring each set at the bodyweight of its day.
+final bodyweightTimelineProvider = StreamProvider<BodyweightTimeline>(
+  (ref) => ref.watch(bodyWeightRepositoryProvider).watchAll().map(RanksRepository.timeline),
+);
+
 final ranksProvider = FutureProvider<RankSummary>((ref) async {
   final history = await ref.watch(historyProvider.future);
   final standards = await ref.watch(standardsProvider.future);
-  final bwIds = await ref.watch(bodyweightLoadedIdsProvider.future);
-  final bw = ref.watch(latestBodyWeightProvider).value?.kg ?? 0;
+  final catalog = await ref.watch(catalogProvider.future);
+  final routines = await ref.watch(routinesProvider.future);
   return RanksRepository.compute(
     history: history,
     standards: standards,
-    bodyweightLoaded: bwIds,
-    bodyweight: bw,
+    catalog: catalog,
+    bodyweights: await ref.watch(bodyweightTimelineProvider.future),
     now: ref.watch(clockProvider)(),
     excluded: await ref.watch(rankExclusionsProvider.future),
+    myExerciseIds: {for (final r in routines) for (final e in r.exercises) e.exerciseId},
   );
 });
 
@@ -227,7 +233,7 @@ final questsProvider = StreamProvider<List<QuestProgress>>((ref) async* {
   final settings = ref.watch(currentSettingsProvider);
   await repo.ensureQuests(now, () => const QuestEngine().generate(QuestGenInput(
         weeklyGoal: settings.weeklyGoal,
-        groupSets4w: groupSetsLast4Weeks(history, now),
+        groupSets4w: regionSetsLast4Weeks(history, now),
         disciplinePct: disciplineLast30(history, now),
         rpeLoggedPct: rpeLoggedPct(history, now),
       )));
@@ -254,7 +260,7 @@ final achievementStatsProvider = FutureProvider<AchievementStats>((ref) async {
     redDays: ref.watch(redDaysProvider),
     weeklyGoal: ref.watch(currentSettingsProvider).weeklyGoal,
     now: ref.watch(clockProvider)(),
-    bestTierIndex: ranks.exercises.fold<int>(-1, (m, r) => r.score.tier.index > m ? r.score.tier.index : m),
+    bestTierIndex: RanksRepository.bestTierIndex(ranks),
     totalXp: ref.watch(totalXpProvider).value ?? 0,
     prCount: findPrs(history, bodyweightLoaded: bwIds, bodyweight: bw).length,
     plannedRestWeekdays: ref.watch(plannedRestWeekdaysProvider),
@@ -318,18 +324,20 @@ class HealthSyncNotifier extends Notifier<HealthSyncState> {
 }
 
 /// Runs once at startup: moves rank-dependent state onto the current ladder.
-final rankLadderMigrationProvider = FutureProvider<List<String>>((ref) async {
+final rankLadderMigrationProvider = FutureProvider<LadderMigration>((ref) async {
   final stats = await ref.read(achievementStatsProvider.future);
+  final bodyweights = await ref.read(bodyweightTimelineProvider.future);
   return migrateRankLadder(
     db: ref.read(databaseProvider),
     stats: stats,
     defs: await GamificationRepository.loadAchievementDefs(),
     now: ref.read(clockProvider)(),
+    ranksKnown: !bodyweights.isEmpty,
   );
 });
 
 /// Working sets per group: last 7 days vs. weekly average of the 4 weeks before (body-graph heatmap).
-final groupVolumeProvider = Provider<Map<MuscleGroup, GroupVolume>>((ref) {
+final groupVolumeProvider = Provider<Map<Muscle, GroupVolume>>((ref) {
   final history = ref.watch(historyProvider).value;
   if (history == null) return const {};
   final counts = const TrainingLoad().counts(ref.watch(clockProvider)(), groupSetEntries(history));

@@ -68,6 +68,9 @@ class GamificationRepository {
 
   Future<Set<String>> unlockedKeys() async => (await _db.select(_db.achievementsUnlocked).get()).map((r) => r.key).toSet();
 
+  /// Removes unlocked achievements (rank model migration only; nothing is shown to the lifter).
+  Future<void> revoke(Iterable<String> keys) => (_db.delete(_db.achievementsUnlocked)..where((t) => t.key.isIn(keys))).go();
+
   Future<void> unlock(Iterable<String> keys, DateTime at) => _db.batch((b) {
         for (final k in keys) {
           b.insert(_db.achievementsUnlocked, AchievementsUnlockedCompanion.insert(key: k, unlockedAt: at),

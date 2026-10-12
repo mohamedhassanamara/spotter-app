@@ -1,7 +1,7 @@
 import 'dart:math' as math;
 
 import '../../../core/domain/dates.dart';
-import '../../../core/domain/muscle_group.dart';
+import '../../../core/domain/muscles.dart';
 
 enum ReadinessBand {
   green('Green'),
@@ -252,7 +252,7 @@ String formatSleep(double minutes) {
 class GroupSetEntry {
   const GroupSetEntry({required this.date, required this.groups, required this.sets});
   final DateTime date;
-  final Set<MuscleGroup> groups;
+  final Set<Muscle> groups;
   final int sets;
 }
 
@@ -263,24 +263,24 @@ class TrainingLoad {
 
   static const double threshold = 1.5;
 
-  Map<MuscleGroup, double> ratios(DateTime today, Iterable<GroupSetEntry> entries) {
+  Map<Muscle, double> ratios(DateTime today, Iterable<GroupSetEntry> entries) {
     final day = dateOnly(today);
     final recentStart = addDays(day, -6); // last 7 days including today
     final priorStart = addDays(day, -34); // 28 days before that
-    final recent = <MuscleGroup, int>{};
-    final prior = <MuscleGroup, int>{};
+    final recent = <Muscle, int>{};
+    final prior = <Muscle, int>{};
     for (final e in entries) {
       final d = dateOnly(e.date);
       if (d.isAfter(day)) continue;
-      final Map<MuscleGroup, int>? bucket =
+      final Map<Muscle, int>? bucket =
           !d.isBefore(recentStart) ? recent : (!d.isBefore(priorStart) ? prior : null);
       if (bucket == null) continue;
       for (final g in e.groups) {
         bucket[g] = (bucket[g] ?? 0) + e.sets;
       }
     }
-    final out = <MuscleGroup, double>{};
-    for (final g in MuscleGroup.values) {
+    final out = <Muscle, double>{};
+    for (final g in Muscle.values) {
       final avg = (prior[g] ?? 0) / 4;
       if (avg <= 0) continue;
       out[g] = (recent[g] ?? 0) / avg;
@@ -289,12 +289,12 @@ class TrainingLoad {
   }
 
   /// Raw counts behind [ratios]: (sets in the last 7 days, weekly average of the 28 days before).
-  Map<MuscleGroup, (int, double)> counts(DateTime today, Iterable<GroupSetEntry> entries) {
+  Map<Muscle, (int, double)> counts(DateTime today, Iterable<GroupSetEntry> entries) {
     final day = dateOnly(today);
     final recentStart = addDays(day, -6);
     final priorStart = addDays(day, -34);
-    final recent = <MuscleGroup, int>{};
-    final prior = <MuscleGroup, int>{};
+    final recent = <Muscle, int>{};
+    final prior = <Muscle, int>{};
     for (final e in entries) {
       final d = dateOnly(e.date);
       if (d.isAfter(day) || d.isBefore(priorStart)) continue;
@@ -303,9 +303,9 @@ class TrainingLoad {
         bucket[g] = (bucket[g] ?? 0) + e.sets;
       }
     }
-    return {for (final g in MuscleGroup.values) g: (recent[g] ?? 0, (prior[g] ?? 0) / 4)};
+    return {for (final g in Muscle.values) g: (recent[g] ?? 0, (prior[g] ?? 0) / 4)};
   }
 
-  Set<MuscleGroup> overloaded(DateTime today, Iterable<GroupSetEntry> entries) =>
+  Set<Muscle> overloaded(DateTime today, Iterable<GroupSetEntry> entries) =>
       {for (final e in ratios(today, entries).entries) if (e.value > threshold) e.key};
 }

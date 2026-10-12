@@ -74,6 +74,14 @@ class NoteScheme {
   /// Target for the set at [index]; the last range repeats for extra sets.
   RepRange? rangeFor(int index) => ranges.isEmpty ? null : ranges[index < ranges.length ? index : ranges.length - 1];
 
+  /// Reps as the app counts them. With a per-leg scheme ("10 per leg"), Liftoff sets logged at
+  /// about twice the target (20 = both legs) are halved to reps per leg, as the app logs lunges.
+  int repsFor(int index, int logged) {
+    final r = rangeFor(index);
+    if (!perSide || r == null) return logged;
+    return logged >= r.max * 1.5 ? (logged / 2).round() : logged;
+  }
+
   static const empty = NoteScheme(ranges: []);
 }
 

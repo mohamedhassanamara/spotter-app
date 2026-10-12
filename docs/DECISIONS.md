@@ -378,3 +378,221 @@ rank achievements that are no longer earned.
 - **Bug fixed along the way.** The number and text prompts disposed their text controller while the
   dialog was still animating closed. That threw "TextEditingController was used after being
   disposed", for example from the Settings bodyweight prompt. The dialog now owns its controller.
+
+## v2.1 section 8: 20 muscles, 6 regions, per-exercise strength standards
+
+**Model.** The 12 flat groups are gone. Ranking, the body graph, the volume heatmap and the
+training-load modifier use 20 muscles in 6 regions (`lib/core/domain/muscles.dart`):
+- **Arms:** Biceps, Triceps, Forearms.
+- **Legs:** Quadriceps, Hamstrings, Glutes, Calves, Adductors, Abductors.
+- **Core:** Abdominals, Obliques.
+- **Shoulders:** Front, Middle and Rear Delt.
+- **Chest:** Upper and Lower Chest.
+- **Back:** Lats, Upper Back, Traps, Lower Back.
+
+Weekly quests ("Train back twice") use the regions; quests stored with an old group name map to their
+region. Media matching keeps its own private coarse grouping, so 3D demo matches didn't change.
+
+**Exercise → muscle contributions.**
+- `assets/exercise_muscles.json` is hand-authored for all 111 exercises in my routines and Liftoff
+  history. Its source is `tool/standards/exercise_data.py`; `python3 tool/standards/build.py` checks
+  it and writes the asset.
+- Every other library exercise derives its contributions: dataset primary muscles at 1.0, secondary at
+  0.3, split by name keywords:
+  - incline → Upper Chest; decline/dip → Lower Chest; flat → Lower 1.0 + Upper 0.6;
+  - lateral raise/upright row → Middle Delt; reverse fly/face pull → Rear Delt; presses → Front Delt
+    1.0 + Middle 0.5; shoulders as a helper in rows → Rear Delt;
+  - twist/side bend/wood chop/Pallof → Obliques.
+- A muscle counts as *primary* (for volume, the load modifier and quests) at a contribution of 0.5 or
+  more.
+
+**Strength score.**
+- Each valid working set gets a score from 0 to 1000: its e1RM ÷ the bodyweight **on the day of the
+  set**, placed against that exercise's standard. The score is 25 per division point, so Iron IV = 0,
+  Master = 700, Grandmaster = 800, Challenger = 900, and 1000 is the cap.
+- Bodyweight between weigh-ins is interpolated linearly. Apple Health sync now stores a year of
+  weigh-ins, so a set from April counts at April's 108 kg, not today's 106 kg (as in Liftoff).
+- For scoring, reps + reps in reserve count at most 20. Epley inflates very long sets: 30
+  bodyweight back extensions would otherwise read as a 2.0× bodyweight "1RM".
+
+**Rank levels.**
+- **Exercise:** the best set score of the last 90 days. Ranks are per exercise now, not per standard,
+  so Close-Grip and V-Bar pulldowns rank separately even though they share a standard.
+- **Muscle:** the average of its exercises' best scores, weighted by each exercise's contribution to it.
+- **Region:** the average of its ranked muscles, shown as "X/Y ranked".
+- **Overall:** the average of the ranked regions.
+- Same tier ladder and LP as v2.
+- Exercises hidden from ranks never contribute.
+- An unranked muscle lists the exercises from my routines and history that train it at ≥ 0.5, or
+  says none do.
+
+**Standards (`assets/strength_standards.json` v3).**
+- Each standard has five anchors as e1RM ÷ bodyweight (beginner, novice, intermediate, advanced,
+  elite) for a male lifter around 100 kg. They're calibrated per exercise from commonly published 1RM
+  standards; my own numbers were never used to set them.
+- Tier entry points:
+
+  | Tier | Starts at |
+  |---|---|
+  | Iron | 0 |
+  | Bronze | beginner |
+  | Silver | novice |
+  | Gold | midpoint of novice and intermediate |
+  | Platinum | intermediate |
+  | Emerald | midpoint of intermediate and advanced |
+  | Diamond | advanced |
+  | **Master** | **elite** |
+  | **Grandmaster** | **elite × 1.15** |
+  | **Challenger** | **elite × 1.30** |
+
+  v2 put Master at "advanced" and Challenger at "elite". That made the apex tiers reachable by good
+  gym numbers. Now Master already requires the elite anchor, and Grandmaster and Challenger require
+  numbers beyond it.
+- **Machines and cables** have their own standards (pec deck, machine chest press, pendulum squat,
+  pushdowns…), never barbell ones. Their anchors are multiplied by **`machine_strictness` = 1.10**,
+  because stacks, cams and pulleys vary between gyms and flatter the number on the pin.
+- Bodyweight movements (crunches, back extensions, side leg raises…) use bodyweight-inclusive e1RM
+  anchors. With the 20-rep cap, their advanced and elite anchors need added load.
+
+**Sanity check with the real import** (`test/tool/import_summary_test.dart`, at 108 → 106 kg):
+- No exercise ranks above Diamond. The test fails if one does, unless it's listed with a
+  justification in this section; none are.
+- The top lift is Walking Lunge at Diamond III (35 kg × 10 per leg). It's on the per-dumbbell
+  standard, so if Liftoff's 35 kg meant both dumbbells together, it's over-ranked by about one tier.
+  Flagged to the owner.
+- Overall is Silver I. The full table is in `docs/IMPORT_SUMMARY.md` under "Rank sanity check".
+
+**Liftoff per-leg reps.** Walking Lunge sets noted "10 per leg" were logged in Liftoff as 20 reps
+(both legs). With a per-leg scheme, a set at 1.5× the target or more is now imported as reps per leg
+(20 → 10), the way the app logs lunges.
+
+**Revoking badges from the old standards** (rank model v3, `ladder_migration.dart`):
+- Rank achievements (type `bestExerciseTier`) unlocked under the old standards are deleted when the
+  new standards don't support them. It's silent: no notification and no rank-down animation.
+  Rank changes are always computed before and after a session with the same standards, so a
+  rank-down never appears.
+- Achievements of every other type stay.
+- If no bodyweight is known yet, nothing is revoked and the migration waits, so a missing bodyweight
+  can't take badges away.
+- Rank badges the new standards qualify for are unlocked.
+
+**Body graph.** All 20 muscles are tappable on the anatomical map (react-native-body-highlighter
+paths), split at load time:
+- Pecs: the top 45 % is Upper Chest, the rest Lower Chest.
+- Deltoids: the outer 40 % is Middle Delt; the rest is Front Delt (front view) or Rear Delt (back view).
+- The back's upper-back paths: the tall piece is Lats, the two upper pieces Upper Back.
+- Gluteal: the small upper piece (glute medius) is Abductors.
+- Lower back, adductors and obliques are now ranked muscles, no longer drawn neutral.
+
+The Ranks tab shows collapsible regions. Each muscle row has a thumbnail of the body with that
+muscle highlighted, its badge, division and LP.
+
+### Anchor values
+
+Anchors are e1RM ÷ bodyweight. Per side means per dumbbell, per arm or per leg. The last column is the
+Master entry after machine strictness.
+
+| Standard | Kind | Per side | Beginner | Novice | Intermediate | Advanced | Elite | Master entry (after strictness) |
+|---|---|---|---|---|---|---|---|---|
+| Back squat | free |  | 0.75 | 1.05 | 1.4 | 1.85 | 2.35 | 2.35 |
+| Barbell calf raise | free |  | 0.5 | 0.8 | 1.15 | 1.55 | 2 | 2.00 |
+| Barbell lunge | free |  | 0.4 | 0.6 | 0.85 | 1.15 | 1.45 | 1.45 |
+| Barbell reverse wrist curl | free |  | 0.12 | 0.2 | 0.32 | 0.46 | 0.62 | 0.62 |
+| Barbell row | free |  | 0.45 | 0.65 | 0.9 | 1.2 | 1.5 | 1.50 |
+| Barbell wrist curl | free |  | 0.2 | 0.35 | 0.55 | 0.8 | 1.05 | 1.05 |
+| Bench press | free |  | 0.6 | 0.85 | 1.15 | 1.5 | 1.9 | 1.90 |
+| Close-grip dumbbell press | free | yes | 0.15 | 0.23 | 0.33 | 0.45 | 0.58 | 0.58 |
+| Deadlift | free |  | 0.9 | 1.25 | 1.6 | 2.1 | 2.6 | 2.60 |
+| Dumbbell Romanian deadlift | free | yes | 0.2 | 0.32 | 0.48 | 0.66 | 0.85 | 0.85 |
+| Dumbbell bench press | free | yes | 0.2 | 0.3 | 0.42 | 0.57 | 0.73 | 0.73 |
+| Dumbbell calf raise | free | yes | 0.15 | 0.25 | 0.38 | 0.55 | 0.72 | 0.72 |
+| Dumbbell curl | free | yes | 0.09 | 0.14 | 0.21 | 0.3 | 0.4 | 0.40 |
+| Dumbbell lateral raise | free | yes | 0.05 | 0.09 | 0.14 | 0.2 | 0.27 | 0.27 |
+| Dumbbell lunge | free | yes | 0.1 | 0.18 | 0.28 | 0.4 | 0.52 | 0.52 |
+| Dumbbell reverse fly | free | yes | 0.04 | 0.08 | 0.13 | 0.19 | 0.26 | 0.26 |
+| Dumbbell reverse wrist curl | free | yes | 0.05 | 0.08 | 0.12 | 0.17 | 0.23 | 0.23 |
+| Dumbbell row | free | yes | 0.2 | 0.32 | 0.48 | 0.66 | 0.86 | 0.86 |
+| Dumbbell shrug | free | yes | 0.2 | 0.35 | 0.55 | 0.78 | 1.02 | 1.02 |
+| Dumbbell side bend | free | yes | 0.15 | 0.25 | 0.38 | 0.52 | 0.68 | 0.68 |
+| Dumbbell split squat | free | yes | 0.08 | 0.15 | 0.24 | 0.34 | 0.45 | 0.45 |
+| Dumbbell wrist curl | free | yes | 0.08 | 0.13 | 0.2 | 0.29 | 0.38 | 0.38 |
+| EZ-bar curl | free |  | 0.25 | 0.38 | 0.52 | 0.7 | 0.9 | 0.90 |
+| Hammer curl | free | yes | 0.09 | 0.14 | 0.21 | 0.3 | 0.39 | 0.39 |
+| Hand gripper | free |  | 0.2 | 0.35 | 0.55 | 0.8 | 1.1 | 1.10 |
+| Hip thrust | free |  | 0.6 | 1 | 1.5 | 2.1 | 2.8 | 2.80 |
+| Incline Y raise | free | yes | 0.04 | 0.065 | 0.1 | 0.14 | 0.19 | 0.19 |
+| Incline bench press | free |  | 0.5 | 0.7 | 0.95 | 1.25 | 1.6 | 1.60 |
+| Incline dumbbell curl | free | yes | 0.08 | 0.12 | 0.18 | 0.26 | 0.35 | 0.35 |
+| Incline dumbbell press | free | yes | 0.18 | 0.27 | 0.38 | 0.52 | 0.67 | 0.67 |
+| Incline hammer curl | free | yes | 0.08 | 0.12 | 0.18 | 0.26 | 0.35 | 0.35 |
+| Overhead press | free |  | 0.38 | 0.52 | 0.7 | 0.92 | 1.17 | 1.17 |
+| Preacher curl | free | yes | 0.08 | 0.12 | 0.18 | 0.26 | 0.34 | 0.34 |
+| Romanian deadlift | free |  | 0.6 | 0.9 | 1.25 | 1.65 | 2.05 | 2.05 |
+| Seated dumbbell press | free | yes | 0.13 | 0.2 | 0.3 | 0.41 | 0.53 | 0.53 |
+| Skull crusher | free |  | 0.2 | 0.32 | 0.48 | 0.66 | 0.88 | 0.88 |
+| Stiff-leg deadlift | free |  | 0.6 | 0.9 | 1.25 | 1.65 | 2.05 | 2.05 |
+| Supine dumbbell press | free | yes | 0.12 | 0.19 | 0.28 | 0.38 | 0.5 | 0.50 |
+| T-bar row | free |  | 0.5 | 0.75 | 1 | 1.3 | 1.65 | 1.65 |
+| Chest-supported T-bar row | machine |  | 0.4 | 0.65 | 0.95 | 1.3 | 1.7 | 1.87 |
+| Hip abduction machine | machine |  | 0.45 | 0.8 | 1.25 | 1.8 | 2.5 | 2.75 |
+| Hip adduction machine | machine |  | 0.45 | 0.8 | 1.25 | 1.8 | 2.5 | 2.75 |
+| Leg extension | machine |  | 0.5 | 0.85 | 1.25 | 1.75 | 2.3 | 2.53 |
+| Leg press | machine |  | 1 | 1.7 | 2.6 | 3.7 | 5 | 5.50 |
+| Leg press calf raise | machine |  | 1 | 1.8 | 2.8 | 4 | 5.4 | 5.94 |
+| Lying leg curl | machine |  | 0.35 | 0.58 | 0.85 | 1.2 | 1.6 | 1.76 |
+| Machine chest press | machine |  | 0.55 | 0.85 | 1.2 | 1.6 | 2.05 | 2.25 |
+| Machine high row | machine |  | 0.45 | 0.72 | 1.05 | 1.42 | 1.85 | 2.04 |
+| Machine hip thrust | machine |  | 0.7 | 1.15 | 1.7 | 2.4 | 3.2 | 3.52 |
+| Machine incline chest press | machine |  | 0.45 | 0.7 | 1 | 1.35 | 1.75 | 1.93 |
+| Machine lateral raise | machine |  | 0.15 | 0.28 | 0.45 | 0.66 | 0.9 | 0.99 |
+| Machine row | machine |  | 0.5 | 0.8 | 1.15 | 1.55 | 2 | 2.20 |
+| Machine shoulder press | machine |  | 0.4 | 0.65 | 0.95 | 1.3 | 1.7 | 1.87 |
+| Machine triceps extension | machine |  | 0.3 | 0.5 | 0.75 | 1.05 | 1.4 | 1.54 |
+| One-arm reverse pec deck | machine | yes | 0.1 | 0.19 | 0.3 | 0.44 | 0.6 | 0.66 |
+| Pec deck | machine |  | 0.4 | 0.7 | 1.05 | 1.5 | 2 | 2.20 |
+| Pendulum squat | machine |  | 0.6 | 1 | 1.5 | 2.1 | 2.8 | 3.08 |
+| Reverse pec deck | machine |  | 0.2 | 0.38 | 0.6 | 0.88 | 1.2 | 1.32 |
+| Single-leg extension | machine | yes | 0.25 | 0.43 | 0.63 | 0.88 | 1.15 | 1.26 |
+| Smith machine bench press | machine |  | 0.6 | 0.85 | 1.15 | 1.5 | 1.9 | 2.09 |
+| Smith machine calf raise | machine |  | 0.7 | 1.15 | 1.7 | 2.4 | 3.2 | 3.52 |
+| Smith machine shoulder press | machine |  | 0.38 | 0.52 | 0.7 | 0.92 | 1.17 | 1.29 |
+| Smith machine squat | machine |  | 0.75 | 1.05 | 1.4 | 1.85 | 2.35 | 2.59 |
+| Smith split squat | machine |  | 0.35 | 0.55 | 0.8 | 1.1 | 1.45 | 1.59 |
+| Standing calf raise machine | machine |  | 0.7 | 1.2 | 1.8 | 2.6 | 3.5 | 3.85 |
+| Cable crunch | cable |  | 0.3 | 0.5 | 0.75 | 1.05 | 1.4 | 1.54 |
+| Cable curl | cable |  | 0.2 | 0.33 | 0.5 | 0.7 | 0.95 | 1.04 |
+| Cable fly | cable | yes | 0.12 | 0.22 | 0.36 | 0.54 | 0.75 | 0.83 |
+| Cable front raise | cable | yes | 0.06 | 0.1 | 0.16 | 0.23 | 0.31 | 0.34 |
+| Cable glute kickback | cable | yes | 0.06 | 0.12 | 0.2 | 0.3 | 0.42 | 0.46 |
+| Cable hammer curl | cable |  | 0.2 | 0.33 | 0.5 | 0.7 | 0.95 | 1.04 |
+| Cable hip abduction | cable | yes | 0.05 | 0.1 | 0.17 | 0.26 | 0.37 | 0.41 |
+| Cable lateral raise | cable | yes | 0.035 | 0.065 | 0.1 | 0.15 | 0.21 | 0.23 |
+| Cable reverse fly | cable | yes | 0.04 | 0.08 | 0.13 | 0.2 | 0.28 | 0.31 |
+| Cable reverse wrist curl | cable |  | 0.12 | 0.2 | 0.32 | 0.46 | 0.62 | 0.68 |
+| Cable upright row | cable |  | 0.25 | 0.4 | 0.58 | 0.8 | 1.05 | 1.16 |
+| Cable wood chop | cable |  | 0.15 | 0.25 | 0.38 | 0.53 | 0.7 | 0.77 |
+| Cable wrist curl | cable |  | 0.2 | 0.35 | 0.55 | 0.8 | 1.05 | 1.16 |
+| Close-grip lat pulldown | cable |  | 0.48 | 0.7 | 0.95 | 1.27 | 1.63 | 1.79 |
+| Face pull | cable |  | 0.2 | 0.33 | 0.5 | 0.7 | 0.95 | 1.04 |
+| Lat pulldown | cable |  | 0.45 | 0.65 | 0.9 | 1.2 | 1.55 | 1.71 |
+| One-arm cable curl | cable | yes | 0.1 | 0.17 | 0.25 | 0.36 | 0.48 | 0.53 |
+| One-arm cable triceps extension | cable | yes | 0.11 | 0.19 | 0.29 | 0.43 | 0.58 | 0.64 |
+| Overhead cable triceps extension | cable |  | 0.2 | 0.35 | 0.55 | 0.8 | 1.1 | 1.21 |
+| Pallof press | cable |  | 0.1 | 0.17 | 0.26 | 0.36 | 0.48 | 0.53 |
+| Rope pushdown | cable |  | 0.22 | 0.38 | 0.58 | 0.85 | 1.15 | 1.26 |
+| Seated cable row | cable |  | 0.45 | 0.68 | 0.98 | 1.33 | 1.73 | 1.90 |
+| Standing cable crunch | cable |  | 0.25 | 0.42 | 0.62 | 0.88 | 1.17 | 1.29 |
+| Straight-arm pulldown | cable |  | 0.18 | 0.3 | 0.45 | 0.63 | 0.85 | 0.94 |
+| Triceps pushdown | cable |  | 0.25 | 0.42 | 0.65 | 0.95 | 1.3 | 1.43 |
+| Underhand lat pulldown | cable |  | 0.48 | 0.7 | 0.95 | 1.27 | 1.63 | 1.79 |
+| Assisted dip | bodyweight |  | 0.9 | 1.1 | 1.35 | 1.65 | 1.95 | 1.95 |
+| Assisted pull-up | bodyweight |  | 0.85 | 1 | 1.25 | 1.5 | 1.75 | 1.75 |
+| Back extension | bodyweight |  | 1.27 | 1.4 | 1.53 | 1.75 | 2 | 2.00 |
+| Crunch | bodyweight |  | 1.27 | 1.4 | 1.53 | 1.8 | 2.1 | 2.10 |
+| Dragon flag | bodyweight |  | 1.07 | 1.17 | 1.27 | 1.4 | 1.55 | 1.55 |
+| Hanging leg raise | bodyweight |  | 1.07 | 1.2 | 1.33 | 1.5 | 1.67 | 1.67 |
+| Roman chair side bend | bodyweight |  | 1.27 | 1.4 | 1.53 | 1.8 | 2.1 | 2.10 |
+| Russian twist | bodyweight |  | 1.27 | 1.4 | 1.53 | 1.8 | 2.1 | 2.10 |
+| Side leg raise | bodyweight |  | 1.33 | 1.5 | 1.67 | 1.9 | 2.2 | 2.20 |
+| Side lunge | bodyweight |  | 1.2 | 1.33 | 1.5 | 1.67 | 1.9 | 1.90 |
+| Side-lying hip adduction | bodyweight |  | 1.33 | 1.5 | 1.67 | 1.9 | 2.2 | 2.20 |

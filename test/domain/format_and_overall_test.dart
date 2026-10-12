@@ -1,19 +1,13 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:spotter/core/domain/format.dart';
 import 'package:spotter/core/widgets/common.dart' show formatClock;
-import 'package:spotter/core/domain/muscle_group.dart';
+import 'package:spotter/core/domain/muscles.dart';
 import 'package:spotter/features/ranks/domain/ranks.dart';
 
-/// One standard per muscle group, all with identical thresholds.
-List<StrengthStandard> perGroupStandards(List<double> thresholds) => [
-      for (final g in MuscleGroup.values)
-        StrengthStandard(
-          id: g.name,
-          name: g.label,
-          exerciseIds: [g.name],
-          thresholds: thresholds,
-          targets: MuscleTargets(primary: {g}, secondary: const {}),
-        ),
+/// One standard per muscle, all with identical anchors.
+List<StrengthStandard> perMuscleStandards() => [
+      for (final m in Muscle.values)
+        StrengthStandard(id: m.name, name: m.label, kind: StandardKind.free, exerciseIds: [m.name], anchors: const [0.5, 0.75, 1.0, 1.4, 1.6]),
     ];
 
 void main() {
@@ -36,25 +30,32 @@ void main() {
   });
 
   group('overall rank', () {
-    const thresholds = [0.0, 0.5, 0.75, 0.875, 1.0, 1.25, 1.4, 1.5, 1.75, 2.0];
-    final standards = perGroupStandards(thresholds);
+    final standards = perMuscleStandards();
     final calc = RankCalculator(standards);
 
-    test('all groups at the same tier/division → overall is exactly that tier/division', () {
+    test('all muscles at the same tier/division → regions and overall are exactly that tier/division', () {
       const bw = 80.0;
       final points = <double>[
-        for (var p = 0; p < 28; p++) ...[p.toDouble(), p + 0.5], // every division, on and inside boundaries
+        for (var p = 1; p < 28; p++) ...[p.toDouble(), p + 0.5], // every division, on and inside boundaries
         28, 29.5, 32, 33.25, 36, 41, // apex
       ];
       for (final p in points) {
-        final ratio = standards.first.ratioForPoints(p).clamp(0.001, double.infinity);
-        final best = {for (final g in MuscleGroup.values) g.name: ratio * bw};
-        final r = calc.compute(bestE1rmByExercise: best, bodyweight: bw);
-        final groupLabel = r.groups.values.first.score.label;
-        expect(r.groups.length, 12);
-        expect(r.groups.values.every((g) => g.score.label == groupLabel), isTrue);
-        expect(r.overall!.label, groupLabel, reason: 'points $p');
-        expect(r.overall!.lp, r.groups.values.first.score.lp, reason: 'points $p');
+        // A 1-rep set at RPE 10 scores e1RM = load × (1 + 1/30).
+        final load = standards.first.ratioForPoints(p) * bw / (1 + 1 / 30);
+        final r = calc.compute(
+          sets: [
+            for (final m in Muscle.values)
+              RankedSet(exerciseId: m.name, name: m.label, weight: load, reps: 1, rpe: 10, date: DateTime(2026, 10, 1), bodyweight: bw),
+          ],
+          targets: {for (final m in Muscle.values) m.name: MuscleTargets({m: 1.0})},
+          currentBodyweight: bw,
+        );
+        final label = r.muscles.values.first.score.label;
+        expect(r.muscles.length, 20);
+        expect(r.rankedRegions, 6);
+        expect(r.regions.values.every((g) => g.score!.label == label), isTrue, reason: 'points $p');
+        expect(r.overall!.label, label, reason: 'points $p');
+        expect(r.overall!.lp, r.muscles.values.first.score.lp, reason: 'points $p');
       }
     });
 

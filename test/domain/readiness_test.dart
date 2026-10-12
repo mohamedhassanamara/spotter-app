@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:spotter/core/domain/muscle_group.dart';
+import 'package:spotter/core/domain/muscles.dart';
 import 'package:spotter/features/readiness/domain/readiness.dart';
 
 final today = DateTime(2026, 3, 20);
@@ -154,26 +154,26 @@ void main() {
     const load = TrainingLoad();
     List<GroupSetEntry> prior(int setsPerWeek) => [
           for (final d in [10, 17, 24, 31])
-            GroupSetEntry(date: DateTime(2026, 3, 20 - d), groups: {MuscleGroup.chest}, sets: setsPerWeek),
+            GroupSetEntry(date: DateTime(2026, 3, 20 - d), groups: {Muscle.lowerChest}, sets: setsPerWeek),
         ];
 
     test('16 sets this week vs 10/week average → 1.6× → overloaded', () {
       final entries = [
         ...prior(10),
-        GroupSetEntry(date: DateTime(2026, 3, 16), groups: {MuscleGroup.chest}, sets: 8),
-        GroupSetEntry(date: DateTime(2026, 3, 19), groups: {MuscleGroup.chest}, sets: 8),
+        GroupSetEntry(date: DateTime(2026, 3, 16), groups: {Muscle.lowerChest}, sets: 8),
+        GroupSetEntry(date: DateTime(2026, 3, 19), groups: {Muscle.lowerChest}, sets: 8),
       ];
-      expect(load.ratios(today, entries)[MuscleGroup.chest], closeTo(1.6, 1e-9));
-      expect(load.overloaded(today, entries), {MuscleGroup.chest});
+      expect(load.ratios(today, entries)[Muscle.lowerChest], closeTo(1.6, 1e-9));
+      expect(load.overloaded(today, entries), {Muscle.lowerChest});
     });
 
     test('exactly 1.5× is not overloaded', () {
-      final entries = [...prior(10), GroupSetEntry(date: DateTime(2026, 3, 18), groups: {MuscleGroup.chest}, sets: 15)];
+      final entries = [...prior(10), GroupSetEntry(date: DateTime(2026, 3, 18), groups: {Muscle.lowerChest}, sets: 15)];
       expect(load.overloaded(today, entries), isEmpty);
     });
 
     test('no prior history → no modifier', () {
-      final entries = [GroupSetEntry(date: DateTime(2026, 3, 18), groups: {MuscleGroup.back}, sets: 30)];
+      final entries = [GroupSetEntry(date: DateTime(2026, 3, 18), groups: {Muscle.lats}, sets: 30)];
       expect(load.overloaded(today, entries), isEmpty);
     });
   });

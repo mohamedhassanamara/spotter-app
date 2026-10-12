@@ -1,7 +1,5 @@
 import 'dart:math' as math;
 
-import '../../../core/domain/muscle_group.dart';
-import '../../library/domain/muscle_mapping.dart';
 
 /// One ExerciseDB V1 entry (metadata only; the GIF is downloaded on demand).
 class EdbExercise {
@@ -224,22 +222,46 @@ class MediaMatcher {
 
   // ---- muscles ----
 
-  static const Map<String, MuscleGroup?> _edbMuscle = {
-    'abdominals': MuscleGroup.abs,
-    'pectorals': MuscleGroup.chest,
-    'glutes': MuscleGroup.glutes,
-    'biceps': MuscleGroup.biceps,
-    'triceps': MuscleGroup.triceps,
-    'deltoids': MuscleGroup.shoulders,
-    'upper back': MuscleGroup.back,
-    'latissimus dorsi': MuscleGroup.back,
-    'calves': MuscleGroup.calves,
-    'quadriceps': MuscleGroup.quads,
-    'forearms': MuscleGroup.forearms,
-    'hamstrings': MuscleGroup.hamstrings,
-    'trapezius': MuscleGroup.traps,
-    'levator scapulae': MuscleGroup.traps,
-    'abductors': MuscleGroup.glutes,
+  /// Coarse groups used only to compare our muscles with ExerciseDB's (kept from the v2 grouping so
+  /// matches don't shift when the ranking muscles change).
+  static const Map<String, String?> _datasetGroup = {
+    'chest': 'chest',
+    'lats': 'back',
+    'middle back': 'back',
+    'lower back': null,
+    'shoulders': 'shoulders',
+    'biceps': 'biceps',
+    'triceps': 'triceps',
+    'forearms': 'forearms',
+    'abdominals': 'abs',
+    'quadriceps': 'quads',
+    'hamstrings': 'hamstrings',
+    'glutes': 'glutes',
+    'abductors': 'glutes',
+    'adductors': null,
+    'calves': 'calves',
+    'traps': 'traps',
+    'neck': null,
+  };
+
+  static String? groupForDatasetMuscle(String m) => _datasetGroup[m.toLowerCase().trim()];
+
+  static const Map<String, String?> _edbMuscle = {
+    'abdominals': 'abs',
+    'pectorals': 'chest',
+    'glutes': 'glutes',
+    'biceps': 'biceps',
+    'triceps': 'triceps',
+    'deltoids': 'shoulders',
+    'upper back': 'back',
+    'latissimus dorsi': 'back',
+    'calves': 'calves',
+    'quadriceps': 'quads',
+    'forearms': 'forearms',
+    'hamstrings': 'hamstrings',
+    'trapezius': 'traps',
+    'levator scapulae': 'traps',
+    'abductors': 'glutes',
   };
 
   /// 1 when their target is one of our primary muscles, 0.7 when it's one of our secondary ones.

@@ -183,7 +183,7 @@ class SeedGenerator {
       );
       await gami.ensureQuests(start, () => const QuestEngine().generate(QuestGenInput(
             weeklyGoal: settings.weeklyGoal,
-            groupSets4w: groupSetsLast4Weeks(history, start),
+            groupSets4w: regionSetsLast4Weeks(history, start),
             disciplinePct: disciplineLast30(history, start),
             rpeLoggedPct: rpeLoggedPct(history, start),
           )));

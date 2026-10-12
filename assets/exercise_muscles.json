@@ -1,0 +1,522 @@
+{
+ "schema_version": 1,
+ "description": "Hand-authored muscle contributions (0-1, 1.0 = prime mover) for every exercise in the owner's routines and Liftoff history, over the 20 ranking muscles. Exercises not listed derive theirs from the dataset's primary (1.0) and secondary (0.3) muscles, refined by name keywords (lib/features/library/domain/muscle_mapping.dart). Source: tool/standards/exercise_data.py.",
+ "exercises": {
+  "Barbell_Bench_Press_-_Medium_Grip": {
+   "lower_chest": 1.0,
+   "upper_chest": 0.6,
+   "front_delt": 0.5,
+   "triceps": 0.4
+  },
+  "Barbell_Deadlift": {
+   "lower_back": 1.0,
+   "glutes": 0.8,
+   "hamstrings": 0.8,
+   "quadriceps": 0.5,
+   "traps": 0.5,
+   "forearms": 0.4,
+   "lats": 0.3
+  },
+  "Barbell_Hip_Thrust": {
+   "glutes": 1.0,
+   "hamstrings": 0.4,
+   "quadriceps": 0.3
+  },
+  "Barbell_Incline_Bench_Press_-_Medium_Grip": {
+   "upper_chest": 1.0,
+   "front_delt": 0.6,
+   "lower_chest": 0.4,
+   "triceps": 0.3
+  },
+  "Barbell_Lunge": {
+   "quadriceps": 1.0,
+   "glutes": 0.7,
+   "adductors": 0.4,
+   "hamstrings": 0.3
+  },
+  "Barbell_Shoulder_Press": {
+   "front_delt": 1.0,
+   "middle_delt": 0.5,
+   "triceps": 0.5,
+   "upper_chest": 0.3
+  },
+  "Barbell_Squat": {
+   "quadriceps": 1.0,
+   "glutes": 0.7,
+   "adductors": 0.5,
+   "hamstrings": 0.3,
+   "lower_back": 0.3
+  },
+  "Bent_Over_Barbell_Row": {
+   "upper_back": 1.0,
+   "lats": 0.8,
+   "rear_delt": 0.4,
+   "biceps": 0.4,
+   "lower_back": 0.4,
+   "traps": 0.3
+  },
+  "Butterfly": {
+   "lower_chest": 1.0,
+   "upper_chest": 0.6,
+   "front_delt": 0.3
+  },
+  "Cable_Crossover": {
+   "lower_chest": 1.0,
+   "upper_chest": 0.4,
+   "front_delt": 0.3
+  },
+  "Cable_Crunch": {
+   "abdominals": 1.0,
+   "obliques": 0.3
+  },
+  "Cable_Hammer_Curls_-_Rope_Attachment": {
+   "biceps": 1.0,
+   "forearms": 0.6
+  },
+  "Cable_One_Arm_Tricep_Extension": {
+   "triceps": 1.0
+  },
+  "Cable_Rear_Delt_Fly": {
+   "rear_delt": 1.0,
+   "upper_back": 0.4,
+   "traps": 0.3
+  },
+  "Cable_Rope_Overhead_Triceps_Extension": {
+   "triceps": 1.0
+  },
+  "Cable_Wrist_Curl": {
+   "forearms": 1.0
+  },
+  "Calf_Press_On_The_Leg_Press_Machine": {
+   "calves": 1.0
+  },
+  "Close-Grip_Dumbbell_Press": {
+   "triceps": 1.0,
+   "lower_chest": 0.6,
+   "upper_chest": 0.4,
+   "front_delt": 0.4
+  },
+  "Close-Grip_Front_Lat_Pulldown": {
+   "lats": 1.0,
+   "upper_back": 0.4,
+   "biceps": 0.5
+  },
+  "Cross_Body_Hammer_Curl": {
+   "biceps": 1.0,
+   "forearms": 0.6
+  },
+  "Crunches": {
+   "abdominals": 1.0
+  },
+  "Decline_Crunch": {
+   "abdominals": 1.0,
+   "obliques": 0.3
+  },
+  "Dumbbell_Bench_Press": {
+   "lower_chest": 1.0,
+   "upper_chest": 0.6,
+   "front_delt": 0.5,
+   "triceps": 0.3
+  },
+  "Dumbbell_Bicep_Curl": {
+   "biceps": 1.0,
+   "forearms": 0.3
+  },
+  "Dumbbell_Lunges": {
+   "quadriceps": 1.0,
+   "glutes": 0.7,
+   "adductors": 0.4,
+   "hamstrings": 0.3
+  },
+  "Dumbbell_Shrug": {
+   "traps": 1.0,
+   "forearms": 0.3
+  },
+  "Dumbbell_Side_Bend": {
+   "obliques": 1.0,
+   "lower_back": 0.3
+  },
+  "EZ-Bar_Curl": {
+   "biceps": 1.0,
+   "forearms": 0.3
+  },
+  "EZ-Bar_Skullcrusher": {
+   "triceps": 1.0,
+   "forearms": 0.2
+  },
+  "Face_Pull": {
+   "rear_delt": 1.0,
+   "upper_back": 0.6,
+   "traps": 0.5,
+   "middle_delt": 0.3
+  },
+  "Flat_Bench_Lying_Leg_Raise": {
+   "abdominals": 1.0
+  },
+  "Front_Cable_Raise": {
+   "front_delt": 1.0,
+   "upper_chest": 0.3
+  },
+  "Hanging_Leg_Raise": {
+   "abdominals": 1.0,
+   "obliques": 0.4,
+   "forearms": 0.3
+  },
+  "Hyperextensions_Back_Extensions": {
+   "lower_back": 1.0,
+   "glutes": 0.6,
+   "hamstrings": 0.5
+  },
+  "Incline_Dumbbell_Curl": {
+   "biceps": 1.0,
+   "forearms": 0.2
+  },
+  "Incline_Dumbbell_Press": {
+   "upper_chest": 1.0,
+   "front_delt": 0.6,
+   "lower_chest": 0.4,
+   "triceps": 0.3
+  },
+  "Incline_Hammer_Curls": {
+   "biceps": 1.0,
+   "forearms": 0.6
+  },
+  "Leg_Extensions": {
+   "quadriceps": 1.0
+  },
+  "Leg_Press": {
+   "quadriceps": 1.0,
+   "glutes": 0.6,
+   "adductors": 0.4,
+   "hamstrings": 0.3
+  },
+  "Leverage_Chest_Press": {
+   "lower_chest": 1.0,
+   "upper_chest": 0.5,
+   "front_delt": 0.4,
+   "triceps": 0.4
+  },
+  "Leverage_High_Row": {
+   "lats": 1.0,
+   "upper_back": 0.7,
+   "biceps": 0.4,
+   "rear_delt": 0.3
+  },
+  "Leverage_Incline_Chest_Press": {
+   "upper_chest": 1.0,
+   "front_delt": 0.5,
+   "lower_chest": 0.4,
+   "triceps": 0.3
+  },
+  "Leverage_Iso_Row": {
+   "upper_back": 1.0,
+   "lats": 0.7,
+   "biceps": 0.4,
+   "rear_delt": 0.4
+  },
+  "Lying_Leg_Curls": {
+   "hamstrings": 1.0,
+   "calves": 0.2
+  },
+  "Lying_T-Bar_Row": {
+   "upper_back": 1.0,
+   "lats": 0.7,
+   "rear_delt": 0.4,
+   "biceps": 0.4,
+   "traps": 0.3
+  },
+  "Lying_Triceps_Press": {
+   "triceps": 1.0
+  },
+  "Machine_Shoulder_Military_Press": {
+   "front_delt": 1.0,
+   "middle_delt": 0.5,
+   "triceps": 0.5
+  },
+  "Machine_Triceps_Extension": {
+   "triceps": 1.0
+  },
+  "One-Arm_Dumbbell_Row": {
+   "lats": 1.0,
+   "upper_back": 0.7,
+   "biceps": 0.4,
+   "rear_delt": 0.3
+  },
+  "One-Legged_Cable_Kickback": {
+   "glutes": 1.0,
+   "hamstrings": 0.3
+  },
+  "One_Arm_Dumbbell_Preacher_Curl": {
+   "biceps": 1.0,
+   "forearms": 0.2
+  },
+  "Pallof_Press": {
+   "obliques": 1.0,
+   "abdominals": 0.5
+  },
+  "Palms-Down_Dumbbell_Wrist_Curl_Over_A_Bench": {
+   "forearms": 1.0
+  },
+  "Palms-Down_Wrist_Curl_Over_A_Bench": {
+   "forearms": 1.0
+  },
+  "Palms-Up_Barbell_Wrist_Curl_Over_A_Bench": {
+   "forearms": 1.0
+  },
+  "Palms-Up_Dumbbell_Wrist_Curl_Over_A_Bench": {
+   "forearms": 1.0
+  },
+  "Preacher_Hammer_Dumbbell_Curl": {
+   "biceps": 1.0,
+   "forearms": 0.6
+  },
+  "Reverse_Crunch": {
+   "abdominals": 1.0
+  },
+  "Reverse_Flyes": {
+   "rear_delt": 1.0,
+   "upper_back": 0.5,
+   "traps": 0.3
+  },
+  "Reverse_Machine_Flyes": {
+   "rear_delt": 1.0,
+   "upper_back": 0.5,
+   "traps": 0.3
+  },
+  "Romanian_Deadlift": {
+   "hamstrings": 1.0,
+   "glutes": 0.7,
+   "lower_back": 0.5,
+   "forearms": 0.3
+  },
+  "Russian_Twist": {
+   "obliques": 1.0,
+   "abdominals": 0.5
+  },
+  "Seated_Cable_Rows": {
+   "upper_back": 1.0,
+   "lats": 0.7,
+   "biceps": 0.4,
+   "rear_delt": 0.4,
+   "traps": 0.3
+  },
+  "Seated_Dumbbell_Press": {
+   "front_delt": 1.0,
+   "middle_delt": 0.6,
+   "triceps": 0.4
+  },
+  "Side_Lateral_Raise": {
+   "middle_delt": 1.0,
+   "traps": 0.3,
+   "front_delt": 0.2
+  },
+  "Side_Leg_Raises": {
+   "abductors": 1.0,
+   "obliques": 0.2
+  },
+  "Single-Leg_Leg_Extension": {
+   "quadriceps": 1.0
+  },
+  "Smith_Machine_Bench_Press": {
+   "lower_chest": 1.0,
+   "upper_chest": 0.6,
+   "front_delt": 0.5,
+   "triceps": 0.4
+  },
+  "Smith_Machine_Calf_Raise": {
+   "calves": 1.0
+  },
+  "Smith_Machine_Overhead_Shoulder_Press": {
+   "front_delt": 1.0,
+   "middle_delt": 0.5,
+   "triceps": 0.5,
+   "upper_chest": 0.3
+  },
+  "Smith_Machine_Squat": {
+   "quadriceps": 1.0,
+   "glutes": 0.6,
+   "adductors": 0.4,
+   "hamstrings": 0.3
+  },
+  "Smith_Single-Leg_Split_Squat": {
+   "quadriceps": 1.0,
+   "glutes": 0.7,
+   "adductors": 0.4
+  },
+  "Split_Squat_with_Dumbbells": {
+   "quadriceps": 1.0,
+   "glutes": 0.7,
+   "adductors": 0.4
+  },
+  "Standing_Barbell_Calf_Raise": {
+   "calves": 1.0
+  },
+  "Standing_Biceps_Cable_Curl": {
+   "biceps": 1.0,
+   "forearms": 0.3
+  },
+  "Standing_Cable_Wood_Chop": {
+   "obliques": 1.0,
+   "abdominals": 0.4,
+   "front_delt": 0.2
+  },
+  "Standing_Calf_Raises": {
+   "calves": 1.0
+  },
+  "Standing_Dumbbell_Calf_Raise": {
+   "calves": 1.0
+  },
+  "Standing_One-Arm_Cable_Curl": {
+   "biceps": 1.0,
+   "forearms": 0.2
+  },
+  "Stiff-Legged_Barbell_Deadlift": {
+   "hamstrings": 1.0,
+   "glutes": 0.6,
+   "lower_back": 0.6,
+   "forearms": 0.3
+  },
+  "Straight-Arm_Pulldown": {
+   "lats": 1.0,
+   "triceps": 0.2
+  },
+  "T-Bar_Row_with_Handle": {
+   "lats": 1.0,
+   "upper_back": 0.8,
+   "biceps": 0.4,
+   "rear_delt": 0.3,
+   "lower_back": 0.3
+  },
+  "Thigh_Abductor": {
+   "abductors": 1.0,
+   "glutes": 0.4
+  },
+  "Thigh_Adductor": {
+   "adductors": 1.0
+  },
+  "Triceps_Pushdown": {
+   "triceps": 1.0
+  },
+  "Triceps_Pushdown_-_Rope_Attachment": {
+   "triceps": 1.0
+  },
+  "Underhand_Cable_Pulldowns": {
+   "lats": 1.0,
+   "biceps": 0.6,
+   "upper_back": 0.3
+  },
+  "Upright_Cable_Row": {
+   "middle_delt": 1.0,
+   "traps": 0.7,
+   "biceps": 0.2
+  },
+  "V-Bar_Pulldown": {
+   "lats": 1.0,
+   "upper_back": 0.4,
+   "biceps": 0.5
+  },
+  "Wide-Grip_Lat_Pulldown": {
+   "lats": 1.0,
+   "upper_back": 0.5,
+   "biceps": 0.4,
+   "rear_delt": 0.3
+  },
+  "liftoff_cable_standing_hip_abduction": {
+   "abductors": 1.0,
+   "glutes": 0.4
+  },
+  "liftoff_dragon_flag": {
+   "abdominals": 1.0,
+   "obliques": 0.4,
+   "lats": 0.2
+  },
+  "liftoff_dumbbell_romanian_deadlift": {
+   "hamstrings": 1.0,
+   "glutes": 0.7,
+   "lower_back": 0.4,
+   "forearms": 0.3
+  },
+  "liftoff_hand_grippers": {
+   "forearms": 1.0
+  },
+  "liftoff_machine_hip_thrust": {
+   "glutes": 1.0,
+   "hamstrings": 0.4
+  },
+  "liftoff_machine_row": {
+   "upper_back": 1.0,
+   "lats": 0.7,
+   "biceps": 0.4,
+   "rear_delt": 0.4
+  },
+  "liftoff_one_arm_cable_reverse_fly": {
+   "rear_delt": 1.0,
+   "upper_back": 0.4
+  },
+  "liftoff_one_arm_machine_reverse_fly": {
+   "rear_delt": 1.0,
+   "upper_back": 0.5,
+   "traps": 0.3
+  },
+  "liftoff_roman_chair_side_bend": {
+   "obliques": 1.0,
+   "lower_back": 0.4
+  },
+  "liftoff_side_lunge": {
+   "adductors": 1.0,
+   "quadriceps": 0.7,
+   "glutes": 0.5
+  },
+  "liftoff_side_lying_hip_adduction": {
+   "adductors": 1.0
+  },
+  "liftoff_standing_cable_crunch": {
+   "abdominals": 1.0,
+   "obliques": 0.3
+  },
+  "liftoff_supine_bench_press": {
+   "lower_chest": 1.0,
+   "upper_chest": 0.6,
+   "triceps": 0.4,
+   "front_delt": 0.3
+  },
+  "sp_assisted_dip_machine": {
+   "lower_chest": 1.0,
+   "triceps": 0.8,
+   "front_delt": 0.4
+  },
+  "sp_assisted_pull_up_machine": {
+   "lats": 1.0,
+   "upper_back": 0.5,
+   "biceps": 0.5,
+   "rear_delt": 0.3
+  },
+  "sp_cable_lateral_raise": {
+   "middle_delt": 1.0,
+   "traps": 0.2
+  },
+  "sp_cable_reverse_wrist_curl": {
+   "forearms": 1.0
+  },
+  "sp_db_incline_y_raise": {
+   "middle_delt": 1.0,
+   "traps": 0.4,
+   "rear_delt": 0.3
+  },
+  "sp_db_walking_lunge": {
+   "quadriceps": 1.0,
+   "glutes": 0.7,
+   "adductors": 0.4,
+   "hamstrings": 0.3
+  },
+  "sp_pendulum_squat": {
+   "quadriceps": 1.0,
+   "glutes": 0.6,
+   "adductors": 0.4
+  },
+  "sp_standing_machine_lateral_raise": {
+   "middle_delt": 1.0,
+   "traps": 0.3
+  }
+ }
+}

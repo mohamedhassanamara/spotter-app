@@ -34,9 +34,9 @@ void main() {
   });
 
   test('rank-up vs first placement vs rank-down', () {
-    final up = RankChange(name: 'a', fromScore: RankScore(10), toScore: RankScore(11.2), scope: RankChangeScope.group);
+    final up = RankChange(name: 'a', fromScore: RankScore(10), toScore: RankScore(11.2), scope: RankChangeScope.muscle);
     final placed = RankChange(name: 'b', fromScore: null, toScore: RankScore(4), scope: RankChangeScope.exercise);
-    final down = RankChange(name: 'c', fromScore: RankScore(9), toScore: RankScore(7.5), scope: RankChangeScope.group);
+    final down = RankChange(name: 'c', fromScore: RankScore(9), toScore: RankScore(7.5), scope: RankChangeScope.muscle);
     expect([up.isRankUp, placed.isRankUp, down.isRankUp], [true, false, false]);
     expect([up.up, placed.up, down.up], [true, true, false]);
   });

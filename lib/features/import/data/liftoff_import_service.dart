@@ -163,7 +163,8 @@ class LiftoffImportService {
         for (var i = 0; i < s.exercises.length; i++) {
           final e = s.exercises[i];
           final scheme = e.scheme;
-          final observed = RepRange(e.sets.map((x) => x.reps).reduce(math.min), e.sets.map((x) => x.reps).reduce(math.max));
+          final reps = [for (var j = 0; j < e.sets.length; j++) scheme.repsFor(j, e.sets[j].reps)];
+          final observed = RepRange(reps.reduce(math.min), reps.reduce(math.max));
           final first = scheme.rangeFor(0) ?? observed;
           final (exerciseId, displayName) = resolved[i];
           final assisted = isAssisted(exerciseId) || isLiftoffAssisted(e.name);
@@ -186,7 +187,7 @@ class LiftoffImportService {
                   sessionExerciseId: exId,
                   position: j,
                   weight: Value(assisted ? -x.weightKg.abs() : x.weightKg),
-                  reps: Value(x.reps),
+                  reps: Value(scheme.repsFor(j, x.reps)),
                   rpe: Value(x.rpe ?? 10),
                   completed: const Value(true),
                   // Liftoff only keeps the session start and length; spread the sets across it.

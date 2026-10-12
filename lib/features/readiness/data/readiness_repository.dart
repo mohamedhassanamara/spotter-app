@@ -136,6 +136,8 @@ class BodyWeightRepository {
   BodyWeightRepository(this._db);
   final AppDatabase _db;
 
+  Stream<List<BodyWeight>> watchAll() => (_db.select(_db.bodyWeights)..orderBy([(t) => OrderingTerm.asc(t.measuredAt)])).watch();
+
   Stream<BodyWeight?> watchLatest() => (_db.select(_db.bodyWeights)
         ..orderBy([(t) => OrderingTerm.desc(t.measuredAt), (t) => OrderingTerm.desc(t.id)])
         ..limit(1))

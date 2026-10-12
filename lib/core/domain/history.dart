@@ -2,7 +2,7 @@ import 'dart:math' as math;
 
 import 'dates.dart';
 import 'equipment.dart';
-import 'muscle_group.dart';
+import 'muscles.dart';
 import 'training.dart';
 
 /// A logged set with its identity and timing (history display, export).

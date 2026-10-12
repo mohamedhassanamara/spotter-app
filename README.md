@@ -73,8 +73,10 @@ The flows start from a fresh install (and an upgraded v2 install) with only your
 They tap through Train → Upper (warm-ups, working sets including the 1×20 row, steppers, add/remove
 set, replace via substitutions, background/resume, cold restart, finish, summary, history, start the
 next routine from Home), Pull (assisted pull-ups with negative load) and Settings → Import from
-Liftoff (preview, fixing an unmatched name, import, re-import is a no-op, and the next workout's
-suggestion built from the imported sessions; a fixture CSV stands in for the iOS file picker). A flow fails if anything is
+Liftoff (preview, fixing an unmatched name, bodyweight prompt, import, re-import is a no-op, and the
+next workout's suggestion built from the imported sessions; a fixture CSV stands in for the iOS file
+picker), and Ranks (regions with X/Y ranked, muscle rows and sheet, tapping muscles on the front and
+back body map, hiding an exercise from ranks, old rank badges revoked silently). A flow fails if anything is
 written to the in-app error log.
 
 ### Reporting bugs from the phone
@@ -117,6 +119,17 @@ Useful routes:
   generated from the program's % pyramid, and Block 2 techniques appear on the last set; tap one to see
   how it works.
 
+## Ranks
+
+- **The model:** 20 muscles in 6 regions, as in Liftoff.
+- **Scores:** every set scores 0–1000 against its exercise's standard, using your bodyweight on the
+  day of the set (Apple Health weigh-ins).
+- **Muscles, regions and overall:** a muscle ranks from its exercises' best scores of the last 90 days,
+  weighted by how much each exercise trains it. Regions average their muscles; overall averages the
+  regions.
+- **Hiding an exercise:** on its exercise page, turn off *Count toward ranks*. Its records stay, but it
+  never affects a rank. Hidden exercises are listed at the bottom of Progress → Ranks.
+
 ## Import from Liftoff
 
 Settings → **Import from Liftoff**. In Liftoff, export your data as CSV and save it to Files, then
@@ -129,7 +142,7 @@ Importing the same file again only adds sessions that aren't already in the app.
 - Name fixes that should stick go in `assets/liftoff_name_map.json`.
 - `docs/IMPORT_SUMMARY.md` shows the result for your export: mappings, current best per lift, ranks
   and the first suggestion for every routine exercise. To regenerate it:
-  `LIFTOFF_CSV=~/Desktop/DOCS/liftoff_workout_data.csv LIFTOFF_BW=80 flutter test test/tool/import_summary_test.dart`.
+  `LIFTOFF_CSV=~/Desktop/DOCS/liftoff_workout_data.csv LIFTOFF_BW=108@2026-04-19,106@2026-10-11 flutter test test/tool/import_summary_test.dart`.
   The CSV is personal data; never commit it.
 
 ## Tutorials
@@ -144,14 +157,21 @@ Importing the same file again only adds sessions that aren't already in the app.
 
 ## Editable data
 
-- **Strength standards:** `assets/strength_standards.json`. For each lift: the dataset exercise
-  ids it covers, 10 tier-entry thresholds as e1RM ÷ bodyweight (Iron…Challenger) derived from its `anchors`, its primary and
-  secondary muscle groups, and the `bodyweight_loaded` and `per_hand` flags.
+- **Strength standards and muscle contributions:** edit `tool/standards/exercise_data.py`, then run
+  `python3 tool/standards/build.py`. It checks the data and writes two assets:
+  - `assets/strength_standards.json`: per exercise, five anchors as e1RM ÷ bodyweight (beginner …
+    elite). Machine and cable standards are stricter via `machine_strictness`.
+  - `assets/exercise_muscles.json`: how much each exercise trains each of the 20 muscles (1.0 = prime
+    mover).
+
+  How tiers come from the anchors, and the full anchor table, are in `docs/DECISIONS.md`
+  (section 8).
 - **Achievements:** `assets/achievements.json`. Each has a key, title, description, icon, a metric
   `type` (sessions, cleanSessionStreak, smartRestDays, comebacks, weeklyStreak, bestExerciseTier (tier index 0–9),
   discipline, prs, totalVolumeKg or level) and a `threshold`.
-- **Muscle mapping:** dataset muscles → the 12 ranking groups live in
-  `lib/features/library/domain/muscle_mapping.dart`.
+- **Muscle mapping for the rest of the library:** `lib/features/library/domain/muscle_mapping.dart`
+  derives contributions from the dataset's muscles plus name keywords (incline → upper chest, lateral
+  raise → middle delt…).
 - **Exercise library:** `assets/exercises.json` comes from
   [yuhonas/free-exercise-db](https://github.com/yuhonas/free-exercise-db) (public domain). Images are
   loaded from the repo at runtime and cached. To refresh the file, download `dist/exercises.json`

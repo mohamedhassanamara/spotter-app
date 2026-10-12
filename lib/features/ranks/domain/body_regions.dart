@@ -1,41 +1,57 @@
-import '../../../core/domain/muscle_group.dart';
+import '../../../core/domain/muscles.dart';
 
-/// How a body-map region is drawn.
+/// How a body-map part is drawn.
 enum RegionRole {
-  /// One of the 12 ranking groups.
+  /// One of the 20 ranking muscles.
   muscle,
 
-  /// A real muscle we don't rank (adductors, lower back, neck, tibialis): rendered neutral.
+  /// Neck and tibialis: real muscles we don't rank, rendered neutral.
   neutral,
 
   /// Head, hair, hands, feet, knees, ankles: the silhouette.
   structure,
 }
 
-/// Mapping from the body-map SVG slugs (react-native-body-highlighter) to our ranking groups.
-const Map<String, MuscleGroup> bodySlugToGroup = {
-  'chest': MuscleGroup.chest,
-  'abs': MuscleGroup.abs,
-  'obliques': MuscleGroup.abs,
-  'biceps': MuscleGroup.biceps,
-  'triceps': MuscleGroup.triceps,
-  'forearm': MuscleGroup.forearms,
-  'deltoids': MuscleGroup.shoulders,
-  'trapezius': MuscleGroup.traps,
-  'upper-back': MuscleGroup.back,
-  'gluteal': MuscleGroup.glutes,
-  'quadriceps': MuscleGroup.quads,
-  'hamstring': MuscleGroup.hamstrings,
-  'calves': MuscleGroup.calves,
+/// Body-map slugs (react-native-body-highlighter) that are one muscle as drawn. Chest, deltoids,
+/// upper back and gluteal are split by [BodyMap] (see `body_map.dart`).
+const Map<String, Muscle> bodySlugToMuscle = {
+  'abs': Muscle.abdominals,
+  'obliques': Muscle.obliques,
+  'biceps': Muscle.biceps,
+  'triceps': Muscle.triceps,
+  'forearm': Muscle.forearms,
+  'trapezius': Muscle.traps,
+  'lower-back': Muscle.lowerBack,
+  'quadriceps': Muscle.quadriceps,
+  'hamstring': Muscle.hamstrings,
+  'calves': Muscle.calves,
+  'adductors': Muscle.adductors,
 };
 
-const Set<String> neutralBodySlugs = {'adductors', 'lower-back', 'neck', 'tibialis'};
+/// Slugs whose paths are split or assigned by shape.
+const Set<String> splitBodySlugs = {'chest', 'deltoids', 'upper-back', 'gluteal'};
+
+const Set<String> neutralBodySlugs = {'neck', 'tibialis'};
 
 RegionRole roleForSlug(String slug) {
-  if (bodySlugToGroup.containsKey(slug)) return RegionRole.muscle;
+  if (bodySlugToMuscle.containsKey(slug) || splitBodySlugs.contains(slug)) return RegionRole.muscle;
   if (neutralBodySlugs.contains(slug)) return RegionRole.neutral;
   return RegionRole.structure;
 }
+
+/// Which view (front/back) shows a muscle best, for thumbnails and deep links.
+bool muscleOnBack(Muscle m) => const {
+      Muscle.triceps,
+      Muscle.hamstrings,
+      Muscle.glutes,
+      Muscle.calves,
+      Muscle.abductors,
+      Muscle.rearDelt,
+      Muscle.lats,
+      Muscle.upperBack,
+      Muscle.traps,
+      Muscle.lowerBack,
+    }.contains(m);
 
 /// Working sets in the last 7 days vs. the weekly average of the 4 weeks before.
 class GroupVolume {

@@ -5,7 +5,7 @@ import 'package:drift/drift.dart';
 import '../../../core/db/database.dart';
 import '../../../core/domain/equipment.dart';
 import '../../../core/domain/history.dart';
-import '../../../core/domain/muscle_group.dart';
+import '../../../core/domain/muscles.dart';
 import '../../../core/domain/training.dart';
 import '../../library/domain/exercise_info.dart';
 

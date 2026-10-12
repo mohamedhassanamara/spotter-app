@@ -24,7 +24,10 @@ import 'package:spotter/features/import/data/liftoff_import_service.dart';
 import 'package:spotter/features/library/data/exercise_repository.dart';
 import 'package:spotter/features/library/domain/load_kinds.dart';
 import 'package:spotter/features/program/data/program_repository.dart';
+import 'package:spotter/core/domain/muscles.dart';
+import 'package:spotter/features/ranks/data/rank_exclusions.dart';
 import 'package:spotter/features/ranks/data/ranks_repository.dart';
+import 'package:spotter/features/ranks/domain/ranks.dart';
 import 'package:spotter/features/readiness/data/readiness_repository.dart';
 import 'package:spotter/features/workout/data/history_repository.dart';
 import 'package:spotter/features/workout/data/routine_repository.dart';
@@ -163,20 +166,71 @@ void main() {
       out.writeln(r.$2);
     }
 
-    final ranks = RanksRepository.compute(history: history, standards: standards, bodyweightLoaded: bwLoaded, bodyweight: bw, now: now);
+    final routinesForRanks = await RoutineRepository(db).watchRoutines().first;
+    final ranks = RanksRepository.compute(
+      history: history,
+      standards: standards,
+      catalog: cat,
+      bodyweights: RanksRepository.timeline(await BodyWeightRepository(db).all()),
+      now: now,
+      excluded: await RankExclusions(db).load(),
+      myExerciseIds: {for (final r in routinesForRanks) for (final e in r.exercises) e.exerciseId},
+    );
     final ranked = [...ranks.exercises]..sort((a, b) => b.score.value.compareTo(a.score.value));
+    String setText(ExerciseRank r) =>
+        '${r.weight < 0 ? '${formatKg(-r.weight)} kg assist' : (r.weight == 0 ? 'BW' : '${formatKg(r.weight)} kg')} × ${r.reps}';
+    out
+      ..writeln()
+      ..writeln('## Rank sanity check')
+      ..writeln()
+      ..writeln('Your top 15 lifts on the v3 standards: best valid set of the last 90 days, scored at the bodyweight '
+          'of its day. e1RM includes bodyweight for bodyweight lifts and counts at most 20 reps (reps + reps in reserve). '
+          'Hidden from ranks: ${(await RankExclusions(db).load()).join(', ')}.')
+      ..writeln()
+      ..writeln('| # | Exercise | Best set | Date | Bodyweight | e1RM | × BW | Rank | Strength |')
+      ..writeln('|---|---|---|---|---|---|---|---|---|');
+    for (final (i, r) in ranked.take(15).indexed) {
+      out.writeln('| ${i + 1} | ${r.name} | ${setText(r)} | ${fmt.format(r.date)} | ${r.bodyweight.toStringAsFixed(1)} kg | '
+          '${r.bestE1rm.toStringAsFixed(1)} kg | ${r.ratio.toStringAsFixed(2)} | ${r.score.label} | ${r.strength} |');
+    }
     out
       ..writeln()
       ..writeln('## Ranks after import')
       ..writeln()
-      ..writeln('Overall: ${ranks.overall?.label ?? 'unranked'}. Ranked lifts, best first (current standards; '
-          'section 8 replaces them with the 20-muscle model):')
+      ..writeln('Overall: **${ranks.overall?.labelWithLp ?? 'unranked'}** (strength ${ranks.overall?.strength ?? 0}).')
       ..writeln()
-      ..writeln('| Lift | Rank | Best e1RM | Ratio to bodyweight |')
+      ..writeln('| Region | Rank | Ranked | Muscles |')
       ..writeln('|---|---|---|---|');
-    for (final r in ranked) {
-      out.writeln('| ${r.standard.name} | ${r.score.label} | ${r.bestE1rm.toStringAsFixed(1)} kg | ${r.ratio.toStringAsFixed(2)} |');
+    for (final r in ranks.regions.values) {
+      final muscles = [
+        for (final m in r.region.muscles) '${m.label} ${ranks.muscles[m]?.score.label ?? '—'}',
+      ].join(', ');
+      out.writeln('| ${r.region.label} | ${r.score?.labelWithLp ?? 'Unranked'} | ${r.ranked}/${r.total} | $muscles |');
     }
+    out
+      ..writeln()
+      ..writeln('All ranked exercises:')
+      ..writeln()
+      ..writeln('| Exercise | Standard | Best set | e1RM | × BW | Rank | Strength |')
+      ..writeln('|---|---|---|---|---|---|---|');
+    for (final r in ranked) {
+      out.writeln('| ${r.name} | ${r.standard.name} (${r.standard.kind.name}) | ${setText(r)} | ${r.bestE1rm.toStringAsFixed(1)} kg | '
+          '${r.ratio.toStringAsFixed(2)} | ${r.score.labelWithLp} | ${r.strength} |');
+    }
+    final unranked = [for (final m in Muscle.values) if (!ranks.muscles.containsKey(m)) m];
+    if (unranked.isNotEmpty) {
+      out
+        ..writeln()
+        ..writeln('Unranked muscles: ${unranked.map((m) => '${m.label} (${(ranks.unrankedHints[m] ?? const []).map((h) => h.name).take(3).join(', ').ifEmpty('no exercise of yours trains it as a main muscle')})').join('; ')}.');
+    }
+
+    // Sanity rule from the owner: nothing above Diamond unless justified in docs/DECISIONS.md.
+    const justifiedAboveDiamond = <String>{};
+    final aboveDiamond = [
+      for (final r in ranked)
+        if (r.score.tier.index > Tier.diamond.index && !justifiedAboveDiamond.contains(r.exerciseId)) '${r.name} (${r.score.label})',
+    ];
+    expect(aboveDiamond, isEmpty, reason: 'ranks above Diamond need a justification in DECISIONS.md');
 
     // First suggestion per routine exercise: start each routine exactly like the app does
     // (neutral readiness), read what it prescribes, then discard the session.
@@ -221,4 +275,8 @@ void main() {
     // ignore: avoid_print
     print('Wrote docs/IMPORT_SUMMARY.md: ${result.sessions} sessions, ${result.sets} sets');
   }, skip: path == null ? 'set LIFTOFF_CSV to the Liftoff export to regenerate docs/IMPORT_SUMMARY.md' : false, timeout: const Timeout(Duration(minutes: 5)));
+}
+
+extension on String {
+  String ifEmpty(String other) => this.isEmpty ? other : this; // `this.`: flutter_test exports an isEmpty matcher
 }

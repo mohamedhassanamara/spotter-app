@@ -1,4 +1,4 @@
-import '../../../core/domain/muscle_group.dart';
+import '../../../core/domain/muscles.dart';
 import '../../../core/domain/training.dart';
 
 enum QuestKey { topOfRange, trainGroup, followAll, logRpe, noOverride, sessions }
@@ -8,7 +8,7 @@ class QuestDef {
 
   final QuestKey key;
   final int target;
-  final MuscleGroup? group;
+  final BodyRegion? group;
 
   String get title {
     switch (key) {
@@ -34,16 +34,31 @@ class QuestDef {
     return QuestDef(
       key: k,
       target: (params['target'] as num).toInt(),
-      group: params['group'] == null ? null : MuscleGroup.fromName(params['group'] as String),
+      group: params['group'] == null ? null : regionFromParam(params['group'] as String),
     );
   }
 }
 
+/// Quests stored before v2.1 name one of the old 12 groups; map those to their region.
+BodyRegion? regionFromParam(String name) =>
+    BodyRegion.fromName(name) ??
+    const {
+      'biceps': BodyRegion.arms,
+      'triceps': BodyRegion.arms,
+      'forearms': BodyRegion.arms,
+      'abs': BodyRegion.core,
+      'quads': BodyRegion.legs,
+      'hamstrings': BodyRegion.legs,
+      'glutes': BodyRegion.legs,
+      'calves': BodyRegion.legs,
+      'traps': BodyRegion.back,
+    }[name];
+
 /// One exercise as performed in one session.
 class ExerciseActivity {
-  const ExerciseActivity({required this.exerciseId, required this.primaryGroups, required this.repMax, required this.sets});
+  const ExerciseActivity({required this.exerciseId, required this.primaryRegions, required this.repMax, required this.sets});
   final String exerciseId;
-  final Set<MuscleGroup> primaryGroups;
+  final Set<BodyRegion> primaryRegions;
   final int repMax;
   final List<LoggedSet> sets;
 
@@ -68,8 +83,8 @@ class QuestGenInput {
 
   final int weeklyGoal;
 
-  /// Working sets per group over the last 4 weeks (primary groups).
-  final Map<MuscleGroup, int> groupSets4w;
+  /// Working sets per body region over the last 4 weeks (regions of primary muscles).
+  final Map<BodyRegion, int> groupSets4w;
   final double? disciplinePct;
   final double? rpeLoggedPct;
 }
@@ -81,19 +96,9 @@ class QuestEngine {
   List<QuestDef> generate(QuestGenInput input) {
     final quests = <QuestDef>[const QuestDef(key: QuestKey.topOfRange, target: 2)];
 
-    // Least-trained group among the big ones the lifter trains; defaults to back.
-    const candidates = [
-      MuscleGroup.back,
-      MuscleGroup.chest,
-      MuscleGroup.shoulders,
-      MuscleGroup.quads,
-      MuscleGroup.hamstrings,
-      MuscleGroup.glutes,
-      MuscleGroup.biceps,
-      MuscleGroup.triceps,
-      MuscleGroup.calves,
-    ];
-    MuscleGroup group = MuscleGroup.back;
+    // Least-trained region the lifter trains (core is left to the lifter); defaults to back.
+    const candidates = [BodyRegion.back, BodyRegion.chest, BodyRegion.shoulders, BodyRegion.legs, BodyRegion.arms];
+    BodyRegion group = BodyRegion.back;
     if (input.groupSets4w.values.any((v) => v > 0)) {
       var min = 1 << 30;
       for (final g in candidates) {
@@ -132,7 +137,7 @@ class QuestEngine {
         return lifts.length;
       case QuestKey.trainGroup:
         return week
-            .where((s) => s.exercises.any((e) => e.primaryGroups.contains(quest.group) && e.working.isNotEmpty))
+            .where((s) => s.exercises.any((e) => e.primaryRegions.contains(quest.group) && e.working.isNotEmpty))
             .length;
       case QuestKey.followAll:
         return week.where((s) {

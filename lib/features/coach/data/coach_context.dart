@@ -1,7 +1,7 @@
 import '../../../core/db/database.dart';
 import '../../../core/domain/equipment.dart';
 import '../../../core/domain/history.dart';
-import '../../../core/domain/muscle_group.dart';
+import '../../../core/domain/muscles.dart';
 import '../../../core/domain/training.dart';
 import '../../library/domain/exercise_info.dart';
 import '../../library/domain/load_kinds.dart';
@@ -39,7 +39,7 @@ Map<String, EgoFreeze> latestFreezes(Iterable<EgoFreeze> rows) {
 }
 
 /// Turns today's readiness + training load into the per-exercise readiness the engine uses.
-ExerciseReadiness exerciseReadiness(ReadinessResult? today, Set<MuscleGroup> overloaded, MuscleTargets targets) {
+ExerciseReadiness exerciseReadiness(ReadinessResult? today, Set<Muscle> overloaded, MuscleTargets targets) {
   final score = today?.coachScore ?? ReadinessCalculator.neutralScore;
   final groups = [
     for (final g in targets.primary)
@@ -63,7 +63,7 @@ class CoachContext {
 
   final TrainingHistory history;
   final ReadinessResult? readiness;
-  final Set<MuscleGroup> overloaded;
+  final Set<Muscle> overloaded;
   final Map<String, EgoFreeze> freezes;
   final Increments increments;
   final DateTime now;
