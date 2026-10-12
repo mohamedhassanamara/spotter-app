@@ -13,6 +13,7 @@ import '../../../router.dart';
 import '../../coach/domain/suggestion_engine.dart' show formatKg;
 import '../../export/data/export_service.dart';
 import '../../tutorials/presentation/tutorial_video.dart';
+import '../../program/data/program_repository.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -168,6 +169,8 @@ class SettingsScreen extends ConsumerWidget {
               },
             ),
           ),
+          const SectionHeader('Program'),
+          const AppCard(padding: EdgeInsets.symmetric(vertical: 4), child: _ProgramTiles()),
           const SectionHeader('Tutorials'),
           const AppCard(padding: EdgeInsets.symmetric(vertical: 4), child: _YouTubeKeyTile()),
           const SectionHeader('Export'),
@@ -342,5 +345,62 @@ class _ExportButtonState extends ConsumerState<_ExportButton> {
       icon: _busy ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : Icon(widget.icon),
       label: Text(widget.label),
     );
+  }
+}
+
+class _ProgramTiles extends ConsumerWidget {
+  const _ProgramTiles();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final program = ref.watch(programProvider).value;
+    final week = ref.watch(programWeekProvider).value ?? 1;
+    return Column(children: [
+      ListTile(
+        leading: const Icon(Icons.calendar_view_week_rounded),
+        title: Text(program?.name ?? 'Program'),
+        subtitle: Text('Current week $week of ${program?.weekCount ?? 12}'
+            '${program != null && program.introWeeks.contains(week) ? (week == 1 ? ' (intro)' : ' (deload)') : ''}'),
+        trailing: Row(mainAxisSize: MainAxisSize.min, children: [
+          IconButton(
+            tooltip: 'Previous week',
+            onPressed: week <= 1 ? null : () => _setWeek(ref, week - 1),
+            icon: const Icon(Icons.remove_circle_outline_rounded),
+          ),
+          IconButton(
+            tooltip: 'Next week',
+            onPressed: week >= (program?.weekCount ?? 12) ? null : () => _setWeek(ref, week + 1),
+            icon: const Icon(Icons.add_circle_outline_rounded),
+          ),
+        ]),
+      ),
+      ListTile(
+        leading: const Icon(Icons.restart_alt_rounded),
+        title: const Text('Reinstall my Min-Max routines'),
+        subtitle: const Text('Replaces all routines with the five program routines (history is kept)'),
+        onTap: () async {
+          final ok = await confirm(context,
+              title: 'Replace routines?', message: 'All routines will be replaced by your five Min-Max Phase 2 routines.', action: 'Replace');
+          if (!ok || program == null) return;
+          final skipped = await ref.read(programRepositoryProvider).installMyRoutines(
+                program: program,
+                definition: await ProgramRepository.loadMyRoutines(),
+                catalog: await ref.read(catalogProvider.future),
+                settings: ref.read(currentSettingsProvider),
+                now: ref.read(clockProvider)(),
+              );
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+              content: Text(skipped.isEmpty ? 'Routines installed' : 'Installed; skipped: ${skipped.join(', ')}'),
+            ));
+          }
+        },
+      ),
+    ]);
+  }
+
+  Future<void> _setWeek(WidgetRef ref, int week) async {
+    await ref.read(programRepositoryProvider).setCurrentWeek(week, now: ref.read(clockProvider)());
+    ref.invalidate(programWeekProvider);
   }
 }

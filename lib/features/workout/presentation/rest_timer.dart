@@ -16,7 +16,9 @@ class RestTimerController {
   RestTimerController(this._ref);
   final Ref _ref;
 
+  /// No-op for 0 s (first exercise of a superset: go straight to the partner).
   Future<void> start(int seconds) async {
+    if (seconds <= 0) return;
     final endsAt = _ref.read(clockProvider)().add(Duration(seconds: seconds));
     await _ref.read(settingsControllerProvider).setRestTimer(endsAt, seconds);
     await _ref.read(notificationServiceProvider).scheduleRestDone(endsAt);

@@ -8,6 +8,8 @@ import '../../../core/domain/training.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/common.dart';
 import '../../../router.dart';
+import '../../program/data/program_repository.dart';
+import '../../program/domain/program.dart';
 import '../data/routine_repository.dart';
 
 final _routineProvider = StreamProvider.family<RoutineWithExercises?, int>(
@@ -92,13 +94,16 @@ class RoutineEditorScreen extends ConsumerWidget {
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Text(catalog[e.exerciseId]?.name ?? e.exerciseId,
+                                    Text(e.displayName ?? catalog[e.exerciseId]?.name ?? e.exerciseId,
                                         style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
                                     const SizedBox(height: 4),
-                                    Text(
-                                      '${e.targetSets} × ${e.repMin}–${e.repMax} · RIR ${e.targetRir} · rest ${formatClock(Duration(seconds: e.restSeconds))}',
-                                      style: const TextStyle(color: AppColors.textSecondary),
-                                    ),
+                                    if (decodeSlots(e.programSlots).isEmpty)
+                                      Text(
+                                        '${e.targetSets} × ${e.repMin}–${e.repMax} · RIR ${e.targetRir} · rest ${formatClock(Duration(seconds: e.restSeconds))}',
+                                        style: const TextStyle(color: AppColors.textSecondary),
+                                      )
+                                    else
+                                      _ProgramRowInfo(row: e),
                                   ],
                                 ),
                               ),
@@ -131,7 +136,7 @@ class RoutineEditorScreen extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text(ref.read(catalogProvider).value?[e.exerciseId]?.name ?? e.exerciseId,
+              Text(e.displayName ?? ref.read(catalogProvider).value?[e.exerciseId]?.name ?? e.exerciseId,
                   style: Theme.of(ctx).textTheme.titleLarge),
               const SizedBox(height: 16),
               Row(children: [
@@ -196,5 +201,50 @@ class RoutineEditorScreen extends ConsumerWidget {
             targetRir: rir,
           );
     }
+  }
+}
+
+/// Prescription from the program for a routine row: per-slot sets × reps, warm-ups, rest, and where
+/// the exercise sits in the program (its own exercise, a listed substitution, your swap).
+class _ProgramRowInfo extends ConsumerWidget {
+  const _ProgramRowInfo({required this.row});
+  final RoutineExercise row;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final program = ref.watch(programProvider).value;
+    final week = ref.watch(programWeekProvider).value ?? 1;
+    if (program == null) return const SizedBox.shrink();
+    final pres = prescribeSets(program: program, slotIds: decodeSlots(row.programSlots), sets: row.targetSets, week: week);
+    final parts = <String>[];
+    for (final p in pres) {
+      final label = '${p.repRange.min == p.repRange.max ? p.repRange.min : p.repRange}';
+      if (parts.isNotEmpty && parts.last.endsWith('× $label')) {
+        final n = int.parse(parts.last.split('×').first.trim()) + 1;
+        parts[parts.length - 1] = '$n × $label';
+      } else {
+        parts.add('1 × $label');
+      }
+    }
+    final first = program.slot(decodeSlots(row.programSlots).first);
+    final relation = switch (row.programRelation) {
+      'substitution' => 'substitution for ${row.programExercise}',
+      'swap' => 'your swap for ${row.programExercise}',
+      'extra' => 'not in the program (uses ${first?.exercise} prescription)',
+      _ => row.programExercise == null ? 'program' : 'program: ${row.programExercise}',
+    };
+    final techniques = pres.map((p) => p.technique).whereType<String>().toSet();
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Text(
+        '${parts.join(' + ')} reps · warm-up ${first?.warmupSets} · rest ${first?.rest?.text ?? 'none (superset)'}',
+        style: const TextStyle(color: AppColors.textSecondary),
+      ),
+      Text(
+        'Week $week · effort ${pres.map((p) => p.targetRir == null ? '–' : (p.targetRir == 0 ? 'F' : 'RIR ${p.targetRir}')).join(' / ')}'
+        '${techniques.isEmpty ? '' : ' · ${techniques.map((t) => program.techniques[t]?.name ?? t).join(', ')}'}',
+        style: AppType.bodyS.copyWith(fontSize: 12, color: AppColors.accent),
+      ),
+      Text(relation, style: AppType.bodyS.copyWith(fontSize: 12, color: AppColors.textTertiary)),
+    ]);
   }
 }

@@ -7,11 +7,14 @@ import 'training.dart';
 
 /// A logged set with its identity and timing (history display, export).
 class HistSet {
-  const HistSet({required this.id, required this.set, required this.completedAt, this.overrideReason});
+  const HistSet({required this.id, required this.set, required this.completedAt, this.overrideReason, this.targetRange});
   final int id;
   final LoggedSet set;
   final DateTime? completedAt;
   final String? overrideReason;
+
+  /// Per-set prescribed rep range (program sets can differ within one exercise).
+  final RepRange? targetRange;
 }
 
 class HistExercise {
@@ -107,6 +110,28 @@ class TrainingHistory {
 
   /// Chronological logs of one exercise.
   List<ExerciseSessionLog> logsFor(String exerciseId) => _byExercise[exerciseId] ?? const [];
+
+  /// Logs of one exercise restricted to sets prescribed at [range] (a set without its own target
+  /// uses its exercise's range). Falls back to all logs when nothing was ever done at that range,
+  /// so a new back-off slot still starts from real history.
+  List<ExerciseSessionLog> logsForRange(String exerciseId, RepRange range) {
+    final out = <ExerciseSessionLog>[];
+    for (final s in sessions) {
+      for (final e in s.exercises) {
+        if (e.exerciseId != exerciseId) continue;
+        final sets = [for (final h in e.sets) if ((h.targetRange ?? e.range) == range) h.set];
+        if (!sets.any((x) => x.isWorking)) continue;
+        out.add(ExerciseSessionLog(
+          sessionId: s.id,
+          date: s.startedAt,
+          sets: sets,
+          suggestionKind: e.suggestionKind,
+          techniqueDay: e.techniqueDay,
+        ));
+      }
+    }
+    return out.isEmpty ? logsFor(exerciseId) : out;
+  }
 
   Iterable<String> get exerciseIds => _byExercise.keys;
 

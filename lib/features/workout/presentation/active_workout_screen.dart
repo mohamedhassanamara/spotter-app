@@ -14,8 +14,10 @@ import '../../../core/widgets/common.dart';
 import '../../../router.dart';
 import '../../coach/domain/suggestion_engine.dart';
 import '../../library/domain/exercise_info.dart';
+import '../../program/data/program_repository.dart';
 import '../data/session_repository.dart';
 import '../../tutorials/presentation/form_check_sheet.dart';
+import '../../program/presentation/program_widgets.dart';
 import 'rest_timer.dart';
 import 'set_editor_sheet.dart';
 
@@ -276,7 +278,7 @@ class _ExerciseCardState extends ConsumerState<_ExerciseCard> {
     final sug = ex.suggestion;
     final freeze = ref.watch(activeFreezesProvider)[ex.row.exerciseId];
     final now = ref.watch(clockProvider)();
-    final name = widget.info?.name ?? ex.row.exerciseId;
+    final name = ex.row.displayName ?? widget.info?.name ?? ex.row.exerciseId;
     final workingIdx = <int, int>{};
     var n = 0;
     for (final s in ex.sets) {
@@ -343,6 +345,7 @@ class _ExerciseCardState extends ConsumerState<_ExerciseCard> {
             const SizedBox(height: 10),
             _SuggestionBanner(suggestion: sug, open: _whyOpen, onToggle: () => setState(() => _whyOpen = !_whyOpen)),
           ],
+          _ProgramCue(row: ex.row),
           if (ex.row.notes.isNotEmpty)
             Padding(
               padding: const EdgeInsets.only(top: 8, right: 8),
@@ -419,7 +422,7 @@ class _ExerciseCardState extends ConsumerState<_ExerciseCard> {
       context,
       set: s,
       increment: _increment,
-      exerciseName: widget.info?.name ?? ex.row.exerciseId,
+      exerciseName: ex.row.displayName ?? widget.info?.name ?? ex.row.exerciseId,
       setNumber: number,
       targetRir: ex.row.targetRir,
     );
@@ -545,11 +548,15 @@ class _SetRow extends ConsumerWidget {
         : overridePct != null
             ? AppColors.warning
             : (s.isWarmup ? AppColors.textTertiary : AppColors.outlineBright);
+    final reps = (s.targetRepMin != null && s.targetRepMax != null)
+        ? (s.targetRepMin == s.targetRepMax ? '${s.targetRepMin}' : '${s.targetRepMin}–${s.targetRepMax}')
+        : '${s.suggestedReps ?? '–'}';
+    final rir = s.targetRir == null ? '' : ' · ${s.targetRir == 0 ? 'FAILURE' : 'RIR ${s.targetRir}'}';
     final target = s.isWarmup
-        ? 'WARM-UP'
+        ? 'WARM-UP · $reps reps'
         : s.suggestedWeight == null
-            ? 'TARGET  ramp up · ${s.suggestedReps ?? '–'} reps'
-            : 'TARGET  ${_load(s.suggestedWeight!)}${s.suggestedWeight == 0 ? '' : ' kg'} × ${s.suggestedReps ?? '–'}';
+            ? 'TARGET  ramp up · $reps reps$rir'
+            : 'TARGET  ${_load(s.suggestedWeight!)}${s.suggestedWeight == 0 ? '' : ' kg'} × $reps$rir';
 
     final body = Container(
       margin: const EdgeInsets.only(top: 8, right: 8),
@@ -594,6 +601,11 @@ class _SetRow extends ConsumerWidget {
               _RpeChip(set: s, onTap: () => _pickRpe(context, ref)),
             ],
           ),
+          if (s.technique != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 6),
+              child: TechniqueChip(techniqueId: s.technique!),
+            ),
           const SizedBox(height: 8),
           if (s.completed)
             Row(children: [
@@ -757,6 +769,37 @@ class _CheckButton extends StatelessWidget {
         ),
         icon: const Icon(Icons.check_rounded, size: 30),
       ),
+    );
+  }
+}
+
+/// Program week and the program's coaching cue for this exercise.
+class _ProgramCue extends ConsumerWidget {
+  const _ProgramCue({required this.row});
+  final SessionExercise row;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final slots = decodeSlots(row.programSlots);
+    final program = ref.watch(programProvider).value;
+    if (slots.isEmpty || program == null) return const SizedBox.shrink();
+    final slot = program.slot(slots.first);
+    if (slot == null) return const SizedBox.shrink();
+    final week = row.programWeek;
+    return Padding(
+      padding: const EdgeInsets.only(top: 6, right: 8),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        if (week != null)
+          Text(
+            'MIN-MAX · WEEK $week${program.introWeeks.contains(week) ? (week == 1 ? ' · INTRO' : ' · DELOAD') : ''}',
+            style: AppType.label.copyWith(fontSize: 10, color: AppColors.accent),
+          ),
+        if (slot.notes.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(top: 2),
+            child: Text(slot.notes, style: AppType.bodyS.copyWith(fontSize: 13, color: AppColors.textSecondary)),
+          ),
+      ]),
     );
   }
 }

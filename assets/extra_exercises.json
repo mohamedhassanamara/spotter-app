@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "description": "Built-in exercises missing from free-exercise-db, added for the owner's Min-Max Phase 2 routines and Liftoff history. Same shape as assets/exercises.json; ids start with sp_. Instructions are written for this app.",
+  "exercises": [
+    {"id": "sp_pendulum_squat", "name": "Pendulum Squat", "equipment": "machine", "mechanic": "compound", "level": "intermediate", "category": "strength", "force": "push",
+     "primaryMuscles": ["quadriceps"], "secondaryMuscles": ["glutes", "adductors"],
+     "instructions": ["Set the shoulder pads so you can stand fully upright with feet mid-platform.", "Release the safety and sit down under control until your knees are deeply bent.", "Drive through the whole foot to stand back up without locking the knees hard.", "Keep your back against the pad for every rep."], "images": []},
+    {"id": "sp_db_incline_y_raise", "name": "Dumbbell Incline Y Raise", "equipment": "dumbbell", "mechanic": "isolation", "level": "beginner", "category": "strength", "force": "push",
+     "primaryMuscles": ["shoulders"], "secondaryMuscles": ["traps"],
+     "instructions": ["Set a bench to about 30° and sit with your back against it.", "With arms hanging and a slight elbow bend, lift the dumbbells up and out into a Y shape.", "Stop around head height, then lower slowly."], "images": []},
+    {"id": "sp_standing_machine_lateral_raise", "name": "Standing Machine Lateral Raise", "equipment": "machine", "mechanic": "isolation", "level": "beginner", "category": "strength", "force": "push",
+     "primaryMuscles": ["shoulders"], "secondaryMuscles": [],
+     "instructions": ["Stand facing the machine with the pads against your forearms just above the elbows.", "Raise your arms out to the sides until they are level with your shoulders.", "Resist the weight on the way down without pausing at the bottom."], "images": []},
+    {"id": "sp_assisted_pull_up_machine", "name": "Assisted Pull-Up (Machine)", "equipment": "machine", "mechanic": "compound", "level": "beginner", "category": "strength", "force": "pull",
+     "primaryMuscles": ["lats"], "secondaryMuscles": ["biceps", "middle back"],
+     "instructions": ["Kneel or stand on the platform and grip the bar a little wider than shoulder width.", "Pull your chest towards the bar, driving the elbows down.", "Lower under control to a full stretch. More counterweight means more assistance."], "images": []},
+    {"id": "sp_cable_reverse_wrist_curl", "name": "Cable Reverse Wrist Curl", "equipment": "cable", "mechanic": "isolation", "level": "beginner", "category": "strength", "force": "pull",
+     "primaryMuscles": ["forearms"], "secondaryMuscles": [],
+     "instructions": ["Hold a straight bar on a low pulley with an overhand grip, forearms resting on your thighs or a bench.", "Extend your wrists to lift the bar, then lower it through a full stretch."], "images": []},
+    {"id": "sp_cable_lateral_raise", "name": "Cable Lateral Raise", "equipment": "cable", "mechanic": "isolation", "level": "beginner", "category": "strength", "force": "push",
+     "primaryMuscles": ["shoulders"], "secondaryMuscles": [],
+     "instructions": ["Stand side-on to a cable set around hip height or higher and take the handle with the far hand.", "Raise your arm out to the side until it is level with your shoulder.", "Lower slowly, keeping tension on the side delt the whole time."], "images": []},
+    {"id": "sp_db_walking_lunge", "name": "Dumbbell Walking Lunge", "equipment": "dumbbell", "mechanic": "compound", "level": "beginner", "category": "strength", "force": "push",
+     "primaryMuscles": ["quadriceps"], "secondaryMuscles": ["glutes", "hamstrings"],
+     "instructions": ["Hold a dumbbell in each hand and take a medium stride forward.", "Lower until the back knee nearly touches the floor, then step through into the next rep.", "Count reps per leg."], "images": []}
+  ]
+}

@@ -25,6 +25,9 @@ class Routines extends Table {
   TextColumn get name => text()();
   IntColumn get position => integer().withDefault(const Constant(0))();
   DateTimeColumn get createdAt => dateTime()();
+
+  /// v3: program day this routine runs (e.g. "upper"), if it follows a program.
+  TextColumn get programDay => text().nullable()();
 }
 
 class RoutineExercises extends Table {
@@ -37,6 +40,18 @@ class RoutineExercises extends Table {
   IntColumn get targetSets => integer()();
   IntColumn get restSeconds => integer()();
   IntColumn get targetRir => integer().withDefault(const Constant(2))();
+
+  /// v3: program slot ids (JSON list) this row takes its prescription from, in order.
+  TextColumn get programSlots => text().nullable()();
+
+  /// v3: program | substitution | swap | extra.
+  TextColumn get programRelation => text().nullable()();
+
+  /// v3: the program's exercise name this row stands in for.
+  TextColumn get programExercise => text().nullable()();
+
+  /// v3: the owner's name for the exercise (e.g. "Chest Press" for Leverage_Chest_Press).
+  TextColumn get displayName => text().nullable()();
 }
 
 class Sessions extends Table {
@@ -69,6 +84,13 @@ class SessionExercises extends Table {
   IntColumn get suggestedReps => integer().nullable()();
   IntColumn get suggestedSets => integer().nullable()();
   TextColumn get suggestionJson => text().nullable()(); // headline + why lines
+
+  /// v3: program slots and the program week this session used.
+  TextColumn get programSlots => text().nullable()();
+  IntColumn get programWeek => integer().nullable()();
+
+  /// v3: the owner's name for the exercise, copied from the routine.
+  TextColumn get displayName => text().nullable()();
 }
 
 class WorkoutSets extends Table {
@@ -85,6 +107,14 @@ class WorkoutSets extends Table {
   IntColumn get suggestedReps => integer().nullable()();
   BoolColumn get isOverride => boolean().withDefault(const Constant(false))();
   TextColumn get overrideReason => text().nullable()();
+
+  /// v3: per-set prescription (program sets can differ within one exercise, e.g. 2×4-6 then 1×20).
+  IntColumn get targetRepMin => integer().nullable()();
+  IntColumn get targetRepMax => integer().nullable()();
+  IntColumn get targetRir => integer().nullable()();
+
+  /// v3: last-set intensity technique id (e.g. drop_sets_2x25), on the set it applies to.
+  TextColumn get technique => text().nullable()();
 }
 
 /// One row per calendar day: raw Health metrics and the readiness computed from them.

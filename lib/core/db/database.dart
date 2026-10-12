@@ -33,7 +33,7 @@ class AppDatabase extends _$AppDatabase {
   factory AppDatabase.open() => AppDatabase(driftDatabase(name: 'spotter'));
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -50,6 +50,20 @@ class AppDatabase extends _$AppDatabase {
           if (from < 2) {
             await m.createTable(mediaMatches);
             await m.createTable(pinnedVideos);
+          }
+          if (from < 3) {
+            await m.addColumn(routines, routines.programDay);
+            await m.addColumn(routineExercises, routineExercises.programSlots);
+            await m.addColumn(routineExercises, routineExercises.programRelation);
+            await m.addColumn(routineExercises, routineExercises.programExercise);
+            await m.addColumn(routineExercises, routineExercises.displayName);
+            await m.addColumn(sessionExercises, sessionExercises.displayName);
+            await m.addColumn(sessionExercises, sessionExercises.programSlots);
+            await m.addColumn(sessionExercises, sessionExercises.programWeek);
+            await m.addColumn(workoutSets, workoutSets.targetRepMin);
+            await m.addColumn(workoutSets, workoutSets.targetRepMax);
+            await m.addColumn(workoutSets, workoutSets.targetRir);
+            await m.addColumn(workoutSets, workoutSets.technique);
           }
         },
         beforeOpen: (details) async {

@@ -7,7 +7,7 @@ import '../../../core/db/database.dart';
 import '../domain/exercise_info.dart';
 
 /// Bump when assets/exercises.json is refreshed so existing installs re-import it.
-const int exerciseDatasetVersion = 1;
+const int exerciseDatasetVersion = 2; // v2: + assets/extra_exercises.json
 
 class ExerciseRepository {
   ExerciseRepository(this._db);
@@ -17,11 +17,16 @@ class ExerciseRepository {
 
   /// Imports the bundled free-exercise-db catalogue on first launch (or after a dataset bump).
   /// Favorites and custom exercises are preserved.
-  Future<void> ensureSeeded({String? jsonOverride}) async {
+  Future<void> ensureSeeded({String? jsonOverride, String? extraJsonOverride}) async {
     final current = int.tryParse(await _db.getSetting(_datasetKey) ?? '');
     if (current == exerciseDatasetVersion) return;
     final raw = jsonOverride ?? await rootBundle.loadString('assets/exercises.json');
-    final list = (jsonDecode(raw) as List<dynamic>).cast<Map<String, dynamic>>();
+    final extraRaw = extraJsonOverride ?? await rootBundle.loadString('assets/extra_exercises.json');
+    final list = [
+      ...(jsonDecode(raw) as List<dynamic>).cast<Map<String, dynamic>>(),
+      // Built-in additions (Pendulum Squat, machine Assisted Pull-Up…), same shape, ids start with sp_.
+      ...((jsonDecode(extraRaw) as Map<String, dynamic>)['exercises'] as List<dynamic>).cast<Map<String, dynamic>>(),
+    ];
     await _db.batch((b) {
       for (final e in list) {
         final companion = ExercisesCompanion.insert(

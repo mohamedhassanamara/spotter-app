@@ -4,6 +4,7 @@ import '../../../core/domain/history.dart';
 import '../../../core/domain/muscle_group.dart';
 import '../../../core/domain/training.dart';
 import '../../library/domain/exercise_info.dart';
+import '../../library/domain/load_kinds.dart';
 import '../../readiness/domain/readiness.dart';
 import '../domain/suggestion_engine.dart';
 
@@ -56,6 +57,8 @@ class CoachContext {
     required this.freezes,
     required this.increments,
     required this.now,
+    this.bodyweight = 0,
+    this.bodyweightLoaded = const {},
   });
 
   final TrainingHistory history;
@@ -64,6 +67,10 @@ class CoachContext {
   final Map<String, EgoFreeze> freezes;
   final Increments increments;
   final DateTime now;
+
+  /// Latest bodyweight and the exercises whose load is relative to it (pull-ups, dips, assisted).
+  final double bodyweight;
+  final Set<String> bodyweightLoaded;
 
   static const _engine = SuggestionEngine();
 
@@ -80,10 +87,12 @@ class CoachContext {
         targetRir: targetRir,
         increment: increments.of(info.equipmentKind),
         equipment: info.equipmentKind,
-        history: history.logsFor(info.id),
+        history: history.logsForRange(info.id, range),
         readiness: exerciseReadiness(readiness, overloaded, info.targets),
         now: now,
         freeze: freezeFor(info.id),
+        bodyweight: bodyweightLoaded.contains(info.id) ? bodyweight : 0,
+        assisted: isAssisted(info.id),
       ));
 }
 

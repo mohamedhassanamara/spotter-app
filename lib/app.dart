@@ -35,6 +35,7 @@ class _SpotterAppState extends ConsumerState<SpotterApp> {
       await ref.read(notificationServiceProvider).init();
       _refreshHealth();
       await ref.read(rankLadderMigrationProvider.future);
+      await ref.read(programRoutinesBootstrapProvider.future);
     });
   }
 

@@ -175,7 +175,7 @@ class _PrimaryAction extends ConsumerWidget {
           children: [
             Expanded(
               child: Text(
-                next.exercises.map((e) => catalog[e.exerciseId]?.name ?? e.exerciseId).join(' · '),
+                next.exercises.map((e) => e.displayName ?? catalog[e.exerciseId]?.name ?? e.exerciseId).join(' · '),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: AppType.bodyS.copyWith(color: AppColors.textSecondary),

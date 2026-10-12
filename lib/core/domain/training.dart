@@ -121,8 +121,12 @@ class ExerciseSessionLog {
   bool get hasWorkingSets => sets.any((s) => s.isWorking);
 
   /// Heaviest working weight of the session.
-  double get topWeight =>
-      workingSets.fold<double>(0, (m, s) => s.weight > m ? s.weight : m);
+  /// Heaviest working weight (may be negative for assisted lifts); 0 without working sets.
+  double get topWeight {
+    final w = workingSets;
+    if (w.isEmpty) return 0;
+    return w.map((s) => s.weight).reduce((a, b) => a > b ? a : b);
+  }
 
   List<LoggedSet> get topSets => workingSets.where((s) => s.weight == topWeight).toList();
 

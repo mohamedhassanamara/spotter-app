@@ -9,6 +9,8 @@ import '../../coach/domain/guardrail.dart';
 import '../../coach/domain/suggestion_engine.dart';
 import '../../library/domain/exercise_info.dart';
 import '../../readiness/domain/readiness.dart';
+import '../../program/data/program_repository.dart';
+import '../../program/domain/program.dart';
 import 'routine_repository.dart';
 
 /// Suggestion as stored with a session exercise.
@@ -129,6 +131,9 @@ class SessionRepository {
     required CoachContext coach,
     required Map<String, ExerciseInfo> catalog,
     RoutineWithExercises? routine,
+    Program? program,
+    int programWeek = 2,
+    int? warmupOverride,
   }) {
     return _db.transaction(() async {
       final r = coach.readiness;
@@ -153,6 +158,11 @@ class SessionRepository {
             restSeconds: re.restSeconds,
             targetRir: re.targetRir,
             coach: coach,
+            program: program,
+            programSlots: decodeSlots(re.programSlots),
+            programWeek: programWeek,
+            warmupOverride: warmupOverride,
+            displayName: re.displayName,
           );
         }
       }
@@ -192,7 +202,27 @@ class SessionRepository {
     required int restSeconds,
     required int targetRir,
     required CoachContext coach,
+    Program? program,
+    List<String> programSlots = const [],
+    int programWeek = 2,
+    int? warmupOverride,
+    String? displayName,
   }) async {
+    if (program != null && programSlots.isNotEmpty) {
+      return _insertProgramExercise(
+        sessionId: sessionId,
+        info: info,
+        position: position,
+        targetSets: targetSets,
+        restSeconds: restSeconds,
+        coach: coach,
+        program: program,
+        slotIds: programSlots,
+        week: programWeek,
+        warmupOverride: warmupOverride,
+        displayName: displayName,
+      );
+    }
     final s = coach.suggest(info, range, targetSets, targetRir);
     final exId = await _db.into(_db.sessionExercises).insert(SessionExercisesCompanion.insert(
           sessionId: sessionId,
@@ -220,6 +250,115 @@ class SessionRepository {
             suggestedWeight: Value(suggested),
             suggestedReps: Value(s.reps),
           ));
+    }
+    return exId;
+  }
+
+  /// A routine row that follows a program: per-set prescriptions for the week (rep range, RIR,
+  /// last-set technique), one suggestion per program slot (e.g. 2×4-6 heavy, then 1×20 back-off),
+  /// and the program's warm-up pyramid from today's working weight.
+  Future<int> _insertProgramExercise({
+    required int sessionId,
+    required ExerciseInfo info,
+    required int position,
+    required int targetSets,
+    required int restSeconds,
+    required CoachContext coach,
+    required Program program,
+    required List<String> slotIds,
+    required int week,
+    int? warmupOverride,
+    String? displayName,
+  }) async {
+    final prescriptions = prescribeSets(program: program, slotIds: slotIds, sets: targetSets, week: week);
+    // Group consecutive sets by slot, keeping order.
+    final groups = <List<SetPrescription>>[];
+    for (final p in prescriptions) {
+      if (groups.isEmpty || groups.last.first.slotId != p.slotId) groups.add([]);
+      groups.last.add(p);
+    }
+    final suggestions = [
+      for (final g in groups) coach.suggest(info, g.first.repRange, g.length, g.first.targetRir ?? 0),
+    ];
+    final main = suggestions.first;
+    final firstSlot = program.slot(groups.first.first.slotId)!;
+    final headline = StringBuffer(main.headline);
+    final why = [...main.why];
+    for (var i = 1; i < groups.length; i++) {
+      final s = suggestions[i];
+      headline.write(' · then ${formatKg(s.weight)} kg × ${groups[i].first.repRange}');
+      why.add('${groups[i].first.repRange} set(s): ${s.headline}');
+    }
+    final combined = Suggestion(
+      kind: main.kind,
+      weight: main.weight,
+      reps: main.reps,
+      sets: main.sets,
+      rir: main.rir,
+      headline: headline.toString(),
+      why: why,
+      techniqueDay: main.techniqueDay,
+      rampUp: main.rampUp,
+      band: main.band,
+    );
+    final exId = await _db.into(_db.sessionExercises).insert(SessionExercisesCompanion.insert(
+          sessionId: sessionId,
+          exerciseId: info.id,
+          position: position,
+          repMin: firstSlot.repRange.min,
+          repMax: firstSlot.repRange.max,
+          targetSets: targetSets,
+          restSeconds: restSeconds,
+          targetRir: Value(groups.first.first.targetRir ?? 0),
+          suggestionKind: Value(main.kind.name),
+          suggestedWeight: Value(main.weight),
+          suggestedReps: Value(main.reps),
+          suggestedSets: Value(main.sets),
+          suggestionJson: Value(StoredSuggestion.encode(combined)),
+          programSlots: Value(jsonEncode(slotIds)),
+          programWeek: Value(week),
+          displayName: Value(displayName),
+        ));
+    var pos = 0;
+    // Warm-ups (not for calibration, where the lifter ramps up anyway).
+    if (!main.rampUp) {
+      final count = warmupOverride ?? firstSlot.warmupSets.max;
+      for (final w in warmupSets(
+        program: program,
+        count: count,
+        workingWeight: main.weight,
+        increment: coach.increments.of(info.equipmentKind),
+      )) {
+        await _db.into(_db.workoutSets).insert(WorkoutSetsCompanion.insert(
+              sessionExerciseId: exId,
+              position: pos++,
+              isWarmup: const Value(true),
+              weight: Value(w.weight),
+              reps: Value(w.reps),
+              targetRepMin: Value(w.repRange.min),
+              targetRepMax: Value(w.repRange.max),
+            ));
+      }
+    }
+    for (var g = 0; g < groups.length; g++) {
+      final s = suggestions[g];
+      // A Red technique day trims sets; keep the first ones of each slot.
+      final take = s.techniqueDay ? s.sets.clamp(1, groups[g].length) : groups[g].length;
+      for (var i = 0; i < take; i++) {
+        final p = groups[g][i];
+        await _db.into(_db.workoutSets).insert(WorkoutSetsCompanion.insert(
+              sessionExerciseId: exId,
+              position: pos++,
+              weight: Value(s.weight),
+              reps: Value(s.reps),
+              suggestedWeight: Value(s.rampUp ? null : s.weight),
+              suggestedReps: Value(s.reps),
+              targetRepMin: Value(p.repRange.min),
+              targetRepMax: Value(p.repRange.max),
+              targetRir: Value(p.targetRir),
+              technique: Value(p.technique),
+            ));
+      }
     }
     return exId;
   }
@@ -260,8 +399,12 @@ class SessionRepository {
           isWarmup: Value(warmup),
           weight: Value(warmup ? (weight / 2.5).round() * 2.5 : weight),
           reps: Value(warmup ? 5 : (last?.reps ?? sug?.reps ?? ex.row.repMin)),
-          suggestedWeight: Value(warmup || (sug?.rampUp ?? false) ? null : sug?.weight),
-          suggestedReps: Value(warmup ? null : sug?.reps),
+          suggestedWeight: Value(warmup || (sug?.rampUp ?? false) ? null : (last?.suggestedWeight ?? sug?.weight)),
+          suggestedReps: Value(warmup ? null : (last?.suggestedReps ?? sug?.reps)),
+          // An added working set repeats the previous working set's prescription (never its technique).
+          targetRepMin: Value(warmup ? null : last?.targetRepMin),
+          targetRepMax: Value(warmup ? null : last?.targetRepMax),
+          targetRir: Value(warmup ? null : last?.targetRir),
         ));
     await _renumber(ex.row.id);
   }

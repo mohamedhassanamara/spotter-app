@@ -199,7 +199,7 @@ class FinishService {
         bodyweight: bwLoaded.contains(e.exerciseId) ? bodyweight : 0,
       );
       if (!result.flagged) continue;
-      final top = e.workingSets.fold<double>(0, (m, s) => s.weight > m ? s.weight : m);
+      final top = e.workingSets.map((s) => s.weight).fold<double>(double.negativeInfinity, (m, w) => w > m ? w : m);
       final base = e.suggestedWeight ?? top;
       final until = _guardrail.freezeUntil(now);
       await _freezes.add(exerciseId: e.exerciseId, start: now, until: until, baseWeight: base, reason: result.message);

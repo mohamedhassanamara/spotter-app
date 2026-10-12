@@ -28,12 +28,13 @@ void main() {
 
     final finished = await (db.select(db.sessions)..where((t) => t.status.equals('finished'))).get();
     expect(finished.length, report.sessions);
-    expect(report.sessions, greaterThan(60));
-    expect(report.sessions, lessThanOrEqualTo(72));
+    // Min-Max 5x layout: 5 sessions a week for 12 weeks, minus smart-rest skips.
+    expect(report.sessions, greaterThan(45));
+    expect(report.sessions, lessThanOrEqualTo(60));
     expect(report.freezes, greaterThanOrEqualTo(2));
 
     // Gradual progression: the best valid e1RM (ego sets excluded, missing RPE = 9) trends up.
-    for (final id in ['Barbell_Bench_Press_-_Medium_Grip', 'Barbell_Squat']) {
+    for (final id in ['Leverage_Chest_Press', 'sp_pendulum_squat']) {
       final rows = await db.customSelect(
         'SELECT se.id AS ex, ws.weight AS w, ws.reps AS r, ws.rpe AS rpe, ws.is_override AS o '
         'FROM session_exercises se JOIN sessions s ON s.id = se.session_id '
@@ -50,7 +51,7 @@ void main() {
       }
       final series = best.values.toList();
       double avg(Iterable<double> v) => v.reduce((a, b) => a + b) / v.length;
-      expect(avg(series.skip(series.length - 3)), greaterThan(avg(series.take(3)) * 1.05), reason: '$id e1RM should trend up');
+      expect(avg(series.skip(series.length - 3)), greaterThan(avg(series.take(3)) /* each lift is trained once a week in the 5x split: expect a gain, not +5% */), reason: '$id e1RM should trend up');
     }
     final overrides = await (db.select(db.workoutSets)..where((t) => t.isOverride.equals(true))).get();
     expect(overrides, isNotEmpty);

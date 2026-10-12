@@ -17,6 +17,8 @@ import '../../readiness/data/readiness_repository.dart';
 import '../../readiness/domain/readiness.dart';
 import '../../workout/data/finish_service.dart';
 import '../../workout/data/history_repository.dart';
+import '../../program/data/program_repository.dart';
+import '../../program/domain/program.dart';
 import '../../workout/data/routine_repository.dart';
 import '../../workout/data/session_repository.dart';
 
@@ -40,67 +42,55 @@ class SeedGenerator {
   static const weeks = 12;
   static const bodyweight = 80.0;
 
-  static const _bench = 'Barbell_Bench_Press_-_Medium_Grip';
-  static const _squat = 'Barbell_Squat';
+  static const _chestPress = 'Leverage_Chest_Press';
+  static const _pendulum = 'sp_pendulum_squat';
 
-  /// PPL split, 6 days a week.
-  static const routines = <String, List<String>>{
-    'Push A': [_bench, 'Standing_Military_Press', 'Incline_Dumbbell_Press', 'Side_Lateral_Raise', 'Triceps_Pushdown'],
-    'Pull A': ['Barbell_Deadlift', 'Pullups', 'Bent_Over_Barbell_Row', 'Barbell_Curl', 'Face_Pull'],
-    'Legs A': [_squat, 'Romanian_Deadlift', 'Leg_Press', 'Lying_Leg_Curls', 'Standing_Calf_Raises'],
-    'Push B': [
-      _bench,
-      'Barbell_Incline_Bench_Press_-_Medium_Grip',
-      'Dumbbell_Shoulder_Press',
-      'Dips_-_Triceps_Version',
-      'EZ-Bar_Skullcrusher',
-      'Side_Lateral_Raise',
-    ],
-    'Pull B': ['Wide-Grip_Lat_Pulldown', 'Seated_Cable_Rows', 'Barbell_Shrug', 'Hammer_Curls', 'Dumbbell_Bicep_Curl'],
-    'Legs B': [_squat, 'Barbell_Hip_Thrust', 'Leg_Extensions', 'Seated_Leg_Curl', 'Seated_Calf_Raise', 'Cable_Crunch'],
-  };
-
-  /// Hidden starting strength (e1RM kg, bodyweight included for pull-ups/dips; per dumbbell for DB lifts).
+  /// Hidden starting strength (e1RM kg; bodyweight included for bodyweight-loaded lifts;
+  /// per dumbbell for DB lifts) for the owner's Min-Max Phase 2 routine exercises.
   static const _startE1rm = <String, double>{
-    _bench: 95,
-    'Standing_Military_Press': 60,
-    'Incline_Dumbbell_Press': 32,
-    'Side_Lateral_Raise': 14,
-    'Triceps_Pushdown': 45,
-    'Barbell_Deadlift': 150,
-    'Pullups': 105,
-    'Bent_Over_Barbell_Row': 85,
-    'Barbell_Curl': 45,
+    _chestPress: 105,
+    'Straight-Arm_Pulldown': 45,
+    'Butterfly': 80,
+    'Lying_T-Bar_Row': 80,
+    'sp_db_incline_y_raise': 9,
+    'Lying_Leg_Curls': 75,
+    _pendulum: 150,
+    'Leg_Extensions': 95,
+    'sp_db_walking_lunge': 26,
+    'Calf_Press_On_The_Leg_Press_Machine': 180,
+    'Hyperextensions_Back_Extensions': 100,
+    'Cable_Crossover': 30,
+    'Smith_Machine_Overhead_Shoulder_Press': 65,
+    'Smith_Machine_Bench_Press': 95,
+    'Single-Leg_Leg_Extension': 45,
+    'sp_standing_machine_lateral_raise': 30,
+    'sp_assisted_pull_up_machine': 70,
+    'Stiff-Legged_Barbell_Deadlift': 120,
+    'Close-Grip_Front_Lat_Pulldown': 80,
+    'One-Arm_Dumbbell_Row': 42,
+    'Reverse_Machine_Flyes': 55,
     'Face_Pull': 35,
-    _squat: 125,
-    'Romanian_Deadlift': 110,
-    'Leg_Press': 230,
-    'Lying_Leg_Curls': 55,
-    'Standing_Calf_Raises': 120,
-    'Barbell_Incline_Bench_Press_-_Medium_Grip': 80,
-    'Dumbbell_Shoulder_Press': 28,
-    'Dips_-_Triceps_Version': 120,
-    'EZ-Bar_Skullcrusher': 40,
-    'Wide-Grip_Lat_Pulldown': 80,
-    'Seated_Cable_Rows': 85,
-    'Barbell_Shrug': 130,
-    'Hammer_Curls': 18,
-    'Dumbbell_Bicep_Curl': 17,
-    'Barbell_Hip_Thrust': 140,
-    'Leg_Extensions': 75,
-    'Seated_Leg_Curl': 60,
-    'Seated_Calf_Raise': 80,
-    'Cable_Crunch': 50,
+    'Decline_Crunch': 95,
+    'EZ-Bar_Curl': 45,
+    'Cable_Rope_Overhead_Triceps_Extension': 40,
+    'Preacher_Hammer_Dumbbell_Curl': 20,
+    'Triceps_Pushdown': 50,
+    'Cable_Wrist_Curl': 35,
+    'sp_cable_reverse_wrist_curl': 22,
+    'sp_cable_lateral_raise': 13,
   };
 
-  static const _bodyweightLoaded = {'Pullups', 'Dips_-_Triceps_Version'};
+  static const _bodyweightLoaded = {'sp_assisted_pull_up_machine', 'Decline_Crunch', 'Hyperextensions_Back_Extensions'};
 
   /// Ego-lifting episodes: week (0-based) → lifts overridden in every session of that week.
   /// Kept in the first half so the coach has time to rebuild after each freeze.
   static const _overrideEpisodes = <int, Set<String>>{
-    1: {_bench},
-    3: {_squat},
-    5: {_bench},
+    // Each lift is trained once a week in the 5x split, so an episode spans two weeks
+    // (the ego flag needs overrides in 2 of the last 3 sessions).
+    1: {_chestPress},
+    2: {_chestPress},
+    4: {_pendulum},
+    5: {_pendulum},
   };
 
   Future<void> wipeTrainingData() => _db.transaction(() async {
@@ -151,29 +141,34 @@ class SeedGenerator {
     final metricRows = await readinessRepo.allDays();
     final bandByDay = {for (final r in metricRows) r.date: r.readinessBand};
 
-    onProgress?.call('Creating PPL routines…');
-    for (final entry in routines.entries) {
-      final id = await routineRepo.create(entry.key, now: addDays(now, -weeks * 7 - 1));
-      for (final exId in entry.value) {
-        final info = catalog[exId];
-        if (info != null) await routineRepo.addExercise(id, info, settings);
-      }
-    }
+    onProgress?.call('Installing Min-Max Phase 2 routines…');
+    final program = await ProgramRepository.load();
+    await ProgramRepository(_db).installMyRoutines(
+      program: program,
+      definition: await ProgramRepository.loadMyRoutines(),
+      catalog: catalog,
+      settings: settings,
+      now: addDays(now, -weeks * 7 - 1),
+    );
     final allRoutines = await routineRepo.watchRoutines().first;
+    final routineByName = {for (final r in allRoutines) r.routine.name: r};
 
     final strength = {..._startE1rm};
     final firstMonday = weekStart(addDays(dateOnly(now), -weeks * 7));
     final yesterday = addDays(dateOnly(now), -1);
-    var rotation = 0;
     var sessions = 0;
+    // Program week 1 starts on the first seeded Monday.
+    await ProgramRepository(_db).setCurrentWeek(1, now: firstMonday);
 
     for (var day = firstMonday; !day.isAfter(yesterday); day = addDays(day, 1)) {
-      if (day.weekday == DateTime.sunday) continue;
+      // The program's week: Upper, Lower, rest, Push, Pull, Arms, rest.
+      final dayName = program.weekLayout[day.weekday - 1];
+      if (dayName == 'Rest') continue;
       final band = ReadinessBand.fromName(bandByDay[dayKey(day)]);
       if (band == ReadinessBand.red && rng.nextBool()) continue; // smart rest
       final weekIndex = day.difference(firstMonday).inDays ~/ 7;
-      final routine = allRoutines[rotation % allRoutines.length];
-      rotation++;
+      final routine = routineByName[dayName]!;
+      final programWeek = programWeekFor(startMonday: firstMonday, now: day, weekCount: program.weekCount);
 
       final start = DateTime(day.year, day.month, day.day, 18).add(Duration(minutes: rng.nextInt(50) - 20));
       final history = await historyRepo.load(catalog);
@@ -185,6 +180,8 @@ class SeedGenerator {
         freezes: latestFreezes(await freezeRepo.all()),
         increments: settings.increments,
         now: start,
+        bodyweight: bodyweight,
+        bodyweightLoaded: _bodyweightLoaded,
       );
       await gami.ensureQuests(start, () => const QuestEngine().generate(QuestGenInput(
             weeklyGoal: settings.weeklyGoal,
@@ -193,17 +190,15 @@ class SeedGenerator {
             rpeLoggedPct: rpeLoggedPct(history, start),
           )));
 
-      final sessionId = await sessionRepo.start(name: routine.routine.name, coach: coach, catalog: catalog, routine: routine);
-      var active = (await sessionRepo.watchActive().first)!;
-
-      // Warm-ups on the first (compound) exercise.
-      if (active.exercises.isNotEmpty) {
-        final first = active.exercises.first;
-        await sessionRepo.addSet(first, warmup: true);
-        active = (await sessionRepo.watchActive().first)!;
-        await sessionRepo.addSet(active.exercises.first, warmup: true);
-        active = (await sessionRepo.watchActive().first)!;
-      }
+      final sessionId = await sessionRepo.start(
+        name: routine.routine.name,
+        coach: coach,
+        catalog: catalog,
+        routine: routine,
+        program: program,
+        programWeek: programWeek,
+      );
+      final active = (await sessionRepo.watchActive().first)!;
 
       var t = start.add(const Duration(minutes: 5));
       // A Red night costs about one rep of performance on every set.
@@ -219,21 +214,22 @@ class SeedGenerator {
         final calibration = sug?.rampUp == true;
         final overrideEpisode = (_overrideEpisodes[weekIndex]?.contains(id) ?? false) && !calibration;
         final working = ex.sets.where((s) => !s.isWarmup).toList();
-        final targetRir = calibration ? 2 : ex.row.targetRir;
+        final rowRir = calibration ? 2 : ex.row.targetRir;
         var fatigue = dayPenalty;
 
         for (final set in ex.sets) {
           t = t.add(Duration(minutes: 2 + rng.nextInt(3)));
           if (set.isWarmup) {
-            await sessionRepo.completeSet(set, weight: set.weight, reps: 5, rpe: null, isWarmup: true, now: t);
+            await sessionRepo.completeSet(set, weight: set.weight, reps: set.reps, rpe: null, isWarmup: true, now: t);
             continue;
           }
           final idx = working.indexOf(set);
           double weight = set.weight;
           if (calibration) {
             // Ramp towards a load the lifter can do for the bottom of the range at RPE 8.
-            final target = math.max(0.0, trueE1rm / (1 + (ex.row.repMin + 2) / 30) - bw);
-            weight = math.max(0, roundToIncrement(set.weight + (target - set.weight) * (idx + 1) / working.length, inc));
+            final target = trueE1rm / (1 + (ex.row.repMin + 2) / 30) - bw;
+            weight = roundToIncrement(set.weight + (target - set.weight) * (idx + 1) / working.length, inc);
+            if (!_bodyweightLoaded.contains(id)) weight = math.max(0, weight);
           } else if (overrideEpisode) {
             weight = roundToIncrement((sug?.weight ?? set.weight) * (1.10 + rng.nextDouble() * 0.05), inc);
           }
@@ -249,8 +245,9 @@ class SeedGenerator {
             rpe = rng.nextBool() ? 10 : 9.5;
           } else {
             // Told to stop at targetRir reps in reserve; lands within about a rep of it.
+            final targetRir = set.targetRir ?? rowRir;
             final noise = rng.nextDouble() - 0.5;
-            final cap = calibration ? ex.row.repMin : ex.row.repMax + 2;
+            final cap = calibration ? ex.row.repMin : (set.targetRepMax ?? ex.row.repMax) + 2;
             reps = (achievable - targetRir + noise).round().clamp(1, cap).toInt();
             // Logged like a real lifter: 10 − perceived RIR, mostly whole numbers.
             final perceivedRir = (achievable - reps).round() + (rng.nextDouble() < 0.2 ? (rng.nextBool() ? 0.5 : -0.5) : 0);

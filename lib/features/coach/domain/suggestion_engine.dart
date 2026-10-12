@@ -54,6 +54,8 @@ class SuggestionInput {
     required this.readiness,
     required this.now,
     this.freeze,
+    this.bodyweight = 0,
+    this.assisted = false,
   });
 
   final RepRange range;
@@ -67,6 +69,12 @@ class SuggestionInput {
   final ExerciseReadiness readiness;
   final DateTime now;
   final FreezeState? freeze;
+
+  /// For bodyweight-loaded exercises: percentage changes apply to bodyweight + weight.
+  final double bodyweight;
+
+  /// Assisted machines log assistance as negative weight (−25 = 25 kg of help).
+  final bool assisted;
 }
 
 class Suggestion {
@@ -135,10 +143,10 @@ class SuggestionEngine {
     final lastTop = last.topWeight;
 
     if (last.suggestionKind == SuggestionKind.calibration) {
-      final best = _bestSet(last);
-      final e1rm = best.e1rm();
-      weight = floorToIncrement(e1rm / (1 + (range.min + input.targetRir) / 30), inc);
-      weight = math.max(weight, 0);
+      final best = _bestSet(last, input.bodyweight);
+      final e1rm = best.e1rm(bodyweight: input.bodyweight);
+      weight = floorToIncrement(e1rm / (1 + (range.min + input.targetRir) / 30) - input.bodyweight, inc);
+      weight = math.max(weight, _minLoad(input));
       reps = range.min;
       kind = SuggestionKind.seeded;
       why.add('Calibration best set ${formatKg(best.weight)} kg × ${best.reps} @ RPE ${formatRpe(best.effectiveRpe)} '
@@ -152,8 +160,8 @@ class SuggestionEngine {
 
       if (failed) {
         kind = SuggestionKind.reduce;
-        weight = floorToIncrement(lastTop * (1 - failureReduction), inc);
-        if (weight >= lastTop && lastTop > 0) weight = math.max(0, lastTop - inc);
+        weight = _scaled(input, lastTop, 1 - failureReduction);
+        if (weight >= lastTop) weight = _lowered(input, lastTop);
         reps = range.min;
         why.add('A working set fell below $range reps or hit RPE 10 → weight −5% '
             '(${formatKg(lastTop)} → ${formatKg(weight)} kg), target ${range.min} reps.');
@@ -166,8 +174,8 @@ class SuggestionEngine {
             'reps reset to ${range.min}.');
       } else if (_isPlateau(logs)) {
         kind = SuggestionKind.plateauDeload;
-        weight = floorToIncrement(lastTop * (1 - plateauReduction), inc);
-        if (weight >= lastTop && lastTop > 0) weight = math.max(0, lastTop - inc);
+        weight = _scaled(input, lastTop, 1 - plateauReduction);
+        if (weight >= lastTop) weight = _lowered(input, lastTop);
         reps = math.max(range.min, math.min(range.max, minTopReps));
         why.add('Plateau: two sessions in a row without progress (same weight, no extra reps, RPE not lower) '
             '→ one lighter session at −10%, then rebuild.');
@@ -186,7 +194,7 @@ class SuggestionEngine {
     // Ego freeze overrides progression.
     final freeze = input.freeze;
     if (freeze != null && freeze.isActive(input.now)) {
-      final frozen = floorToIncrement(freeze.baseWeight * (1 - freezeReduction), inc);
+      final frozen = _scaled(input, freeze.baseWeight, 1 - freezeReduction);
       weight = math.min(weight, frozen);
       kind = SuggestionKind.egoFreeze;
       reps = range.min;
@@ -217,7 +225,7 @@ class SuggestionEngine {
         }
       case ReadinessBand.red:
         final before = weight;
-        weight = floorToIncrement(weight * (1 - redReduction), inc);
+        weight = _scaled(input, weight, 1 - redReduction);
         sets = math.max(1, sets - 1);
         technique = true;
         why.add('Readiness ${band.label} ($scoreText) → technique day: '
@@ -238,13 +246,16 @@ class SuggestionEngine {
   }
 
   Suggestion _calibration(SuggestionInput input) {
-    final start = startingWeight(input.equipment, input.increment);
+    // Assisted machines start with about half of bodyweight as assistance.
+    final start = input.assisted
+        ? floorToIncrement(-input.bodyweight * 0.5, input.increment)
+        : startingWeight(input.equipment, input.increment);
     final r = input.readiness;
     var sets = input.targetSets;
     var technique = false;
     final why = <String>[
       'No history for this exercise → calibration session.',
-      'Start at ${start == 0 ? 'bodyweight' : '${formatKg(start)} kg'} and add weight each set while form stays clean. '
+      'Start at ${_loadText(start)} and add weight each set while form stays clean. '
           'Stop every set at RPE ${formatRpe(calibrationStopRpe)} (2 reps left).',
       'Your best working set today seeds future suggestions.',
     ];
@@ -253,7 +264,7 @@ class SuggestionEngine {
       technique = true;
       why.add('Readiness Red (${r.adjustedScore}) → one fewer set, keep it light.');
     }
-    final loadText = start == 0 ? 'bodyweight' : '${formatKg(start)} kg';
+    final loadText = _loadText(start);
     return Suggestion(
       kind: SuggestionKind.calibration,
       weight: start,
@@ -274,10 +285,26 @@ class SuggestionEngine {
     return technique ? 'Technique day: $core' : 'Today: $core';
   }
 
-  static LoggedSet _bestSet(ExerciseSessionLog log) {
+  /// [weight] scaled by [factor] on the effective load (bodyweight + weight for bodyweight-loaded
+  /// lifts), floored to the increment. Never below the lightest allowed load.
+  static double _scaled(SuggestionInput input, double weight, double factor) {
+    final bw = input.bodyweight;
+    final scaled = floorToIncrement((weight + bw) * factor - bw, input.increment);
+    return math.max(_minLoad(input), scaled);
+  }
+
+  /// One increment lighter (for loads too small for a percentage to move them).
+  static double _lowered(SuggestionInput input, double weight) => math.max(_minLoad(input), weight - input.increment);
+
+  /// Plain lifts can't go below 0 kg; assisted lifts can add assistance down to full bodyweight.
+  static double _minLoad(SuggestionInput input) => input.assisted ? -input.bodyweight : 0;
+
+  static String _loadText(double w) => w == 0 ? 'bodyweight' : (w < 0 ? '${formatKg(-w)} kg assistance' : '${formatKg(w)} kg');
+
+  static LoggedSet _bestSet(ExerciseSessionLog log, double bodyweight) {
     LoggedSet best = log.workingSets.first;
     for (final s in log.workingSets) {
-      if (s.e1rm() > best.e1rm()) best = s;
+      if (s.e1rm(bodyweight: bodyweight) > best.e1rm(bodyweight: bodyweight)) best = s;
     }
     return best;
   }

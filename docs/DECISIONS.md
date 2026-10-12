@@ -204,3 +204,41 @@ bodyweight lifts uses 2.5 kg. Both are editable in Settings.
 - **Screenshots** for every visual phase are in `docs/screenshots/v2/`. They were taken on the iPhone 17
   Pro simulator with the seeded database (`p2_*` badges, `p3_*` body map, `p4_*` tutorials, `p5_*`
   overhaul).
+
+## v2.1 sections 1–2: Min-Max Phase 2 program and your routines
+- **Extraction.** The program is extracted into `assets/programs/min_max_phase2.json` by a repeatable
+  script (`tool/program/extract_min_max.py`) from your personal PDF. The PDF is never committed:
+  `private/` and `*.pdf` are git-ignored. It was verified by an independent second parse (0 mismatches
+  across 444 slot-weeks) plus visual checks. See `docs/program/EXTRACTION_REPORT.md` and `SCHEMA.md`.
+- **Routines are data** (`assets/programs/my_routines.json`): your order, names and set counts, with
+  each row pointing at the program slot(s) it takes its prescription from.
+  - A row can span several slots (e.g. Chest Press = 2×4–6 + 1×20).
+  - They install automatically on first launch, replacing the demo routines. Settings → Program →
+    "Reinstall my Min-Max routines" does it again.
+- **Schema v3** adds:
+  - the program day on routines;
+  - program slots, relation, program exercise and your display name on routine rows;
+  - program slots, program week and display name on session exercises;
+  - **per-set** target rep range, target RIR and technique on sets.
+  - The v1→v3 and v2→v3 migrations are tested with drift's schema verifier.
+- **Per-slot suggestions.** A row spanning two slots gets one suggestion per slot. Suggestions only use
+  history done at that slot's rep range (`TrainingHistory.logsForRange`), so a 1×20 back-off set never
+  reads as "top of the 4–6 range reached".
+- **Warm-ups.** Generated from the program's pyramid at the start of each exercise, as % of today's
+  suggested working weight, rounded to the increment. The count defaults to the upper bound of the
+  printed range. There are none on a calibration (ramp-up) session.
+- **Assisted exercises.** Assistance is logged as negative weight, and effective load = bodyweight +
+  weight. Every percentage change (−5% failure, −10% plateau or Red day, −5% freeze, calibration seed)
+  is applied to the effective load and converted back. This fixed a real bug: "top working weight"
+  folded from 0 and broke on all-negative sets.
+- **Bodyweight-loaded lifts** now include the machine assisted pull-up, the band assisted pull-up and
+  back extensions (`load_kinds.dart`).
+- **Library additions.** Seven exercises missing from free-exercise-db are bundled as built-ins
+  (`assets/extra_exercises.json`, ids `sp_*`). The exercise dataset version is bumped to 2.
+- **Rest timer.** Uses the upper bound of the printed rest. A rest of 0 (the first exercise of a
+  superset) doesn't start the timer.
+- **Seed generator.** It now uses your five routines on the program's weekly layout, with the program
+  week advancing and override episodes on Chest Press and Pendulum Squat.
+  - Each lift is now trained once a week, so an episode spans two weeks to reach the "2 of 3 sessions"
+    ego trigger.
+  - The seed test's e1RM-trend check expects a gain rather than +5%.

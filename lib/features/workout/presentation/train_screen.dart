@@ -72,7 +72,7 @@ class TrainScreen extends ConsumerWidget {
                       child: _RoutineCard(
                         routine: list[i],
                         index: i,
-                        names: [for (final e in list[i].exercises) catalog[e.exerciseId]?.name ?? e.exerciseId],
+                        names: [for (final e in list[i].exercises) e.displayName ?? catalog[e.exerciseId]?.name ?? e.exerciseId],
                         canStart: active == null,
                       ),
                     ),

@@ -84,7 +84,7 @@ class HistoryRepository {
               HistExercise(
                 id: e.id,
                 exerciseId: e.exerciseId,
-                name: catalog[e.exerciseId]?.name ?? e.exerciseId,
+                name: e.displayName ?? catalog[e.exerciseId]?.name ?? e.exerciseId,
                 targets: catalog[e.exerciseId]?.targets ?? MuscleTargets.empty,
                 equipment: catalog[e.exerciseId]?.equipmentKind ?? EquipmentKind.other,
                 range: RepRange(e.repMin, e.repMax),
@@ -96,7 +96,13 @@ class HistoryRepository {
                 notes: e.notes,
                 sets: [
                   for (final w in setsByEx[e.id] ?? const <WorkoutSet>[])
-                    HistSet(id: w.id, set: loggedSetFromRow(w), completedAt: w.completedAt, overrideReason: w.overrideReason),
+                    HistSet(
+                      id: w.id,
+                      set: loggedSetFromRow(w),
+                      completedAt: w.completedAt,
+                      overrideReason: w.overrideReason,
+                      targetRange: w.targetRepMin == null || w.targetRepMax == null ? null : RepRange(w.targetRepMin!, w.targetRepMax!),
+                    ),
                 ],
               ),
           ],

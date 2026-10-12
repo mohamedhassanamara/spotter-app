@@ -19,6 +19,8 @@ import 'features/gamification/domain/streaks.dart';
 import 'features/gamification/domain/xp.dart';
 import 'features/library/data/exercise_repository.dart';
 import 'features/library/domain/exercise_info.dart';
+import 'features/program/data/program_repository.dart';
+import 'features/program/domain/program.dart';
 import 'features/ranks/data/ladder_migration.dart';
 import 'features/ranks/data/ranks_repository.dart';
 import 'features/ranks/domain/body_regions.dart';
@@ -146,6 +148,8 @@ final coachContextBuilderProvider = Provider<Future<CoachContext> Function()>((r
       freezes: freezes,
       increments: ref.read(currentSettingsProvider).increments,
       now: now,
+      bodyweight: (await ref.read(bodyWeightRepositoryProvider).latest())?.kg ?? 0,
+      bodyweightLoaded: await ref.read(bodyweightLoadedIdsProvider.future),
     );
   };
 });
@@ -321,4 +325,35 @@ final groupVolumeProvider = Provider<Map<MuscleGroup, GroupVolume>>((ref) {
   if (history == null) return const {};
   final counts = const TrainingLoad().counts(ref.watch(clockProvider)(), groupSetEntries(history));
   return {for (final e in counts.entries) e.key: GroupVolume(recentSets: e.value.$1, weeklyAverage: e.value.$2)};
+});
+
+// ---------------------------------------------------------------------------
+// Program (Min-Max Phase 2)
+// ---------------------------------------------------------------------------
+
+final programRepositoryProvider = Provider((ref) => ProgramRepository(ref.watch(databaseProvider)));
+
+final programProvider = FutureProvider<Program>((ref) => ProgramRepository.load());
+
+/// Current program week (1–12), from the stored week-1 Monday; week 1 until it's set.
+final programWeekProvider = FutureProvider<int>((ref) async {
+  ref.watch(settingsProvider);
+  final program = await ref.watch(programProvider.future);
+  final start = await ref.read(programRepositoryProvider).startMonday();
+  if (start == null) return 1;
+  return programWeekFor(startMonday: start, now: ref.read(clockProvider)(), weekCount: program.weekCount);
+});
+
+/// Installs the owner's program routines once (replacing the demo routines).
+final programRoutinesBootstrapProvider = FutureProvider<List<String>>((ref) async {
+  final db = ref.read(databaseProvider);
+  if (await db.getSetting(routinesInstalledKey) != null) return const [];
+  final catalog = await ref.read(catalogProvider.future);
+  return ref.read(programRepositoryProvider).installMyRoutines(
+        program: await ref.read(programProvider.future),
+        definition: await ProgramRepository.loadMyRoutines(),
+        catalog: catalog,
+        settings: ref.read(currentSettingsProvider),
+        now: ref.read(clockProvider)(),
+      );
 });

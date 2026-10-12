@@ -6,6 +6,7 @@ import '../../../core/domain/dates.dart';
 import '../../../core/domain/equipment.dart';
 import '../../../core/domain/history.dart';
 import '../../library/domain/exercise_info.dart';
+import '../../library/domain/load_kinds.dart';
 import '../domain/ranks.dart';
 
 /// Loads the editable strength standards and computes ranks from history.
@@ -26,6 +27,7 @@ class RanksRepository {
           if (s.bodyweightLoaded) ...s.exerciseIds,
         for (final e in catalog.values)
           if (e.equipmentKind == EquipmentKind.bodyweight) e.id,
+        ...extraBodyweightExerciseIds,
       };
 
   static RankSummary compute({

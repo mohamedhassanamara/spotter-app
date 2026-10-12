@@ -192,6 +192,45 @@ void main() {
     });
   });
 
+  group('assisted (negative load)', () {
+    Suggestion assisted(List<ExerciseSessionLog> h, {int score = 60}) => const SuggestionEngine().suggest(SuggestionInput(
+          range: const RepRange(4, 6),
+          targetSets: 3,
+          targetRir: 0,
+          increment: 2.5,
+          equipment: EquipmentKind.machineCable,
+          history: h,
+          readiness: ExerciseReadiness(score: score, calibrating: false),
+          now: now,
+          bodyweight: 80,
+          assisted: true,
+        ));
+
+    test('increase = one increment less assistance', () {
+      final s = assisted([log([(-25, 6, 8), (-25, 6, 8), (-25, 6, 8)])]);
+      expect(s.kind, SuggestionKind.increase);
+      expect(s.weight, -22.5);
+    });
+
+    test('−5% applies to the effective load: more assistance, not less', () {
+      // Effective 55 kg × 0.95 = 52.25 → weight −27.75 → floored to −30 (lighter).
+      final s = assisted([log([(-25, 3, 10), (-25, 3, 10)])]);
+      expect(s.kind, SuggestionKind.reduce);
+      expect(s.weight, -30);
+    });
+
+    test('Red day: −10% of effective load', () {
+      // Hold at −25 (effective 55) → 49.5 → −30.5 → −32.5.
+      final s = assisted([log([(-25, 5, 9), (-25, 5, 9)])], score: 30);
+      expect(s.weight, -32.5);
+    });
+
+    test('never more assistance than bodyweight', () {
+      final s = assisted([log([(-80, 2, 10)])]);
+      expect(s.weight, -80);
+    });
+  });
+
   group('technique days', () {
     test('a Red technique day is not used as the progression base', () {
       final s = run([

@@ -80,6 +80,21 @@ Useful routes:
 - Progress: `/progress?tab=ranks`, `/progress?back=1&mode=volume&group=chest`
 - Debug previews: `/settings/debug/badges`, `/settings/debug/rank-up-preview`, `/settings/debug/summary-preview`, `/settings/debug/media`
 
+## Program: Min-Max Phase 2 (5x)
+
+- The program is extracted from your own PDF into `assets/programs/min_max_phase2.json`. The schema is
+  in `docs/program/SCHEMA.md` and the extraction findings and open questions are in
+  `docs/program/EXTRACTION_REPORT.md`.
+- To regenerate it: `pip install pdfplumber`, then
+  `python tool/program/extract_min_max.py "/path/to/The Min-Max Program Phase 2 5x.pdf"`.
+  **Never commit the PDF** (`private/` and `*.pdf` are git-ignored).
+- Your five routines are in `assets/programs/my_routines.json`: names, set counts, and the program
+  slots each row follows. They install on first launch. Settings → Program sets the current week and
+  can reinstall them.
+- In a workout, each set shows its own target (reps and RIR, where RIR 0 = failure). Warm-up sets are
+  generated from the program's % pyramid, and Block 2 techniques appear on the last set; tap one to see
+  how it works.
+
 ## Tutorials
 
 - Each exercise page has **3D | Video | Steps** tabs. The 3D demo loops, with play/pause and 0.5×.

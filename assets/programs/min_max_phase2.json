@@ -1,0 +1,4800 @@
+{
+  "schema_version": 1,
+  "program": {
+    "id": "min_max_phase2_5x",
+    "name": "Min-Max Phase 2: Peak Physique (5x/week)",
+    "author": "Jeff Nippard",
+    "source": "Extracted from the owner's personal copy of the PDF for personal use. The PDF itself is not in this repository.",
+    "weeks": 12,
+    "split": [
+      "Upper",
+      "Lower",
+      "Push",
+      "Pull",
+      "Arms"
+    ],
+    "week_layout": [
+      "Upper",
+      "Lower",
+      "Rest",
+      "Push",
+      "Pull",
+      "Arms",
+      "Rest"
+    ]
+  },
+  "method": {
+    "effort": {
+      "scale": "RIR",
+      "definition": "Reps in reserve: how many more reps you could have done. RIR 0 = failure.",
+      "rir0_default": "Attempt the final rep and fail it.",
+      "rir0_safety_exception": "Hack Squat and Smith Machine Bench Press: RIR 0 means no reps left, but do not attempt and fail the final rep (safety).",
+      "warmup_sets_effort": "Light and not fatiguing.",
+      "first_set_to_failure": "Phase 2 takes the FIRST working set to failure on most exercises (Phase 1 took the last set to failure)."
+    },
+    "blocks": [
+      {
+        "block": 1,
+        "weeks": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "intro_week": 1,
+        "description": "Week 1 is an intro week: most sets 1-2 reps shy of failure instead of 0-1. No intensity techniques."
+      },
+      {
+        "block": 2,
+        "weeks": [
+          7,
+          8,
+          9,
+          10,
+          11,
+          12
+        ],
+        "deload_week": 7,
+        "description": "Week 7 is a deload: most sets 1-2 reps shy of failure. Last-set intensity techniques from week 8."
+      }
+    ],
+    "warmup": {
+      "general": {
+        "duration": "5-10 min",
+        "items": [
+          {
+            "name": "Light cardio (treadmill, stairmaster, elliptical, bike…)",
+            "dose": "5-10 minutes",
+            "optional": false
+          },
+          {
+            "name": "Arm swings",
+            "dose": "10 reps per side",
+            "optional": true
+          },
+          {
+            "name": "Arm circles",
+            "dose": "10 reps per side",
+            "optional": true
+          },
+          {
+            "name": "Front-to-back leg swings",
+            "dose": "10 reps per side",
+            "optional": true
+          },
+          {
+            "name": "Side-to-side leg swings",
+            "dose": "10 reps per side",
+            "optional": true
+          },
+          {
+            "name": "Cable external rotation",
+            "dose": "15 reps per side",
+            "optional": true
+          }
+        ],
+        "tip": "Dynamic stretches can be done during warm-up sets for the first exercise to save time."
+      },
+      "exercise_specific": {
+        "by_count": {
+          "1": [
+            {
+              "pct": 60,
+              "reps": {
+                "min": 6,
+                "max": 10
+              }
+            }
+          ],
+          "2": [
+            {
+              "pct": 50,
+              "reps": {
+                "min": 6,
+                "max": 10
+              }
+            },
+            {
+              "pct": 70,
+              "reps": {
+                "min": 4,
+                "max": 6
+              }
+            }
+          ],
+          "3": [
+            {
+              "pct": 45,
+              "reps": {
+                "min": 6,
+                "max": 10
+              }
+            },
+            {
+              "pct": 65,
+              "reps": {
+                "min": 4,
+                "max": 6
+              }
+            },
+            {
+              "pct": 85,
+              "reps": {
+                "min": 3,
+                "max": 4
+              }
+            }
+          ],
+          "4": [
+            {
+              "pct": 45,
+              "reps": {
+                "min": 6,
+                "max": 10
+              }
+            },
+            {
+              "pct": 60,
+              "reps": {
+                "min": 4,
+                "max": 6
+              }
+            },
+            {
+              "pct": 75,
+              "reps": {
+                "min": 3,
+                "max": 5
+              }
+            },
+            {
+              "pct": 85,
+              "reps": {
+                "min": 2,
+                "max": 4
+              }
+            }
+          ]
+        },
+        "basis": "Percent of the planned working weight. 1 warm-up set: \"or until you feel warm and loose\".",
+        "rest_between_s": {
+          "min": 0,
+          "max": 60
+        }
+      }
+    },
+    "techniques": {
+      "drop_sets_2x25": {
+        "name": "Two Drop Sets (~25% per)",
+        "when": "After the final working set only",
+        "description": "After reaching failure, reduce the weight by ~25% and go to failure again. Repeat once more (3 back-to-back sets in total).",
+        "drops": 2,
+        "drop_pct": 25
+      },
+      "myo_reps": {
+        "name": "Myo-reps",
+        "when": "After the final working set only",
+        "description": "After failure, rest 5 seconds and attempt 2 more reps. Repeat (5 s rest → 2 reps) until you fail to complete 2 full-ROM reps (usually within 1-3 cycles).",
+        "rest_s": 5,
+        "reps_per_cycle": 2
+      },
+      "weighted_static_hold_30s": {
+        "name": "Weighted Static Hold (30 sec)",
+        "when": "After the final working set of Standing Calf Raise (or its substitution)",
+        "description": "After failing, hold the bottom position under full calf tension for 30 seconds.",
+        "hold_s": 30
+      },
+      "lengthened_partials": {
+        "name": "Lengthened Partials",
+        "when": "After the final working set only",
+        "description": "After reaching failure with full ROM, keep doing partial reps in the stretched position until failure.",
+        "used_in_this_version": false
+      }
+    },
+    "progression": {
+      "rule": "Once you can perform all working sets at the top of the rep range, increase the load next session.",
+      "fallback": "If adding weight would drop you below the range, keep the same weight and extend the range slightly (e.g. 6-8 → aim for 6-10).",
+      "tracking": "Log load and reps for every working set."
+    },
+    "rest": {
+      "working_sets": "As listed per exercise.",
+      "warmup_sets_s": {
+        "min": 0,
+        "max": 60
+      },
+      "between_exercises_s": {
+        "min": 60,
+        "max": 120
+      },
+      "faq": "Timing rest is optional; the priority is feeling recovered without letting the session drag."
+    },
+    "supersets": "Exercises with the same prefix (S1, S2, S3…) are a superset: one set of the first, then one set of the second, then rest the listed time (listed on the second exercise) and repeat.",
+    "substitutions": "Every exercise lists two alternatives with a very similar training effect. Prefer the main exercise if you can; swap for equipment or preference.",
+    "exercise_order": "Small reorders are fine when the gym is crowded; avoid scrambling the workout.",
+    "looping": "After week 12, loop back to week 1.",
+    "four_day_option": "Run the workouts in order and carry the remaining workout(s) into the next week."
+  },
+  "days": [
+    {
+      "id": "upper",
+      "name": "Upper",
+      "slots": [
+        {
+          "slot_id": "upper_01",
+          "exercise": "Machine Chest Press",
+          "superset": null,
+          "warmup_sets": {
+            "min": 2,
+            "max": 3
+          },
+          "working_sets": 2,
+          "rep_range": {
+            "min": 4,
+            "max": 6,
+            "per_side": false,
+            "text": "4-6"
+          },
+          "rest": {
+            "min_s": 120,
+            "max_s": 180,
+            "text": "2-3 min"
+          },
+          "substitutions": [
+            "Smith Machine Bench Press",
+            "DB Bench Press"
+          ],
+          "notes": "1 second pause at the bottom of each rep while maintaining tension on the pecs.",
+          "rir0_attempt_failure": true,
+          "source_pages": [
+            26,
+            31,
+            36,
+            41,
+            46,
+            51,
+            56,
+            61,
+            66,
+            71,
+            76,
+            81
+          ],
+          "weeks": {
+            "1": {
+              "rir": [
+                1,
+                2
+              ],
+              "technique": null
+            },
+            "2": {
+              "rir": [
+                0,
+                0
+              ],
+              "technique": null
+            },
+            "3": {
+              "rir": [
+                0,
+                0
+              ],
+              "technique": null
+            },
+            "4": {
+              "rir": [
+                0,
+                0
+              ],
+              "technique": null
+            },
+            "5": {
+              "rir": [
+                0,
+                0
+              ],
+              "technique": null
+            },
+            "6": {
+              "rir": [
+                0,
+                0
+              ],
+              "technique": null
+            },
+            "7": {
+              "rir": [
+                1,
+                2
+              ],
+              "technique": null
+            },
+            "8": {
+              "rir": [
+                0,
+                0
+              ],
+              "technique": null
+            },
+            "9": {
+              "rir": [
+                0,
+                0
+              ],
+              "technique": null
+            },
+            "10": {
+              "rir": [
+                0,
+                0
+              ],
+              "technique": null
+            },
+            "11": {
+              "rir": [
+                0,
+                0
+              ],
+              "technique": null
+            },
+            "12": {
+              "rir": [
+                0,
+                0
+              ],
+              "technique": null
+            }
+          }
+        },
+        {
+          "slot_id": "upper_02",
+          "exercise": "Machine Chest Press",
+          "superset": null,
+          "warmup_sets": {
+            "min": 0,
+            "max": 0
+          },
+          "working_sets": 1,
+          "rep_range": {
+            "min": 20,
+            "max": 20,
+            "per_side": false,
+            "text": "20"
+          },
+          "rest": {
+            "min_s": 120,
+            "max_s": 180,
+            "text": "2-3 min"
+          },
+          "substitutions": [
+            "Smith Machine Bench Press",
+            "DB Bench Press"
+          ],
+          "notes": "1 second pause at the bottom of each rep while maintaining tension on the pecs.",
+          "rir0_attempt_failure": true,
+          "source_pages": [
+            26,
+            31,
+            36,
+            41,
+            46,
+            51,
+            56,
+            61,
+            66,
+            71,
+            76,
+            81
+          ],
+          "weeks": {
+            "1": {
+              "rir": [
+                1
+              ],
+              "technique": null
+            },
+            "2": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "3": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "4": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "5": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "6": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "7": {
+              "rir": [
+                1
+              ],
+              "technique": null
+            },
+            "8": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "9": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "10": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "11": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "12": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            }
+          }
+        },
+        {
+          "slot_id": "upper_03",
+          "exercise": "Machine Lat Pullover",
+          "superset": null,
+          "warmup_sets": {
+            "min": 1,
+            "max": 2
+          },
+          "working_sets": 1,
+          "rep_range": {
+            "min": 8,
+            "max": 10,
+            "per_side": false,
+            "text": "8-10"
+          },
+          "rest": {
+            "min_s": 60,
+            "max_s": 120,
+            "text": "1-2 min"
+          },
+          "substitutions": [
+            "DB Lat Pullover",
+            "Cable Lat Pullover"
+          ],
+          "notes": "Smooth, controlled reps. Feel a deep stretch in your lats at the top of each rep.",
+          "rir0_attempt_failure": true,
+          "source_pages": [
+            26,
+            31,
+            36,
+            41,
+            46,
+            51,
+            56,
+            61,
+            66,
+            71,
+            76,
+            81
+          ],
+          "weeks": {
+            "1": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "2": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "3": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "4": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "5": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "6": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "7": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "8": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "9": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "10": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "11": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "12": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            }
+          }
+        },
+        {
+          "slot_id": "upper_04",
+          "exercise": "Machine Lat Pullover",
+          "superset": null,
+          "warmup_sets": {
+            "min": 0,
+            "max": 0
+          },
+          "working_sets": 1,
+          "rep_range": {
+            "min": 20,
+            "max": 20,
+            "per_side": false,
+            "text": "20"
+          },
+          "rest": {
+            "min_s": 60,
+            "max_s": 120,
+            "text": "1-2 min"
+          },
+          "substitutions": [
+            "DB Lat Pullover",
+            "Cable Lat Pullover"
+          ],
+          "notes": "Smooth, controlled reps. Feel a deep stretch in your lats at the top of each rep.",
+          "rir0_attempt_failure": true,
+          "source_pages": [
+            26,
+            31,
+            36,
+            41,
+            46,
+            51,
+            56,
+            61,
+            66,
+            71,
+            76,
+            81
+          ],
+          "weeks": {
+            "1": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "2": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "3": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "4": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "5": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "6": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "7": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "8": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "9": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "10": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "11": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "12": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            }
+          }
+        },
+        {
+          "slot_id": "upper_05",
+          "exercise": "Pec Deck",
+          "superset": null,
+          "warmup_sets": {
+            "min": 0,
+            "max": 1
+          },
+          "working_sets": 2,
+          "rep_range": {
+            "min": 10,
+            "max": 12,
+            "per_side": false,
+            "text": "10-12"
+          },
+          "rest": {
+            "min_s": 60,
+            "max_s": 120,
+            "text": "1-2 min"
+          },
+          "substitutions": [
+            "DB Flye",
+            "Cable Flye"
+          ],
+          "notes": "Pause for 1 second at the bottom of each rep while maintaining tension on the pecs",
+          "rir0_attempt_failure": true,
+          "source_pages": [
+            26,
+            31,
+            36,
+            41,
+            46,
+            51,
+            56,
+            61,
+            66,
+            71,
+            76,
+            81
+          ],
+          "weeks": {
+            "1": {
+              "rir": [
+                0,
+                1
+              ],
+              "technique": null
+            },
+            "2": {
+              "rir": [
+                0,
+                0
+              ],
+              "technique": null
+            },
+            "3": {
+              "rir": [
+                0,
+                0
+              ],
+              "technique": null
+            },
+            "4": {
+              "rir": [
+                0,
+                0
+              ],
+              "technique": null
+            },
+            "5": {
+              "rir": [
+                0,
+                0
+              ],
+              "technique": null
+            },
+            "6": {
+              "rir": [
+                0,
+                0
+              ],
+              "technique": null
+            },
+            "7": {
+              "rir": [
+                0,
+                1
+              ],
+              "technique": null
+            },
+            "8": {
+              "rir": [
+                0,
+                0
+              ],
+              "technique": "myo_reps"
+            },
+            "9": {
+              "rir": [
+                0,
+                0
+              ],
+              "technique": "myo_reps"
+            },
+            "10": {
+              "rir": [
+                0,
+                0
+              ],
+              "technique": "myo_reps"
+            },
+            "11": {
+              "rir": [
+                0,
+                0
+              ],
+              "technique": "myo_reps"
+            },
+            "12": {
+              "rir": [
+                0,
+                0
+              ],
+              "technique": "myo_reps"
+            }
+          }
+        },
+        {
+          "slot_id": "upper_06",
+          "exercise": "Chest-Supported T-Bar Row",
+          "superset": null,
+          "warmup_sets": {
+            "min": 1,
+            "max": 2
+          },
+          "working_sets": 2,
+          "rep_range": {
+            "min": 6,
+            "max": 8,
+            "per_side": false,
+            "text": "6-8"
+          },
+          "rest": {
+            "min_s": 120,
+            "max_s": 180,
+            "text": "2-3 min"
+          },
+          "substitutions": [
+            "Chest-Supported Machine Row",
+            "Chest-Supported DB Row"
+          ],
+          "notes": "Flare elbows out at roughly 45° and squeeze your shoulder blades together hard at the top of each rep.",
+          "rir0_attempt_failure": true,
+          "source_pages": [
+            26,
+            31,
+            36,
+            41,
+            46,
+            51,
+            56,
+            61,
+            66,
+            71,
+            76,
+            81
+          ],
+          "weeks": {
+            "1": {
+              "rir": [
+                1,
+                2
+              ],
+              "technique": null
+            },
+            "2": {
+              "rir": [
+                0,
+                0
+              ],
+              "technique": null
+            },
+            "3": {
+              "rir": [
+                0,
+                0
+              ],
+              "technique": null
+            },
+            "4": {
+              "rir": [
+                0,
+                0
+              ],
+              "technique": null
+            },
+            "5": {
+              "rir": [
+                0,
+                0
+              ],
+              "technique": null
+            },
+            "6": {
+              "rir": [
+                0,
+                0
+              ],
+              "technique": null
+            },
+            "7": {
+              "rir": [
+                1,
+                2
+              ],
+              "technique": null
+            },
+            "8": {
+              "rir": [
+                0,
+                0
+              ],
+              "technique": "myo_reps"
+            },
+            "9": {
+              "rir": [
+                0,
+                0
+              ],
+              "technique": "myo_reps"
+            },
+            "10": {
+              "rir": [
+                0,
+                0
+              ],
+              "technique": "myo_reps"
+            },
+            "11": {
+              "rir": [
+                0,
+                0
+              ],
+              "technique": "myo_reps"
+            },
+            "12": {
+              "rir": [
+                0,
+                0
+              ],
+              "technique": "myo_reps"
+            }
+          }
+        },
+        {
+          "slot_id": "upper_07",
+          "exercise": "Incline DB Y-Raise",
+          "superset": null,
+          "warmup_sets": {
+            "min": 0,
+            "max": 1
+          },
+          "working_sets": 3,
+          "rep_range": {
+            "min": 10,
+            "max": 12,
+            "per_side": false,
+            "text": "10-12"
+          },
+          "rest": {
+            "min_s": 60,
+            "max_s": 120,
+            "text": "1-2 min"
+          },
+          "substitutions": [
+            "Cable Y-Raise",
+            "Machine Lateral Raise"
+          ],
+          "notes": "Use a 30° incline bench (back against the bench) and lift the weight up and out in a Y shape.",
+          "rir0_attempt_failure": true,
+          "source_pages": [
+            26,
+            31,
+            36,
+            41,
+            46,
+            51,
+            56,
+            61,
+            66,
+            71,
+            76,
+            81
+          ],
+          "weeks": {
+            "1": {
+              "rir": [
+                0,
+                1,
+                1
+              ],
+              "technique": null
+            },
+            "2": {
+              "rir": [
+                0,
+                0,
+                0
+              ],
+              "technique": null
+            },
+            "3": {
+              "rir": [
+                0,
+                0,
+                0
+              ],
+              "technique": null
+            },
+            "4": {
+              "rir": [
+                0,
+                0,
+                0
+              ],
+              "technique": null
+            },
+            "5": {
+              "rir": [
+                0,
+                0,
+                0
+              ],
+              "technique": null
+            },
+            "6": {
+              "rir": [
+                0,
+                0,
+                0
+              ],
+              "technique": null
+            },
+            "7": {
+              "rir": [
+                0,
+                1,
+                1
+              ],
+              "technique": null
+            },
+            "8": {
+              "rir": [
+                0,
+                0,
+                0
+              ],
+              "technique": null
+            },
+            "9": {
+              "rir": [
+                0,
+                0,
+                0
+              ],
+              "technique": null
+            },
+            "10": {
+              "rir": [
+                0,
+                0,
+                0
+              ],
+              "technique": null
+            },
+            "11": {
+              "rir": [
+                0,
+                0,
+                0
+              ],
+              "technique": null
+            },
+            "12": {
+              "rir": [
+                0,
+                0,
+                0
+              ],
+              "technique": null
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "lower",
+      "name": "Lower",
+      "slots": [
+        {
+          "slot_id": "lower_01",
+          "exercise": "Seated Leg Curl",
+          "superset": null,
+          "warmup_sets": {
+            "min": 1,
+            "max": 2
+          },
+          "working_sets": 3,
+          "rep_range": {
+            "min": 6,
+            "max": 8,
+            "per_side": false,
+            "text": "6-8"
+          },
+          "rest": {
+            "min_s": 60,
+            "max_s": 120,
+            "text": "1-2 min"
+          },
+          "substitutions": [
+            "Lying Leg Curl",
+            "Nordic Ham Curl"
+          ],
+          "notes": "Lean forward over the machine to get a maximum stretch in your hamstrings.",
+          "rir0_attempt_failure": true,
+          "source_pages": [
+            27,
+            32,
+            37,
+            42,
+            47,
+            52,
+            57,
+            62,
+            67,
+            72,
+            77,
+            82
+          ],
+          "weeks": {
+            "1": {
+              "rir": [
+                0,
+                1,
+                1
+              ],
+              "technique": null
+            },
+            "2": {
+              "rir": [
+                0,
+                0,
+                0
+              ],
+              "technique": null
+            },
+            "3": {
+              "rir": [
+                0,
+                0,
+                0
+              ],
+              "technique": null
+            },
+            "4": {
+              "rir": [
+                0,
+                0,
+                0
+              ],
+              "technique": null
+            },
+            "5": {
+              "rir": [
+                0,
+                0,
+                0
+              ],
+              "technique": null
+            },
+            "6": {
+              "rir": [
+                0,
+                0,
+                0
+              ],
+              "technique": null
+            },
+            "7": {
+              "rir": [
+                0,
+                1,
+                1
+              ],
+              "technique": null
+            },
+            "8": {
+              "rir": [
+                0,
+                0,
+                0
+              ],
+              "technique": "drop_sets_2x25"
+            },
+            "9": {
+              "rir": [
+                0,
+                0,
+                0
+              ],
+              "technique": "drop_sets_2x25"
+            },
+            "10": {
+              "rir": [
+                0,
+                0,
+                0
+              ],
+              "technique": "drop_sets_2x25"
+            },
+            "11": {
+              "rir": [
+                0,
+                0,
+                0
+              ],
+              "technique": "drop_sets_2x25"
+            },
+            "12": {
+              "rir": [
+                0,
+                0,
+                0
+              ],
+              "technique": "drop_sets_2x25"
+            }
+          }
+        },
+        {
+          "slot_id": "lower_02",
+          "exercise": "Hack Squat",
+          "superset": null,
+          "warmup_sets": {
+            "min": 2,
+            "max": 3
+          },
+          "working_sets": 2,
+          "rep_range": {
+            "min": 4,
+            "max": 6,
+            "per_side": false,
+            "text": "4-6"
+          },
+          "rest": {
+            "min_s": 120,
+            "max_s": 240,
+            "text": "2-4 min"
+          },
+          "substitutions": [
+            "Smith Machine Squat",
+            "Leg Press"
+          ],
+          "notes": "Use a controlled negative (don't free fall) and then explode on the positive.",
+          "rir0_attempt_failure": false,
+          "source_pages": [
+            27,
+            32,
+            37,
+            42,
+            47,
+            52,
+            57,
+            62,
+            67,
+            72,
+            77,
+            82
+          ],
+          "weeks": {
+            "1": {
+              "rir": [
+                2,
+                3
+              ],
+              "technique": null
+            },
+            "2": {
+              "rir": [
+                1,
+                2
+              ],
+              "technique": null
+            },
+            "3": {
+              "rir": [
+                1,
+                2
+              ],
+              "technique": null
+            },
+            "4": {
+              "rir": [
+                1,
+                2
+              ],
+              "technique": null
+            },
+            "5": {
+              "rir": [
+                0,
+                2
+              ],
+              "technique": null
+            },
+            "6": {
+              "rir": [
+                0,
+                2
+              ],
+              "technique": null
+            },
+            "7": {
+              "rir": [
+                2,
+                3
+              ],
+              "technique": null
+            },
+            "8": {
+              "rir": [
+                1,
+                2
+              ],
+              "technique": null
+            },
+            "9": {
+              "rir": [
+                1,
+                2
+              ],
+              "technique": null
+            },
+            "10": {
+              "rir": [
+                1,
+                2
+              ],
+              "technique": null
+            },
+            "11": {
+              "rir": [
+                0,
+                2
+              ],
+              "technique": null
+            },
+            "12": {
+              "rir": [
+                0,
+                2
+              ],
+              "technique": null
+            }
+          }
+        },
+        {
+          "slot_id": "lower_03",
+          "exercise": "Leg Extension",
+          "superset": null,
+          "warmup_sets": {
+            "min": 0,
+            "max": 1
+          },
+          "working_sets": 2,
+          "rep_range": {
+            "min": 6,
+            "max": 8,
+            "per_side": false,
+            "text": "6-8"
+          },
+          "rest": {
+            "min_s": 60,
+            "max_s": 120,
+            "text": "1-2 min"
+          },
+          "substitutions": [
+            "Reverse Nordic",
+            "Sissy Squat"
+          ],
+          "notes": "Set the seat back as far as it will go while still feeling comfortable. Grab the handles as hard as you can to pull your butt down into the seat (using straps can help here).",
+          "rir0_attempt_failure": true,
+          "source_pages": [
+            27,
+            32,
+            37,
+            42,
+            47,
+            52,
+            57,
+            62,
+            67,
+            72,
+            77,
+            82
+          ],
+          "weeks": {
+            "1": {
+              "rir": [
+                0,
+                1
+              ],
+              "technique": null
+            },
+            "2": {
+              "rir": [
+                0,
+                0
+              ],
+              "technique": null
+            },
+            "3": {
+              "rir": [
+                0,
+                0
+              ],
+              "technique": null
+            },
+            "4": {
+              "rir": [
+                0,
+                0
+              ],
+              "technique": null
+            },
+            "5": {
+              "rir": [
+                0,
+                0
+              ],
+              "technique": null
+            },
+            "6": {
+              "rir": [
+                0,
+                0
+              ],
+              "technique": null
+            },
+            "7": {
+              "rir": [
+                0,
+                1
+              ],
+              "technique": null
+            },
+            "8": {
+              "rir": [
+                0,
+                0
+              ],
+              "technique": null
+            },
+            "9": {
+              "rir": [
+                0,
+                0
+              ],
+              "technique": null
+            },
+            "10": {
+              "rir": [
+                0,
+                0
+              ],
+              "technique": null
+            },
+            "11": {
+              "rir": [
+                0,
+                0
+              ],
+              "technique": null
+            },
+            "12": {
+              "rir": [
+                0,
+                0
+              ],
+              "technique": null
+            }
+          }
+        },
+        {
+          "slot_id": "lower_04",
+          "exercise": "Leg Extension",
+          "superset": null,
+          "warmup_sets": {
+            "min": 0,
+            "max": 0
+          },
+          "working_sets": 1,
+          "rep_range": {
+            "min": 20,
+            "max": 20,
+            "per_side": false,
+            "text": "20"
+          },
+          "rest": {
+            "min_s": 60,
+            "max_s": 120,
+            "text": "1-2 min"
+          },
+          "substitutions": [
+            "Reverse Nordic",
+            "Sissy Squat"
+          ],
+          "notes": "Set the seat back as far as it will go while still feeling comfortable. Grab the handles as hard as you can to pull your butt down into the seat (using straps can help here).",
+          "rir0_attempt_failure": true,
+          "source_pages": [
+            27,
+            32,
+            37,
+            42,
+            47,
+            52,
+            57,
+            62,
+            67,
+            72,
+            77,
+            82
+          ],
+          "weeks": {
+            "1": {
+              "rir": [
+                1
+              ],
+              "technique": null
+            },
+            "2": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "3": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "4": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "5": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "6": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "7": {
+              "rir": [
+                1
+              ],
+              "technique": null
+            },
+            "8": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "9": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "10": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "11": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "12": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            }
+          }
+        },
+        {
+          "slot_id": "lower_05",
+          "exercise": "DB Walking Lunge",
+          "superset": null,
+          "warmup_sets": {
+            "min": 0,
+            "max": 1
+          },
+          "working_sets": 1,
+          "rep_range": {
+            "min": 10,
+            "max": 10,
+            "per_side": true,
+            "text": "10 per leg"
+          },
+          "rest": {
+            "min_s": 60,
+            "max_s": 120,
+            "text": "1-2 min"
+          },
+          "substitutions": [
+            "Smith Machine Split Squat",
+            "DB Reverse Lunge"
+          ],
+          "notes": "Take medium strides. Minimize contribution from the back leg",
+          "rir0_attempt_failure": true,
+          "source_pages": [
+            27,
+            32,
+            37,
+            42,
+            47,
+            52,
+            57,
+            62,
+            67,
+            72,
+            77,
+            82
+          ],
+          "weeks": {
+            "1": {
+              "rir": [
+                1
+              ],
+              "technique": null
+            },
+            "2": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "3": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "4": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "5": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "6": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "7": {
+              "rir": [
+                1
+              ],
+              "technique": null
+            },
+            "8": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "9": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "10": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "11": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "12": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            }
+          }
+        },
+        {
+          "slot_id": "lower_06",
+          "exercise": "Standing Calf Raise",
+          "superset": null,
+          "warmup_sets": {
+            "min": 0,
+            "max": 1
+          },
+          "working_sets": 3,
+          "rep_range": {
+            "min": 10,
+            "max": 12,
+            "per_side": false,
+            "text": "10-12"
+          },
+          "rest": {
+            "min_s": 60,
+            "max_s": 120,
+            "text": "1-2 min"
+          },
+          "substitutions": [
+            "Donkey Calf Raise",
+            "Leg Press Calf Press"
+          ],
+          "notes": "1-2 second pause at the bottom of each rep. Instead of just going up onto your toes, think about rolling your ankle back and forth on the balls of your feet.",
+          "rir0_attempt_failure": true,
+          "source_pages": [
+            27,
+            32,
+            37,
+            42,
+            47,
+            52,
+            57,
+            62,
+            67,
+            72,
+            77,
+            82
+          ],
+          "weeks": {
+            "1": {
+              "rir": [
+                0,
+                1,
+                1
+              ],
+              "technique": null
+            },
+            "2": {
+              "rir": [
+                0,
+                0,
+                0
+              ],
+              "technique": null
+            },
+            "3": {
+              "rir": [
+                0,
+                0,
+                0
+              ],
+              "technique": null
+            },
+            "4": {
+              "rir": [
+                0,
+                0,
+                0
+              ],
+              "technique": null
+            },
+            "5": {
+              "rir": [
+                0,
+                0,
+                0
+              ],
+              "technique": null
+            },
+            "6": {
+              "rir": [
+                0,
+                0,
+                0
+              ],
+              "technique": null
+            },
+            "7": {
+              "rir": [
+                0,
+                1,
+                1
+              ],
+              "technique": null
+            },
+            "8": {
+              "rir": [
+                0,
+                0,
+                0
+              ],
+              "technique": "weighted_static_hold_30s"
+            },
+            "9": {
+              "rir": [
+                0,
+                0,
+                0
+              ],
+              "technique": "weighted_static_hold_30s"
+            },
+            "10": {
+              "rir": [
+                0,
+                0,
+                0
+              ],
+              "technique": "weighted_static_hold_30s"
+            },
+            "11": {
+              "rir": [
+                0,
+                0,
+                0
+              ],
+              "technique": "weighted_static_hold_30s"
+            },
+            "12": {
+              "rir": [
+                0,
+                0,
+                0
+              ],
+              "technique": "weighted_static_hold_30s"
+            }
+          }
+        },
+        {
+          "slot_id": "lower_07",
+          "exercise": "Glute Kickback",
+          "superset": null,
+          "warmup_sets": {
+            "min": 0,
+            "max": 1
+          },
+          "working_sets": 1,
+          "rep_range": {
+            "min": 30,
+            "max": 30,
+            "per_side": false,
+            "text": "30"
+          },
+          "rest": {
+            "min_s": 60,
+            "max_s": 120,
+            "text": "1-2 min"
+          },
+          "substitutions": [
+            "45° Hyperextension",
+            "Cable Pull-Through"
+          ],
+          "notes": "Perform Glute Kickbacks if you want to focus on your glutes. Perform 45° Hyperextension if you want to focus more on your lower back and hamstrings.",
+          "rir0_attempt_failure": true,
+          "source_pages": [
+            27,
+            32,
+            37,
+            42,
+            47,
+            52,
+            57,
+            62,
+            67,
+            72,
+            77,
+            82
+          ],
+          "weeks": {
+            "1": {
+              "rir": [
+                1
+              ],
+              "technique": null
+            },
+            "2": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "3": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "4": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "5": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "6": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "7": {
+              "rir": [
+                1
+              ],
+              "technique": null
+            },
+            "8": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "9": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "10": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "11": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "12": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "push",
+      "name": "Push",
+      "slots": [
+        {
+          "slot_id": "push_01",
+          "exercise": "Machine Shoulder Press",
+          "superset": null,
+          "warmup_sets": {
+            "min": 2,
+            "max": 3
+          },
+          "working_sets": 2,
+          "rep_range": {
+            "min": 4,
+            "max": 6,
+            "per_side": false,
+            "text": "4-6"
+          },
+          "rest": {
+            "min_s": 120,
+            "max_s": 180,
+            "text": "2-3 min"
+          },
+          "substitutions": [
+            "Seated DB Shoulder Press",
+            "Seated Smith Machine Shoulder Press"
+          ],
+          "notes": "Ensure that your elbows break at least 90°. Mind-muscle connection with your delts. Smooth, controlled reps.",
+          "rir0_attempt_failure": true,
+          "source_pages": [
+            28,
+            33,
+            38,
+            43,
+            48,
+            53,
+            58,
+            63,
+            68,
+            73,
+            78,
+            83
+          ],
+          "weeks": {
+            "1": {
+              "rir": [
+                1,
+                2
+              ],
+              "technique": null
+            },
+            "2": {
+              "rir": [
+                0,
+                1
+              ],
+              "technique": null
+            },
+            "3": {
+              "rir": [
+                0,
+                1
+              ],
+              "technique": null
+            },
+            "4": {
+              "rir": [
+                0,
+                1
+              ],
+              "technique": null
+            },
+            "5": {
+              "rir": [
+                0,
+                1
+              ],
+              "technique": null
+            },
+            "6": {
+              "rir": [
+                0,
+                1
+              ],
+              "technique": null
+            },
+            "7": {
+              "rir": [
+                1,
+                2
+              ],
+              "technique": null
+            },
+            "8": {
+              "rir": [
+                0,
+                1
+              ],
+              "technique": "drop_sets_2x25"
+            },
+            "9": {
+              "rir": [
+                0,
+                1
+              ],
+              "technique": "drop_sets_2x25"
+            },
+            "10": {
+              "rir": [
+                0,
+                1
+              ],
+              "technique": "drop_sets_2x25"
+            },
+            "11": {
+              "rir": [
+                0,
+                1
+              ],
+              "technique": "drop_sets_2x25"
+            },
+            "12": {
+              "rir": [
+                0,
+                1
+              ],
+              "technique": "drop_sets_2x25"
+            }
+          }
+        },
+        {
+          "slot_id": "push_02",
+          "exercise": "DB Bench Press",
+          "superset": null,
+          "warmup_sets": {
+            "min": 2,
+            "max": 3
+          },
+          "working_sets": 1,
+          "rep_range": {
+            "min": 10,
+            "max": 10,
+            "per_side": false,
+            "text": "10"
+          },
+          "rest": {
+            "min_s": 120,
+            "max_s": 180,
+            "text": "2-3 min"
+          },
+          "substitutions": [
+            "Smith Machine Bench Press",
+            "Machine Chest Press"
+          ],
+          "notes": "1 second pause at the bottom of each rep while maintaining tension on the pecs.",
+          "rir0_attempt_failure": true,
+          "source_pages": [
+            28,
+            33,
+            38,
+            43,
+            48,
+            53,
+            58,
+            63,
+            68,
+            73,
+            78,
+            83
+          ],
+          "weeks": {
+            "1": {
+              "rir": [
+                1
+              ],
+              "technique": null
+            },
+            "2": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "3": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "4": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "5": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "6": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "7": {
+              "rir": [
+                1
+              ],
+              "technique": null
+            },
+            "8": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "9": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "10": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "11": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "12": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            }
+          }
+        },
+        {
+          "slot_id": "push_03",
+          "exercise": "DB Bench Press",
+          "superset": null,
+          "warmup_sets": {
+            "min": 0,
+            "max": 0
+          },
+          "working_sets": 1,
+          "rep_range": {
+            "min": 20,
+            "max": 20,
+            "per_side": false,
+            "text": "20"
+          },
+          "rest": {
+            "min_s": 120,
+            "max_s": 180,
+            "text": "2-3 min"
+          },
+          "substitutions": [
+            "Smith Machine Bench Press",
+            "Machine Chest Press"
+          ],
+          "notes": "1 second pause at the bottom of each rep while maintaining tension on the pecs.",
+          "rir0_attempt_failure": true,
+          "source_pages": [
+            28,
+            33,
+            38,
+            43,
+            48,
+            53,
+            58,
+            63,
+            68,
+            73,
+            78,
+            83
+          ],
+          "weeks": {
+            "1": {
+              "rir": [
+                1
+              ],
+              "technique": null
+            },
+            "2": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "3": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "4": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "5": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "6": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "7": {
+              "rir": [
+                1
+              ],
+              "technique": null
+            },
+            "8": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "9": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "10": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "11": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "12": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            }
+          }
+        },
+        {
+          "slot_id": "push_04",
+          "exercise": "Single-Leg Leg Extension",
+          "superset": null,
+          "warmup_sets": {
+            "min": 0,
+            "max": 1
+          },
+          "working_sets": 1,
+          "rep_range": {
+            "min": 20,
+            "max": 20,
+            "per_side": false,
+            "text": "20"
+          },
+          "rest": {
+            "min_s": 60,
+            "max_s": 120,
+            "text": "1-2 min"
+          },
+          "substitutions": [
+            "Reverse Nordic",
+            "Sissy Squat"
+          ],
+          "notes": "Set the seat back as far as it will go while still feeling comfortable. Grab the handles as hard as you can to pull your butt down into the seat (using straps can help here).",
+          "rir0_attempt_failure": true,
+          "source_pages": [
+            28,
+            33,
+            38,
+            43,
+            48,
+            53,
+            58,
+            63,
+            68,
+            73,
+            78,
+            83
+          ],
+          "weeks": {
+            "1": {
+              "rir": [
+                1
+              ],
+              "technique": null
+            },
+            "2": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "3": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "4": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "5": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "6": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "7": {
+              "rir": [
+                1
+              ],
+              "technique": null
+            },
+            "8": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "9": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "10": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "11": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "12": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            }
+          }
+        },
+        {
+          "slot_id": "push_05",
+          "exercise": "Machine Lateral Raise",
+          "superset": null,
+          "warmup_sets": {
+            "min": 0,
+            "max": 1
+          },
+          "working_sets": 1,
+          "rep_range": {
+            "min": 10,
+            "max": 10,
+            "per_side": false,
+            "text": "10"
+          },
+          "rest": {
+            "min_s": 60,
+            "max_s": 120,
+            "text": "1-2 min"
+          },
+          "substitutions": [
+            "High-Cable Lateral Raise",
+            "DB Lateral Raise"
+          ],
+          "notes": "Resist the negative on every rep and avoid pausing at the bottom",
+          "rir0_attempt_failure": true,
+          "source_pages": [
+            28,
+            33,
+            38,
+            43,
+            48,
+            53,
+            58,
+            63,
+            68,
+            73,
+            78,
+            83
+          ],
+          "weeks": {
+            "1": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "2": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "3": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "4": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "5": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "6": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "7": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "8": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "9": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "10": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "11": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "12": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            }
+          }
+        },
+        {
+          "slot_id": "push_06",
+          "exercise": "Machine Lateral Raise",
+          "superset": null,
+          "warmup_sets": {
+            "min": 0,
+            "max": 0
+          },
+          "working_sets": 1,
+          "rep_range": {
+            "min": 20,
+            "max": 20,
+            "per_side": false,
+            "text": "20"
+          },
+          "rest": {
+            "min_s": 60,
+            "max_s": 120,
+            "text": "1-2 min"
+          },
+          "substitutions": [
+            "High-Cable Lateral Raise",
+            "DB Lateral Raise"
+          ],
+          "notes": "Resist the negative on every rep and avoid pausing at the bottom",
+          "rir0_attempt_failure": true,
+          "source_pages": [
+            28,
+            33,
+            38,
+            43,
+            48,
+            53,
+            58,
+            63,
+            68,
+            73,
+            78,
+            83
+          ],
+          "weeks": {
+            "1": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "2": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "3": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "4": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "5": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "6": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "7": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "8": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "9": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "10": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "11": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "12": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            }
+          }
+        },
+        {
+          "slot_id": "push_07",
+          "exercise": "Cable Flye",
+          "superset": null,
+          "warmup_sets": {
+            "min": 0,
+            "max": 1
+          },
+          "working_sets": 2,
+          "rep_range": {
+            "min": 10,
+            "max": 12,
+            "per_side": false,
+            "text": "10-12"
+          },
+          "rest": {
+            "min_s": 60,
+            "max_s": 120,
+            "text": "1-2 min"
+          },
+          "substitutions": [
+            "Pec Deck",
+            "DB Flye"
+          ],
+          "notes": "Focus on feeling a deep stretch in your pecs at the bottom of each rep.",
+          "rir0_attempt_failure": true,
+          "source_pages": [
+            28,
+            33,
+            38,
+            43,
+            48,
+            53,
+            58,
+            63,
+            68,
+            73,
+            78,
+            83
+          ],
+          "weeks": {
+            "1": {
+              "rir": [
+                0,
+                1
+              ],
+              "technique": null
+            },
+            "2": {
+              "rir": [
+                0,
+                0
+              ],
+              "technique": null
+            },
+            "3": {
+              "rir": [
+                0,
+                0
+              ],
+              "technique": null
+            },
+            "4": {
+              "rir": [
+                0,
+                0
+              ],
+              "technique": null
+            },
+            "5": {
+              "rir": [
+                0,
+                0
+              ],
+              "technique": null
+            },
+            "6": {
+              "rir": [
+                0,
+                0
+              ],
+              "technique": null
+            },
+            "7": {
+              "rir": [
+                0,
+                1
+              ],
+              "technique": null
+            },
+            "8": {
+              "rir": [
+                0,
+                0
+              ],
+              "technique": "drop_sets_2x25"
+            },
+            "9": {
+              "rir": [
+                0,
+                0
+              ],
+              "technique": "drop_sets_2x25"
+            },
+            "10": {
+              "rir": [
+                0,
+                0
+              ],
+              "technique": "drop_sets_2x25"
+            },
+            "11": {
+              "rir": [
+                0,
+                0
+              ],
+              "technique": "drop_sets_2x25"
+            },
+            "12": {
+              "rir": [
+                0,
+                0
+              ],
+              "technique": "drop_sets_2x25"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "pull",
+      "name": "Pull",
+      "slots": [
+        {
+          "slot_id": "pull_01",
+          "exercise": "Pull-Up (Wide Grip)",
+          "superset": null,
+          "warmup_sets": {
+            "min": 1,
+            "max": 2
+          },
+          "working_sets": 3,
+          "rep_range": {
+            "min": 4,
+            "max": 6,
+            "per_side": false,
+            "text": "4-6"
+          },
+          "rest": {
+            "min_s": 120,
+            "max_s": 180,
+            "text": "2-3 min"
+          },
+          "substitutions": [
+            "Lat Pulldown (Wide Grip)",
+            "1-Arm Cable Pulldown"
+          ],
+          "notes": "Slow 2-3 second negative. Feel your lats pulling apart on the way down.",
+          "rir0_attempt_failure": true,
+          "source_pages": [
+            29,
+            34,
+            39,
+            44,
+            49,
+            54,
+            59,
+            64,
+            69,
+            74,
+            79,
+            84
+          ],
+          "weeks": {
+            "1": {
+              "rir": [
+                1,
+                2,
+                2
+              ],
+              "technique": null
+            },
+            "2": {
+              "rir": [
+                0,
+                1,
+                1
+              ],
+              "technique": null
+            },
+            "3": {
+              "rir": [
+                0,
+                1,
+                1
+              ],
+              "technique": null
+            },
+            "4": {
+              "rir": [
+                0,
+                1,
+                1
+              ],
+              "technique": null
+            },
+            "5": {
+              "rir": [
+                0,
+                1,
+                1
+              ],
+              "technique": null
+            },
+            "6": {
+              "rir": [
+                0,
+                1,
+                1
+              ],
+              "technique": null
+            },
+            "7": {
+              "rir": [
+                1,
+                2,
+                2
+              ],
+              "technique": null
+            },
+            "8": {
+              "rir": [
+                0,
+                1,
+                1
+              ],
+              "technique": null
+            },
+            "9": {
+              "rir": [
+                0,
+                1,
+                1
+              ],
+              "technique": null
+            },
+            "10": {
+              "rir": [
+                0,
+                1,
+                1
+              ],
+              "technique": null
+            },
+            "11": {
+              "rir": [
+                0,
+                1,
+                1
+              ],
+              "technique": null
+            },
+            "12": {
+              "rir": [
+                0,
+                1,
+                1
+              ],
+              "technique": null
+            }
+          }
+        },
+        {
+          "slot_id": "pull_02",
+          "exercise": "Stiff-Leg Deadlift",
+          "superset": null,
+          "warmup_sets": {
+            "min": 2,
+            "max": 3
+          },
+          "working_sets": 2,
+          "rep_range": {
+            "min": 6,
+            "max": 8,
+            "per_side": false,
+            "text": "6-8"
+          },
+          "rest": {
+            "min_s": 120,
+            "max_s": 180,
+            "text": "2-3 min"
+          },
+          "substitutions": [
+            "DB RDL",
+            "Barbell RDL"
+          ],
+          "notes": "Keep your back flat and allow just a slight bend in your hamstrings.",
+          "rir0_attempt_failure": true,
+          "source_pages": [
+            29,
+            34,
+            39,
+            44,
+            49,
+            54,
+            59,
+            64,
+            69,
+            74,
+            79,
+            84
+          ],
+          "weeks": {
+            "1": {
+              "rir": [
+                2,
+                3
+              ],
+              "technique": null
+            },
+            "2": {
+              "rir": [
+                1,
+                2
+              ],
+              "technique": null
+            },
+            "3": {
+              "rir": [
+                1,
+                2
+              ],
+              "technique": null
+            },
+            "4": {
+              "rir": [
+                1,
+                2
+              ],
+              "technique": null
+            },
+            "5": {
+              "rir": [
+                1,
+                2
+              ],
+              "technique": null
+            },
+            "6": {
+              "rir": [
+                1,
+                2
+              ],
+              "technique": null
+            },
+            "7": {
+              "rir": [
+                2,
+                3
+              ],
+              "technique": null
+            },
+            "8": {
+              "rir": [
+                1,
+                2
+              ],
+              "technique": null
+            },
+            "9": {
+              "rir": [
+                1,
+                2
+              ],
+              "technique": null
+            },
+            "10": {
+              "rir": [
+                1,
+                2
+              ],
+              "technique": null
+            },
+            "11": {
+              "rir": [
+                1,
+                2
+              ],
+              "technique": null
+            },
+            "12": {
+              "rir": [
+                1,
+                2
+              ],
+              "technique": null
+            }
+          }
+        },
+        {
+          "slot_id": "pull_03",
+          "exercise": "Close-Grip Lat Pulldown",
+          "superset": null,
+          "warmup_sets": {
+            "min": 1,
+            "max": 2
+          },
+          "working_sets": 1,
+          "rep_range": {
+            "min": 10,
+            "max": 10,
+            "per_side": false,
+            "text": "10"
+          },
+          "rest": {
+            "min_s": 120,
+            "max_s": 180,
+            "text": "2-3 min"
+          },
+          "substitutions": [
+            "Close-Grip Pull-Up",
+            "Close-Grip Seated Cable Row"
+          ],
+          "notes": "Lean back by ~15° and drive your elbows down as you squeeze your shoulder blades together. This should feel like a mix of lats and mid-traps.",
+          "rir0_attempt_failure": true,
+          "source_pages": [
+            29,
+            34,
+            39,
+            44,
+            49,
+            54,
+            59,
+            64,
+            69,
+            74,
+            79,
+            84
+          ],
+          "weeks": {
+            "1": {
+              "rir": [
+                1
+              ],
+              "technique": null
+            },
+            "2": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "3": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "4": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "5": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "6": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "7": {
+              "rir": [
+                1
+              ],
+              "technique": null
+            },
+            "8": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "9": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "10": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "11": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "12": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            }
+          }
+        },
+        {
+          "slot_id": "pull_04",
+          "exercise": "Close-Grip Lat Pulldown",
+          "superset": null,
+          "warmup_sets": {
+            "min": 0,
+            "max": 0
+          },
+          "working_sets": 1,
+          "rep_range": {
+            "min": 20,
+            "max": 20,
+            "per_side": false,
+            "text": "20"
+          },
+          "rest": {
+            "min_s": 120,
+            "max_s": 180,
+            "text": "2-3 min"
+          },
+          "substitutions": [
+            "Close-Grip Pull-Up",
+            "Close-Grip Seated Cable Row"
+          ],
+          "notes": "Lean back by ~15° and drive your elbows down as you squeeze your shoulder blades together. This should feel like a mix of lats and mid-traps.",
+          "rir0_attempt_failure": true,
+          "source_pages": [
+            29,
+            34,
+            39,
+            44,
+            49,
+            54,
+            59,
+            64,
+            69,
+            74,
+            79,
+            84
+          ],
+          "weeks": {
+            "1": {
+              "rir": [
+                1
+              ],
+              "technique": null
+            },
+            "2": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "3": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "4": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "5": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "6": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "7": {
+              "rir": [
+                1
+              ],
+              "technique": null
+            },
+            "8": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "9": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "10": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "11": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "12": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            }
+          }
+        },
+        {
+          "slot_id": "pull_05",
+          "exercise": "Chest-Supported Machine Row",
+          "superset": null,
+          "warmup_sets": {
+            "min": 1,
+            "max": 2
+          },
+          "working_sets": 2,
+          "rep_range": {
+            "min": 4,
+            "max": 6,
+            "per_side": false,
+            "text": "4-6"
+          },
+          "rest": {
+            "min_s": 120,
+            "max_s": 180,
+            "text": "2-3 min"
+          },
+          "substitutions": [
+            "Smith Machine Row",
+            "DB Row"
+          ],
+          "notes": "Flare elbows out at roughly 45° and squeeze your shoulder blades together hard at the top of each rep.",
+          "rir0_attempt_failure": true,
+          "source_pages": [
+            29,
+            34,
+            39,
+            44,
+            49,
+            54,
+            59,
+            64,
+            69,
+            74,
+            79,
+            84
+          ],
+          "weeks": {
+            "1": {
+              "rir": [
+                1,
+                1
+              ],
+              "technique": null
+            },
+            "2": {
+              "rir": [
+                0,
+                0
+              ],
+              "technique": null
+            },
+            "3": {
+              "rir": [
+                0,
+                0
+              ],
+              "technique": null
+            },
+            "4": {
+              "rir": [
+                0,
+                0
+              ],
+              "technique": null
+            },
+            "5": {
+              "rir": [
+                0,
+                0
+              ],
+              "technique": null
+            },
+            "6": {
+              "rir": [
+                0,
+                0
+              ],
+              "technique": null
+            },
+            "7": {
+              "rir": [
+                1,
+                1
+              ],
+              "technique": null
+            },
+            "8": {
+              "rir": [
+                0,
+                0
+              ],
+              "technique": "myo_reps"
+            },
+            "9": {
+              "rir": [
+                0,
+                0
+              ],
+              "technique": "myo_reps"
+            },
+            "10": {
+              "rir": [
+                0,
+                0
+              ],
+              "technique": "myo_reps"
+            },
+            "11": {
+              "rir": [
+                0,
+                0
+              ],
+              "technique": "myo_reps"
+            },
+            "12": {
+              "rir": [
+                0,
+                0
+              ],
+              "technique": "myo_reps"
+            }
+          }
+        },
+        {
+          "slot_id": "pull_06",
+          "exercise": "1-Arm Reverse Pec Deck",
+          "superset": null,
+          "warmup_sets": {
+            "min": 0,
+            "max": 1
+          },
+          "working_sets": 1,
+          "rep_range": {
+            "min": 20,
+            "max": 20,
+            "per_side": false,
+            "text": "20"
+          },
+          "rest": {
+            "min_s": 60,
+            "max_s": 120,
+            "text": "1-2 min"
+          },
+          "substitutions": [
+            "Lying Reverse DB Flye",
+            "Reverse Cable Crossover"
+          ],
+          "notes": "Sweep the weight out to create the largest semi-circle possible with your arm.",
+          "rir0_attempt_failure": true,
+          "source_pages": [
+            29,
+            34,
+            39,
+            44,
+            49,
+            54,
+            59,
+            64,
+            69,
+            74,
+            79,
+            84
+          ],
+          "weeks": {
+            "1": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "2": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "3": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "4": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "5": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "6": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "7": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "8": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "9": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "10": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "11": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "12": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            }
+          }
+        },
+        {
+          "slot_id": "pull_07",
+          "exercise": "1-Arm Reverse Pec Deck",
+          "superset": null,
+          "warmup_sets": {
+            "min": 0,
+            "max": 0
+          },
+          "working_sets": 1,
+          "rep_range": {
+            "min": 10,
+            "max": 10,
+            "per_side": false,
+            "text": "10"
+          },
+          "rest": {
+            "min_s": 60,
+            "max_s": 120,
+            "text": "1-2 min"
+          },
+          "substitutions": [
+            "Lying Reverse DB Flye",
+            "Reverse Cable Crossover"
+          ],
+          "notes": "Sweep the weight out to create the largest semi-circle possible with your arm.",
+          "rir0_attempt_failure": true,
+          "source_pages": [
+            29,
+            34,
+            39,
+            44,
+            49,
+            54,
+            59,
+            64,
+            69,
+            74,
+            79,
+            84
+          ],
+          "weeks": {
+            "1": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "2": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "3": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "4": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "5": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "6": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "7": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "8": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "9": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "10": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "11": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "12": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            }
+          }
+        },
+        {
+          "slot_id": "pull_08",
+          "exercise": "Cable Crunch",
+          "superset": null,
+          "warmup_sets": {
+            "min": 0,
+            "max": 1
+          },
+          "working_sets": 2,
+          "rep_range": {
+            "min": 6,
+            "max": 8,
+            "per_side": false,
+            "text": "6-8"
+          },
+          "rest": {
+            "min_s": 60,
+            "max_s": 120,
+            "text": "1-2 min"
+          },
+          "substitutions": [
+            "Weighted Crunch",
+            "Machine Crunch"
+          ],
+          "notes": "Round your lower back as you crunch. Maintain a mind-muscle connection with your 6-pack.",
+          "rir0_attempt_failure": true,
+          "source_pages": [
+            29,
+            34,
+            39,
+            44,
+            49,
+            54,
+            59,
+            64,
+            69,
+            74,
+            79,
+            84
+          ],
+          "weeks": {
+            "1": {
+              "rir": [
+                0,
+                1
+              ],
+              "technique": null
+            },
+            "2": {
+              "rir": [
+                0,
+                0
+              ],
+              "technique": null
+            },
+            "3": {
+              "rir": [
+                0,
+                0
+              ],
+              "technique": null
+            },
+            "4": {
+              "rir": [
+                0,
+                0
+              ],
+              "technique": null
+            },
+            "5": {
+              "rir": [
+                0,
+                0
+              ],
+              "technique": null
+            },
+            "6": {
+              "rir": [
+                0,
+                0
+              ],
+              "technique": null
+            },
+            "7": {
+              "rir": [
+                0,
+                1
+              ],
+              "technique": null
+            },
+            "8": {
+              "rir": [
+                0,
+                0
+              ],
+              "technique": "drop_sets_2x25"
+            },
+            "9": {
+              "rir": [
+                0,
+                0
+              ],
+              "technique": "drop_sets_2x25"
+            },
+            "10": {
+              "rir": [
+                0,
+                0
+              ],
+              "technique": "drop_sets_2x25"
+            },
+            "11": {
+              "rir": [
+                0,
+                0
+              ],
+              "technique": "drop_sets_2x25"
+            },
+            "12": {
+              "rir": [
+                0,
+                0
+              ],
+              "technique": "drop_sets_2x25"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "arms",
+      "name": "Arms",
+      "slots": [
+        {
+          "slot_id": "arms_01",
+          "exercise": "EZ-Bar Cheat Curl",
+          "superset": "S1",
+          "warmup_sets": {
+            "min": 1,
+            "max": 1
+          },
+          "working_sets": 2,
+          "rep_range": {
+            "min": 4,
+            "max": 6,
+            "per_side": false,
+            "text": "4-6"
+          },
+          "rest": null,
+          "substitutions": [
+            "DB Cheat Curl",
+            "DB Curl"
+          ],
+          "notes": "Use some momentum to get the weight up, but be sure to control the weight on the way down!",
+          "rir0_attempt_failure": true,
+          "source_pages": [
+            30,
+            35,
+            40,
+            45,
+            50,
+            55,
+            60,
+            65,
+            70,
+            75,
+            80,
+            85
+          ],
+          "weeks": {
+            "1": {
+              "rir": [
+                0,
+                1
+              ],
+              "technique": null
+            },
+            "2": {
+              "rir": [
+                0,
+                0
+              ],
+              "technique": null
+            },
+            "3": {
+              "rir": [
+                0,
+                0
+              ],
+              "technique": null
+            },
+            "4": {
+              "rir": [
+                0,
+                0
+              ],
+              "technique": null
+            },
+            "5": {
+              "rir": [
+                0,
+                0
+              ],
+              "technique": null
+            },
+            "6": {
+              "rir": [
+                0,
+                0
+              ],
+              "technique": null
+            },
+            "7": {
+              "rir": [
+                0,
+                1
+              ],
+              "technique": null
+            },
+            "8": {
+              "rir": [
+                0,
+                0
+              ],
+              "technique": null
+            },
+            "9": {
+              "rir": [
+                0,
+                0
+              ],
+              "technique": null
+            },
+            "10": {
+              "rir": [
+                0,
+                0
+              ],
+              "technique": null
+            },
+            "11": {
+              "rir": [
+                0,
+                0
+              ],
+              "technique": null
+            },
+            "12": {
+              "rir": [
+                0,
+                0
+              ],
+              "technique": null
+            }
+          }
+        },
+        {
+          "slot_id": "arms_02",
+          "exercise": "EZ-Bar Skull Crusher",
+          "superset": "S1",
+          "warmup_sets": {
+            "min": 1,
+            "max": 1
+          },
+          "working_sets": 2,
+          "rep_range": {
+            "min": 6,
+            "max": 8,
+            "per_side": false,
+            "text": "6-8"
+          },
+          "rest": {
+            "min_s": 30,
+            "max_s": 60,
+            "text": "30-60 sec"
+          },
+          "substitutions": [
+            "DB Skull Crusher",
+            "Overhead Cable Triceps Extension"
+          ],
+          "notes": "Feel a deep stretch on the triceps throughout the entire negative. Pause for 1 second in the stretch part of each rep.",
+          "rir0_attempt_failure": true,
+          "source_pages": [
+            30,
+            35,
+            40,
+            45,
+            50,
+            55,
+            60,
+            65,
+            70,
+            75,
+            80,
+            85
+          ],
+          "weeks": {
+            "1": {
+              "rir": [
+                0,
+                1
+              ],
+              "technique": null
+            },
+            "2": {
+              "rir": [
+                0,
+                0
+              ],
+              "technique": null
+            },
+            "3": {
+              "rir": [
+                0,
+                0
+              ],
+              "technique": null
+            },
+            "4": {
+              "rir": [
+                0,
+                0
+              ],
+              "technique": null
+            },
+            "5": {
+              "rir": [
+                0,
+                0
+              ],
+              "technique": null
+            },
+            "6": {
+              "rir": [
+                0,
+                0
+              ],
+              "technique": null
+            },
+            "7": {
+              "rir": [
+                0,
+                1
+              ],
+              "technique": null
+            },
+            "8": {
+              "rir": [
+                0,
+                0
+              ],
+              "technique": null
+            },
+            "9": {
+              "rir": [
+                0,
+                0
+              ],
+              "technique": null
+            },
+            "10": {
+              "rir": [
+                0,
+                0
+              ],
+              "technique": null
+            },
+            "11": {
+              "rir": [
+                0,
+                0
+              ],
+              "technique": null
+            },
+            "12": {
+              "rir": [
+                0,
+                0
+              ],
+              "technique": null
+            }
+          }
+        },
+        {
+          "slot_id": "arms_03",
+          "exercise": "Preacher Hammer Curl",
+          "superset": "S2",
+          "warmup_sets": {
+            "min": 0,
+            "max": 1
+          },
+          "working_sets": 2,
+          "rep_range": {
+            "min": 6,
+            "max": 8,
+            "per_side": false,
+            "text": "6-8"
+          },
+          "rest": null,
+          "substitutions": [
+            "DB Preacher Curl",
+            "DB Hammer Curl"
+          ],
+          "notes": "Smooth, controlled reps.",
+          "rir0_attempt_failure": true,
+          "source_pages": [
+            30,
+            35,
+            40,
+            45,
+            50,
+            55,
+            60,
+            65,
+            70,
+            75,
+            80,
+            85
+          ],
+          "weeks": {
+            "1": {
+              "rir": [
+                0,
+                1
+              ],
+              "technique": null
+            },
+            "2": {
+              "rir": [
+                0,
+                0
+              ],
+              "technique": null
+            },
+            "3": {
+              "rir": [
+                0,
+                0
+              ],
+              "technique": null
+            },
+            "4": {
+              "rir": [
+                0,
+                0
+              ],
+              "technique": null
+            },
+            "5": {
+              "rir": [
+                0,
+                0
+              ],
+              "technique": null
+            },
+            "6": {
+              "rir": [
+                0,
+                0
+              ],
+              "technique": null
+            },
+            "7": {
+              "rir": [
+                0,
+                1
+              ],
+              "technique": null
+            },
+            "8": {
+              "rir": [
+                0,
+                0
+              ],
+              "technique": "myo_reps"
+            },
+            "9": {
+              "rir": [
+                0,
+                0
+              ],
+              "technique": "myo_reps"
+            },
+            "10": {
+              "rir": [
+                0,
+                0
+              ],
+              "technique": "myo_reps"
+            },
+            "11": {
+              "rir": [
+                0,
+                0
+              ],
+              "technique": "myo_reps"
+            },
+            "12": {
+              "rir": [
+                0,
+                0
+              ],
+              "technique": "myo_reps"
+            }
+          }
+        },
+        {
+          "slot_id": "arms_04",
+          "exercise": "Triceps Pressdown",
+          "superset": "S2",
+          "warmup_sets": {
+            "min": 0,
+            "max": 1
+          },
+          "working_sets": 2,
+          "rep_range": {
+            "min": 4,
+            "max": 6,
+            "per_side": false,
+            "text": "4-6"
+          },
+          "rest": {
+            "min_s": 30,
+            "max_s": 60,
+            "text": "30-60 sec"
+          },
+          "substitutions": [
+            "Cable Triceps Kickback",
+            "DB Triceps Kickback"
+          ],
+          "notes": "You can use a rope or bar attachment for these, whichever you find more comfortable.",
+          "rir0_attempt_failure": true,
+          "source_pages": [
+            30,
+            35,
+            40,
+            45,
+            50,
+            55,
+            60,
+            65,
+            70,
+            75,
+            80,
+            85
+          ],
+          "weeks": {
+            "1": {
+              "rir": [
+                0,
+                1
+              ],
+              "technique": null
+            },
+            "2": {
+              "rir": [
+                0,
+                0
+              ],
+              "technique": null
+            },
+            "3": {
+              "rir": [
+                0,
+                0
+              ],
+              "technique": null
+            },
+            "4": {
+              "rir": [
+                0,
+                0
+              ],
+              "technique": null
+            },
+            "5": {
+              "rir": [
+                0,
+                0
+              ],
+              "technique": null
+            },
+            "6": {
+              "rir": [
+                0,
+                0
+              ],
+              "technique": null
+            },
+            "7": {
+              "rir": [
+                0,
+                1
+              ],
+              "technique": null
+            },
+            "8": {
+              "rir": [
+                0,
+                0
+              ],
+              "technique": "myo_reps"
+            },
+            "9": {
+              "rir": [
+                0,
+                0
+              ],
+              "technique": "myo_reps"
+            },
+            "10": {
+              "rir": [
+                0,
+                0
+              ],
+              "technique": "myo_reps"
+            },
+            "11": {
+              "rir": [
+                0,
+                0
+              ],
+              "technique": "myo_reps"
+            },
+            "12": {
+              "rir": [
+                0,
+                0
+              ],
+              "technique": "myo_reps"
+            }
+          }
+        },
+        {
+          "slot_id": "arms_05",
+          "exercise": "DB Wrist Curl",
+          "superset": "S3",
+          "warmup_sets": {
+            "min": 0,
+            "max": 1
+          },
+          "working_sets": 2,
+          "rep_range": {
+            "min": 10,
+            "max": 12,
+            "per_side": false,
+            "text": "10-12"
+          },
+          "rest": null,
+          "substitutions": [
+            "Cable Wrist Curl"
+          ],
+          "notes": "Smooth, controlled reps.",
+          "rir0_attempt_failure": true,
+          "source_pages": [
+            30,
+            35,
+            40,
+            45,
+            50,
+            55,
+            60,
+            65,
+            70,
+            75,
+            80,
+            85
+          ],
+          "weeks": {
+            "1": {
+              "rir": [
+                0,
+                1
+              ],
+              "technique": null
+            },
+            "2": {
+              "rir": [
+                0,
+                0
+              ],
+              "technique": null
+            },
+            "3": {
+              "rir": [
+                0,
+                0
+              ],
+              "technique": null
+            },
+            "4": {
+              "rir": [
+                0,
+                0
+              ],
+              "technique": null
+            },
+            "5": {
+              "rir": [
+                0,
+                0
+              ],
+              "technique": null
+            },
+            "6": {
+              "rir": [
+                0,
+                0
+              ],
+              "technique": null
+            },
+            "7": {
+              "rir": [
+                0,
+                1
+              ],
+              "technique": null
+            },
+            "8": {
+              "rir": [
+                0,
+                0
+              ],
+              "technique": null
+            },
+            "9": {
+              "rir": [
+                0,
+                0
+              ],
+              "technique": null
+            },
+            "10": {
+              "rir": [
+                0,
+                0
+              ],
+              "technique": null
+            },
+            "11": {
+              "rir": [
+                0,
+                0
+              ],
+              "technique": null
+            },
+            "12": {
+              "rir": [
+                0,
+                0
+              ],
+              "technique": null
+            }
+          }
+        },
+        {
+          "slot_id": "arms_06",
+          "exercise": "DB Wrist Extension",
+          "superset": "S3",
+          "warmup_sets": {
+            "min": 0,
+            "max": 1
+          },
+          "working_sets": 2,
+          "rep_range": {
+            "min": 10,
+            "max": 12,
+            "per_side": false,
+            "text": "10-12"
+          },
+          "rest": {
+            "min_s": 30,
+            "max_s": 60,
+            "text": "30-60 sec"
+          },
+          "substitutions": [
+            "Cable Wrist Extension"
+          ],
+          "notes": "Smooth, controlled reps.",
+          "rir0_attempt_failure": true,
+          "source_pages": [
+            30,
+            35,
+            40,
+            45,
+            50,
+            55,
+            60,
+            65,
+            70,
+            75,
+            80,
+            85
+          ],
+          "weeks": {
+            "1": {
+              "rir": [
+                0,
+                1
+              ],
+              "technique": null
+            },
+            "2": {
+              "rir": [
+                0,
+                0
+              ],
+              "technique": null
+            },
+            "3": {
+              "rir": [
+                0,
+                0
+              ],
+              "technique": null
+            },
+            "4": {
+              "rir": [
+                0,
+                0
+              ],
+              "technique": null
+            },
+            "5": {
+              "rir": [
+                0,
+                0
+              ],
+              "technique": null
+            },
+            "6": {
+              "rir": [
+                0,
+                0
+              ],
+              "technique": null
+            },
+            "7": {
+              "rir": [
+                0,
+                1
+              ],
+              "technique": null
+            },
+            "8": {
+              "rir": [
+                0,
+                0
+              ],
+              "technique": null
+            },
+            "9": {
+              "rir": [
+                0,
+                0
+              ],
+              "technique": null
+            },
+            "10": {
+              "rir": [
+                0,
+                0
+              ],
+              "technique": null
+            },
+            "11": {
+              "rir": [
+                0,
+                0
+              ],
+              "technique": null
+            },
+            "12": {
+              "rir": [
+                0,
+                0
+              ],
+              "technique": null
+            }
+          }
+        },
+        {
+          "slot_id": "arms_07",
+          "exercise": "Single-Arm Machine Lateral Raise",
+          "superset": null,
+          "warmup_sets": {
+            "min": 0,
+            "max": 1
+          },
+          "working_sets": 1,
+          "rep_range": {
+            "min": 20,
+            "max": 20,
+            "per_side": false,
+            "text": "20"
+          },
+          "rest": {
+            "min_s": 60,
+            "max_s": 120,
+            "text": "1-2 min"
+          },
+          "substitutions": [
+            "High-Cable Lateral Raise",
+            "DB Lateral Raise"
+          ],
+          "notes": "Resist the negative on every rep and avoid pausing at the bottom",
+          "rir0_attempt_failure": true,
+          "source_pages": [
+            30,
+            35,
+            40,
+            45,
+            50,
+            55,
+            60,
+            65,
+            70,
+            75,
+            80,
+            85
+          ],
+          "weeks": {
+            "1": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "2": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "3": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "4": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "5": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "6": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "7": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "8": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "9": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "10": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "11": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "12": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            }
+          }
+        },
+        {
+          "slot_id": "arms_08",
+          "exercise": "Single-Arm Machine Lateral Raise",
+          "superset": null,
+          "warmup_sets": {
+            "min": 0,
+            "max": 0
+          },
+          "working_sets": 1,
+          "rep_range": {
+            "min": 10,
+            "max": 10,
+            "per_side": false,
+            "text": "10"
+          },
+          "rest": {
+            "min_s": 60,
+            "max_s": 120,
+            "text": "1-2 min"
+          },
+          "substitutions": [
+            "High-Cable Lateral Raise",
+            "DB Lateral Raise"
+          ],
+          "notes": "Resist the negative on every rep and avoid pausing at the bottom",
+          "rir0_attempt_failure": true,
+          "source_pages": [
+            30,
+            35,
+            40,
+            45,
+            50,
+            55,
+            60,
+            65,
+            70,
+            75,
+            80,
+            85
+          ],
+          "weeks": {
+            "1": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "2": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "3": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "4": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "5": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "6": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "7": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "8": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "9": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "10": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "11": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            },
+            "12": {
+              "rir": [
+                0
+              ],
+              "technique": null
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
