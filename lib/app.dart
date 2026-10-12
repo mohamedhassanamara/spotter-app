@@ -1,0 +1,73 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+
+import 'app_providers.dart';
+import 'core/theme/app_theme.dart';
+import 'router.dart';
+
+class SpotterApp extends ConsumerStatefulWidget {
+  const SpotterApp({super.key});
+
+  @override
+  ConsumerState<SpotterApp> createState() => _SpotterAppState();
+}
+
+class _SpotterAppState extends ConsumerState<SpotterApp> {
+  late final AppLifecycleListener _lifecycle;
+  final _onboarded = ValueNotifier<bool>(false);
+  GoRouter? _router;
+
+  @override
+  void initState() {
+    super.initState();
+    ref.listenManual(settingsProvider, (_, next) {
+      final v = next.value?.onboarded;
+      if (v != null) _onboarded.value = v;
+    }, fireImmediately: true);
+    _lifecycle = AppLifecycleListener(onResume: _refreshHealth);
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await ref.read(notificationServiceProvider).init();
+      _refreshHealth();
+    });
+  }
+
+  /// Pulls fresh Health data on launch and whenever the app comes back to the foreground.
+  Future<void> _refreshHealth() async {
+    final settings = await ref.read(settingsProvider.future);
+    if (!settings.onboarded || !settings.healthPermissionsRequested && !settings.useFakeHealth) return;
+    await ref.read(healthSyncProvider.notifier).sync();
+  }
+
+  @override
+  void dispose() {
+    _lifecycle.dispose();
+    _onboarded.dispose();
+    _router?.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final settings = ref.watch(settingsProvider);
+    return settings.when(
+      loading: () => MaterialApp(theme: buildAppTheme(), home: const Scaffold(body: Center(child: CircularProgressIndicator()))),
+      error: (e, _) => MaterialApp(theme: buildAppTheme(), home: Scaffold(body: Center(child: Text('Failed to open database: $e')))),
+      data: (s) {
+        if (_router == null) {
+          // No listeners yet, so this can't trigger a rebuild; avoids a bounce through /onboarding.
+          _onboarded.value = s.onboarded;
+          _router = buildRouter(_onboarded);
+        }
+        return MaterialApp.router(
+          title: 'Spotter',
+          debugShowCheckedModeBanner: false,
+          theme: buildAppTheme(),
+          darkTheme: buildAppTheme(),
+          themeMode: ThemeMode.dark,
+          routerConfig: _router,
+        );
+      },
+    );
+  }
+}
