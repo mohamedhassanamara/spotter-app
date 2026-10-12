@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 export '../domain/format.dart';
 
 import '../../features/ranks/domain/ranks.dart';
+import '../../features/ranks/presentation/rank_badge.dart';
 import '../../features/readiness/domain/readiness.dart';
 import '../theme/app_theme.dart';
 
@@ -125,7 +126,7 @@ class TierBadge extends StatelessWidget {
     final s = score;
     final color = s == null ? AppColors.unranked : tierColor(s.tier);
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: large ? 14 : 10, vertical: large ? 7 : 4),
+      padding: EdgeInsets.fromLTRB(large ? 8 : 6, large ? 4 : 3, large ? 14 : 10, large ? 4 : 3),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.16),
         borderRadius: BorderRadius.circular(999),
@@ -134,7 +135,7 @@ class TierBadge extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.shield_rounded, size: large ? 18 : 14, color: color),
+          RankBadge(score: s, size: BadgeSize.small, width: large ? 26 : 20, animate: false),
           const SizedBox(width: 6),
           Text(
             s?.label ?? 'Unranked',

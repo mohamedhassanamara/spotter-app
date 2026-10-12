@@ -19,12 +19,23 @@ import '../../ranks/domain/ranks.dart';
 import '../../readiness/data/readiness_repository.dart';
 import 'history_repository.dart';
 
+enum RankChangeScope { exercise, group, overall }
+
 class RankChange {
-  const RankChange({required this.name, required this.from, required this.to, required this.up});
+  const RankChange({required this.name, required this.fromScore, required this.toScore, required this.scope});
   final String name;
-  final String? from;
-  final String to;
-  final bool up;
+  final RankScore? fromScore;
+  final RankScore toScore;
+  final RankChangeScope scope;
+
+  String? get from => fromScore?.label;
+  String get to => toScore.label;
+
+  /// A first placement counts as up.
+  bool get up => fromScore == null || toScore.value > fromScore!.value;
+
+  /// Moved to a better division or tier (not just LP), i.e. worth a rank-up animation.
+  bool get isRankUp => fromScore != null && toScore.value > fromScore!.value;
 }
 
 class GuardrailFlag {
@@ -74,6 +85,9 @@ class SessionSummary {
   final bool? healthSaved;
 
   int get xpTotal => xpSession + xpBonus;
+
+  List<RankChange> get rankUps => rankChanges.where((r) => r.isRankUp).toList();
+  List<RankChange> get rankDowns => rankChanges.where((r) => !r.up).toList();
 }
 
 /// Everything that happens when a session is finished.
@@ -258,18 +272,18 @@ class FinishService {
     for (final r in after.exercises) {
       final prev = beforeEx[r.standard.id];
       if (prev == null || prev.label != r.score.label) {
-        out.add(RankChange(name: r.standard.name, from: prev?.label, to: r.score.label, up: prev == null || r.score.value > prev.value));
+        out.add(RankChange(name: r.standard.name, fromScore: prev, toScore: r.score, scope: RankChangeScope.exercise));
       }
     }
     for (final g in after.groups.values) {
       final prev = before.groups[g.group]?.score;
       if (prev == null || prev.label != g.score.label) {
-        out.add(RankChange(name: g.group.label, from: prev?.label, to: g.score.label, up: prev == null || g.score.value > prev.value));
+        out.add(RankChange(name: g.group.label, fromScore: prev, toScore: g.score, scope: RankChangeScope.group));
       }
     }
     final o = after.overall, p = before.overall;
     if (o != null && (p == null || p.label != o.label)) {
-      out.add(RankChange(name: 'Overall', from: p?.label, to: o.label, up: p == null || o.value > p.value));
+      out.add(RankChange(name: 'Overall', fromScore: p, toScore: o, scope: RankChangeScope.overall));
     }
     return out;
   }

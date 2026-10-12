@@ -1,7 +1,11 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'app_providers.dart';
+
+import 'features/debug/presentation/badge_gallery_screen.dart';
 import 'features/debug/presentation/debug_menu_screen.dart';
 import 'features/history/presentation/exercise_history_screen.dart';
 import 'features/history/presentation/session_detail_screen.dart';
@@ -11,6 +15,7 @@ import 'features/library/presentation/exercise_detail_screen.dart';
 import 'features/library/presentation/library_screen.dart';
 import 'features/onboarding/presentation/onboarding_screen.dart';
 import 'features/profile/presentation/profile_screen.dart';
+import 'features/ranks/presentation/rank_up_screen.dart';
 import 'features/ranks/presentation/progress_screen.dart';
 import 'features/settings/presentation/settings_screen.dart';
 import 'features/workout/presentation/active_workout_screen.dart';
@@ -29,6 +34,8 @@ abstract final class Routes {
   static const profile = '/profile';
   static const workout = '/workout';
   static const summary = '/summary';
+  static const rankUp = '/rank-up';
+  static const badgeGallery = '/settings/debug/badges';
   static const pickExercise = '/pick-exercise';
   static const newExercise = '/exercise-new';
   static const settings = '/settings';
@@ -68,6 +75,19 @@ GoRouter buildRouter(ValueListenable<bool> onboarded) {
         path: Routes.workout,
         parentNavigatorKey: rootNavigatorKey,
         builder: (_, _) => const ActiveWorkoutScreen(),
+      ),
+      GoRoute(
+        path: Routes.rankUp,
+        parentNavigatorKey: rootNavigatorKey,
+        pageBuilder: (context, _) => CustomTransitionPage<void>(
+          child: Consumer(
+            builder: (context, ref, _) => RankUpScreen(
+              changes: ref.read(lastSummaryProvider)?.rankUps ?? const [],
+              onDone: () => context.pushReplacement(Routes.summary),
+            ),
+          ),
+          transitionsBuilder: (_, a, _, child) => FadeTransition(opacity: a, child: child),
+        ),
       ),
       GoRoute(
         path: Routes.summary,
@@ -117,7 +137,19 @@ GoRouter buildRouter(ValueListenable<bool> onboarded) {
         builder: (_, _) => const SettingsScreen(),
         routes: [
           if (kDebugMode)
-            GoRoute(path: 'debug', parentNavigatorKey: rootNavigatorKey, builder: (_, _) => const DebugMenuScreen()),
+            GoRoute(
+              path: 'debug',
+              parentNavigatorKey: rootNavigatorKey,
+              builder: (_, _) => const DebugMenuScreen(),
+              routes: [
+                GoRoute(path: 'badges', parentNavigatorKey: rootNavigatorKey, builder: (_, _) => const BadgeGalleryScreen()),
+                GoRoute(
+                  path: 'rank-up-preview',
+                  parentNavigatorKey: rootNavigatorKey,
+                  builder: (_, _) => RankUpScreen(changes: demoRankUps(), onDone: () {}, loop: true),
+                ),
+              ],
+            ),
         ],
       ),
     ],

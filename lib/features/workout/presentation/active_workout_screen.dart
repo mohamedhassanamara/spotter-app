@@ -227,7 +227,7 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
             health: ref.read(healthSourceProvider),
           );
       ref.read(lastSummaryProvider.notifier).set(summary);
-      if (mounted) context.pushReplacement(Routes.summary);
+      if (mounted) context.pushReplacement(summary.rankUps.isEmpty ? Routes.summary : Routes.rankUp);
     } catch (e) {
       if (mounted) {
         setState(() => _finishing = false);

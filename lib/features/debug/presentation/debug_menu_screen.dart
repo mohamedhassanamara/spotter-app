@@ -1,10 +1,12 @@
 import 'package:drift/drift.dart' hide Column;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../app_providers.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/common.dart';
+import '../../../router.dart';
 import '../data/seed_generator.dart';
 
 final _tableCountsProvider = FutureProvider.autoDispose<Map<String, int>>((ref) async {
@@ -143,6 +145,11 @@ class _DebugMenuScreenState extends ConsumerState<DebugMenuScreen> {
                           await ref.read(readinessRepositoryProvider).recomputeScores(sinceDays: 365, now: DateTime.now());
                           return 'Readiness recomputed';
                         }),
+              ),
+              ListTile(
+                leading: const Icon(Icons.shield_rounded),
+                title: const Text('Rank badges & rank-up preview'),
+                onTap: () => context.push(Routes.badgeGallery),
               ),
             ]),
           ),

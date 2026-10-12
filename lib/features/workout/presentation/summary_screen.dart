@@ -7,6 +7,7 @@ import '../../../app_providers.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/common.dart';
 import '../../../router.dart';
+import '../../ranks/presentation/rank_badge.dart';
 
 class SummaryScreen extends ConsumerWidget {
   const SummaryScreen({super.key});
@@ -148,17 +149,26 @@ class SummaryScreen extends ConsumerWidget {
                 trailing: const Text('+50 XP', style: TextStyle(color: AppColors.xp, fontWeight: FontWeight.w800)),
               ),
           ],
-          if (s.rankChanges.isNotEmpty) ...[
+          if (s.rankChanges.any((r) => r.up)) ...[
             const SectionHeader('Rank changes'),
-            for (final r in s.rankChanges)
+            for (final r in s.rankChanges.where((r) => r.up))
               ListTile(
                 contentPadding: EdgeInsets.zero,
-                leading: Icon(r.up ? Icons.trending_up_rounded : Icons.trending_down_rounded,
-                    color: r.up ? AppColors.primary : AppColors.danger),
+                leading: RankBadge(score: r.toScore, size: BadgeSize.small, width: 36, animate: false),
                 title: Text(r.name, style: const TextStyle(fontWeight: FontWeight.w700)),
-                subtitle: Text(r.from == null ? 'Ranked: ${r.to}' : '${r.from} → ${r.to}'),
+                subtitle: Text(r.from == null ? 'Placed: ${r.to}' : '${r.from} → ${r.to}'),
+                trailing: const Icon(Icons.trending_up_rounded, color: AppColors.primary),
               ),
           ],
+          if (s.rankDowns.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Text(
+                'Slipped: ${s.rankDowns.map((r) => '${r.name} ${r.to}').join(', ')}. '
+                'Ranks use your best e1RM of the last 90 days.',
+                style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
+              ),
+            ),
           if (s.achievements.isNotEmpty) ...[
             const SectionHeader('Achievements unlocked'),
             for (final a in s.achievements)
