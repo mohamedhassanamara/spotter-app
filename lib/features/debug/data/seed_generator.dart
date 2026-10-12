@@ -157,8 +157,6 @@ class SeedGenerator {
     final firstMonday = weekStart(addDays(dateOnly(now), -weeks * 7));
     final yesterday = addDays(dateOnly(now), -1);
     var sessions = 0;
-    // Program week 1 starts on the first seeded Monday.
-    await ProgramRepository(_db).setCurrentWeek(1, now: firstMonday);
 
     for (var day = firstMonday; !day.isAfter(yesterday); day = addDays(day, 1)) {
       // The program's week: Upper, Lower, rest, Push, Pull, Arms, rest.
@@ -168,7 +166,7 @@ class SeedGenerator {
       if (band == ReadinessBand.red && rng.nextBool()) continue; // smart rest
       final weekIndex = day.difference(firstMonday).inDays ~/ 7;
       final routine = routineByName[dayName]!;
-      final programWeek = programWeekFor(startMonday: firstMonday, now: day, weekCount: program.weekCount);
+      const programWeek = standardProgramWeek;
 
       final start = DateTime(day.year, day.month, day.day, 18).add(Duration(minutes: rng.nextInt(50) - 20));
       final history = await historyRepo.load(catalog);

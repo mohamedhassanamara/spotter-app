@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'app_providers.dart';
+import 'core/diagnostics/error_log.dart';
 import 'core/theme/app_theme.dart';
 import 'features/tutorials/presentation/exercise_demo.dart';
 import 'router.dart';
@@ -28,15 +29,24 @@ class _SpotterAppState extends ConsumerState<SpotterApp> {
     }, fireImmediately: true);
     // Exercise ↔ ExerciseDB matching and GIF prefetch for routine exercises (re-runs when routines change).
     ref.listenManual(mediaBootstrapProvider, (_, next) {
-      if (next.hasError) debugPrint('Media bootstrap failed: ${next.error}');
+      if (next.hasError) ErrorLog.instance.recordCaught(next.error!, next.stackTrace ?? StackTrace.current);
     });
     _lifecycle = AppLifecycleListener(onResume: _refreshHealth);
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      await ref.read(notificationServiceProvider).init();
-      _refreshHealth();
-      await ref.read(rankLadderMigrationProvider.future);
-      await ref.read(programRoutinesBootstrapProvider.future);
+    // Independent startup steps: one failing must not block the others, and every failure is logged.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _step(() => ref.read(notificationServiceProvider).init());
+      _step(_refreshHealth);
+      _step(() => ref.read(rankLadderMigrationProvider.future));
     });
+  }
+
+  Future<void> _step(Future<Object?> Function() f) async {
+    try {
+      await f();
+    } catch (e, st) {
+      // If the app is being torn down, the step was simply cancelled.
+      if (mounted) ErrorLog.instance.recordCaught(e, st);
+    }
   }
 
   /// Pulls fresh Health data on launch and whenever the app comes back to the foreground.

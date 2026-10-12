@@ -147,6 +147,12 @@ class _DebugMenuScreenState extends ConsumerState<DebugMenuScreen> {
                         }),
               ),
               ListTile(
+                leading: const Icon(Icons.error_outline_rounded, color: AppColors.danger),
+                title: const Text('Error log'),
+                subtitle: const Text('Every recorded error, with Copy all'),
+                onTap: () => context.push(Routes.errorLog),
+              ),
+              ListTile(
                 leading: const Icon(Icons.view_in_ar_rounded),
                 title: const Text('Media matching'),
                 subtitle: const Text('Unmatched and low-confidence 3D demos'),

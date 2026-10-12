@@ -53,16 +53,17 @@ AchievementStats buildAchievementStats({
   required int bestTierIndex,
   required int totalXp,
   required int prCount,
+  Set<int> plannedRestWeekdays = const {},
 }) {
   const streaks = StreakCalculator();
   final days = [for (final s in history.sessions) s.startedAt];
   return AchievementStats(
     sessions: history.sessions.length,
     longestCleanSessionStreak: longestCleanStreak([for (final s in history.sessions) s.hasOverrides]),
-    smartRestDays: streaks.totalSmartRestDays(sessionDays: days, redDays: redDays, now: now),
+    smartRestDays: streaks.totalSmartRestDays(sessionDays: days, redDays: redDays, now: now, plannedRestWeekdays: plannedRestWeekdays),
     comebacks: countComebacks(history.logsByExercise.values),
     longestWeeklyStreak:
-        streaks.compute(sessionDays: days, redDays: redDays, goal: weeklyGoal, now: now).longest,
+        streaks.compute(sessionDays: days, redDays: redDays, goal: weeklyGoal, now: now, plannedRestWeekdays: plannedRestWeekdays).longest,
     bestExerciseTierIndex: bestTierIndex,
     disciplinePct30: disciplineLast30(history, now),
     workingSets30: workingSetsLast30(history, now),

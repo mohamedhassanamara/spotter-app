@@ -242,3 +242,40 @@ bodyweight lifts uses 2.5 kg. Both are editable in Settings.
   - Each lift is now trained once a week, so an episode spans two weeks to reach the "2 of 3 sessions"
     ego trigger.
   - The seed test's e1RM-trend check expects a gain rather than +5%.
+
+## v2.1 review answers
+- **Face Pull** was removed from the Pull routine (you add exercises freely). **Back Extension** is
+  confirmed: 1 × 30 to failure via the 45° Hyperextension substitution.
+- **No week plan.** Every session uses the program's standard hard week (`standardProgramWeek = 2`):
+  full effort, no intro/deload easing, no automatic Block 2 techniques. You add techniques by hand.
+  The week stepper and the week labels were removed.
+- **Warm-ups.** The higher count for the day's first exercise and for compounds, the lower count for
+  everything else (`warmupCountFor`).
+- **Planned rest days.** Wednesday and Sunday come from the program's weekly layout. A Red day that
+  falls on a planned rest day isn't counted as smart rest (it never lowers the goal), and the streak
+  dots show those days as planned rest. Installing the routines sets the weekly goal to the program's
+  5 sessions.
+
+## Phase F: Train flow on the phone
+- **Error log.** `FlutterError.onError`, `PlatformDispatcher.onError` and the app's own recovering
+  catch blocks write to a persistent log (Application Support/`error_log.jsonl`, last 300 entries),
+  with timestamp, error, stack and current route. Open it from Settings by long-pressing the version
+  label (release builds too); it has Copy all and Clear.
+- **Tap-driven integration tests** (`integration_test/`) run on the simulator against a fresh install
+  (and an upgraded one) with only your routines. Each flow fails if anything lands in the error log.
+- **Routines install before the first frame** (`bootstrapDatabase`, shared by `main()` and the tests).
+  They used to be installed in a post-frame chain behind notification setup and the rank-ladder
+  migration. On an upgraded install that chain took more than 9 s, so the old routines stayed on Train,
+  and if any earlier step threw, the new routines were never installed. A newer `my_routines.json`
+  version now reinstalls them.
+- **Independent startup steps.** Notification setup, Health refresh and the rank-ladder migration each
+  run on their own and log their own failures.
+- **Readiness card.** With no recovery data it collapses to one line, so Resume/Start stays above the
+  fold.
+- **Dead ExerciseDB GIFs.** 176 of 1,500 V1 GIF URLs return HTTP 404. They're flagged in the asset and
+  never matched (the media match version is bumped, so matches are recomputed on launch; manual picks
+  are kept). Four overrides pointed at dead GIFs and now point at live duplicates. A GIF that still
+  fails to load at runtime falls back to the library photos.
+- **Replace exercise.** In the workout menu, replacing offers the program's exercise and its
+  substitutions first, resolved to library exercises by `ExerciseNameResolver` (exact name, then
+  token similarity), then library search. The replacement keeps the slot's prescription and set count.

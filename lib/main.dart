@@ -4,15 +4,18 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'app.dart';
 import 'core/db/database.dart';
+import 'core/diagnostics/error_log.dart';
 import 'core/providers.dart';
-import 'features/library/data/exercise_repository.dart';
+import 'bootstrap.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await ErrorLog.instance.init();
+  ErrorLog.instance.installGlobalHandlers();
   await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
 
   final db = AppDatabase.open();
-  await ExerciseRepository(db).ensureSeeded();
+  await bootstrapDatabase(db);
 
   runApp(ProviderScope(
     overrides: [databaseProvider.overrideWithValue(db)],

@@ -60,6 +60,24 @@ If you change `lib/core/db/tables.dart`, regenerate the drift code with
 `dart run build_runner build --delete-conflicting-outputs`, and add a migration step in
 `AppDatabase.migration` and bump `schemaVersion`.
 
+### Integration tests (real taps on the simulator)
+
+```sh
+xcrun simctl list devices booted          # find the simulator id
+flutter test integration_test -d <simulator-id>
+```
+
+The flows start from a fresh install (and an upgraded v2 install) with only your five routines.
+They tap through Train → Upper (warm-ups, working sets including the 1×20 row, steppers, add/remove
+set, replace via substitutions, background/resume, cold restart, finish, summary, history, start the
+next routine from Home) and Pull (assisted pull-ups with negative load). A flow fails if anything is
+written to the in-app error log.
+
+### Reporting bugs from the phone
+
+Settings → long-press the version label → **Error log** → **Copy all**, then paste it into a message.
+It works in release builds.
+
 ## Seed data (debug builds only)
 
 Run a debug build (`flutter run`), then open **Settings** and tap **Debug menu**, or long-press the

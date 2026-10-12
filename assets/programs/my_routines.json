@@ -1,47 +1,338 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "program_id": "min_max_phase2_5x",
-  "description": "The owner's Min-Max Phase 2 routines. Order and working-set counts are the owner's; every other parameter comes from the program slots listed in program_slots (in order: sets fill the first slot, then the next). relation: program = the program's own exercise (or the same movement under another name), substitution = one of the slot's listed substitution options, swap = the owner's own swap (inherits the replaced exercise's prescription), extra = not in the program (inherits from inherit_from).",
+  "description": "The owner's Min-Max Phase 2 routines. Order and working-set counts are the owner's; every other parameter comes from the program slots listed in program_slots (in order: sets fill the first slot, then the next). relation: program = the program's own exercise (or the same movement under another name), substitution = one of the slot's listed substitution options, swap = the owner's own swap (inherits the replaced exercise's prescription), extra = not in the program (inherits from inherit_from). v2: Face Pull removed (owner adds exercises freely); Back Extension confirmed (1 x 30 to failure via 45° Hyperextension).",
   "routines": [
-    {"day": "upper", "name": "Upper", "exercises": [
-      {"name": "Chest Press", "exercise_id": "Leverage_Chest_Press", "sets": 3, "program_slots": ["upper_01", "upper_02"], "relation": "program", "program_exercise": "Machine Chest Press"},
-      {"name": "Straight Arm Pulldown", "exercise_id": "Straight-Arm_Pulldown", "sets": 2, "program_slots": ["upper_03", "upper_04"], "relation": "swap", "program_exercise": "Machine Lat Pullover"},
-      {"name": "Machine Chest Fly", "exercise_id": "Butterfly", "sets": 2, "program_slots": ["upper_05"], "relation": "program", "program_exercise": "Pec Deck"},
-      {"name": "Chest Supported T-Bar Row", "exercise_id": "Lying_T-Bar_Row", "sets": 2, "program_slots": ["upper_06"], "relation": "program", "program_exercise": "Chest-Supported T-Bar Row"},
-      {"name": "Dumbbell Incline Y Raise", "exercise_id": "sp_db_incline_y_raise", "sets": 3, "program_slots": ["upper_07"], "relation": "program", "program_exercise": "Incline DB Y-Raise"}
-    ]},
-    {"day": "lower", "name": "Lower", "exercises": [
-      {"name": "Lying Leg Curl", "exercise_id": "Lying_Leg_Curls", "sets": 3, "program_slots": ["lower_01"], "relation": "substitution", "program_exercise": "Seated Leg Curl"},
-      {"name": "Pendulum Squat", "exercise_id": "sp_pendulum_squat", "sets": 2, "program_slots": ["lower_02"], "relation": "swap", "program_exercise": "Hack Squat"},
-      {"name": "Leg Extension", "exercise_id": "Leg_Extensions", "sets": 3, "program_slots": ["lower_03", "lower_04"], "relation": "program", "program_exercise": "Leg Extension"},
-      {"name": "Walking Lunge", "exercise_id": "sp_db_walking_lunge", "sets": 1, "program_slots": ["lower_05"], "relation": "program", "program_exercise": "DB Walking Lunge"},
-      {"name": "Sled Press Calf Raise", "exercise_id": "Calf_Press_On_The_Leg_Press_Machine", "sets": 3, "program_slots": ["lower_06"], "relation": "substitution", "program_exercise": "Standing Calf Raise"},
-      {"name": "Back Extension", "exercise_id": "Hyperextensions_Back_Extensions", "sets": 1, "program_slots": ["lower_07"], "relation": "substitution", "program_exercise": "Glute Kickback", "needs_confirmation": true}
-    ]},
-    {"day": "push", "name": "Push", "exercises": [
-      {"name": "High-to-Low Cable Fly", "exercise_id": "Cable_Crossover", "sets": 2, "program_slots": ["push_07"], "relation": "program", "program_exercise": "Cable Flye"},
-      {"name": "Seated Smith Machine Shoulder Press", "exercise_id": "Smith_Machine_Overhead_Shoulder_Press", "sets": 2, "program_slots": ["push_01"], "relation": "substitution", "program_exercise": "Machine Shoulder Press"},
-      {"name": "Smith Machine Bench Press", "exercise_id": "Smith_Machine_Bench_Press", "sets": 2, "program_slots": ["push_02", "push_03"], "relation": "substitution", "program_exercise": "DB Bench Press"},
-      {"name": "Single Leg Extension", "exercise_id": "Single-Leg_Leg_Extension", "sets": 1, "program_slots": ["push_04"], "relation": "program", "program_exercise": "Single-Leg Leg Extension"},
-      {"name": "Standing Machine Lateral Raise", "exercise_id": "sp_standing_machine_lateral_raise", "sets": 2, "program_slots": ["push_05", "push_06"], "relation": "program", "program_exercise": "Machine Lateral Raise"}
-    ]},
-    {"day": "pull", "name": "Pull", "exercises": [
-      {"name": "Assisted Pull-Ups", "exercise_id": "sp_assisted_pull_up_machine", "sets": 3, "program_slots": ["pull_01"], "relation": "program", "program_exercise": "Pull-Up (Wide Grip)", "assisted": true},
-      {"name": "Stiff-Leg Deadlift", "exercise_id": "Stiff-Legged_Barbell_Deadlift", "sets": 2, "program_slots": ["pull_02"], "relation": "program", "program_exercise": "Stiff-Leg Deadlift"},
-      {"name": "Close-Grip Lat Pulldown", "exercise_id": "Close-Grip_Front_Lat_Pulldown", "sets": 2, "program_slots": ["pull_03", "pull_04"], "relation": "program", "program_exercise": "Close-Grip Lat Pulldown"},
-      {"name": "Dumbbell Row", "exercise_id": "One-Arm_Dumbbell_Row", "sets": 2, "program_slots": ["pull_05"], "relation": "substitution", "program_exercise": "Chest-Supported Machine Row"},
-      {"name": "Machine Reverse Fly", "exercise_id": "Reverse_Machine_Flyes", "sets": 2, "program_slots": ["pull_06", "pull_07"], "relation": "program", "program_exercise": "1-Arm Reverse Pec Deck"},
-      {"name": "Face Pull", "exercise_id": "Face_Pull", "sets": 1, "program_slots": ["pull_06"], "relation": "extra", "program_exercise": null, "inherit_from": "pull_06", "needs_confirmation": true},
-      {"name": "Decline Crunch", "exercise_id": "Decline_Crunch", "sets": 2, "program_slots": ["pull_08"], "relation": "swap", "program_exercise": "Cable Crunch", "bodyweight": true}
-    ]},
-    {"day": "arms", "name": "Arms", "exercises": [
-      {"name": "EZ Bar Curl", "exercise_id": "EZ-Bar_Curl", "sets": 2, "program_slots": ["arms_01"], "relation": "program", "program_exercise": "EZ-Bar Cheat Curl"},
-      {"name": "Cable Overhead Triceps Extension", "exercise_id": "Cable_Rope_Overhead_Triceps_Extension", "sets": 2, "program_slots": ["arms_02"], "relation": "substitution", "program_exercise": "EZ-Bar Skull Crusher"},
-      {"name": "Preacher Hammer Curl", "exercise_id": "Preacher_Hammer_Dumbbell_Curl", "sets": 2, "program_slots": ["arms_03"], "relation": "program", "program_exercise": "Preacher Hammer Curl"},
-      {"name": "Triceps Pushdown", "exercise_id": "Triceps_Pushdown", "sets": 2, "program_slots": ["arms_04"], "relation": "program", "program_exercise": "Triceps Pressdown"},
-      {"name": "Cable Wrist Curl", "exercise_id": "Cable_Wrist_Curl", "sets": 2, "program_slots": ["arms_05"], "relation": "substitution", "program_exercise": "DB Wrist Curl"},
-      {"name": "Cable Reverse Wrist Curl", "exercise_id": "sp_cable_reverse_wrist_curl", "sets": 2, "program_slots": ["arms_06"], "relation": "substitution", "program_exercise": "DB Wrist Extension"},
-      {"name": "Cable Lateral Raise", "exercise_id": "sp_cable_lateral_raise", "sets": 2, "program_slots": ["arms_07", "arms_08"], "relation": "substitution", "program_exercise": "Single-Arm Machine Lateral Raise"}
-    ]}
+    {
+      "day": "upper",
+      "name": "Upper",
+      "exercises": [
+        {
+          "name": "Chest Press",
+          "exercise_id": "Leverage_Chest_Press",
+          "sets": 3,
+          "program_slots": [
+            "upper_01",
+            "upper_02"
+          ],
+          "relation": "program",
+          "program_exercise": "Machine Chest Press"
+        },
+        {
+          "name": "Straight Arm Pulldown",
+          "exercise_id": "Straight-Arm_Pulldown",
+          "sets": 2,
+          "program_slots": [
+            "upper_03",
+            "upper_04"
+          ],
+          "relation": "swap",
+          "program_exercise": "Machine Lat Pullover"
+        },
+        {
+          "name": "Machine Chest Fly",
+          "exercise_id": "Butterfly",
+          "sets": 2,
+          "program_slots": [
+            "upper_05"
+          ],
+          "relation": "program",
+          "program_exercise": "Pec Deck"
+        },
+        {
+          "name": "Chest Supported T-Bar Row",
+          "exercise_id": "Lying_T-Bar_Row",
+          "sets": 2,
+          "program_slots": [
+            "upper_06"
+          ],
+          "relation": "program",
+          "program_exercise": "Chest-Supported T-Bar Row"
+        },
+        {
+          "name": "Dumbbell Incline Y Raise",
+          "exercise_id": "sp_db_incline_y_raise",
+          "sets": 3,
+          "program_slots": [
+            "upper_07"
+          ],
+          "relation": "program",
+          "program_exercise": "Incline DB Y-Raise"
+        }
+      ]
+    },
+    {
+      "day": "lower",
+      "name": "Lower",
+      "exercises": [
+        {
+          "name": "Lying Leg Curl",
+          "exercise_id": "Lying_Leg_Curls",
+          "sets": 3,
+          "program_slots": [
+            "lower_01"
+          ],
+          "relation": "substitution",
+          "program_exercise": "Seated Leg Curl"
+        },
+        {
+          "name": "Pendulum Squat",
+          "exercise_id": "sp_pendulum_squat",
+          "sets": 2,
+          "program_slots": [
+            "lower_02"
+          ],
+          "relation": "swap",
+          "program_exercise": "Hack Squat"
+        },
+        {
+          "name": "Leg Extension",
+          "exercise_id": "Leg_Extensions",
+          "sets": 3,
+          "program_slots": [
+            "lower_03",
+            "lower_04"
+          ],
+          "relation": "program",
+          "program_exercise": "Leg Extension"
+        },
+        {
+          "name": "Walking Lunge",
+          "exercise_id": "sp_db_walking_lunge",
+          "sets": 1,
+          "program_slots": [
+            "lower_05"
+          ],
+          "relation": "program",
+          "program_exercise": "DB Walking Lunge"
+        },
+        {
+          "name": "Sled Press Calf Raise",
+          "exercise_id": "Calf_Press_On_The_Leg_Press_Machine",
+          "sets": 3,
+          "program_slots": [
+            "lower_06"
+          ],
+          "relation": "substitution",
+          "program_exercise": "Standing Calf Raise"
+        },
+        {
+          "name": "Back Extension",
+          "exercise_id": "Hyperextensions_Back_Extensions",
+          "sets": 1,
+          "program_slots": [
+            "lower_07"
+          ],
+          "relation": "substitution",
+          "program_exercise": "Glute Kickback",
+          "confirmed": true
+        }
+      ]
+    },
+    {
+      "day": "push",
+      "name": "Push",
+      "exercises": [
+        {
+          "name": "High-to-Low Cable Fly",
+          "exercise_id": "Cable_Crossover",
+          "sets": 2,
+          "program_slots": [
+            "push_07"
+          ],
+          "relation": "program",
+          "program_exercise": "Cable Flye"
+        },
+        {
+          "name": "Seated Smith Machine Shoulder Press",
+          "exercise_id": "Smith_Machine_Overhead_Shoulder_Press",
+          "sets": 2,
+          "program_slots": [
+            "push_01"
+          ],
+          "relation": "substitution",
+          "program_exercise": "Machine Shoulder Press"
+        },
+        {
+          "name": "Smith Machine Bench Press",
+          "exercise_id": "Smith_Machine_Bench_Press",
+          "sets": 2,
+          "program_slots": [
+            "push_02",
+            "push_03"
+          ],
+          "relation": "substitution",
+          "program_exercise": "DB Bench Press"
+        },
+        {
+          "name": "Single Leg Extension",
+          "exercise_id": "Single-Leg_Leg_Extension",
+          "sets": 1,
+          "program_slots": [
+            "push_04"
+          ],
+          "relation": "program",
+          "program_exercise": "Single-Leg Leg Extension"
+        },
+        {
+          "name": "Standing Machine Lateral Raise",
+          "exercise_id": "sp_standing_machine_lateral_raise",
+          "sets": 2,
+          "program_slots": [
+            "push_05",
+            "push_06"
+          ],
+          "relation": "program",
+          "program_exercise": "Machine Lateral Raise"
+        }
+      ]
+    },
+    {
+      "day": "pull",
+      "name": "Pull",
+      "exercises": [
+        {
+          "name": "Assisted Pull-Ups",
+          "exercise_id": "sp_assisted_pull_up_machine",
+          "sets": 3,
+          "program_slots": [
+            "pull_01"
+          ],
+          "relation": "program",
+          "program_exercise": "Pull-Up (Wide Grip)",
+          "assisted": true
+        },
+        {
+          "name": "Stiff-Leg Deadlift",
+          "exercise_id": "Stiff-Legged_Barbell_Deadlift",
+          "sets": 2,
+          "program_slots": [
+            "pull_02"
+          ],
+          "relation": "program",
+          "program_exercise": "Stiff-Leg Deadlift"
+        },
+        {
+          "name": "Close-Grip Lat Pulldown",
+          "exercise_id": "Close-Grip_Front_Lat_Pulldown",
+          "sets": 2,
+          "program_slots": [
+            "pull_03",
+            "pull_04"
+          ],
+          "relation": "program",
+          "program_exercise": "Close-Grip Lat Pulldown"
+        },
+        {
+          "name": "Dumbbell Row",
+          "exercise_id": "One-Arm_Dumbbell_Row",
+          "sets": 2,
+          "program_slots": [
+            "pull_05"
+          ],
+          "relation": "substitution",
+          "program_exercise": "Chest-Supported Machine Row"
+        },
+        {
+          "name": "Machine Reverse Fly",
+          "exercise_id": "Reverse_Machine_Flyes",
+          "sets": 2,
+          "program_slots": [
+            "pull_06",
+            "pull_07"
+          ],
+          "relation": "program",
+          "program_exercise": "1-Arm Reverse Pec Deck"
+        },
+        {
+          "name": "Decline Crunch",
+          "exercise_id": "Decline_Crunch",
+          "sets": 2,
+          "program_slots": [
+            "pull_08"
+          ],
+          "relation": "swap",
+          "program_exercise": "Cable Crunch",
+          "bodyweight": true
+        }
+      ]
+    },
+    {
+      "day": "arms",
+      "name": "Arms",
+      "exercises": [
+        {
+          "name": "EZ Bar Curl",
+          "exercise_id": "EZ-Bar_Curl",
+          "sets": 2,
+          "program_slots": [
+            "arms_01"
+          ],
+          "relation": "program",
+          "program_exercise": "EZ-Bar Cheat Curl"
+        },
+        {
+          "name": "Cable Overhead Triceps Extension",
+          "exercise_id": "Cable_Rope_Overhead_Triceps_Extension",
+          "sets": 2,
+          "program_slots": [
+            "arms_02"
+          ],
+          "relation": "substitution",
+          "program_exercise": "EZ-Bar Skull Crusher"
+        },
+        {
+          "name": "Preacher Hammer Curl",
+          "exercise_id": "Preacher_Hammer_Dumbbell_Curl",
+          "sets": 2,
+          "program_slots": [
+            "arms_03"
+          ],
+          "relation": "program",
+          "program_exercise": "Preacher Hammer Curl"
+        },
+        {
+          "name": "Triceps Pushdown",
+          "exercise_id": "Triceps_Pushdown",
+          "sets": 2,
+          "program_slots": [
+            "arms_04"
+          ],
+          "relation": "program",
+          "program_exercise": "Triceps Pressdown"
+        },
+        {
+          "name": "Cable Wrist Curl",
+          "exercise_id": "Cable_Wrist_Curl",
+          "sets": 2,
+          "program_slots": [
+            "arms_05"
+          ],
+          "relation": "substitution",
+          "program_exercise": "DB Wrist Curl"
+        },
+        {
+          "name": "Cable Reverse Wrist Curl",
+          "exercise_id": "sp_cable_reverse_wrist_curl",
+          "sets": 2,
+          "program_slots": [
+            "arms_06"
+          ],
+          "relation": "substitution",
+          "program_exercise": "DB Wrist Extension"
+        },
+        {
+          "name": "Cable Lateral Raise",
+          "exercise_id": "sp_cable_lateral_raise",
+          "sets": 2,
+          "program_slots": [
+            "arms_07",
+            "arms_08"
+          ],
+          "relation": "substitution",
+          "program_exercise": "Single-Arm Machine Lateral Raise"
+        }
+      ]
+    }
   ]
 }

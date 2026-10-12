@@ -198,8 +198,10 @@ class SettingsScreen extends ConsumerWidget {
               ListTile(
                 leading: const Icon(Icons.info_outline_rounded),
                 title: const Text('Spotter 1.0.0'),
-                subtitle: const Text('All data stays on this iPhone. Exercise data: free-exercise-db (public domain).'),
-                onLongPress: kDebugMode ? () => context.push(Routes.debug) : null,
+                subtitle: const Text('All data stays on this iPhone. Exercise data: free-exercise-db (public domain). '
+                    'Long-press for the error log.'),
+                // Release builds too: the error log is how bugs get reported from the phone.
+                onLongPress: () => context.push(Routes.errorLog),
               ),
               if (kDebugMode)
                 ListTile(
@@ -354,25 +356,12 @@ class _ProgramTiles extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final program = ref.watch(programProvider).value;
-    final week = ref.watch(programWeekProvider).value ?? 1;
     return Column(children: [
       ListTile(
         leading: const Icon(Icons.calendar_view_week_rounded),
         title: Text(program?.name ?? 'Program'),
-        subtitle: Text('Current week $week of ${program?.weekCount ?? 12}'
-            '${program != null && program.introWeeks.contains(week) ? (week == 1 ? ' (intro)' : ' (deload)') : ''}'),
-        trailing: Row(mainAxisSize: MainAxisSize.min, children: [
-          IconButton(
-            tooltip: 'Previous week',
-            onPressed: week <= 1 ? null : () => _setWeek(ref, week - 1),
-            icon: const Icon(Icons.remove_circle_outline_rounded),
-          ),
-          IconButton(
-            tooltip: 'Next week',
-            onPressed: week >= (program?.weekCount ?? 12) ? null : () => _setWeek(ref, week + 1),
-            icon: const Icon(Icons.add_circle_outline_rounded),
-          ),
-        ]),
+        subtitle: const Text('Standard hard-week targets every session (no week plan). '
+            'Planned rest: Wednesday and Sunday.'),
       ),
       ListTile(
         leading: const Icon(Icons.restart_alt_rounded),
@@ -399,8 +388,4 @@ class _ProgramTiles extends ConsumerWidget {
     ]);
   }
 
-  Future<void> _setWeek(WidgetRef ref, int week) async {
-    await ref.read(programRepositoryProvider).setCurrentWeek(week, now: ref.read(clockProvider)());
-    ref.invalidate(programWeekProvider);
-  }
 }

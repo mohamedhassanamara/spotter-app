@@ -213,7 +213,7 @@ class _ProgramRowInfo extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final program = ref.watch(programProvider).value;
-    final week = ref.watch(programWeekProvider).value ?? 1;
+    final week = ref.watch(programWeekProvider).value ?? standardProgramWeek;
     if (program == null) return const SizedBox.shrink();
     final pres = prescribeSets(program: program, slotIds: decodeSlots(row.programSlots), sets: row.targetSets, week: week);
     final parts = <String>[];
@@ -240,7 +240,7 @@ class _ProgramRowInfo extends ConsumerWidget {
         style: const TextStyle(color: AppColors.textSecondary),
       ),
       Text(
-        'Week $week · effort ${pres.map((p) => p.targetRir == null ? '–' : (p.targetRir == 0 ? 'F' : 'RIR ${p.targetRir}')).join(' / ')}'
+        'Effort ${pres.map((p) => p.targetRir == null ? '–' : (p.targetRir == 0 ? 'F' : 'RIR ${p.targetRir}')).join(' / ')}'
         '${techniques.isEmpty ? '' : ' · ${techniques.map((t) => program.techniques[t]?.name ?? t).join(', ')}'}',
         style: AppType.bodyS.copyWith(fontSize: 12, color: AppColors.accent),
       ),

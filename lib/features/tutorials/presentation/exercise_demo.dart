@@ -77,7 +77,7 @@ class ExerciseDemo extends ConsumerWidget {
             ? const _Skeleton()
             : url == null
                 ? _Fallback(images: fallbackImages)
-                : _GifPlayer(url: url, compact: compact),
+                : _GifPlayer(url: url, compact: compact, fallbackImages: fallbackImages),
       ),
     );
     return Column(
@@ -101,9 +101,10 @@ class ExerciseDemo extends ConsumerWidget {
 }
 
 class _GifPlayer extends ConsumerStatefulWidget {
-  const _GifPlayer({required this.url, required this.compact});
+  const _GifPlayer({required this.url, required this.compact, required this.fallbackImages});
   final String url;
   final bool compact;
+  final List<String> fallbackImages;
 
   @override
   ConsumerState<_GifPlayer> createState() => _GifPlayerState();
@@ -150,12 +151,8 @@ class _GifPlayerState extends ConsumerState<_GifPlayer> with SingleTickerProvide
     final gif = ref.watch(gifFramesProvider(widget.url));
     return gif.when(
       loading: () => const _Skeleton(),
-      error: (e, _) => const Center(
-        child: Padding(
-          padding: EdgeInsets.all(16),
-          child: Text('Demo unavailable offline.', textAlign: TextAlign.center, style: TextStyle(color: Colors.black54)),
-        ),
-      ),
+      // Offline or a dead GIF: show the library photos instead.
+      error: (e, _) => _Fallback(images: widget.fallbackImages),
       data: (g) => Stack(
         fit: StackFit.expand,
         children: [

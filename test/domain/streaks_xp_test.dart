@@ -60,6 +60,19 @@ void main() {
       expect(r.thisWeek.sessions, 0);
     });
 
+    test('a Red day on a planned rest day is planned rest, not smart rest', () {
+      // 2026-01-07 is a Wednesday, 2026-01-11 a Sunday (planned rest); 2026-01-08 a Thursday.
+      final r = calc.compute(
+        sessionDays: [d(1, 5)],
+        redDays: {DateTime(2026, 1, 7), DateTime(2026, 1, 11), DateTime(2026, 1, 8)},
+        goal: 5,
+        now: d(1, 11),
+        plannedRestWeekdays: {DateTime.wednesday, DateTime.sunday},
+      );
+      expect(r.weeks.single.smartRestDays, 1);
+      expect(r.weeks.single.effectiveGoal, 4);
+    });
+
     test('total smart rest days for achievements', () {
       expect(
         calc.totalSmartRestDays(

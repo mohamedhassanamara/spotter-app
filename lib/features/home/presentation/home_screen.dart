@@ -306,8 +306,10 @@ class _Streak extends ConsumerWidget {
     final monday = weekStart(now);
     final trained = {for (final s in history.inWeek(now)) dateOnly(s.startedAt)};
     final today = dateOnly(now);
+    final plannedRest = ref.watch(plannedRestWeekdaysProvider);
     DayDotState stateFor(DateTime d) {
       if (trained.contains(d)) return DayDotState.trained;
+      if (plannedRest.contains(d.weekday)) return DayDotState.plannedRest;
       if (d.isAfter(today)) return DayDotState.future;
       if (red.contains(d)) return DayDotState.smartRest;
       if (d == today) return DayDotState.today;

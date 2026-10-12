@@ -322,7 +322,7 @@ class SessionRepository {
     var pos = 0;
     // Warm-ups (not for calibration, where the lifter ramps up anyway).
     if (!main.rampUp) {
-      final count = warmupOverride ?? firstSlot.warmupSets.max;
+      final count = warmupOverride ?? warmupCountFor(firstSlot, firstOfDay: position == 0, compound: info.isCompound);
       for (final w in warmupSets(
         program: program,
         count: count,
@@ -361,6 +361,36 @@ class SessionRepository {
       }
     }
     return exId;
+  }
+
+  /// Swaps a session exercise for [info] in the same position, keeping its program slots, set count
+  /// and rest (the replacement inherits the prescription). Its sets are rebuilt with a fresh
+  /// suggestion; any sets already logged on the old exercise are discarded.
+  Future<int> replaceExercise({
+    required ActiveExercise old,
+    required ExerciseInfo info,
+    required CoachContext coach,
+    Program? program,
+  }) {
+    return _db.transaction(() async {
+      final row = old.row;
+      await (_db.delete(_db.workoutSets)..where((t) => t.sessionExerciseId.equals(row.id))).go();
+      await (_db.delete(_db.sessionExercises)..where((t) => t.id.equals(row.id))).go();
+      return _insertExercise(
+        sessionId: row.sessionId,
+        info: info,
+        position: row.position,
+        range: RepRange(row.repMin, row.repMax),
+        targetSets: row.targetSets,
+        restSeconds: row.restSeconds,
+        targetRir: row.targetRir,
+        coach: coach,
+        program: program,
+        programSlots: decodeSlots(row.programSlots),
+        programWeek: row.programWeek ?? standardProgramWeek,
+        displayName: info.name,
+      );
+    });
   }
 
   Future<void> removeExercise(int sessionExerciseId) => _db.transaction(() async {

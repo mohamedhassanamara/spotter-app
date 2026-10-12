@@ -19,7 +19,9 @@ import 'features/onboarding/presentation/onboarding_screen.dart';
 import 'features/profile/presentation/profile_screen.dart';
 import 'features/ranks/presentation/rank_up_screen.dart';
 import 'features/ranks/presentation/progress_screen.dart';
+import 'features/settings/presentation/error_log_screen.dart';
 import 'features/settings/presentation/settings_screen.dart';
+import 'core/diagnostics/error_log.dart';
 import 'features/workout/presentation/active_workout_screen.dart';
 import 'features/workout/presentation/routine_editor_screen.dart';
 import 'features/workout/presentation/summary_screen.dart';
@@ -43,6 +45,7 @@ abstract final class Routes {
   static const newExercise = '/exercise-new';
   static const settings = '/settings';
   static const debug = '/settings/debug';
+  static const errorLog = '/settings/errors';
 
   static String routine(int id) => '/routine/$id';
   static String exercise(String id) => '/exercise/${Uri.encodeComponent(id)}';
@@ -52,7 +55,7 @@ abstract final class Routes {
 }
 
 GoRouter buildRouter(ValueListenable<bool> onboarded) {
-  return GoRouter(
+  final router = GoRouter(
     navigatorKey: rootNavigatorKey,
     initialLocation: Routes.home,
     refreshListenable: onboarded,
@@ -139,6 +142,8 @@ GoRouter buildRouter(ValueListenable<bool> onboarded) {
         parentNavigatorKey: rootNavigatorKey,
         builder: (_, _) => const SettingsScreen(),
         routes: [
+          // Available in release builds too: that's how bugs get reported from the phone.
+          GoRoute(path: 'errors', parentNavigatorKey: rootNavigatorKey, builder: (_, _) => const ErrorLogScreen()),
           if (kDebugMode)
             GoRoute(
               path: 'debug',
@@ -159,6 +164,11 @@ GoRouter buildRouter(ValueListenable<bool> onboarded) {
       ),
     ],
   );
+  // Keep the error log's "current route" in sync.
+  router.routerDelegate.addListener(() {
+    ErrorLog.instance.currentRoute = router.routerDelegate.currentConfiguration.uri.toString();
+  });
+  return router;
 }
 
 class _Shell extends StatelessWidget {

@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'core/db/database.dart';
+import 'core/diagnostics/error_log.dart';
 import 'core/domain/dates.dart';
 import 'core/domain/history.dart';
 import 'core/domain/muscle_group.dart';
@@ -192,6 +193,7 @@ final streakProvider = Provider<StreakResult?>((ref) {
   final history = ref.watch(historyProvider).value;
   if (history == null) return null;
   return const StreakCalculator().compute(
+    plannedRestWeekdays: ref.watch(plannedRestWeekdaysProvider),
     sessionDays: [for (final s in history.sessions) s.startedAt],
     redDays: ref.watch(redDaysProvider),
     goal: ref.watch(currentSettingsProvider).weeklyGoal,
@@ -250,6 +252,7 @@ final achievementStatsProvider = FutureProvider<AchievementStats>((ref) async {
     bestTierIndex: ranks.exercises.fold<int>(-1, (m, r) => r.score.tier.index > m ? r.score.tier.index : m),
     totalXp: ref.watch(totalXpProvider).value ?? 0,
     prCount: findPrs(history, bodyweightLoaded: bwIds, bodyweight: bw).length,
+    plannedRestWeekdays: ref.watch(plannedRestWeekdaysProvider),
   );
 });
 
@@ -302,7 +305,8 @@ class HealthSyncNotifier extends Notifier<HealthSyncState> {
       final now = ref.read(clockProvider)();
       final result = await ref.read(readinessRepositoryProvider).sync(ref.read(healthSourceProvider), now: now, days: days);
       state = HealthSyncState(lastSync: now, lastResult: result);
-    } catch (e) {
+    } catch (e, st) {
+      ErrorLog.instance.recordCaught(e, st);
       state = HealthSyncState(lastSync: state.lastSync, lastResult: state.lastResult, error: '$e');
     }
   }
@@ -335,25 +339,11 @@ final programRepositoryProvider = Provider((ref) => ProgramRepository(ref.watch(
 
 final programProvider = FutureProvider<Program>((ref) => ProgramRepository.load());
 
-/// Current program week (1–12), from the stored week-1 Monday; week 1 until it's set.
-final programWeekProvider = FutureProvider<int>((ref) async {
-  ref.watch(settingsProvider);
-  final program = await ref.watch(programProvider.future);
-  final start = await ref.read(programRepositoryProvider).startMonday();
-  if (start == null) return 1;
-  return programWeekFor(startMonday: start, now: ref.read(clockProvider)(), weekCount: program.weekCount);
-});
+/// Program week whose prescriptions sessions use. The owner doesn't follow the 12-week plan, so this
+/// is always the standard hard week (see [standardProgramWeek]).
+final programWeekProvider = FutureProvider<int>((ref) async => standardProgramWeek);
 
-/// Installs the owner's program routines once (replacing the demo routines).
-final programRoutinesBootstrapProvider = FutureProvider<List<String>>((ref) async {
-  final db = ref.read(databaseProvider);
-  if (await db.getSetting(routinesInstalledKey) != null) return const [];
-  final catalog = await ref.read(catalogProvider.future);
-  return ref.read(programRepositoryProvider).installMyRoutines(
-        program: await ref.read(programProvider.future),
-        definition: await ProgramRepository.loadMyRoutines(),
-        catalog: catalog,
-        settings: ref.read(currentSettingsProvider),
-        now: ref.read(clockProvider)(),
-      );
-});
+
+/// Weekdays the program schedules as rest (Wednesday and Sunday for Min-Max Phase 2): planned rest
+/// for the streak, never "smart rest".
+final plannedRestWeekdaysProvider = Provider<Set<int>>((ref) => ref.watch(programProvider).value?.plannedRestWeekdays ?? const {});

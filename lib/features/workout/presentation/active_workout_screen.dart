@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../app_providers.dart';
 import '../../../core/db/database.dart';
+import '../../../core/diagnostics/error_log.dart';
 import '../../../core/domain/equipment.dart';
 import '../../../core/domain/training.dart';
 import '../../../core/theme/app_theme.dart';
@@ -14,6 +15,7 @@ import '../../../core/widgets/common.dart';
 import '../../../router.dart';
 import '../../coach/domain/suggestion_engine.dart';
 import '../../library/domain/exercise_info.dart';
+import '../../library/domain/name_resolver.dart';
 import '../../program/data/program_repository.dart';
 import '../data/session_repository.dart';
 import '../../tutorials/presentation/form_check_sheet.dart';
@@ -237,7 +239,8 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
           );
       ref.read(lastSummaryProvider.notifier).set(summary);
       if (mounted) context.pushReplacement(summary.rankUps.isEmpty ? Routes.summary : Routes.rankUp);
-    } catch (e) {
+    } catch (e, st) {
+      ErrorLog.instance.recordCaught(e, st);
       if (mounted) {
         setState(() => _finishing = false);
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Could not finish: $e')));
@@ -317,6 +320,7 @@ class _ExerciseCardState extends ConsumerState<_ExerciseCard> {
                 itemBuilder: (_) => [
                   if (widget.index > 0) const PopupMenuItem(value: 'up', child: Text('Move up')),
                   if (widget.index < widget.count - 1) const PopupMenuItem(value: 'down', child: Text('Move down')),
+                  const PopupMenuItem(value: 'replace', child: Text('Replace exercise')),
                   const PopupMenuItem(value: 'notes', child: Text('Exercise notes')),
                   const PopupMenuItem(value: 'remove', child: Text('Remove exercise')),
                 ],
@@ -398,6 +402,8 @@ class _ExerciseCardState extends ConsumerState<_ExerciseCard> {
         widget.onMove(-1);
       case 'down':
         widget.onMove(1);
+      case 'replace':
+        await _replace();
       case 'notes':
         final notes = await promptText(context, title: 'Exercise notes', initial: ex.row.notes, maxLines: 3);
         if (notes != null) await repo.setExerciseNotes(ex.row.id, notes);
@@ -406,6 +412,69 @@ class _ExerciseCardState extends ConsumerState<_ExerciseCard> {
             title: 'Remove exercise?', message: 'Its sets in this workout will be deleted.', action: 'Remove', destructive: true);
         if (ok) await repo.removeExercise(ex.row.id);
     }
+  }
+
+  /// Program substitutions first (resolved to library exercises), then a library search.
+  Future<void> _replace() async {
+    final catalog = await ref.read(catalogProvider.future);
+    final program = await ref.read(programProvider.future);
+    if (!mounted) return;
+    final slots = decodeSlots(ex.row.programSlots);
+    final slot = slots.isEmpty ? null : program.slot(slots.first);
+    final options = <String>[if (slot != null) slot.exercise, ...?slot?.substitutions];
+    final resolver = ExerciseNameResolver(catalog.values);
+    final resolved = <(String, ExerciseInfo?)>[
+      for (final o in options) (o, resolver.resolve(o)?.exercise),
+    ];
+    if (ex.sets.any((s) => s.completed)) {
+      final ok = await confirm(context,
+          title: 'Replace exercise?', message: 'Sets already logged on this exercise will be removed.', action: 'Replace', destructive: true);
+      if (!ok || !mounted) return;
+    }
+    final picked = await showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+          child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+            Text('Replace ${ex.row.displayName ?? widget.info?.name ?? ''}', style: AppType.title),
+            if (resolved.isNotEmpty) ...[
+              const SectionLabel('From the program'),
+              for (final (label, info) in resolved)
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  enabled: info != null && info.id != ex.row.exerciseId,
+                  leading: Icon(label == slot?.exercise ? Icons.star_rounded : Icons.swap_horiz_rounded,
+                      color: info == null ? AppColors.textTertiary : AppColors.primary),
+                  title: Text(label),
+                  subtitle: Text(info == null
+                      ? 'Not in the library — use search'
+                      : (info.id == ex.row.exerciseId ? 'Current exercise' : info.name)),
+                  onTap: info == null ? null : () => Navigator.of(ctx).pop(info.id),
+                ),
+            ],
+            const SizedBox(height: 8),
+            OutlinedButton.icon(
+              onPressed: () => Navigator.of(ctx).pop('__search__'),
+              icon: const Icon(Icons.search_rounded),
+              label: const Text('Search the library'),
+            ),
+          ]),
+        ),
+      ),
+    );
+    if (picked == null || !mounted) return;
+    final id = picked == '__search__' ? await context.push<String>(Routes.pickExercise) : picked;
+    final info = id == null ? null : catalog[id];
+    if (info == null || !mounted) return;
+    await ref.read(sessionRepositoryProvider).replaceExercise(
+          old: ex,
+          info: info,
+          coach: await ref.read(coachContextBuilderProvider)(),
+          program: program,
+        );
   }
 
   /// Swipe or check: complete with the row's values. Overrides go through the sheet (RPE + reason).
@@ -785,15 +854,10 @@ class _ProgramCue extends ConsumerWidget {
     if (slots.isEmpty || program == null) return const SizedBox.shrink();
     final slot = program.slot(slots.first);
     if (slot == null) return const SizedBox.shrink();
-    final week = row.programWeek;
     return Padding(
       padding: const EdgeInsets.only(top: 6, right: 8),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        if (week != null)
-          Text(
-            'MIN-MAX · WEEK $week${program.introWeeks.contains(week) ? (week == 1 ? ' · INTRO' : ' · DELOAD') : ''}',
-            style: AppType.label.copyWith(fontSize: 10, color: AppColors.accent),
-          ),
+        Text('MIN-MAX PHASE 2', style: AppType.label.copyWith(fontSize: 10, color: AppColors.accent)),
         if (slot.notes.isNotEmpty)
           Padding(
             padding: const EdgeInsets.only(top: 2),

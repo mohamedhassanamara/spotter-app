@@ -6,6 +6,16 @@ import '../../../core/domain/training.dart';
 
 /// Pure model of a training program extracted from its source (see docs/program/SCHEMA.md).
 
+/// The owner runs the program's exercises and methods without following the 12-week plan, so every
+/// session uses a standard hard week: full Block 1 effort targets, no intro/deload easing and no
+/// automatic Block 2 techniques (techniques are added by hand). Week 2 is that week.
+const int standardProgramWeek = 2;
+
+/// Warm-up sets for a slot: the higher count for the day's first exercise and for compounds,
+/// the lower count for isolation work (the owner trains to failure and wants to get to work sets fast).
+int warmupCountFor(ProgramSlot slot, {required bool firstOfDay, required bool compound}) =>
+    (firstOfDay || compound) ? slot.warmupSets.max : slot.warmupSets.min;
+
 class IntRange {
   const IntRange(this.min, this.max);
   final int min;
@@ -126,6 +136,15 @@ class Program {
   final Map<String, ProgramSlot> _slots;
 
   ProgramSlot? slot(String id) => _slots[id];
+
+  /// ISO weekdays (Monday = 1) the program schedules as rest.
+  Set<int> get plannedRestWeekdays => {
+        for (var i = 0; i < weekLayout.length; i++)
+          if (weekLayout[i] == 'Rest') i + 1,
+      };
+
+  /// Training days per week in the program's layout.
+  int get sessionsPerWeek => weekLayout.where((d) => d != 'Rest').length;
 
   factory Program.fromJson(Map<String, dynamic> j) {
     final p = j['program'] as Map<String, dynamic>;

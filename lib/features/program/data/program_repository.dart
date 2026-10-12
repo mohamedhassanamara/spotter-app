@@ -7,6 +7,7 @@ import '../../../core/db/database.dart';
 import '../../../core/domain/dates.dart';
 import '../../../core/domain/training.dart';
 import '../../../core/settings/app_settings.dart';
+import '../../library/data/exercise_repository.dart';
 import '../../library/domain/exercise_info.dart';
 import '../domain/program.dart';
 
@@ -34,6 +35,26 @@ class ProgramRepository {
   /// Sets the current program week by back-computing week 1's Monday.
   Future<void> setCurrentWeek(int week, {required DateTime now}) =>
       _db.putSetting(programStartKey, dayKey(startMondayForWeek(week: week, now: now)));
+
+  /// Startup step (before the UI exists, so Train never shows stale routines): installs the owner's
+  /// routines on first launch, and reinstalls them when `my_routines.json` gets a newer version.
+  static Future<bool> ensureMyRoutinesInstalled(AppDatabase db, {DateTime? now, Map<String, dynamic>? definition, Program? program}) async {
+    final def = definition ?? await loadMyRoutines();
+    final version = (def['schema_version'] as num?)?.toInt() ?? 1;
+    final installed = int.tryParse(await db.getSetting(routinesInstalledKey) ?? '');
+    if (installed != null && installed >= version) return false;
+    final rows = await db.select(db.exercises).get();
+    final catalog = {for (final r in rows) r.id: ExerciseRepository.toInfo(r)};
+    final settings = SettingsModel.fromMap(await db.watchSettings().first);
+    await ProgramRepository(db).installMyRoutines(
+      program: program ?? await load(),
+      definition: def,
+      catalog: catalog,
+      settings: settings,
+      now: now ?? DateTime.now(),
+    );
+    return true;
+  }
 
   /// Replaces all routines with the owner's program routines (sessions are kept; they don't
   /// reference routine rows). Rows missing from the catalogue are skipped and returned.
@@ -83,6 +104,8 @@ class ProgramRepository {
         }
       }
       await _db.putSetting(routinesInstalledKey, '${definition['schema_version'] ?? 1}');
+      // The program trains 5 days a week (two planned rest days).
+      await _db.putSetting(SettingsModel.kWeeklyGoal, '${program.sessionsPerWeek}');
     });
     return skipped;
   }

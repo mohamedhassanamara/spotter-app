@@ -44,6 +44,7 @@ class StreakCalculator {
     required Set<DateTime> redDays,
     required int goal,
     required DateTime now,
+    Set<int> plannedRestWeekdays = const {},
   }) {
     final today = dateOnly(now);
     final currentWeek = weekStart(today);
@@ -59,6 +60,8 @@ class StreakCalculator {
     for (final r in redDays) {
       final day = dateOnly(r);
       if (day.isAfter(today) || trainedDays.contains(day)) continue;
+      // A Red day that was a planned rest day anyway doesn't lower the goal.
+      if (plannedRestWeekdays.contains(day.weekday)) continue;
       final w = weekStart(day);
       smartRest[w] = (smartRest[w] ?? 0) + 1;
     }
@@ -106,12 +109,18 @@ class StreakCalculator {
   }
 
   /// Number of smart rest days (Red, no training), capped per week. Used by achievements.
-  int totalSmartRestDays({required List<DateTime> sessionDays, required Set<DateTime> redDays, required DateTime now}) {
+  int totalSmartRestDays({
+    required List<DateTime> sessionDays,
+    required Set<DateTime> redDays,
+    required DateTime now,
+    Set<int> plannedRestWeekdays = const {},
+  }) {
     final trained = sessionDays.map(dateOnly).toSet();
     final perWeek = <DateTime, int>{};
     for (final r in redDays) {
       final d = dateOnly(r);
       if (d.isAfter(dateOnly(now)) || trained.contains(d)) continue;
+      if (plannedRestWeekdays.contains(d.weekday)) continue;
       perWeek[weekStart(d)] = (perWeek[weekStart(d)] ?? 0) + 1;
     }
     return perWeek.values.fold<int>(0, (s, v) => s + math.min(maxSmartRestPerWeek, v));

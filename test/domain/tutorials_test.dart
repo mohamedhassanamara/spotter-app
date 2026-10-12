@@ -89,6 +89,19 @@ void main() {
       expect(MediaMatcher.muscleScore(['lower back'], ['erector spinae']), 1);
     });
 
+    test('dead GIFs (HTTP 404) are never matched, and no override points at one', () {
+      final dead = edb.where((e) => !e.gifAvailable).map((e) => e.id).toSet();
+      expect(dead.length, 176);
+      for (final k in lib.values) {
+        for (final c in matcher.match(k).candidates) {
+          expect(dead.contains(c.edb.id), isFalse, reason: k.id);
+        }
+      }
+      final overrides = (jsonDecode(File('assets/media_overrides.json').readAsStringSync()) as Map<String, dynamic>)['overrides']
+          as Map<String, dynamic>;
+      expect(overrides.values.whereType<String>().where(dead.contains), isEmpty);
+    });
+
     test('most of the library gets a usable demo', () {
       var usable = 0;
       for (final k in lib.values) {

@@ -72,6 +72,35 @@ void main() {
     expect(warmupSets(program: program, count: 1, workingWeight: 2, increment: 2).single.weight, 2);
   });
 
+  test('warm-up count: higher for the first exercise of the day and compounds, lower otherwise', () {
+    final y = program.slot('upper_07')!; // Incline DB Y-Raise, warm-up 0-1
+    expect(warmupCountFor(y, firstOfDay: false, compound: false), 0);
+    expect(warmupCountFor(y, firstOfDay: true, compound: false), 1);
+    final press = program.slot('upper_01')!; // warm-up 2-3
+    expect(warmupCountFor(press, firstOfDay: false, compound: true), 3);
+    expect(warmupCountFor(press, firstOfDay: false, compound: false), 2);
+  });
+
+  test('planned rest days and 5 sessions a week; standard week = full effort, no techniques', () {
+    expect(program.plannedRestWeekdays, {DateTime.wednesday, DateTime.sunday});
+    expect(program.sessionsPerWeek, 5);
+    expect(program.introWeeks.contains(standardProgramWeek), isFalse);
+    for (final d in program.days) {
+      for (final s in d.slots) {
+        expect(s.week(standardProgramWeek).technique, isNull, reason: s.id);
+      }
+    }
+  });
+
+  test('my routines no longer include Face Pull; Back Extension is confirmed', () {
+    final names = [
+      for (final r in routines.cast<Map<String, dynamic>>())
+        for (final e in (r['exercises'] as List<dynamic>).cast<Map<String, dynamic>>()) e['name'],
+    ];
+    expect(names, isNot(contains('Face Pull')));
+    expect(names.length, 29);
+  });
+
   test('program week loops after week 12', () {
     final start = DateTime(2026, 9, 7); // Monday
     expect(programWeekFor(startMonday: start, now: DateTime(2026, 9, 7), weekCount: 12), 1);

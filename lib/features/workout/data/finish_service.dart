@@ -14,6 +14,7 @@ import '../../gamification/domain/stats.dart';
 import '../../gamification/domain/streaks.dart';
 import '../../gamification/domain/xp.dart';
 import '../../library/domain/exercise_info.dart';
+import '../../program/data/program_repository.dart';
 import '../../ranks/data/ranks_repository.dart';
 import '../../ranks/domain/ranks.dart';
 import '../../readiness/data/readiness_repository.dart';
@@ -160,7 +161,9 @@ class FinishService {
 
     // Weekly goal bonus.
     final redDays = await _readiness.redDays();
+    final restWeekdays = (await ProgramRepository.load()).plannedRestWeekdays;
     final streak = const StreakCalculator().compute(
+      plannedRestWeekdays: restWeekdays,
       sessionDays: [for (final s in after.sessions) s.startedAt],
       redDays: redDays,
       goal: settings.weeklyGoal,
@@ -226,6 +229,7 @@ class FinishService {
       bestTierIndex: bestTier,
       totalXp: xpBefore + xpSession + bonus,
       prCount: allPrs,
+      plannedRestWeekdays: restWeekdays,
     );
     final unlocked = await _gami.unlockedKeys();
     final newAchievements = const AchievementEvaluator().newlyUnlocked(defs, stats, unlocked);

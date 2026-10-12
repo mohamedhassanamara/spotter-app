@@ -23,6 +23,27 @@ class ReadinessCard extends ConsumerWidget {
     if (r == null) {
       return const Skeleton(height: 210, radius: Radii.card);
     }
+    // No recovery data at all: one compact line so the main action stays above the fold.
+    if (r.missing.length == 3) {
+      return GameCard(
+        padding: const EdgeInsets.fromLTRB(16, 10, 8, 10),
+        child: Row(children: [
+          const Icon(Icons.favorite_border_rounded, color: AppColors.textSecondary),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              'Readiness: no recovery data from ${source.name}. Suggestions use a neutral readiness.',
+              style: AppType.bodyS.copyWith(color: AppColors.textSecondary),
+            ),
+          ),
+          IconButton(
+            tooltip: 'Refresh from Health',
+            onPressed: sync.syncing ? null : () => ref.read(healthSyncProvider.notifier).sync(),
+            icon: const Icon(Icons.refresh_rounded),
+          ),
+        ]),
+      );
+    }
     final color = r.calibrating ? AppColors.accent : bandColor(r.band);
     final scoreText = r.score?.toString() ?? '—';
     final label = r.calibrating

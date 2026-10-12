@@ -12,7 +12,7 @@ import '../domain/media_matcher.dart';
 
 /// Bump when the matcher or the ExerciseDB asset changes so matches are recomputed
 /// (manual picks are kept).
-const int mediaMatchVersion = 1;
+const int mediaMatchVersion = 2; // v2: dead GIFs (HTTP 404) excluded
 
 /// GIFs are downloaded on first view and kept for a year.
 final gifCacheManager = CacheManager(Config(

@@ -12,6 +12,7 @@ class EdbExercise {
     required this.equipments,
     required this.targets,
     required this.bodyParts,
+    this.gifAvailable = true,
   });
 
   final String id;
@@ -21,6 +22,9 @@ class EdbExercise {
   final List<String> targets;
   final List<String> bodyParts;
 
+  /// False when the GIF URL is dead (HTTP 404 when checked); such entries are never matched.
+  final bool gifAvailable;
+
   factory EdbExercise.fromJson(Map<String, dynamic> j) => EdbExercise(
         id: j['exerciseId'] as String,
         name: j['name'] as String,
@@ -28,6 +32,7 @@ class EdbExercise {
         equipments: (j['equipments'] as List<dynamic>).cast<String>(),
         targets: (j['targetMuscles'] as List<dynamic>).cast<String>(),
         bodyParts: (j['bodyParts'] as List<dynamic>? ?? const []).cast<String>(),
+        gifAvailable: j['gifAvailable'] as bool? ?? true,
       );
 }
 
@@ -73,7 +78,7 @@ class MediaMatch {
 /// Fuzzy matcher: normalised name similarity (IDF-weighted tokens + character trigrams), equipment
 /// compatibility and target-muscle agreement.
 class MediaMatcher {
-  MediaMatcher(this.edb) {
+  MediaMatcher(List<EdbExercise> all) : edb = all.where((e) => e.gifAvailable).toList() {
     for (final e in edb) {
       final tokens = normalizeTokens(e.name).toSet();
       _tokens[e.id] = tokens;
