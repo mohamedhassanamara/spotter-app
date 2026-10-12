@@ -18,6 +18,7 @@ import '../domain/ranks.dart';
 import '../domain/body_regions.dart';
 import 'anatomy_graph.dart';
 import 'muscle_sheet.dart';
+import 'rank_badge.dart';
 
 /// Progress tab. Deep-linkable: `/progress?tab=ranks`, `/progress?back=1&mode=volume&group=chest`.
 class ProgressScreen extends StatelessWidget {
@@ -239,33 +240,34 @@ class _OverallCard extends StatelessWidget {
     final s = score;
     final color = s == null ? AppColors.unranked : tierColor(s.tier);
     final next = s == null ? null : nextDivisionLabel(s);
-    return AppCard(
-      borderColor: color.withValues(alpha: 0.6),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+    return GameCard(
+      accent: s == null ? null : color,
+      glow: s != null,
+      child: Row(
         children: [
-          Row(
-            children: [
-              const Expanded(
-                child: Text('OVERALL RANK',
-                    style: TextStyle(fontWeight: FontWeight.w800, letterSpacing: 1.2, color: AppColors.textSecondary)),
-              ),
-              TierBadge(s, large: true),
-            ],
-          ),
-          const SizedBox(height: 14),
-          if (s == null)
-            const Text('Log ranked lifts to place on the ladder.', style: TextStyle(color: AppColors.textSecondary))
-          else ...[
-            ProgressBar(value: s.divisionProgress, color: color),
-            const SizedBox(height: 8),
-            Text(
-              next == null
-                  ? 'Top of the ladder · $rankedGroups/12 groups ranked'
-                  : '${s.lp} LP · next: $next · $rankedGroups/12 groups ranked',
-              style: const TextStyle(color: AppColors.textSecondary),
+          RankBadge(score: s, size: BadgeSize.medium, width: 76),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('OVERALL RANK', style: AppType.label.copyWith(color: AppColors.textSecondary)),
+                const SizedBox(height: 2),
+                Text(s?.label ?? 'Unranked', style: AppType.titleL.copyWith(color: s == null ? AppColors.textSecondary : color)),
+                const SizedBox(height: 10),
+                if (s == null)
+                  Text('Log ranked lifts to place on the ladder.', style: AppType.bodyS.copyWith(color: AppColors.textSecondary))
+                else ...[
+                  LpBar(progress: s.divisionProgress, color: color, lp: s.lp),
+                  const SizedBox(height: 6),
+                  Text(
+                    next == null ? 'Top of the ladder · $rankedGroups/12 groups' : 'Next: $next · $rankedGroups/12 groups',
+                    style: AppType.bodyS.copyWith(color: AppColors.textSecondary),
+                  ),
+                ],
+              ],
             ),
-          ],
+          ),
         ],
       ),
     );
@@ -310,49 +312,42 @@ class _RanksTab extends ConsumerWidget {
     return AsyncBody(
       value: ref.watch(ranksProvider),
       builder: (summary) {
-        final ranked = summary.groups.values.toList()..sort((a, b) => b.score.value.compareTo(a.score.value));
+        // Weakest → strongest, so the top of the list is what to work on. Unranked groups first.
+        final ranked = summary.groups.values.toList()..sort((a, b) => a.score.value.compareTo(b.score.value));
         final unranked = MuscleGroup.values.where((g) => !summary.groups.containsKey(g)).toList();
-        final lifts = [...summary.exercises]..sort((a, b) => b.score.value.compareTo(a.score.value));
+        final lifts = [...summary.exercises]..sort((a, b) => a.score.value.compareTo(b.score.value));
+        void open(MuscleGroup g) => showMuscleSheet(context, group: g, mode: BodyGraphMode.ranks, summary: summary, volume: null);
         return ListView(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
           children: [
             if (bw.hasValue && bw.value == null) ...[const _BodyweightCard(), const SizedBox(height: 12)],
             _OverallCard(score: summary.overall, rankedGroups: summary.groups.length),
-            const SectionHeader('Muscle groups'),
-            AppCard(
-              padding: const EdgeInsets.symmetric(vertical: 6),
-              child: Column(
-                children: [
-                  for (final g in ranked)
-                    ListTile(
-                      onTap: () => showMuscleSheet(context, group: g.group, mode: BodyGraphMode.ranks, summary: summary, volume: null),
-                      leading: _Dot(tierColor(g.score.tier)),
-                      title: Text(g.group.label, style: const TextStyle(fontWeight: FontWeight.w700)),
-                      subtitle: Text('${g.contributions.length} lift${g.contributions.length == 1 ? '' : 's'}'),
-                      trailing: TierBadge(g.score),
-                    ),
-                  for (final g in unranked)
-                    ListTile(
-                      onTap: () => showMuscleSheet(context, group: g, mode: BodyGraphMode.ranks, summary: summary, volume: null),
-                      leading: const _Dot(AppColors.unranked),
-                      title: Text(g.label, style: const TextStyle(color: AppColors.textSecondary)),
-                      subtitle: Text(
-                        (summary.unrankedHints[g] ?? const []).isEmpty
-                            ? 'No ranked lift for this group'
-                            : 'Try: ${summary.unrankedHints[g]!.take(2).map((s) => s.name).join(', ')}',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      trailing: const TierBadge(null),
-                    ),
-                ],
+            const SectionLabel('Muscle groups · weakest first'),
+            for (final g in unranked) ...[
+              _GroupRow(
+                title: g.label,
+                score: null,
+                subtitle: (summary.unrankedHints[g] ?? const []).isEmpty
+                    ? 'No ranked lift trains this group'
+                    : 'Unranked. Try ${summary.unrankedHints[g]!.take(2).map((s) => s.name).join(' or ')}',
+                onTap: () => open(g),
               ),
-            ),
-            const SectionHeader('Lifts (best e1RM, last 90 days)'),
+              const SizedBox(height: 8),
+            ],
+            for (final g in ranked) ...[
+              _GroupRow(
+                title: g.group.label,
+                score: g.score,
+                subtitle: '${g.contributions.length} lift${g.contributions.length == 1 ? '' : 's'}',
+                onTap: () => open(g.group),
+              ),
+              const SizedBox(height: 8),
+            ],
+            const SectionLabel('Lifts · best e1RM, last 90 days · weakest first'),
             if (lifts.isEmpty)
-              const AppCard(
+              GameCard(
                 child: Text('No ranked lifts yet. Bench, squat, deadlift, rows, curls and ~25 more count.',
-                    style: TextStyle(color: AppColors.textSecondary)),
+                    style: AppType.bodyS.copyWith(color: AppColors.textSecondary)),
               ),
             for (final r in lifts) ...[
               _LiftRankCard(rank: r),
@@ -365,13 +360,49 @@ class _RanksTab extends ConsumerWidget {
   }
 }
 
-class _Dot extends StatelessWidget {
-  const _Dot(this.color);
-  final Color color;
+/// One muscle group: badge, name, division and LP bar.
+class _GroupRow extends StatelessWidget {
+  const _GroupRow({required this.title, required this.score, required this.subtitle, required this.onTap});
+  final String title;
+  final RankScore? score;
+  final String subtitle;
+  final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) =>
-      Container(width: 14, height: 14, decoration: BoxDecoration(color: color, shape: BoxShape.circle));
+  Widget build(BuildContext context) {
+    final s = score;
+    final color = s == null ? AppColors.unranked : tierColor(s.tier);
+    return GameCard(
+      onTap: onTap,
+      padding: const EdgeInsets.fromLTRB(12, 12, 14, 12),
+      child: Row(
+        children: [
+          RankBadge(score: s, size: BadgeSize.small, width: 44, animate: false),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(children: [
+                  Expanded(
+                    child: Text(title,
+                        style: AppType.title.copyWith(color: s == null ? AppColors.textSecondary : AppColors.textPrimary)),
+                  ),
+                  Text(s?.label ?? 'Unranked', style: AppType.bodyS.copyWith(fontFamily: AppType.display, fontWeight: FontWeight.w700, color: color)),
+                ]),
+                const SizedBox(height: 6),
+                if (s != null) LpBar(progress: s.divisionProgress, color: color, lp: s.lp, height: 8),
+                if (s != null) const SizedBox(height: 4),
+                Text(subtitle, maxLines: 1, overflow: TextOverflow.ellipsis, style: AppType.bodyS.copyWith(fontSize: 13, color: AppColors.textSecondary)),
+              ],
+            ),
+          ),
+          const SizedBox(width: 4),
+          const Icon(Icons.chevron_right_rounded, color: AppColors.textTertiary),
+        ],
+      ),
+    );
+  }
 }
 
 class _LiftRankCard extends StatelessWidget {
@@ -382,29 +413,36 @@ class _LiftRankCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final next = rank.nextThresholdKg;
     final nextLabel = nextDivisionLabel(rank.score);
-    return AppCard(
-      padding: const EdgeInsets.all(16),
-      child: Column(
+    final color = tierColor(rank.score.tier);
+    return GameCard(
+      padding: const EdgeInsets.fromLTRB(12, 14, 16, 14),
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Expanded(child: Text(rank.standard.name, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16))),
-              TierBadge(rank.score),
-            ],
+          RankBadge(score: rank.score, size: BadgeSize.small, width: 44, animate: false),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(rank.standard.name, style: AppType.title),
+                const SizedBox(height: 2),
+                Text(rank.score.labelWithLp,
+                    style: AppType.bodyS.copyWith(fontFamily: AppType.display, fontWeight: FontWeight.w700, color: color)),
+                const SizedBox(height: 8),
+                LpBar(progress: rank.score.divisionProgress, color: color, height: 8),
+                const SizedBox(height: 8),
+                Text(
+                  'e1RM ${rank.bestE1rm.toStringAsFixed(1)} kg · ×${rank.ratio.toStringAsFixed(2)} BW'
+                  '${rank.standard.perHand ? ' (per dumbbell)' : ''}',
+                  style: AppType.bodyS.copyWith(color: AppColors.textSecondary, fontFeatures: AppType.tabular),
+                ),
+                if (next != null && nextLabel != null)
+                  Text('${next.toStringAsFixed(1)} kg for $nextLabel',
+                      style: AppType.bodyS.copyWith(fontSize: 13, color: AppColors.textTertiary, fontFeatures: AppType.tabular)),
+              ],
+            ),
           ),
-          const SizedBox(height: 6),
-          Text(
-            'e1RM ${rank.bestE1rm.toStringAsFixed(1)} kg · ×${rank.ratio.toStringAsFixed(2)} bodyweight'
-            '${rank.standard.perHand ? ' (per dumbbell)' : ''}',
-            style: const TextStyle(color: AppColors.textSecondary),
-          ),
-          const SizedBox(height: 10),
-          ProgressBar(value: rank.score.divisionProgress, color: tierColor(rank.score.tier), height: 8),
-          if (next != null && nextLabel != null) ...[
-            const SizedBox(height: 6),
-            Text('${next.toStringAsFixed(1)} kg for $nextLabel', style: const TextStyle(fontSize: 13, color: AppColors.textSecondary)),
-          ],
         ],
       ),
     );

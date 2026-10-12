@@ -83,11 +83,17 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(session.session.name, overflow: TextOverflow.ellipsis),
-              Text(
-                '${formatClock(elapsed)} · ${session.completedWorkingSets} working sets',
-                style: const TextStyle(fontSize: 13, color: AppColors.textSecondary, fontWeight: FontWeight.w600),
-              ),
+              Text(session.session.name, overflow: TextOverflow.ellipsis, style: AppType.title.copyWith(fontSize: 20)),
+              Row(children: [
+                Text(formatClock(elapsed), style: AppType.bodyS.copyWith(fontFamily: AppType.display, color: AppColors.primary, fontWeight: FontWeight.w700)),
+                Flexible(
+                  child: Text(
+                    '  ·  ${session.completedWorkingSets} working sets',
+                    overflow: TextOverflow.ellipsis,
+                    style: AppType.bodyS.copyWith(color: AppColors.textSecondary),
+                  ),
+                ),
+              ]),
             ],
           ),
         ),
@@ -126,7 +132,7 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
               child: Text('Empty workout. Add your first exercise.',
                   textAlign: TextAlign.center, style: TextStyle(color: AppColors.textSecondary)),
             ),
-          FilledButton.tonalIcon(
+          OutlinedButton.icon(
             onPressed: () => _addExercise(session),
             icon: const Icon(Icons.add_rounded),
             label: const Text('Add exercise'),
@@ -276,10 +282,12 @@ class _ExerciseCardState extends ConsumerState<_ExerciseCard> {
     for (final s in ex.sets) {
       if (!s.isWarmup) workingIdx[s.id] = ++n;
     }
+    final done = ex.sets.where((s) => s.completed && !s.isWarmup).length;
+    final total = ex.sets.where((s) => !s.isWarmup).length;
 
-    return AppCard(
-      padding: const EdgeInsets.fromLTRB(14, 10, 8, 12),
-      borderColor: sug?.techniqueDay == true ? AppColors.red.withValues(alpha: 0.5) : null,
+    return GameCard(
+      padding: const EdgeInsets.fromLTRB(14, 8, 6, 12),
+      accent: sug?.techniqueDay == true ? AppColors.red : (done == total && total > 0 ? AppColors.primary : null),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -288,18 +296,13 @@ class _ExerciseCardState extends ConsumerState<_ExerciseCard> {
               Expanded(
                 child: InkWell(
                   onTap: () => context.push(Routes.exercise(ex.row.exerciseId)),
-                  child: Text(name, style: Theme.of(context).textTheme.titleMedium?.copyWith(fontSize: 18)),
-                ),
-              ),
-              if (freeze != null)
-                Tooltip(
-                  message: 'Progression frozen',
-                  child: Chip(
-                    avatar: const Icon(Icons.lock_rounded, size: 16, color: AppColors.warning),
-                    label: Text('${freeze.until.difference(now).inHours ~/ 24 + 1}d', style: const TextStyle(color: AppColors.warning)),
-                    visualDensity: VisualDensity.compact,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 6),
+                    child: Text(name, style: AppType.title.copyWith(fontSize: 19)),
                   ),
                 ),
+              ),
+              Text('$done/$total', style: AppType.bodyS.copyWith(fontFamily: AppType.display, color: AppColors.textSecondary, fontWeight: FontWeight.w700)),
               IconButton(
                 tooltip: 'Form check',
                 iconSize: 26,
@@ -318,10 +321,24 @@ class _ExerciseCardState extends ConsumerState<_ExerciseCard> {
               ),
             ],
           ),
-          Text(
-            '${ex.range} reps · ${ex.row.targetSets} sets · rest ${formatClock(Duration(seconds: ex.row.restSeconds))}',
-            style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: Text(
+              '${ex.range} reps · ${ex.row.targetSets} sets · RIR ${ex.row.targetRir} · rest ${formatClock(Duration(seconds: ex.row.restSeconds))}',
+              style: AppType.bodyS.copyWith(color: AppColors.textSecondary),
+            ),
           ),
+          if (freeze != null) ...[
+            const SizedBox(height: 10),
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: GuardrailBanner(
+                tone: GuardrailTone.egoFlag,
+                title: 'Progression frozen · ${FreezeState(until: freeze.until, baseWeight: freeze.baseWeight).daysLeft(now)} day(s) left',
+                details: freeze.reason,
+              ),
+            ),
+          ],
           if (sug != null) ...[
             const SizedBox(height: 10),
             _SuggestionBanner(suggestion: sug, open: _whyOpen, onToggle: () => setState(() => _whyOpen = !_whyOpen)),
@@ -331,33 +348,40 @@ class _ExerciseCardState extends ConsumerState<_ExerciseCard> {
               padding: const EdgeInsets.only(top: 8, right: 8),
               child: Text('📝 ${ex.row.notes}', style: const TextStyle(color: AppColors.textSecondary)),
             ),
-          const SizedBox(height: 8),
-          const _SetHeader(),
+          const SizedBox(height: 6),
           for (final s in ex.sets)
             _SetRow(
+              key: ValueKey(s.id),
               set: s,
               label: s.isWarmup ? 'W' : '${workingIdx[s.id]}',
-              onTap: () => _edit(s, workingIdx[s.id] ?? 0),
-              onCheck: () => _quickComplete(s, workingIdx[s.id] ?? 0),
+              increment: _increment,
+              targetRir: ex.row.targetRir,
+              onComplete: () => _complete(s, workingIdx[s.id] ?? 0),
+              onUndo: () => ref.read(sessionRepositoryProvider).uncompleteSet(s.id),
+              onEdit: () => _edit(s, workingIdx[s.id] ?? 0),
             ),
           const SizedBox(height: 6),
-          Row(
-            children: [
-              Expanded(
-                child: TextButton.icon(
-                  onPressed: () => ref.read(sessionRepositoryProvider).addSet(ex),
-                  icon: const Icon(Icons.add_rounded),
-                  label: const Text('Set'),
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () => ref.read(sessionRepositoryProvider).addSet(ex),
+                    icon: const Icon(Icons.add_rounded),
+                    label: const Text('Set'),
+                  ),
                 ),
-              ),
-              Expanded(
-                child: TextButton.icon(
-                  onPressed: () => ref.read(sessionRepositoryProvider).addSet(ex, warmup: true),
-                  icon: const Icon(Icons.local_fire_department_outlined),
-                  label: const Text('Warm-up'),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () => ref.read(sessionRepositoryProvider).addSet(ex, warmup: true),
+                    icon: const Icon(Icons.local_fire_department_outlined),
+                    label: const Text('Warm-up'),
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ],
       ),
@@ -381,16 +405,10 @@ class _ExerciseCardState extends ConsumerState<_ExerciseCard> {
     }
   }
 
-  Future<void> _quickComplete(WorkoutSet s, int number) async {
+  /// Swipe or check: complete with the row's values. Overrides go through the sheet (RPE + reason).
+  Future<void> _complete(WorkoutSet s, int number) async {
     final repo = ref.read(sessionRepositoryProvider);
-    if (s.completed) {
-      await repo.uncompleteSet(s.id);
-      return;
-    }
-    if (s.reps <= 0 || repo.wouldOverride(s, s.weight)) {
-      // Overrides need an RPE and a reason: go through the sheet.
-      return _edit(s, number);
-    }
+    if (s.reps <= 0 || repo.wouldOverride(s, s.weight)) return _edit(s, number);
     HapticFeedback.mediumImpact();
     await repo.completeSet(s, weight: s.weight, reps: s.reps, rpe: s.rpe, isWarmup: s.isWarmup, now: ref.read(clockProvider)());
     if (!s.isWarmup) await ref.read(restTimerProvider).start(ex.row.restSeconds);
@@ -446,75 +464,46 @@ class _SuggestionBanner extends StatelessWidget {
             : suggestion.kind == SuggestionKind.calibration
                 ? AppColors.accent
                 : AppColors.primary;
-    return InkWell(
-      onTap: onToggle,
-      borderRadius: BorderRadius.circular(14),
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(12),
-        margin: const EdgeInsets.only(right: 6),
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: color.withValues(alpha: 0.45)),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Icon(
-                  suggestion.kind == SuggestionKind.egoFreeze ? Icons.lock_rounded : Icons.psychology_alt_rounded,
-                  color: color,
-                  size: 20,
-                ),
-                const SizedBox(width: 8),
-                Expanded(child: Text(suggestion.headline, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15))),
-                Icon(open ? Icons.expand_less_rounded : Icons.expand_more_rounded, color: AppColors.textSecondary),
-              ],
-            ),
-            if (open) ...[
-              const SizedBox(height: 8),
-              for (final w in suggestion.why)
-                Padding(
-                  padding: const EdgeInsets.only(top: 4),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text('•  ', style: TextStyle(color: AppColors.textSecondary)),
-                      Expanded(child: Text(w, style: const TextStyle(color: AppColors.textSecondary, height: 1.3))),
-                    ],
-                  ),
-                ),
-            ] else
-              const Padding(
-                padding: EdgeInsets.only(top: 2, left: 28),
-                child: Text('Why?', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: InkWell(
+        onTap: onToggle,
+        borderRadius: BorderRadius.circular(Radii.control),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(colors: [color.withValues(alpha: 0.16), color.withValues(alpha: 0.04)]),
+            borderRadius: BorderRadius.circular(Radii.control),
+            border: Border.all(color: color.withValues(alpha: 0.35)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(suggestion.kind == SuggestionKind.egoFreeze ? Icons.lock_rounded : Icons.psychology_alt_rounded,
+                      color: color, size: 20),
+                  const SizedBox(width: 8),
+                  Expanded(child: Text(suggestion.headline, style: AppType.bodyS.copyWith(fontWeight: FontWeight.w800, fontSize: 15))),
+                  Icon(open ? Icons.expand_less_rounded : Icons.expand_more_rounded, color: AppColors.textSecondary),
+                ],
               ),
-          ],
+              if (open)
+                for (final w in suggestion.why)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 6, left: 28),
+                    child: Text('• $w', style: AppType.bodyS.copyWith(color: AppColors.textSecondary)),
+                  )
+              else
+                Padding(
+                  padding: const EdgeInsets.only(top: 2, left: 28),
+                  child: Text('Why?', style: AppType.label.copyWith(fontSize: 11, color: AppColors.textTertiary)),
+                ),
+            ],
+          ),
         ),
-      ),
-    );
-  }
-}
-
-class _SetHeader extends StatelessWidget {
-  const _SetHeader();
-
-  @override
-  Widget build(BuildContext context) {
-    const style = TextStyle(color: AppColors.textSecondary, fontSize: 12, fontWeight: FontWeight.w700);
-    return const Padding(
-      padding: EdgeInsets.only(top: 4, bottom: 2, right: 6),
-      child: Row(
-        children: [
-          SizedBox(width: 34, child: Text('SET', style: style)),
-          Expanded(flex: 3, child: Text('TARGET', style: style)),
-          Expanded(flex: 4, child: Text('KG × REPS', style: style)),
-          Expanded(flex: 2, child: Text('RPE', style: style)),
-          SizedBox(width: 56),
-        ],
       ),
     );
   }
@@ -523,85 +512,250 @@ class _SetHeader extends StatelessWidget {
 /// "BW" for bodyweight-only sets, kg otherwise.
 String _load(double kg) => kg == 0 ? 'BW' : formatKg(kg);
 
-class _SetRow extends StatelessWidget {
-  const _SetRow({required this.set, required this.label, required this.onTap, required this.onCheck});
+/// One set: target on top (muted), actual weight/reps steppers below, RPE chip, swipe right to complete.
+class _SetRow extends ConsumerWidget {
+  const _SetRow({
+    super.key,
+    required this.set,
+    required this.label,
+    required this.increment,
+    required this.targetRir,
+    required this.onComplete,
+    required this.onUndo,
+    required this.onEdit,
+  });
+
   final WorkoutSet set;
   final String label;
+  final double increment;
+  final int targetRir;
+  final VoidCallback onComplete;
+  final VoidCallback onUndo;
+  final VoidCallback onEdit;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final repo = ref.read(sessionRepositoryProvider);
+    final s = set;
+    final overridePct = (!s.isWarmup && s.suggestedWeight != null && s.suggestedWeight! > 0 && repo.wouldOverride(s, s.weight))
+        ? ((s.weight - s.suggestedWeight!) / s.suggestedWeight! * 100).round()
+        : null;
+    final stripe = s.completed
+        ? (s.isOverride ? AppColors.warning : AppColors.primary)
+        : overridePct != null
+            ? AppColors.warning
+            : (s.isWarmup ? AppColors.textTertiary : AppColors.outlineBright);
+    final target = s.isWarmup
+        ? 'WARM-UP'
+        : s.suggestedWeight == null
+            ? 'TARGET  ramp up · ${s.suggestedReps ?? '–'} reps'
+            : 'TARGET  ${_load(s.suggestedWeight!)}${s.suggestedWeight == 0 ? '' : ' kg'} × ${s.suggestedReps ?? '–'}';
+
+    final body = Container(
+      margin: const EdgeInsets.only(top: 8, right: 8),
+      decoration: BoxDecoration(
+        color: s.completed ? stripe.withValues(alpha: 0.09) : AppColors.surfaceHigh,
+        borderRadius: BorderRadius.circular(Radii.control),
+        border: Border(left: BorderSide(color: stripe, width: 4)),
+      ),
+      padding: const EdgeInsets.fromLTRB(10, 8, 8, 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 28,
+                height: 28,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: s.isWarmup ? AppColors.warning.withValues(alpha: 0.16) : AppColors.surfaceTop,
+                  shape: BoxShape.circle,
+                ),
+                child: Text(label,
+                    style: AppType.bodyS.copyWith(
+                        fontFamily: AppType.display, fontWeight: FontWeight.w800, color: s.isWarmup ? AppColors.warning : AppColors.textPrimary)),
+              ),
+              const SizedBox(width: 10),
+              Expanded(child: Text(target, style: AppType.label.copyWith(color: AppColors.textSecondary, fontSize: 12))),
+              if (overridePct != null || s.isOverride)
+                Container(
+                  margin: const EdgeInsets.only(right: 6),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: AppColors.warning.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(Radii.chip),
+                  ),
+                  child: Text(
+                    overridePct != null ? '+$overridePct% override' : 'override',
+                    style: AppType.label.copyWith(color: AppColors.warning, fontSize: 11, letterSpacing: 0.4),
+                  ),
+                ),
+              _RpeChip(set: s, onTap: () => _pickRpe(context, ref)),
+            ],
+          ),
+          const SizedBox(height: 8),
+          if (s.completed)
+            Row(children: [
+              Expanded(
+                child: Text(
+                  '${_load(s.weight)}${s.weight == 0 ? '' : ' kg'} × ${s.reps}',
+                  style: AppType.number.copyWith(fontSize: 24, color: s.isOverride ? AppColors.warning : AppColors.textPrimary),
+                ),
+              ),
+              _CheckButton(done: true, onTap: onUndo),
+            ])
+          else
+            Row(children: [
+              Expanded(
+                flex: 6,
+                child: StepperBox(
+                  dense: true,
+                  value: _load(s.weight),
+                  unit: s.weight == 0 ? null : 'KG',
+                  onMinus: () => repo.updateSet(s.id, weight: (s.weight - increment).clamp(0, 1000).toDouble()),
+                  onPlus: () => repo.updateSet(s.id, weight: s.weight + increment),
+                  onTapValue: () async {
+                    final v = await promptNumber(context, title: 'Weight (kg)', initial: s.weight, suffix: 'kg');
+                    if (v != null && v >= 0) await repo.updateSet(s.id, weight: v);
+                  },
+                ),
+              ),
+              const SizedBox(width: 6),
+              Expanded(
+                flex: 5,
+                child: StepperBox(
+                  dense: true,
+                  value: '${s.reps}',
+                  unit: 'REPS',
+                  onMinus: () => repo.updateSet(s.id, reps: (s.reps - 1).clamp(0, 100)),
+                  onPlus: () => repo.updateSet(s.id, reps: s.reps + 1),
+                  onTapValue: () async {
+                    final v = await promptNumber(context, title: 'Reps', initial: s.reps.toDouble(), decimal: false);
+                    if (v != null && v >= 0) await repo.updateSet(s.id, reps: v.round());
+                  },
+                ),
+              ),
+              const SizedBox(width: 6),
+              _CheckButton(done: false, onTap: onComplete),
+            ]),
+        ],
+      ),
+    );
+
+    return GestureDetector(
+      onLongPress: onEdit,
+      child: s.completed
+          ? body
+          : Dismissible(
+              key: ValueKey('swipe-${s.id}'),
+              direction: DismissDirection.startToEnd,
+              dismissThresholds: const {DismissDirection.startToEnd: 0.35},
+              confirmDismiss: (_) async {
+                onComplete();
+                return false; // the row stays; the DB update re-renders it as completed
+              },
+              background: Container(
+                margin: const EdgeInsets.only(top: 8, right: 8),
+                decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.85), borderRadius: BorderRadius.circular(Radii.control)),
+                alignment: Alignment.centerLeft,
+                padding: const EdgeInsets.only(left: 20),
+                child: const Row(children: [
+                  Icon(Icons.check_rounded, color: Color(0xFF06210F), size: 30),
+                  SizedBox(width: 8),
+                  Text('COMPLETE', style: TextStyle(fontFamily: AppType.display, fontWeight: FontWeight.w800, color: Color(0xFF06210F))),
+                ]),
+              ),
+              child: body,
+            ),
+    );
+  }
+
+  Future<void> _pickRpe(BuildContext context, WidgetRef ref) async {
+    final picked = await showModalBottomSheet<double?>(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+          child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text('RPE', style: AppType.title),
+            Text('Target: stop at $targetRir reps in reserve (RPE ${10 - targetRir})',
+                style: AppType.bodyS.copyWith(color: AppColors.textSecondary)),
+            const SizedBox(height: 14),
+            Wrap(spacing: 8, runSpacing: 8, children: [
+              for (final v in rpeValues)
+                ChoiceChip(
+                  label: Column(mainAxisSize: MainAxisSize.min, children: [
+                    Text(formatRpe(v), style: AppType.number.copyWith(fontSize: 18)),
+                    Text('RIR ${formatRpe(10 - v)}', style: AppType.label.copyWith(fontSize: 9, letterSpacing: 0.2)),
+                  ]),
+                  selected: set.rpe == v,
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+                  onSelected: (_) => Navigator.of(ctx).pop(v),
+                ),
+            ]),
+            const SizedBox(height: 10),
+            TextButton(onPressed: () => Navigator.of(ctx).pop(-1), child: const Text('Clear (counts as RPE 9)')),
+          ]),
+        ),
+      ),
+    );
+    if (picked == null) return;
+    await ref.read(sessionRepositoryProvider).updateSet(set.id, rpe: () => picked < 0 ? null : picked);
+  }
+}
+
+class _RpeChip extends StatelessWidget {
+  const _RpeChip({required this.set, required this.onTap});
+  final WorkoutSet set;
   final VoidCallback onTap;
-  final VoidCallback onCheck;
 
   @override
   Widget build(BuildContext context) {
-    final done = set.completed;
-    final target = set.isWarmup
-        ? '—'
-        : set.suggestedWeight == null
-            ? 'ramp'
-            : '${_load(set.suggestedWeight!)}×${set.suggestedReps ?? '–'}';
-    final rowColor = done
-        ? (set.isOverride ? AppColors.warning.withValues(alpha: 0.12) : AppColors.primary.withValues(alpha: 0.1))
-        : Colors.transparent;
+    final rpe = set.rpe;
+    final hot = (rpe ?? 0) >= 9.5;
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(Radii.chip),
       child: Container(
-        constraints: const BoxConstraints(minHeight: 56),
-        margin: const EdgeInsets.only(top: 4, right: 6),
-        padding: const EdgeInsets.symmetric(horizontal: 4),
-        decoration: BoxDecoration(color: rowColor, borderRadius: BorderRadius.circular(12)),
-        child: Row(
-          children: [
-            SizedBox(
-              width: 30,
-              child: Text(
-                label,
-                style: TextStyle(
-                  fontWeight: FontWeight.w900,
-                  fontSize: 16,
-                  color: set.isWarmup ? AppColors.warning : AppColors.textPrimary,
-                ),
-              ),
-            ),
-            Expanded(flex: 3, child: Text(target, style: const TextStyle(color: AppColors.textSecondary, fontSize: 15))),
-            Expanded(
-              flex: 4,
-              child: Row(children: [
-                Flexible(
-                  child: Text(
-                    '${_load(set.weight)} × ${set.reps}',
-                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                if (set.isOverride) const Padding(padding: EdgeInsets.only(left: 4), child: Icon(Icons.warning_amber_rounded, size: 18, color: AppColors.warning)),
-              ]),
-            ),
-            Expanded(
-              flex: 2,
-              child: Text(
-                set.rpe == null ? '–' : formatRpe(set.rpe!),
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  color: (set.rpe ?? 0) >= 9.5 ? AppColors.danger : AppColors.textPrimary,
-                ),
-              ),
-            ),
-            SizedBox(
-              width: 52,
-              height: 48,
-              child: IconButton.filled(
-                onPressed: onCheck,
-                style: IconButton.styleFrom(
-                  backgroundColor: done ? AppColors.primary : AppColors.surfaceHigh,
-                  foregroundColor: done ? const Color(0xFF06210F) : AppColors.textSecondary,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                ),
-                icon: const Icon(Icons.check_rounded, size: 26),
-              ),
-            ),
-          ],
+        constraints: const BoxConstraints(minHeight: 36, minWidth: 64),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        decoration: BoxDecoration(
+          color: hot ? AppColors.danger.withValues(alpha: 0.15) : AppColors.surfaceTop,
+          borderRadius: BorderRadius.circular(Radii.chip),
+          border: Border.all(color: hot ? AppColors.danger.withValues(alpha: 0.6) : AppColors.outlineBright),
         ),
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          Text(rpe == null ? 'RPE –' : 'RPE ${formatRpe(rpe)}',
+              style: AppType.bodyS.copyWith(fontFamily: AppType.display, fontWeight: FontWeight.w800, color: hot ? AppColors.danger : AppColors.textPrimary)),
+          if (rpe != null)
+            Text('${formatRpe(10 - rpe)} RIR', style: AppType.label.copyWith(fontSize: 9, letterSpacing: 0.2, color: AppColors.textSecondary)),
+        ]),
+      ),
+    );
+  }
+}
+
+class _CheckButton extends StatelessWidget {
+  const _CheckButton({required this.done, required this.onTap});
+  final bool done;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 56,
+      height: 56,
+      child: IconButton.filled(
+        tooltip: done ? 'Mark not done' : 'Complete set',
+        onPressed: onTap,
+        style: IconButton.styleFrom(
+          backgroundColor: done ? AppColors.primary : AppColors.surfaceTop,
+          foregroundColor: done ? const Color(0xFF06210F) : AppColors.textPrimary,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(Radii.control)),
+          side: done ? null : const BorderSide(color: AppColors.outlineBright),
+        ),
+        icon: const Icon(Icons.check_rounded, size: 30),
       ),
     );
   }

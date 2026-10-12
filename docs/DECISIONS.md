@@ -181,3 +181,26 @@ bodyweight lifts uses 2.5 kg. Both are editable in Settings.
   YouTube search.
 - **Schema v2** adds `media_matches` and `pinned_videos`. The migration is tested with drift's schema
   verifier: `drift_schemas/` holds the v1 and v2 dumps, and `test/generated_migrations/` the helpers.
+
+## v2 phase 5: UI overhaul
+- `docs/DESIGN.md` is the source of truth for tokens and components. Code: `AppColors` / `AppType` /
+  `Space` / `Radii` / `Motion` in `app_theme.dart`; components in `core/widgets/game_ui.dart`.
+- **Fonts:** Oxanium for display, numbers and ranks; Barlow for UI text. Both are SIL OFL, bundled
+  locally, licences in `docs/licenses/`.
+  - Chakra Petch was tried first and dropped: its digits are proportional (advance widths 382–652), so
+    changing weights and timers would jitter.
+  - Oxanium's ten digits share one width (578 units), which makes them tabular by construction. Only
+    the variable font is published, so static SemiBold/Bold/ExtraBold instances were cut with
+    fontTools' `varLib.instancer`.
+- **Page transitions:** iOS keeps the native slide with edge swipe-back, which matters for one-handed
+  use; Android uses fade-forwards. Celebration routes fade in.
+- **Swipe to complete:** a `Dismissible` that never dismisses. The swipe calls complete and the row
+  re-renders from the DB as done. An override set never completes from a swipe or the check: it opens
+  the set sheet, because RPE and a reason are mandatory. Long-press a row for the full editor
+  (warm-up, delete).
+- **Debug-only preview routes** for reviewing states a headless simulator can't tap into:
+  `/settings/debug/badges`, `/settings/debug/rank-up-preview`, `/settings/debug/summary-preview` and
+  `/settings/debug/media`. They aren't registered in release builds.
+- **Screenshots** for every visual phase are in `docs/screenshots/v2/`. They were taken on the iPhone 17
+  Pro simulator with the seeded database (`p2_*` badges, `p3_*` body map, `p4_*` tutorials, `p5_*`
+  overhaul).

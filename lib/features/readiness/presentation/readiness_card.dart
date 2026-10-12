@@ -21,7 +21,7 @@ class ReadinessCard extends ConsumerWidget {
     final energy = _energyYesterday(ref);
 
     if (r == null) {
-      return const AppCard(child: SizedBox(height: 120, child: Center(child: CircularProgressIndicator())));
+      return const Skeleton(height: 210, radius: Radii.card);
     }
     final color = r.calibrating ? AppColors.accent : bandColor(r.band);
     final scoreText = r.score?.toString() ?? '—';
@@ -31,39 +31,28 @@ class ReadinessCard extends ConsumerWidget {
             ? 'No data · neutral'
             : r.band.label;
 
-    return AppCard(
-      borderColor: color.withValues(alpha: 0.6),
+    return GameCard(
+      accent: color,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              SizedBox(
-                width: 84,
-                height: 84,
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    SizedBox.expand(
-                      child: CircularProgressIndicator(
-                        value: (r.score ?? ReadinessCalculator.neutralScore) / 100,
-                        strokeWidth: 8,
-                        backgroundColor: AppColors.surfaceHigh,
-                        valueColor: AlwaysStoppedAnimation(color),
-                      ),
-                    ),
-                    Text(scoreText, style: const TextStyle(fontSize: 30, fontWeight: FontWeight.w900)),
-                  ],
-                ),
+              ProgressRing(
+                value: (r.score ?? ReadinessCalculator.neutralScore) / 100,
+                color: color,
+                size: 88,
+                stroke: 8,
+                child: Text(scoreText, style: AppType.displayL.copyWith(fontSize: 30)),
               ),
               const SizedBox(width: 16),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('READINESS', style: TextStyle(color: AppColors.textSecondary, fontWeight: FontWeight.w800, letterSpacing: 1.2, fontSize: 12)),
+                    Text('READINESS', style: AppType.label.copyWith(color: AppColors.textSecondary)),
                     const SizedBox(height: 2),
-                    Text(label, style: TextStyle(color: color, fontWeight: FontWeight.w900, fontSize: 22)),
+                    Text(label, style: AppType.title.copyWith(color: color, fontSize: 22)),
                     const SizedBox(height: 4),
                     Text(r.reason, style: const TextStyle(height: 1.3)),
                   ],
@@ -185,7 +174,7 @@ class _Metric extends StatelessWidget {
         Text(label, style: const TextStyle(color: AppColors.textSecondary, fontSize: 12, fontWeight: FontWeight.w700)),
         const SizedBox(height: 2),
         Text(v == null ? 'missing' : format(v),
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: v == null ? AppColors.textSecondary : color)),
+            style: AppType.number.copyWith(fontSize: 18, color: v == null ? AppColors.textSecondary : color)),
         Text(
           b == null ? 'no baseline' : 'base ${format(b.mean)}',
           style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),

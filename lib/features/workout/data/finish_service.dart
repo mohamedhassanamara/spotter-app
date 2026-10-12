@@ -64,6 +64,7 @@ class SessionSummary {
     required this.questsCompleted,
     required this.weeklyGoalReached,
     required this.healthSaved,
+    this.disciplinePct,
   });
 
   final int sessionId;
@@ -83,6 +84,9 @@ class SessionSummary {
   final List<String> questsCompleted;
   final bool weeklyGoalReached;
   final bool? healthSaved;
+
+  /// % of this session's working sets within ±5 % of the suggestion (null without suggestions).
+  final double? disciplinePct;
 
   int get xpTotal => xpSession + xpBonus;
 
@@ -263,6 +267,7 @@ class FinishService {
       questsCompleted: questsDone,
       weeklyGoalReached: weeklyGoalReached,
       healthSaved: saved,
+      disciplinePct: _guardrail.disciplinePct(session.workingSets),
     );
   }
 

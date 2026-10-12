@@ -44,6 +44,16 @@ flutter:
   assets:
     - assets/
   fonts:
+    - family: Barlow
+      fonts:
+        - asset: assets/fonts/Barlow-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/Barlow-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/Barlow-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/Barlow-Bold.ttf
+          weight: 700
     - family: Oxanium
       fonts:
         - asset: assets/fonts/Oxanium-SemiBold.ttf

@@ -84,37 +84,42 @@ class _RestTimerBarState extends ConsumerState<RestTimerBar> {
     final controller = ref.read(restTimerProvider);
     final progress = done ? 1.0 : 1 - remaining.inMilliseconds / (total * 1000);
 
-    return Material(
-      color: done ? AppColors.primary.withValues(alpha: 0.18) : AppColors.surfaceHigh,
+    final color = done ? AppColors.primary : AppColors.accent;
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        border: Border(top: BorderSide(color: color.withValues(alpha: 0.5))),
+        boxShadow: [BoxShadow(color: color.withValues(alpha: 0.12), blurRadius: 20, offset: const Offset(0, -4))],
+      ),
       child: SafeArea(
         top: false,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
+          padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
+          child: Row(
             children: [
-              ProgressBar(value: progress, color: done ? AppColors.primary : AppColors.accent, height: 6),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  Icon(done ? Icons.notifications_active_rounded : Icons.timer_outlined,
-                      color: done ? AppColors.primary : AppColors.accent),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      done ? 'Rest done — go!' : 'Rest ${formatClock(remaining)}',
-                      style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900),
-                    ),
-                  ),
-                  if (!done) ...[
-                    _TimerButton(label: '−15', onTap: () => controller.adjust(-15)),
-                    const SizedBox(width: 8),
-                    _TimerButton(label: '+15', onTap: () => controller.adjust(15)),
-                    const SizedBox(width: 8),
-                  ],
-                  _TimerButton(label: done ? 'OK' : 'Skip', onTap: controller.stop, filled: true),
-                ],
+              ProgressRing(
+                value: progress,
+                color: color,
+                size: 58,
+                stroke: 6,
+                child: done
+                    ? Icon(Icons.notifications_active_rounded, color: color)
+                    : Text('${(remaining.inMilliseconds / 1000).ceil()}', style: AppType.number.copyWith(fontSize: 18)),
               ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text(done ? 'REST DONE' : 'REST', style: AppType.label.copyWith(color: color)),
+                  Text(done ? 'Next set!' : formatClock(remaining), style: AppType.displayL.copyWith(fontSize: 28)),
+                ]),
+              ),
+              if (!done) ...[
+                _TimerButton(label: '−15', onTap: () => controller.adjust(-15)),
+                const SizedBox(width: 6),
+                _TimerButton(label: '+15', onTap: () => controller.adjust(15)),
+                const SizedBox(width: 6),
+              ],
+              _TimerButton(label: done ? 'OK' : 'Skip', onTap: controller.stop, filled: true),
             ],
           ),
         ),
@@ -132,11 +137,11 @@ class _TimerButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final style = ButtonStyle(
-      minimumSize: const WidgetStatePropertyAll(Size(60, 48)),
+      minimumSize: const WidgetStatePropertyAll(Size(56, 52)),
       padding: const WidgetStatePropertyAll(EdgeInsets.symmetric(horizontal: 12)),
       shape: WidgetStatePropertyAll(RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
     );
-    final child = Text(label, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16));
+    final child = Text(label, style: const TextStyle(fontFamily: AppType.display, fontWeight: FontWeight.w800, fontSize: 16));
     return filled
         ? FilledButton(onPressed: onTap, style: style, child: child)
         : OutlinedButton(onPressed: onTap, style: style, child: child);

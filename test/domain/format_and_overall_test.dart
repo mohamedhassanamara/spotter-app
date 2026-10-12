@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:spotter/core/domain/format.dart';
+import 'package:spotter/core/widgets/common.dart' show formatClock;
 import 'package:spotter/core/domain/muscle_group.dart';
 import 'package:spotter/features/ranks/domain/ranks.dart';
 
@@ -16,6 +17,12 @@ List<StrengthStandard> perGroupStandards(List<double> thresholds) => [
     ];
 
 void main() {
+  test('clock rolls over to hours', () {
+    expect(formatClock(const Duration(seconds: 95)), '1:35');
+    expect(formatClock(const Duration(hours: 4, minutes: 14, seconds: 53)), '4:14:53');
+    expect(formatClock(const Duration(seconds: -15)), '-0:15');
+  });
+
   group('volume formatting', () {
     test('kg with separators below 10,000, then tonnes with one decimal', () {
       expect(formatVolume(0), '0 kg');

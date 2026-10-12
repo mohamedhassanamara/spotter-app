@@ -6,6 +6,8 @@ lifting history and Apple Watch recovery data. It also flags ego lifting.
 
 - Architecture, schema and packages: [`docs/PLAN.md`](docs/PLAN.md)
 - Deviations from the original spec: [`docs/DECISIONS.md`](docs/DECISIONS.md)
+- Design system (tokens, type, components): [`docs/DESIGN.md`](docs/DESIGN.md)
+- Screenshots of the v2 screens: [`docs/screenshots/v2/`](docs/screenshots/v2/)
 - Export format: [`docs/export_schema.md`](docs/export_schema.md)
 
 ## Run on your iPhone
@@ -73,8 +75,10 @@ version label. From there:
 
 The debug menu and the fake Health source are compiled out of release builds (`kDebugMode`).
 
-To open a specific screen at launch in debug, e.g. on the simulator:
-`flutter run --route=/progress`.
+To open a specific screen at launch in debug, e.g. on the simulator: `flutter run --route=/progress`.
+Useful routes:
+- Progress: `/progress?tab=ranks`, `/progress?back=1&mode=volume&group=chest`
+- Debug previews: `/settings/debug/badges`, `/settings/debug/rank-up-preview`, `/settings/debug/summary-preview`, `/settings/debug/media`
 
 ## Tutorials
 
@@ -109,7 +113,7 @@ To open a specific screen at launch in debug, e.g. on the simulator:
   by ELABBASSI Hicham, MIT License (`docs/licenses/react-native-body-highlighter-LICENSE.txt`).
 - 3D exercise demos: [ExerciseDB](https://exercisedb.dev) V1 free dataset (non-commercial use, attribution
   required). Only metadata is bundled; GIFs download on first view.
-- Display font: [Oxanium](https://fonts.google.com/specimen/Oxanium) (SIL Open Font License, `docs/licenses/`).
+- Fonts: [Oxanium](https://fonts.google.com/specimen/Oxanium) and [Barlow](https://fonts.google.com/specimen/Barlow) (SIL Open Font License, `docs/licenses/`).
 - Rank emblems: original artwork drawn in code for this app.
 
 ## Privacy

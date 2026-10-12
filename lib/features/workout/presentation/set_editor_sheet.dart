@@ -139,9 +139,15 @@ class _SetEditorState extends State<_SetEditor> {
                 Text(_isOverride ? 'RPE (required)' : 'RPE',
                     style: TextStyle(
                         fontWeight: FontWeight.w800, color: _isOverride && _rpe == null ? AppColors.warning : AppColors.textPrimary)),
-                const Spacer(),
-                Text(_rpe == null ? 'not logged (counts as RPE 9)' : rirHint(_rpe!),
-                    style: const TextStyle(color: AppColors.textSecondary)),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    _rpe == null ? 'not logged (counts as RPE 9)' : rirHint(_rpe!),
+                    textAlign: TextAlign.end,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(color: AppColors.textSecondary),
+                  ),
+                ),
               ],
             ),
             const SizedBox(height: 8),

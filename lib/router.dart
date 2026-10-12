@@ -8,6 +8,7 @@ import 'app_providers.dart';
 import 'features/debug/presentation/badge_gallery_screen.dart';
 import 'features/debug/presentation/debug_menu_screen.dart';
 import 'features/debug/presentation/media_matching_screen.dart';
+import 'features/debug/presentation/summary_preview.dart';
 import 'features/history/presentation/exercise_history_screen.dart';
 import 'features/history/presentation/session_detail_screen.dart';
 import 'features/home/presentation/home_screen.dart';
@@ -146,6 +147,7 @@ GoRouter buildRouter(ValueListenable<bool> onboarded) {
               routes: [
                 GoRoute(path: 'badges', parentNavigatorKey: rootNavigatorKey, builder: (_, _) => const BadgeGalleryScreen()),
                 GoRoute(path: 'media', parentNavigatorKey: rootNavigatorKey, builder: (_, _) => const MediaMatchingScreen()),
+                GoRoute(path: 'summary-preview', parentNavigatorKey: rootNavigatorKey, builder: (_, _) => const SummaryPreviewScreen()),
                 GoRoute(
                   path: 'rank-up-preview',
                   parentNavigatorKey: rootNavigatorKey,

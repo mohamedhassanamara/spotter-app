@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -7,7 +9,10 @@ import '../../../app_providers.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/common.dart';
 import '../../../router.dart';
+import '../../gamification/domain/achievements.dart';
+import '../../ranks/domain/ranks.dart';
 import '../../ranks/presentation/progress_screen.dart' show enterBodyweight;
+import '../../ranks/presentation/rank_badge.dart';
 
 IconData achievementIcon(String name) => switch (name) {
       'fitness' => Icons.fitness_center_rounded,
@@ -21,6 +26,7 @@ IconData achievementIcon(String name) => switch (name) {
       'star' => Icons.star_rounded,
       'weight' => Icons.scale_rounded,
       'bolt' => Icons.bolt_rounded,
+      'crown' => Icons.workspace_premium_rounded,
       _ => Icons.star_rounded,
     };
 
@@ -53,31 +59,21 @@ class ProfileScreen extends ConsumerWidget {
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
         children: [
           // Level
-          AppCard(
-            borderColor: AppColors.xp.withValues(alpha: 0.5),
+          GameCard(
+            accent: AppColors.xp,
+            glow: true,
             child: Row(
               children: [
-                SizedBox(
-                  width: 92,
-                  height: 92,
-                  child: Stack(
-                    fit: StackFit.expand,
+                ProgressRing(
+                  value: level.progress,
+                  color: AppColors.xp,
+                  size: 96,
+                  stroke: 9,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      CircularProgressIndicator(
-                        value: level.progress,
-                        strokeWidth: 8,
-                        backgroundColor: AppColors.surfaceHigh,
-                        valueColor: const AlwaysStoppedAnimation(AppColors.xp),
-                      ),
-                      Center(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Text('LVL', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: AppColors.textSecondary)),
-                            Text('${level.level}', style: const TextStyle(fontSize: 32, fontWeight: FontWeight.w900, height: 1)),
-                          ],
-                        ),
-                      ),
+                      Text('LVL', style: AppType.label.copyWith(fontSize: 11, color: AppColors.textSecondary)),
+                      Text('${level.level}', style: AppType.displayL.copyWith(height: 1)),
                     ],
                   ),
                 ),
@@ -86,14 +82,14 @@ class ProfileScreen extends ConsumerWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Level ${level.level}', style: Theme.of(context).textTheme.titleLarge),
-                      const SizedBox(height: 8),
-                      ProgressBar(value: level.progress, color: AppColors.xp),
+                      Text('Level ${level.level}', style: AppType.titleL),
+                      const SizedBox(height: 10),
+                      LpBar(progress: level.progress, color: AppColors.xp, trailing: '${(level.progress * 100).round()}%'),
                       const SizedBox(height: 6),
                       Text('${level.xpIntoLevel} / ${level.xpForNext} XP to level ${level.level + 1}',
-                          style: const TextStyle(color: AppColors.textSecondary)),
+                          style: AppType.bodyS.copyWith(color: AppColors.textSecondary, fontFeatures: AppType.tabular)),
                       Text('${NumberFormat.decimalPattern().format(level.totalXp)} XP total',
-                          style: const TextStyle(color: AppColors.xp, fontWeight: FontWeight.w800)),
+                          style: AppType.bodyS.copyWith(fontFamily: AppType.display, fontWeight: FontWeight.w800, color: AppColors.xp)),
                     ],
                   ),
                 ),
@@ -163,7 +159,7 @@ class ProfileScreen extends ConsumerWidget {
                     children: [
                       Text(
                         bw == null ? 'Bodyweight not set' : '${bw.kg.toStringAsFixed(1)} kg',
-                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+                        style: AppType.number.copyWith(fontSize: 20),
                       ),
                       Text(
                         bw == null
@@ -174,26 +170,27 @@ class ProfileScreen extends ConsumerWidget {
                     ],
                   ),
                 ),
-                TierBadge(overall),
+                RankBadge(score: overall, size: BadgeSize.small, width: 44, animate: false),
               ],
             ),
           ),
           AsyncBody(
             value: achievements,
+            loading: const Padding(padding: EdgeInsets.only(top: 22), child: Skeleton(height: 320, radius: Radii.card)),
             builder: (list) {
               final unlocked = list.where((a) => a.unlockedAt != null).length;
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  SectionHeader('Achievements', trailing: Text('$unlocked/${list.length}',
-                      style: const TextStyle(fontWeight: FontWeight.w800, color: AppColors.textSecondary))),
+                  SectionLabel('Achievements', trailing: Text('$unlocked/${list.length}',
+                      style: AppType.bodyS.copyWith(fontFamily: AppType.display, fontWeight: FontWeight.w800, color: AppColors.textSecondary))),
                   GridView.count(
                     crossAxisCount: 3,
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
                     mainAxisSpacing: 10,
                     crossAxisSpacing: 10,
-                    childAspectRatio: 0.82,
+                    childAspectRatio: 0.74,
                     children: [for (final a in list) _AchievementTile(a)],
                   ),
                 ],
@@ -227,19 +224,25 @@ class _DisciplineCard extends StatelessWidget {
             : p >= 70
                 ? 'Mostly on plan. Watch the overrides.'
                 : 'Lots of overrides. Ego is driving.';
-    return AppCard(
-      borderColor: color.withValues(alpha: 0.5),
+    return GameCard(
+      accent: p == null ? null : color,
       child: Row(
         children: [
-          Icon(Icons.gps_fixed_rounded, size: 34, color: color),
+          ProgressRing(
+            value: (p ?? 0) / 100,
+            color: color,
+            size: 64,
+            stroke: 6,
+            child: Icon(Icons.gps_fixed_rounded, size: 26, color: color),
+          ),
           const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('DISCIPLINE', style: TextStyle(fontWeight: FontWeight.w800, letterSpacing: 1.2, color: AppColors.textSecondary)),
+                Text('DISCIPLINE', style: AppType.label.copyWith(color: AppColors.textSecondary)),
                 const SizedBox(height: 2),
-                Text(p == null ? '—' : '${p.round()}%', style: TextStyle(fontSize: 34, fontWeight: FontWeight.w900, color: color)),
+                Text(p == null ? '—' : '${p.round()}%', style: AppType.displayL.copyWith(color: color)),
                 const Text('Working sets within ±5% of the suggestion, last 30 days',
                     style: TextStyle(color: AppColors.textSecondary, fontSize: 13)),
                 const SizedBox(height: 4),
@@ -253,6 +256,19 @@ class _DisciplineCard extends StatelessWidget {
   }
 }
 
+Color achievementColor(AchievementType type) => switch (type) {
+      AchievementType.sessions => AppColors.primary,
+      AchievementType.cleanSessionStreak => AppColors.accent,
+      AchievementType.smartRestDays => const Color(0xFF7FA7FF),
+      AchievementType.comebacks => AppColors.green,
+      AchievementType.weeklyStreak => AppColors.warning,
+      AchievementType.bestExerciseTier => tierColors[Tier.gold.index],
+      AchievementType.discipline => const Color(0xFF3FD5C0),
+      AchievementType.prs => const Color(0xFFFFC93C),
+      AchievementType.totalVolumeKg => const Color(0xFFFF7A45),
+      AchievementType.level => AppColors.xp,
+    };
+
 class _AchievementTile extends StatelessWidget {
   const _AchievementTile(this.a);
   final AchievementState a;
@@ -260,15 +276,13 @@ class _AchievementTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final unlocked = a.unlockedAt != null;
-    final color = unlocked ? AppColors.xp : AppColors.textSecondary;
-    return AppCard(
-      padding: const EdgeInsets.all(10),
-      color: unlocked ? AppColors.xp.withValues(alpha: 0.10) : null,
-      borderColor: unlocked ? AppColors.xp.withValues(alpha: 0.6) : null,
+    final color = achievementColor(a.def.type);
+    return InkWell(
+      borderRadius: BorderRadius.circular(Radii.card),
       onTap: () => showDialog<void>(
         context: context,
         builder: (ctx) => AlertDialog(
-          icon: Icon(achievementIcon(a.def.icon), size: 40, color: color),
+          icon: _Medallion(icon: achievementIcon(a.def.icon), color: color, unlocked: unlocked, progress: a.progress, size: 84),
           title: Text(a.def.title),
           content: Column(
             mainAxisSize: MainAxisSize.min,
@@ -277,51 +291,137 @@ class _AchievementTile extends StatelessWidget {
               const SizedBox(height: 12),
               unlocked
                   ? Text('Unlocked ${DateFormat('d MMM yyyy').format(a.unlockedAt!)}',
-                      style: const TextStyle(color: AppColors.xp, fontWeight: FontWeight.w800))
+                      style: AppType.bodyS.copyWith(color: color, fontWeight: FontWeight.w800))
                   : Column(children: [
-                      ProgressBar(value: a.progress, color: AppColors.xp),
-                      const SizedBox(height: 6),
-                      Text('${(a.progress * 100).round()}% there', style: const TextStyle(color: AppColors.textSecondary)),
+                      LpBar(progress: a.progress, color: color, trailing: '${(a.progress * 100).round()}%'),
                     ]),
             ],
           ),
           actions: [TextButton(onPressed: () => Navigator.of(ctx).pop(), child: const Text('Close'))],
         ),
       ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          SizedBox(
-            width: 52,
-            height: 52,
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                if (!unlocked)
-                  CircularProgressIndicator(
-                    value: a.progress,
-                    strokeWidth: 3.5,
-                    backgroundColor: AppColors.surfaceHigh,
-                    valueColor: const AlwaysStoppedAnimation(AppColors.xp),
-                  ),
-                Center(
-                  child: Icon(achievementIcon(a.def.icon), size: unlocked ? 36 : 26, color: unlocked ? AppColors.xp : AppColors.unranked),
-                ),
-              ],
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 6),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.start,
+          children: [
+            _Medallion(icon: achievementIcon(a.def.icon), color: color, unlocked: unlocked, progress: a.progress, size: 72),
+            const SizedBox(height: 8),
+            Text(
+              a.def.title,
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: AppType.bodyS.copyWith(
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                color: unlocked ? AppColors.textPrimary : AppColors.textTertiary,
+              ),
             ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            a.def.title,
-            textAlign: TextAlign.center,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13, color: unlocked ? AppColors.textPrimary : AppColors.textSecondary),
-          ),
-          if (unlocked)
-            Text(DateFormat('d MMM').format(a.unlockedAt!), style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+            if (unlocked)
+              Text(DateFormat('d MMM').format(a.unlockedAt!), style: AppType.bodyS.copyWith(fontSize: 11, color: AppColors.textSecondary)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Hexagonal medallion. Unlocked: coloured, glowing, with the icon. Locked: dark silhouette with a
+/// faint icon, a lock glyph and a progress arc around it.
+class _Medallion extends StatelessWidget {
+  const _Medallion({required this.icon, required this.color, required this.unlocked, required this.progress, required this.size});
+  final IconData icon;
+  final Color color;
+  final bool unlocked;
+  final double progress;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    final hex = SizedBox(
+      width: size * 0.82,
+      height: size * 0.82,
+      child: CustomPaint(
+        painter: _HexPainter(color: unlocked ? color : AppColors.surfaceTop, lit: unlocked),
+        child: Center(
+          child: Icon(icon, size: size * 0.36, color: unlocked ? Colors.white : AppColors.textTertiary.withValues(alpha: 0.25)),
+        ),
+      ),
+    );
+    return SizedBox(
+      width: size,
+      height: size,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          if (!unlocked) ProgressRing(value: progress, color: color.withValues(alpha: 0.8), size: size, stroke: 3),
+          hex,
+          if (!unlocked)
+            Positioned(
+              right: size * 0.08,
+              bottom: size * 0.06,
+              child: Container(
+                padding: const EdgeInsets.all(3),
+                decoration: const BoxDecoration(color: AppColors.background, shape: BoxShape.circle),
+                child: Icon(Icons.lock_rounded, size: size * 0.18, color: AppColors.textSecondary),
+              ),
+            ),
         ],
       ),
     );
   }
+}
+
+class _HexPainter extends CustomPainter {
+  _HexPainter({required this.color, required this.lit});
+  final Color color;
+  final bool lit;
+
+  Path _hex(Size s, double inset) {
+    final c = s.center(Offset.zero);
+    final r = s.shortestSide / 2 - inset;
+    return Path()
+      ..addPolygon([
+        for (var i = 0; i < 6; i++) c + Offset(math.cos(math.pi / 3 * i - math.pi / 2), math.sin(math.pi / 3 * i - math.pi / 2)) * r,
+      ], true);
+  }
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final outer = _hex(size, 0);
+    final hsl = HSLColor.fromColor(color);
+    Color shade(double d) => hsl.withLightness((hsl.lightness + d).clamp(0.0, 1.0)).toColor();
+    if (lit) {
+      canvas.drawPath(outer, Paint()
+        ..color = color.withValues(alpha: 0.45)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8));
+    }
+    canvas.drawPath(
+      outer,
+      Paint()
+        ..shader = LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: lit ? [shade(0.18), color, shade(-0.22)] : [shade(0.03), color, shade(-0.04)],
+        ).createShader(Offset.zero & size),
+    );
+    canvas.drawPath(
+      _hex(size, size.shortestSide * 0.1),
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.5
+        ..color = lit ? Colors.white.withValues(alpha: 0.35) : AppColors.outlineBright,
+    );
+    canvas.drawPath(
+      outer,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2
+        ..color = lit ? shade(0.25) : AppColors.outline,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _HexPainter old) => old.color != color || old.lit != lit;
 }

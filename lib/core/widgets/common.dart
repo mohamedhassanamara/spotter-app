@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 export '../domain/format.dart';
+export 'game_ui.dart';
 
 import '../../features/ranks/domain/ranks.dart';
 import '../../features/ranks/presentation/rank_badge.dart';
 import '../../features/readiness/domain/readiness.dart';
 import '../theme/app_theme.dart';
+import 'game_ui.dart';
 
 /// Renders an [AsyncValue] with consistent loading and error states.
 class AsyncBody<T> extends StatelessWidget {
@@ -20,7 +22,7 @@ class AsyncBody<T> extends StatelessWidget {
   Widget build(BuildContext context) {
     return value.when(
       data: builder,
-      loading: () => loading ?? const Center(child: Padding(padding: EdgeInsets.all(32), child: CircularProgressIndicator())),
+      loading: () => loading ?? const SkeletonList(),
       error: (e, st) => Center(
         child: Padding(
           padding: const EdgeInsets.all(24),
@@ -37,24 +39,10 @@ class SectionHeader extends StatelessWidget {
   final Widget? trailing;
 
   @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(4, 20, 4, 10),
-      child: Row(
-        children: [
-          Expanded(
-            child: Text(
-              title.toUpperCase(),
-              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800, letterSpacing: 1.2, color: AppColors.textSecondary),
-            ),
-          ),
-          ?trailing,
-        ],
-      ),
-    );
-  }
+  Widget build(BuildContext context) => SectionLabel(title, trailing: trailing);
 }
 
+/// Layered card (see [GameCard]). [borderColor] becomes the accent border.
 class AppCard extends StatelessWidget {
   const AppCard({super.key, required this.child, this.onTap, this.padding = const EdgeInsets.all(18), this.color, this.borderColor});
 
@@ -65,16 +53,8 @@ class AppCard extends StatelessWidget {
   final Color? borderColor;
 
   @override
-  Widget build(BuildContext context) {
-    return Card(
-      color: color,
-      shape: borderColor == null
-          ? null
-          : RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: BorderSide(color: borderColor!, width: 1.5)),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(onTap: onTap, child: Padding(padding: padding, child: child)),
-    );
-  }
+  Widget build(BuildContext context) =>
+      GameCard(onTap: onTap, padding: padding, fill: color, accent: borderColor, child: child);
 }
 
 class EmptyState extends StatelessWidget {
@@ -339,7 +319,8 @@ String formatDuration(Duration d) {
 String formatClock(Duration d) {
   final neg = d.isNegative;
   final a = d.abs();
-  final m = a.inMinutes, s = a.inSeconds % 60;
-  return '${neg ? '-' : ''}$m:${s.toString().padLeft(2, '0')}';
+  final h = a.inHours, m = a.inMinutes % 60, s = a.inSeconds % 60;
+  final ss = s.toString().padLeft(2, '0');
+  return '${neg ? '-' : ''}${h > 0 ? '$h:${m.toString().padLeft(2, '0')}' : '$m'}:$ss';
 }
 
