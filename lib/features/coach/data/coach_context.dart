@@ -1,0 +1,96 @@
+import '../../../core/db/database.dart';
+import '../../../core/domain/equipment.dart';
+import '../../../core/domain/history.dart';
+import '../../../core/domain/muscle_group.dart';
+import '../../../core/domain/training.dart';
+import '../../library/domain/exercise_info.dart';
+import '../../readiness/domain/readiness.dart';
+import '../domain/suggestion_engine.dart';
+
+class EgoFreezeRepository {
+  EgoFreezeRepository(this._db);
+  final AppDatabase _db;
+
+  Stream<List<EgoFreeze>> watchAll() => _db.select(_db.egoFreezes).watch();
+
+  Future<List<EgoFreeze>> all() => _db.select(_db.egoFreezes).get();
+
+  Future<void> add({required String exerciseId, required DateTime start, required DateTime until, required double baseWeight, required String reason}) =>
+      _db.into(_db.egoFreezes).insert(EgoFreezesCompanion.insert(
+            exerciseId: exerciseId,
+            startedAt: start,
+            until: until,
+            baseWeight: baseWeight,
+            reason: reason,
+          ));
+
+  Future<void> deleteAll() => _db.delete(_db.egoFreezes).go();
+}
+
+/// Most recent freeze per exercise.
+Map<String, EgoFreeze> latestFreezes(Iterable<EgoFreeze> rows) {
+  final out = <String, EgoFreeze>{};
+  for (final f in rows) {
+    final cur = out[f.exerciseId];
+    if (cur == null || f.startedAt.isAfter(cur.startedAt)) out[f.exerciseId] = f;
+  }
+  return out;
+}
+
+/// Turns today's readiness + training load into the per-exercise readiness the engine uses.
+ExerciseReadiness exerciseReadiness(ReadinessResult? today, Set<MuscleGroup> overloaded, MuscleTargets targets) {
+  final score = today?.coachScore ?? ReadinessCalculator.neutralScore;
+  final groups = [
+    for (final g in targets.primary)
+      if (overloaded.contains(g)) g.label,
+  ];
+  return ExerciseReadiness(score: score, calibrating: today?.calibrating ?? false, loadPenaltyGroups: groups);
+}
+
+/// Everything the suggestion engine needs at a point in time.
+class CoachContext {
+  CoachContext({
+    required this.history,
+    required this.readiness,
+    required this.overloaded,
+    required this.freezes,
+    required this.increments,
+    required this.now,
+  });
+
+  final TrainingHistory history;
+  final ReadinessResult? readiness;
+  final Set<MuscleGroup> overloaded;
+  final Map<String, EgoFreeze> freezes;
+  final Increments increments;
+  final DateTime now;
+
+  static const _engine = SuggestionEngine();
+
+  FreezeState? freezeFor(String exerciseId) {
+    final f = freezes[exerciseId];
+    if (f == null) return null;
+    final s = FreezeState(until: f.until, baseWeight: f.baseWeight);
+    return s.isActive(now) ? s : null;
+  }
+
+  Suggestion suggest(ExerciseInfo info, RepRange range, int targetSets, int targetRir) => _engine.suggest(SuggestionInput(
+        range: range,
+        targetSets: targetSets,
+        targetRir: targetRir,
+        increment: increments.of(info.equipmentKind),
+        equipment: info.equipmentKind,
+        history: history.logsFor(info.id),
+        readiness: exerciseReadiness(readiness, overloaded, info.targets),
+        now: now,
+        freeze: freezeFor(info.id),
+      ));
+}
+
+/// Working sets per session exercise, attributed to its primary groups (training-load modifier).
+List<GroupSetEntry> groupSetEntries(TrainingHistory history) => [
+      for (final s in history.sessions)
+        for (final e in s.exercises)
+          if (e.workingSets.isNotEmpty)
+            GroupSetEntry(date: s.startedAt, groups: e.targets.primary, sets: e.workingSets.length),
+    ];
