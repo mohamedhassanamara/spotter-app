@@ -1,0 +1,12 @@
+# App icons: `dart run flutter_launcher_icons`. Sources live in branding/ (not bundled into the app).
+flutter_launcher_icons:
+  image_path: "branding/app_icon.png"
+  ios: true
+  remove_alpha_ios: true
+  android: true
+  min_sdk_android: 21
+  # Adaptive icon: the emblem with the navy background keyed out, as a full-size transparent
+  # foreground (the generator insets it by 16%, which keeps it inside the 66% safe zone), on the
+  # same navy as a solid background layer.
+  adaptive_icon_foreground: "branding/app_icon_foreground.png"
+  adaptive_icon_background: "#0B111E"
