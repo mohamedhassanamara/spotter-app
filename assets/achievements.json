@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "description": "Achievement definitions. type is one of: sessions, cleanSessionStreak, smartRestDays, comebacks, weeklyStreak, bestExerciseTier (0=Iron..6=Champion), discipline (% over 30 days, needs 50+ sets), prs, totalVolumeKg, level. Unlocked when the metric >= threshold.",
+  "achievements": [
+    {"key": "first_workout", "title": "First Rep", "description": "Finish your first workout.", "icon": "fitness", "type": "sessions", "threshold": 1},
+    {"key": "ten_workouts", "title": "Habit Forming", "description": "Finish 10 workouts.", "icon": "fitness", "type": "sessions", "threshold": 10},
+    {"key": "fifty_workouts", "title": "Regular", "description": "Finish 50 workouts.", "icon": "fitness", "type": "sessions", "threshold": 50},
+    {"key": "hundred_workouts", "title": "Centurion", "description": "Finish 100 workouts.", "icon": "trophy", "type": "sessions", "threshold": 100},
+    {"key": "patience", "title": "Patience", "description": "10 sessions in a row with no overrides.", "icon": "shield", "type": "cleanSessionStreak", "threshold": 10},
+    {"key": "monk_mode", "title": "Monk Mode", "description": "30 sessions in a row with no overrides.", "icon": "shield", "type": "cleanSessionStreak", "threshold": 30},
+    {"key": "smart_rest", "title": "Smart Rest", "description": "Take 5 smart rest days (Red readiness, no training).", "icon": "bed", "type": "smartRestDays", "threshold": 5},
+    {"key": "comeback", "title": "Comeback", "description": "Regain your best e1RM on a lift after a deload.", "icon": "trending", "type": "comebacks", "threshold": 1},
+    {"key": "disciplined", "title": "Disciplined", "description": "Follow 90% of suggestions over 30 days (50+ sets).", "icon": "target", "type": "discipline", "threshold": 90},
+    {"key": "streak_4", "title": "On a Roll", "description": "Hit your weekly goal 4 weeks in a row.", "icon": "fire", "type": "weeklyStreak", "threshold": 4},
+    {"key": "streak_12", "title": "Unbreakable", "description": "Hit your weekly goal 12 weeks in a row.", "icon": "fire", "type": "weeklyStreak", "threshold": 12},
+    {"key": "rank_silver", "title": "Silver Lining", "description": "Reach Silver on any ranked lift.", "icon": "rank", "type": "bestExerciseTier", "threshold": 2},
+    {"key": "rank_gold", "title": "Gold Standard", "description": "Reach Gold on any ranked lift.", "icon": "rank", "type": "bestExerciseTier", "threshold": 3},
+    {"key": "rank_platinum", "title": "Platinum Plates", "description": "Reach Platinum on any ranked lift.", "icon": "rank", "type": "bestExerciseTier", "threshold": 4},
+    {"key": "first_pr", "title": "New Personal Best", "description": "Set your first valid PR.", "icon": "star", "type": "prs", "threshold": 1},
+    {"key": "pr_25", "title": "Record Breaker", "description": "Set 25 valid PRs.", "icon": "star", "type": "prs", "threshold": 25},
+    {"key": "volume_100t", "title": "100 Tonnes", "description": "Lift 100,000 kg of working volume.", "icon": "weight", "type": "totalVolumeKg", "threshold": 100000},
+    {"key": "level_10", "title": "Double Digits", "description": "Reach level 10.", "icon": "bolt", "type": "level", "threshold": 10}
+  ]
+}
