@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math' as math;
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:spotter/core/domain/muscles.dart';
@@ -191,15 +192,74 @@ void main() {
     });
   });
 
-  test('bundled standards parse, and every hand-authored exercise has one', () {
+  group('allometric scaling', () {
+    final scaled = StrengthStandard(
+      id: 'b',
+      name: 'Bench',
+      kind: StandardKind.free,
+      exerciseIds: const ['B'],
+      anchors: const [0.5, 0.75, 1.0, 1.4, 1.6],
+      scaling: BodyweightScaling.allometric,
+    );
+
+    test('scaled ratio = e1RM / (100 × (bw/100)^0.67); equals the plain ratio at 100 kg', () {
+      expect(scaled.ratioFor(100, 100), closeTo(1.0, 1e-12));
+      expect(scaled.ratioFor(100, 120), closeTo(100 / (100 * math.pow(1.2, 0.67)), 1e-12));
+      expect(scaled.normalizer(80), closeTo(100 * math.pow(0.8, 0.67), 1e-12));
+    });
+
+    test('heavier lifters are not penalised for not lifting in proportion to bodyweight', () {
+      // 1.5 × the load at 1.5 × the bodyweight scores higher than the lighter lifter's ratio would.
+      final light = scaled.scoreForRatio(scaled.ratioFor(100, 80));
+      final heavy = scaled.scoreForRatio(scaled.ratioFor(150, 120));
+      expect(heavy.value, greaterThan(light.value));
+      // With plain ratios the two would tie.
+      expect(150 / 120, closeTo(100 / 80, 1e-12));
+    });
+
+    test('bodyweight lifts keep the plain ratio', () {
+      final dip = StrengthStandard(
+        id: 'd',
+        name: 'Dip',
+        kind: StandardKind.bodyweight,
+        exerciseIds: const ['D'],
+        anchors: const [1.0, 1.1, 1.3, 1.7, 1.8],
+        scaling: BodyweightScaling.allometric,
+      );
+      expect(dip.ratioFor(120, 100), closeTo(1.2, 1e-12));
+      expect(dip.ratioFor(144, 120), closeTo(1.2, 1e-12));
+    });
+
+    test('next-division kg inverts the scaling', () {
+      final s = scaled.scoreForRatio(scaled.ratioFor(90, 110));
+      final kg = scaled.nextThresholdKg(s, 110)!;
+      expect(scaled.scoreForRatio(scaled.ratioFor(kg, 110)).value, closeTo((s.value + 1e-9).floorToDouble() + 1, 1e-6));
+    });
+  });
+
+  test('bundled standards: every exercise covered, accessories are base compound × factor', () {
+    final raw = jsonDecode(File('assets/strength_standards.json').readAsStringSync()) as Map<String, dynamic>;
     final standards = RanksRepository.parseStandards(File('assets/strength_standards.json').readAsStringSync());
     final ids = {for (final s in standards) ...s.exerciseIds};
     final muscles = (jsonDecode(File('assets/exercise_muscles.json').readAsStringSync()) as Map<String, dynamic>)['exercises'] as Map<String, dynamic>;
     expect(muscles.keys.toSet().difference(ids), isEmpty);
+    final bases = raw['bases'] as Map<String, dynamic>;
+    for (final j in (raw['standards'] as List<dynamic>).cast<Map<String, dynamic>>()) {
+      final anchors = j['anchors'] as Map<String, dynamic>;
+      if (j['kind'] == 'bodyweight') {
+        expect(j.containsKey('base'), isFalse, reason: j['name'] as String);
+        continue;
+      }
+      final base = bases[j['base']] as Map<String, dynamic>;
+      for (final k in anchors.keys) {
+        expect((anchors[k] as num).toDouble(), closeTo((base[k] as num) * (j['factor'] as num), 1e-3), reason: '${j['name']} $k');
+      }
+    }
     for (final s in standards) {
       expect(s.thresholds[Tier.challenger.index], greaterThan(s.thresholds[Tier.master.index] * 1.29), reason: s.name);
+      expect(s.scaling.exponent, 0.67);
     }
     final machine = standards.firstWhere((s) => s.id == 'machine_chest_press');
-    expect(machine.thresholds[Tier.platinum.index], closeTo(1.20 * 1.10, 1e-9));
+    expect(machine.thresholds[Tier.platinum.index], closeTo(1.15 * 1.05 * 1.10, 1e-3));
   });
 }

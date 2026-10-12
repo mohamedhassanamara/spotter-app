@@ -179,20 +179,48 @@ void main() {
     final ranked = [...ranks.exercises]..sort((a, b) => b.score.value.compareTo(a.score.value));
     String setText(ExerciseRank r) =>
         '${r.weight < 0 ? '${formatKg(-r.weight)} kg assist' : (r.weight == 0 ? 'BW' : '${formatKg(r.weight)} kg')} × ${r.reps}';
+    // Outliers that sit more than 2 tiers from the rest, each justified in docs/DECISIONS.md
+    // ("Rank calibration v4 → justified outliers").
+    const justified = {
+      'Triceps_Pushdown': 'load doubled overnight on 13 Sep (34 → 72 kg): a different station',
+      'liftoff_machine_hip_thrust': 'new machine since 13 Aug, 4 sessions',
+      'Standing_Calf_Raises': 'a single session',
+      'Leg_Extensions': 'machine quad strength above the barbell squat',
+      'Lying_Leg_Curls': 'machine hamstring strength above the barbell compounds',
+      'Calf_Press_On_The_Leg_Press_Machine': 'calves are a strong point',
+      'Standing_Dumbbell_Calf_Raise': 'calves are a strong point',
+      'sp_db_incline_y_raise': 'shoulder isolation above the presses',
+      'liftoff_one_arm_machine_reverse_fly': 'shoulder isolation above the presses',
+    };
     out
       ..writeln()
       ..writeln('## Rank sanity check')
       ..writeln()
-      ..writeln('Your top 15 lifts on the v3 standards: best valid set of the last 90 days, scored at the bodyweight '
-          'of its day. e1RM includes bodyweight for bodyweight lifts and counts at most 20 reps (reps + reps in reserve). '
-          'Hidden from ranks: ${(await RankExclusions(db).load()).join(', ')}.')
+      ..writeln('Every ranked exercise on the v4 standards, highest rank first: best valid set of the last 90 days, '
+          'scored at the bodyweight of its day. e1RM counts at most 20 reps (reps + reps in reserve) and includes '
+          'bodyweight for bodyweight lifts. "Scaled" is the allometric ratio the standard scores: '
+          'e1RM ÷ (100 × (bodyweight ÷ 100)^0.67); bodyweight lifts use e1RM ÷ bodyweight. '
+          'Hidden from ranks: ${(await RankExclusions(db).load()).join(', ')}. '
+          'Outliers marked ⚑ are justified in docs/DECISIONS.md.')
       ..writeln()
-      ..writeln('| # | Exercise | Best set | Date | Bodyweight | e1RM | × BW | Rank | Strength |')
-      ..writeln('|---|---|---|---|---|---|---|---|---|');
-    for (final (i, r) in ranked.take(15).indexed) {
-      out.writeln('| ${i + 1} | ${r.name} | ${setText(r)} | ${fmt.format(r.date)} | ${r.bodyweight.toStringAsFixed(1)} kg | '
-          '${r.bestE1rm.toStringAsFixed(1)} kg | ${r.ratio.toStringAsFixed(2)} | ${r.score.label} | ${r.strength} |');
+      ..writeln('| # | Exercise | Best set | Date | Bodyweight | e1RM | × BW | Scaled | Rank | Strength |')
+      ..writeln('|---|---|---|---|---|---|---|---|---|---|');
+    for (final (i, r) in ranked.indexed) {
+      out.writeln('| ${i + 1} | ${r.name}${justified.containsKey(r.exerciseId) ? ' ⚑' : ''} | ${setText(r)} | ${fmt.format(r.date)} | '
+          '${r.bodyweight.toStringAsFixed(1)} kg | ${r.bestE1rm.toStringAsFixed(1)} kg | ${r.ratio.toStringAsFixed(2)} | '
+          '${r.scaledRatio.toStringAsFixed(3)} | ${r.score.label} | ${r.strength} |');
     }
+    final counts = <Tier, int>{};
+    for (final r in ranked) {
+      counts[r.score.tier] = (counts[r.score.tier] ?? 0) + 1;
+    }
+    final core = [for (final r in ranked) if (!justified.containsKey(r.exerciseId)) r.score.tier.index];
+    out
+      ..writeln()
+      ..writeln('Tiers: ${[for (final t in Tier.values) if (counts[t] != null) '${t.label} ${counts[t]}'].join(' · ')}. '
+          'Without the ⚑ outliers: ${Tier.values[core.reduce(math.min)].label} to ${Tier.values[core.reduce(math.max)].label} '
+          '(${core.reduce(math.max) - core.reduce(math.min)} tiers).');
+
     out
       ..writeln()
       ..writeln('## Ranks after import')
@@ -224,13 +252,6 @@ void main() {
         ..writeln('Unranked muscles: ${unranked.map((m) => '${m.label} (${(ranks.unrankedHints[m] ?? const []).map((h) => h.name).take(3).join(', ').ifEmpty('no exercise of yours trains it as a main muscle')})').join('; ')}.');
     }
 
-    // Sanity rule from the owner: nothing above Diamond unless justified in docs/DECISIONS.md.
-    const justifiedAboveDiamond = <String>{};
-    final aboveDiamond = [
-      for (final r in ranked)
-        if (r.score.tier.index > Tier.diamond.index && !justifiedAboveDiamond.contains(r.exerciseId)) '${r.name} (${r.score.label})',
-    ];
-    expect(aboveDiamond, isEmpty, reason: 'ranks above Diamond need a justification in DECISIONS.md');
 
     // First suggestion per routine exercise: start each routine exactly like the app does
     // (neutral readiness), read what it prescribes, then discard the session.
@@ -272,6 +293,14 @@ void main() {
     }
 
     File('docs/IMPORT_SUMMARY.md').writeAsStringSync(out.toString());
+    // Owner's rule: highest − lowest ranked exercise (hidden excluded) ≤ 2 tiers, except justified outliers.
+    expect(core.reduce(math.max) - core.reduce(math.min), lessThanOrEqualTo(2), reason: 'rank spread');
+    final decisions = File('docs/DECISIONS.md').readAsStringSync();
+    for (final id in justified.keys) {
+      final r = ranked.where((x) => x.exerciseId == id).firstOrNull;
+      if (r == null) continue;
+      expect(decisions, contains(r.name), reason: '${r.name} must be justified in DECISIONS.md');
+    }
     // ignore: avoid_print
     print('Wrote docs/IMPORT_SUMMARY.md: ${result.sessions} sessions, ${result.sets} sets');
   }, skip: path == null ? 'set LIFTOFF_CSV to the Liftoff export to regenerate docs/IMPORT_SUMMARY.md' : false, timeout: const Timeout(Duration(minutes: 5)));

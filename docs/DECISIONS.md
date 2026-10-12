@@ -487,7 +487,7 @@ paths), split at load time:
 The Ranks tab shows collapsible regions. Each muscle row has a thumbnail of the body with that
 muscle highlighted, its badge, division and LP.
 
-### Anchor values
+### Anchor values (v3, superseded by the v4 calibration below)
 
 Anchors are e1RM ÷ bodyweight. Per side means per dumbbell, per arm or per leg. The last column is the
 Master entry after machine strictness.
@@ -596,3 +596,208 @@ Master entry after machine strictness.
 | Side leg raise | bodyweight |  | 1.33 | 1.5 | 1.67 | 1.9 | 2.2 | 2.20 |
 | Side lunge | bodyweight |  | 1.2 | 1.33 | 1.5 | 1.67 | 1.9 | 1.90 |
 | Side-lying hip adduction | bodyweight |  | 1.33 | 1.5 | 1.67 | 1.9 | 2.2 | 2.20 |
+
+## Rank calibration v4 (owner review after section 8)
+
+**Owner corrections first.**
+- **Shoulder Press:** every Liftoff "Shoulder Press" session was a barbell press, so the name maps
+  straight to `Barbell_Shoulder_Press`. The weight-threshold rule is gone. The importer still supports
+  `by_weight` entries, but none are used.
+- **Walking Lunge:** Liftoff's 35 kg was both dumbbells together. Walking lunges (in Liftoff and in the
+  app's Lower routine) log the **combined** load, and the lunge is ranked on its own standard, *Dumbbell
+  walking lunge*, which uses total load. *Dumbbell lunge* stays per dumbbell. No weights were rewritten.
+- **Cable Kickback:** still glute kickback, still hidden from ranks.
+
+**Allometric scaling.**
+- Loaded lifts are no longer scored as e1RM ÷ bodyweight. The scaled ratio is:
+
+      scaled ratio = e1RM / (100 kg × (bodyweight / 100 kg)^0.67)
+
+- Strength grows with muscle cross-section, roughly mass^⅔, so the plain ratio penalises heavier
+  lifters. DOTS and Wilks correct for the same effect with fitted polynomials; the power law is simpler
+  and works for every exercise, not just the three powerlifts.
+- At 100 kg the scaled ratio equals the plain ratio. At 106 kg a lift counts about 4 % more than
+  before, and at 120 kg about 6 % more.
+- Bodyweight-inclusive lifts (pull-ups, dips, crunches, back extensions…) keep e1RM ÷ bodyweight, because
+  their load *is* bodyweight and already scales with the lifter.
+- The anchors are expressed at the 100 kg reference. The next-division kg targets invert the same
+  formula.
+- The scaling lives in `strength_standards.json` → `scaling` (`reference_bodyweight`, `exponent`).
+
+**Cross-lift consistency.**
+- In v3, accessories had free-standing anchors and isolation work ranked far above the compounds: a
+  10 kg Y raise was Emerald II while a 65 × 6 bench was Bronze II.
+- In v4, five base compounds carry population standards for a 100 kg male: bench, squat, deadlift,
+  overhead press and barbell row. Every other loaded standard is **base × factor**. The factor is the
+  typical ratio of that exercise's 1RM to the compound's, from population intermediate numbers, so a
+  typical lifter at a given level on the compound sits at about the same level on the accessory.
+  Examples:
+  - lateral raise ≈ 0.23 × overhead press per dumbbell;
+  - pushdown ≈ 0.42 × bench;
+  - standing calf machine ≈ 1.20 × squat;
+  - leg curl ≈ 0.60 × squat.
+- Machine and cable standards also keep the 1.10 strictness.
+- `build.py` enforces the rule: only bodyweight-kind standards may have their own anchors. A unit test
+  checks that every bundled standard equals its base × factor.
+- Fixed from v3 while calibrating, because their anchors didn't follow typical ratios:
+  - cable arm work (rope pushdown 0.34, overhead cable extension 0.27, cable hammer curl 0.30, cable fly
+    0.16 per side);
+  - pendulum squat 0.50 × squat (the sled weight isn't counted, and the lever makes loaded plates far
+    lighter than a bar);
+  - reverse pec deck 1.00 × OHP;
+  - hip abduction and adduction machines 0.70 × squat;
+  - reverse dumbbell fly 0.20 × OHP;
+  - bodyweight high-rep isolation (crunches, Russian twist, side bend, back extension, side leg raise,
+    side-lying adduction): 20 reps, the scoring cap, is now between novice and intermediate (1.40,
+    1.60, 1.80, 2.10, 2.40), so more needs added load.
+- None of the factors were fitted to my own numbers.
+
+**Spread test with the real import.**
+- `test/tool/import_summary_test.dart` fails if the highest and lowest ranked exercises (hidden ones
+  excluded) are more than 2 tiers apart, ignoring only the outliers justified below.
+- Result: 68 of 77 ranked exercises sit between **Bronze and Gold** (Iron 2 · Bronze 26 · Silver 23 ·
+  Gold 19 · Platinum 5 · Emerald 1 · Master 1). Overall is Silver.
+- Each item below is a real feature of the data, not calibration. The test also checks that every
+  outlier is named here.
+
+### Justified outliers
+
+**Data, not strength.**
+- **Triceps Pushdown** (Master, 72 kg × 12). The logged load doubled overnight on 13 Sep 2026, from
+  34 kg × 8 to 72 kg × 6, and has stayed there. Meanwhile the rope pushdown is 20 kg × 12 and the
+  single-arm pushdown 10 kg × 8. That's a different station or pulley ratio, or a stack in pounds, so
+  the numbers aren't comparable. Asked the owner.
+- **Machine Hip Thrust** (Iron II, 42.5 kg × 12). A new machine since 13 Aug, with 4 sessions at
+  35–45 kg. Plate-loaded hip thrust machines differ a lot in leverage.
+- **Machine Calf Raise** (Iron, 50 kg × 12). A single session (26 Aug).
+
+**Real strong points.** Each is above the population intermediate level in absolute terms, while the
+barbell bench (78 kg e1RM) and squat (108 kg e1RM) are below novice at 106 kg. They rank high because
+this lifter is relatively stronger on machines and isolation work than on barbell compounds.
+- **Leg Extension** (Platinum, 110 kg × 10, e1RM 147 kg ≈ 1.41 scaled; intermediate is 1.39) and
+  **Lying Leg Curl** (Platinum, 85 kg × 7, e1RM 105 kg ≈ 1.01; intermediate 0.92).
+- **Sled Press Calf Raise** (Platinum, 240 kg × 12) and **Dumbbell Calf Raise** (Emerald, 37.5 kg per
+  dumbbell × 15). Calves are this lifter's strongest group. The Smith calf raise (100 kg × 12, Bronze)
+  is the exception, plausibly because of its range of motion.
+- **Dumbbell Incline Y Raise** (Platinum, 10 kg per dumbbell × 13) and **One Arm Machine Reverse Fly**
+  (Platinum, 25 kg per arm × 20). Delt isolation is well ahead of the presses (Smith shoulder press
+  Bronze, seated dumbbell press Gold).
+
+### Standards (v4)
+
+The base compound anchors are e1RM ÷ 100 kg × (bodyweight ÷ 100)^0.67. Machine and cable anchors are
+then × 1.10.
+
+| Base compound | Beginner | Novice | Intermediate | Advanced | Elite |
+|---|---|---|---|---|---|
+| Bench press (`bench`) | 0.6 | 0.85 | 1.15 | 1.5 | 1.9 |
+| Back squat (`squat`) | 0.75 | 1.05 | 1.4 | 1.85 | 2.35 |
+| Deadlift (`deadlift`) | 0.9 | 1.25 | 1.6 | 2.1 | 2.6 |
+| Overhead press (`ohp`) | 0.38 | 0.52 | 0.7 | 0.92 | 1.17 |
+| Barbell row (`row`) | 0.45 | 0.65 | 0.9 | 1.2 | 1.5 |
+
+| Standard | Kind | Per side | Base × factor | Intermediate anchor | Elite anchor |
+|---|---|---|---|---|---|
+| Bench press | free |  | bench press × 1 | 1.15 | 1.9 |
+| Smith machine bench press | machine |  | bench press × 1.05 | 1.21 | 2 |
+| Incline bench press | free |  | bench press × 0.82 | 0.943 | 1.56 |
+| Dumbbell bench press | free | yes | bench press × 0.37 | 0.425 | 0.703 |
+| Incline dumbbell press | free | yes | bench press × 0.33 | 0.38 | 0.627 |
+| Close-grip dumbbell press | free | yes | bench press × 0.28 | 0.322 | 0.532 |
+| Supine dumbbell press | free | yes | bench press × 0.25 | 0.287 | 0.475 |
+| Machine chest press | machine |  | bench press × 1.05 | 1.21 | 2 |
+| Machine incline chest press | machine |  | bench press × 0.9 | 1.03 | 1.71 |
+| Pec deck | machine |  | bench press × 0.8 | 0.92 | 1.52 |
+| Cable fly | cable | yes | bench press × 0.16 | 0.184 | 0.304 |
+| Assisted dip | bodyweight |  | own anchors: 0.85, 1, 1.2, 1.5, 1.8 | 1.2 | 1.8 |
+| Overhead press | free |  | overhead press × 1 | 0.7 | 1.17 |
+| Smith machine shoulder press | machine |  | overhead press × 1.05 | 0.735 | 1.23 |
+| Machine shoulder press | machine |  | overhead press × 1.35 | 0.945 | 1.58 |
+| Seated dumbbell press | free | yes | overhead press × 0.42 | 0.294 | 0.491 |
+| Dumbbell lateral raise | free | yes | overhead press × 0.23 | 0.161 | 0.269 |
+| Cable lateral raise | cable | yes | overhead press × 0.16 | 0.112 | 0.187 |
+| Machine lateral raise | machine |  | overhead press × 0.62 | 0.434 | 0.725 |
+| Incline Y raise | free | yes | overhead press × 0.17 | 0.119 | 0.199 |
+| Cable front raise | cable | yes | overhead press × 0.22 | 0.154 | 0.257 |
+| Cable upright row | cable |  | overhead press × 0.8 | 0.56 | 0.936 |
+| Reverse pec deck | machine |  | overhead press × 1 | 0.7 | 1.17 |
+| One-arm reverse pec deck | machine | yes | overhead press × 0.5 | 0.35 | 0.585 |
+| Dumbbell reverse fly | free | yes | overhead press × 0.2 | 0.14 | 0.234 |
+| Cable reverse fly | cable | yes | overhead press × 0.17 | 0.119 | 0.199 |
+| Face pull | cable |  | overhead press × 0.7 | 0.49 | 0.819 |
+| Barbell row | free |  | barbell row × 1 | 0.9 | 1.5 |
+| T-bar row | free |  | barbell row × 1.1 | 0.99 | 1.65 |
+| Chest-supported T-bar row | machine |  | barbell row × 1 | 0.9 | 1.5 |
+| Dumbbell row | free | yes | barbell row × 0.53 | 0.477 | 0.795 |
+| Machine row | machine |  | barbell row × 1.25 | 1.12 | 1.88 |
+| Machine high row | machine |  | barbell row × 1.15 | 1.03 | 1.73 |
+| Seated cable row | cable |  | barbell row × 1.05 | 0.945 | 1.57 |
+| Lat pulldown | cable |  | barbell row × 0.95 | 0.855 | 1.43 |
+| Close-grip lat pulldown | cable |  | barbell row × 1 | 0.9 | 1.5 |
+| Underhand lat pulldown | cable |  | barbell row × 1 | 0.9 | 1.5 |
+| Assisted pull-up | bodyweight |  | own anchors: 0.8, 0.95, 1.15, 1.4, 1.65 | 1.15 | 1.65 |
+| Straight-arm pulldown | cable |  | barbell row × 0.5 | 0.45 | 0.75 |
+| Deadlift | free |  | deadlift × 1 | 1.6 | 2.6 |
+| Dumbbell shrug | free | yes | deadlift × 0.34 | 0.544 | 0.884 |
+| Back extension | bodyweight |  | own anchors: 1.4, 1.6, 1.8, 2.1, 2.4 | 1.8 | 2.4 |
+| EZ-bar curl | free |  | bench press × 0.45 | 0.517 | 0.855 |
+| Dumbbell curl | free | yes | bench press × 0.18 | 0.207 | 0.342 |
+| Incline dumbbell curl | free | yes | bench press × 0.16 | 0.184 | 0.304 |
+| Preacher curl | free | yes | bench press × 0.16 | 0.184 | 0.304 |
+| Hammer curl | free | yes | bench press × 0.18 | 0.207 | 0.342 |
+| Incline hammer curl | free | yes | bench press × 0.16 | 0.184 | 0.304 |
+| Cable curl | cable |  | bench press × 0.33 | 0.38 | 0.627 |
+| Cable hammer curl | cable |  | bench press × 0.3 | 0.345 | 0.57 |
+| One-arm cable curl | cable | yes | bench press × 0.15 | 0.172 | 0.285 |
+| Triceps pushdown | cable |  | bench press × 0.42 | 0.483 | 0.798 |
+| Rope pushdown | cable |  | bench press × 0.34 | 0.391 | 0.646 |
+| Overhead cable triceps extension | cable |  | bench press × 0.27 | 0.31 | 0.513 |
+| One-arm cable triceps extension | cable | yes | bench press × 0.15 | 0.172 | 0.285 |
+| Machine triceps extension | machine |  | bench press × 0.65 | 0.748 | 1.24 |
+| Skull crusher | free |  | bench press × 0.42 | 0.483 | 0.798 |
+| Cable wrist curl | cable |  | bench press × 0.48 | 0.552 | 0.912 |
+| Cable reverse wrist curl | cable |  | bench press × 0.28 | 0.322 | 0.532 |
+| Barbell wrist curl | free |  | bench press × 0.48 | 0.552 | 0.912 |
+| Barbell reverse wrist curl | free |  | bench press × 0.28 | 0.322 | 0.532 |
+| Dumbbell wrist curl | free | yes | bench press × 0.17 | 0.196 | 0.323 |
+| Dumbbell reverse wrist curl | free | yes | bench press × 0.1 | 0.115 | 0.19 |
+| Hand gripper | free |  | bench press × 0.48 | 0.552 | 0.912 |
+| Back squat | free |  | back squat × 1 | 1.4 | 2.35 |
+| Smith machine squat | machine |  | back squat × 1 | 1.4 | 2.35 |
+| Pendulum squat | machine |  | back squat × 0.5 | 0.7 | 1.18 |
+| Leg press | machine |  | back squat × 1.85 | 2.59 | 4.35 |
+| Leg extension | machine |  | back squat × 0.9 | 1.26 | 2.12 |
+| Single-leg extension | machine | yes | back squat × 0.45 | 0.63 | 1.06 |
+| Barbell lunge | free |  | back squat × 0.6 | 0.84 | 1.41 |
+| Dumbbell lunge | free | yes | back squat × 0.2 | 0.28 | 0.47 |
+| Dumbbell walking lunge | free |  | back squat × 0.4 | 0.56 | 0.94 |
+| Dumbbell split squat | free | yes | back squat × 0.17 | 0.238 | 0.4 |
+| Smith split squat | machine |  | back squat × 0.57 | 0.798 | 1.34 |
+| Side lunge | bodyweight |  | own anchors: 1.2, 1.33, 1.5, 1.67, 1.9 | 1.5 | 1.9 |
+| Lying leg curl | machine |  | back squat × 0.6 | 0.84 | 1.41 |
+| Romanian deadlift | free |  | deadlift × 0.78 | 1.25 | 2.03 |
+| Stiff-leg deadlift | free |  | deadlift × 0.78 | 1.25 | 2.03 |
+| Dumbbell Romanian deadlift | free | yes | deadlift × 0.3 | 0.48 | 0.78 |
+| Hip thrust | free |  | back squat × 1.07 | 1.5 | 2.51 |
+| Machine hip thrust | machine |  | back squat × 1.2 | 1.68 | 2.82 |
+| Cable glute kickback | cable | yes | back squat × 0.14 | 0.196 | 0.329 |
+| Hip abduction machine | machine |  | back squat × 0.7 | 0.98 | 1.65 |
+| Cable hip abduction | cable | yes | back squat × 0.12 | 0.168 | 0.282 |
+| Side leg raise | bodyweight |  | own anchors: 1.4, 1.6, 1.8, 2.1, 2.4 | 1.8 | 2.4 |
+| Hip adduction machine | machine |  | back squat × 0.7 | 0.98 | 1.65 |
+| Side-lying hip adduction | bodyweight |  | own anchors: 1.4, 1.6, 1.8, 2.1, 2.4 | 1.8 | 2.4 |
+| Leg press calf raise | machine |  | back squat × 2 | 2.8 | 4.7 |
+| Standing calf raise machine | machine |  | back squat × 1.2 | 1.68 | 2.82 |
+| Smith machine calf raise | machine |  | back squat × 1.2 | 1.68 | 2.82 |
+| Barbell calf raise | free |  | back squat × 0.82 | 1.15 | 1.93 |
+| Dumbbell calf raise | free | yes | back squat × 0.32 | 0.448 | 0.752 |
+| Cable crunch | cable |  | bench press × 0.65 | 0.748 | 1.24 |
+| Standing cable crunch | cable |  | bench press × 0.55 | 0.632 | 1.04 |
+| Crunch | bodyweight |  | own anchors: 1.4, 1.6, 1.8, 2.1, 2.4 | 1.8 | 2.4 |
+| Hanging leg raise | bodyweight |  | own anchors: 1.07, 1.2, 1.33, 1.5, 1.67 | 1.33 | 1.67 |
+| Dragon flag | bodyweight |  | own anchors: 1.07, 1.17, 1.27, 1.4, 1.55 | 1.27 | 1.55 |
+| Russian twist | bodyweight |  | own anchors: 1.4, 1.6, 1.8, 2.1, 2.4 | 1.8 | 2.4 |
+| Roman chair side bend | bodyweight |  | own anchors: 1.4, 1.6, 1.8, 2.1, 2.4 | 1.8 | 2.4 |
+| Dumbbell side bend | free | yes | bench press × 0.33 | 0.38 | 0.627 |
+| Cable wood chop | cable |  | bench press × 0.33 | 0.38 | 0.627 |
+| Pallof press | cable |  | bench press × 0.23 | 0.265 | 0.437 |

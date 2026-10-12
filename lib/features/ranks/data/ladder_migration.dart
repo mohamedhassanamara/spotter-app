@@ -4,7 +4,8 @@ import '../../gamification/domain/achievements.dart';
 
 /// Current rank model. v1: 7 tiers × 3 divisions. v2: League-style 10-tier ladder.
 /// v3: per-exercise standards (machines and cables stricter, apex tiers above "elite").
-const int rankLadderVersion = 3;
+/// v4: allometric bodyweight scaling, accessories anchored to their base compound.
+const int rankLadderVersion = 4;
 const String rankLadderVersionKey = 'rank_ladder_version';
 
 class LadderMigration {
@@ -18,7 +19,7 @@ class LadderMigration {
 /// Ranks themselves are never stored: they're derived from logged sets every time they're shown, so
 /// history re-ranks automatically. The only persisted rank-dependent state is achievements:
 /// - rank achievements the new standards now qualify for are unlocked;
-/// - from v3, rank achievements the *old* standards handed out and the new ones don't support are
+/// - from v3 (re-run for v4), rank achievements the *old* standards handed out and the new ones don't support are
 ///   revoked, silently (no notification, no rank-down animation). Achievements of every other
 ///   type were earned by real criteria and stay.
 ///

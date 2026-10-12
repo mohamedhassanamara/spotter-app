@@ -40,7 +40,7 @@
     "Reverse Grip Lat Pulldown": "Underhand_Cable_Pulldowns",
     "Reverse Wrist Curl": "Palms-Down_Wrist_Curl_Over_A_Bench",
     "Seated Dumbbell Shoulder Press": "Seated_Dumbbell_Press",
-    "Shoulder Press": {"by_weight": [{"min_kg": 80, "id": "Machine_Shoulder_Military_Press", "name": "Machine Shoulder Press"}, {"min_kg": 0, "id": "Barbell_Shoulder_Press", "name": "Barbell Shoulder Press"}]},
+    "Shoulder Press": "Barbell_Shoulder_Press",
     "Single Arm Tricep Pushdown": "Cable_One_Arm_Tricep_Extension",
     "Sled Leg Press": "Leg_Press",
     "Smith Machine Bulgarian Split Squat": "Smith_Single-Leg_Split_Squat",

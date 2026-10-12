@@ -73,7 +73,7 @@ void main() {
     });
     await h.pumpApp(); // cold start runs the v3 migration
     for (var i = 0; i < 20; i++) {
-      if (await tester.runAsync(() => h.db!.getSetting(rankLadderVersionKey)) == '3') break;
+      if (await tester.runAsync(() => h.db!.getSetting(rankLadderVersionKey)) == '$rankLadderVersion') break;
       await h.settle(3);
     }
     final keys = await tester.runAsync(() => GamificationRepository(h.db!).unlockedKeys());

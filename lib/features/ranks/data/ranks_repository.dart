@@ -18,8 +18,15 @@ class RanksRepository {
   static List<StrengthStandard> parseStandards(String json) {
     final raw = jsonDecode(json) as Map<String, dynamic>;
     final strict = (raw['machine_strictness'] as num? ?? 1).toDouble();
+    final sc = raw['scaling'] as Map<String, dynamic>?;
+    final scaling = sc == null
+        ? BodyweightScaling.linear
+        : BodyweightScaling(
+            referenceBodyweight: (sc['reference_bodyweight'] as num).toDouble(),
+            exponent: (sc['exponent'] as num).toDouble(),
+          );
     return (raw['standards'] as List<dynamic>)
-        .map((e) => StrengthStandard.fromJson(e as Map<String, dynamic>, machineStrictness: strict))
+        .map((e) => StrengthStandard.fromJson(e as Map<String, dynamic>, machineStrictness: strict, scaling: scaling))
         .toList();
   }
 

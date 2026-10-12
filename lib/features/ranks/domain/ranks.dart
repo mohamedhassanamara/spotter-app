@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import '../../../core/domain/muscles.dart';
 
 /// League-style ladder: 7 divisional tiers (IV → I) and 3 apex tiers without divisions.
@@ -120,6 +122,23 @@ extension StrengthScore on RankScore {
 
 RankScore scoreFromStrength(num strength) => RankScore(strength / strengthPerPoint);
 
+/// How bodyweight normalises a load. Allometric: scaled = e1RM / (reference × (bodyweight / reference)^exponent).
+/// Exponent 1 is the plain e1RM ÷ bodyweight ratio; 0.67 (strength scales with muscle cross-section,
+/// i.e. mass^⅔) stops heavier lifters being penalised for not lifting in proportion to bodyweight.
+class BodyweightScaling {
+  const BodyweightScaling({this.referenceBodyweight = 100, this.exponent = 1});
+
+  final double referenceBodyweight;
+  final double exponent;
+
+  static const linear = BodyweightScaling();
+  static const allometric = BodyweightScaling(exponent: 0.67);
+
+  /// The load that counts as "1× bodyweight" for a lifter of [bodyweight] kg.
+  double normalizer(double bodyweight) =>
+      exponent == 1 ? bodyweight : referenceBodyweight * math.pow(bodyweight / referenceBodyweight, exponent);
+}
+
 enum StandardKind {
   free,
   machine,
@@ -142,7 +161,17 @@ class StrengthStandard {
     required this.anchors,
     this.perHand = false,
     double strictness = 1,
+    this.scaling = BodyweightScaling.linear,
   }) : thresholds = thresholdsFromAnchors([for (final a in anchors) a * strictness]);
+
+  /// Allometric scaling for loaded lifts. Bodyweight lifts always use the plain ratio: their load is
+  /// bodyweight itself, so it already scales with the lifter.
+  final BodyweightScaling scaling;
+
+  /// The divisor that turns an e1RM into the ratio the thresholds are expressed in.
+  double normalizer(double bodyweight) => bodyweightLoaded ? bodyweight : scaling.normalizer(bodyweight);
+
+  double ratioFor(double e1rm, double bodyweight) => bodyweight <= 0 ? 0 : e1rm / normalizer(bodyweight);
 
   final String id;
   final String name;
@@ -169,7 +198,7 @@ class StrengthStandard {
     return [0, a[0], a[1], (a[1] + a[2]) / 2, a[2], (a[2] + a[3]) / 2, a[3], a[4], a[4] * 1.15, a[4] * 1.30];
   }
 
-  factory StrengthStandard.fromJson(Map<String, dynamic> j, {double machineStrictness = 1}) {
+  factory StrengthStandard.fromJson(Map<String, dynamic> j, {double machineStrictness = 1, BodyweightScaling scaling = BodyweightScaling.linear}) {
     final kind = StandardKind.fromName(j['kind'] as String?);
     final a = j['anchors'] as Map<String, dynamic>;
     return StrengthStandard(
@@ -180,6 +209,7 @@ class StrengthStandard {
       anchors: [for (final k in const ['beginner', 'novice', 'intermediate', 'advanced', 'elite']) (a[k] as num).toDouble()],
       perHand: j['per_hand'] as bool? ?? false,
       strictness: kind == StandardKind.machine || kind == StandardKind.cable ? machineStrictness : 1,
+      scaling: scaling,
     );
   }
 
@@ -234,7 +264,7 @@ class StrengthStandard {
       default:
         target = (current.value + 1e-9).floorToDouble() + 1;
     }
-    return ratioForPoints(target) * bodyweight;
+    return ratioForPoints(target) * normalizer(bodyweight);
   }
 }
 
@@ -314,6 +344,9 @@ class ExerciseRank {
   final double? nextThresholdKg;
 
   double get ratio => bodyweight <= 0 ? 0 : bestE1rm / bodyweight;
+
+  /// The ratio the standard scores (allometric for loaded lifts).
+  double get scaledRatio => standard.ratioFor(bestE1rm, bodyweight);
   int get strength => score.strength;
 }
 
@@ -367,7 +400,7 @@ MuscleNextStep? muscleNextStep(MuscleRank m) {
     final r = c.rank;
     if (r.bodyweight <= 0) continue;
     final needPoints = r.score.value + (target - m.score.value) * totalW / c.weight;
-    final targetE1rm = r.standard.ratioForPoints(needPoints) * r.bodyweight;
+    final targetE1rm = r.standard.ratioForPoints(needPoints) * r.standard.normalizer(r.bodyweight);
     final kg = targetE1rm - r.bestE1rm;
     if (best == null || kg < best.kg) best = MuscleNextStep(rank: r, kg: kg, targetE1rm: targetE1rm, nextLabel: label);
   }
@@ -429,7 +462,7 @@ class RankCalculator {
     final load = set.weight + (s.bodyweightLoaded ? bodyweight : 0);
     final e = scoringE1rm(load: load, reps: set.reps, rpe: set.rpe);
     if (e <= 0) return null;
-    return s.scoreForRatio(e / bodyweight);
+    return s.scoreForRatio(s.ratioFor(e, bodyweight));
   }
 
   RankSummary compute({

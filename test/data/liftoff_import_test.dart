@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:drift/drift.dart' show OrderingTerm, driftRuntimeOptions;
@@ -114,12 +115,34 @@ void main() {
     expect(r.kind, SuggestionKind.seeded);
   });
 
+  test('the bundled map sends every Liftoff Shoulder Press to the barbell press', () async {
+    const csv3 = 'Date,Duration,Workout Name,Exercise Name,Set Order,Weight,Reps,Distance,Seconds,RPE,Notes\n'
+        '2026-06-01 08:00:00,00 hours 50 minutes 00 seconds,,Shoulder Press,0,198.416035967,6,0,0,,\n';
+    final p = await service.preview(csv3, catalog: catalog);
+    expect(p.mappingFor('Shoulder Press').exerciseId, 'Barbell_Shoulder_Press');
+    expect(p.mappingFor('Shoulder Press').weightRules, isEmpty);
+  });
+
   test('weight-banded names pick the exercise per session; excluded names stay out of ranking', () async {
     const csv2 = 'Date,Duration,Workout Name,Exercise Name,Set Order,Weight,Reps,Distance,Seconds,RPE,Notes\n'
         '2026-05-01 08:00:00,00 hours 50 minutes 00 seconds,,Shoulder Press,0,66.1386786555,8,0,0,,\n'
         '2026-05-01 08:00:00,00 hours 50 minutes 00 seconds,,Cable Kickback,0,4.4092452437,30,0,0,,\n'
         '2026-06-01 08:00:00,00 hours 50 minutes 00 seconds,,Shoulder Press,0,198.416035967,6,0,0,,\n';
-    final p = await service.preview(csv2, catalog: catalog);
+    // A by_weight entry (supported, though the owner's map no longer needs one) plus the bundled
+    // Cable Kickback entry.
+    final bundled = await LiftoffImportService.loadNameMap();
+    final map = LiftoffNameMap.parse(jsonEncode({
+      'map': {
+        'Shoulder Press': {
+          'by_weight': [
+            {'min_kg': 80, 'id': 'Machine_Shoulder_Military_Press', 'name': 'Machine Shoulder Press'},
+            {'min_kg': 0, 'id': 'Barbell_Shoulder_Press', 'name': 'Barbell Shoulder Press'},
+          ],
+        },
+        'Cable Kickback': {'id': 'One-Legged_Cable_Kickback', 'exclude_from_ranks': bundled.excludeFromRanks.contains('Cable Kickback')},
+      },
+    }));
+    final p = await service.preview(csv2, catalog: catalog, nameMap: map);
     expect(p.mappingFor('Shoulder Press').weightRules, hasLength(2));
     await service.commit(p, catalog: catalog, settings: const SettingsModel(), now: now);
     final rows = await (db.select(db.sessionExercises)..orderBy([(t) => OrderingTerm.asc(t.id)])).get();

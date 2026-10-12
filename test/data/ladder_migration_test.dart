@@ -24,7 +24,7 @@ void main() {
     expect(r.revoked.toSet(), {'rank_diamond', 'rank_master'});
     expect(r.unlocked, isEmpty);
     expect(await repo.unlockedKeys(), {'rank_silver', 'rank_gold', 'rank_platinum', 'first_workout', 'first_pr'});
-    expect(await db.getSetting(rankLadderVersionKey), '3');
+    expect(await db.getSetting(rankLadderVersionKey), '$rankLadderVersion');
 
     // Second run is a no-op.
     const better = AchievementStats(bestExerciseTierIndex: 9);

@@ -123,7 +123,10 @@ Useful routes:
 
 - **The model:** 20 muscles in 6 regions, as in Liftoff.
 - **Scores:** every set scores 0–1000 against its exercise's standard, using your bodyweight on the
-  day of the set (Apple Health weigh-ins).
+  day of the set (Apple Health weigh-ins). Loads are scaled allometrically:
+  e1RM ÷ (100 × (bodyweight ÷ 100)^0.67), so heavier lifters aren't penalised.
+- **Consistency:** every accessory standard is a base compound (bench, squat, deadlift, overhead press,
+  barbell row) times a typical ratio, so a typical lifter ranks about the same across lifts.
 - **Muscles, regions and overall:** a muscle ranks from its exercises' best scores of the last 90 days,
   weighted by how much each exercise trains it. Regions average their muscles; overall averages the
   regions.

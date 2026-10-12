@@ -10,7 +10,7 @@ import re
 import sys
 
 sys.path.insert(0, str(pathlib.Path(__file__).parent))
-from exercise_data import MUSCLES, STANDARDS  # noqa: E402
+from exercise_data import BASES, MUSCLES, STANDARDS, standard_anchors  # noqa: E402
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 MUSCLE_KEYS = {
@@ -29,9 +29,12 @@ for ex, ws in MUSCLES.items():
     if max(ws.values()) != 1.0:
         errors.append(f"{ex}: needs a prime mover at 1.0")
 covered = {}
-for name, (kind, per_hand, anchors, ids) in STANDARDS.items():
+for name, (kind, per_hand, base, factor, ids) in STANDARDS.items():
+    anchors = standard_anchors(name)
     if kind not in ("free", "machine", "cable", "bodyweight"):
         errors.append(f"{name}: kind {kind}")
+    if (factor is None) != (kind == "bodyweight"):
+        errors.append(f"{name}: only bodyweight standards have their own anchors; the rest scale a base compound")
     if list(anchors) != sorted(anchors) or len(set(anchors)) != 5:
         errors.append(f"{name}: anchors must strictly ascend")
     for i in ids:
@@ -62,25 +65,31 @@ def slug(s):
 
 
 standards = {
-    "schema_version": 3,
-    "description": "Strength standards per exercise. anchors = e1RM / bodyweight at the beginner, novice, "
-    "intermediate, advanced and elite levels for a male lifter around 100 kg. Machine and cable anchors "
-    "are multiplied by machine_strictness. Tier entry points: Iron 0, Bronze = beginner, Silver = novice, "
-    "Gold = midpoint novice-intermediate, Platinum = intermediate, Emerald = midpoint intermediate-advanced, "
-    "Diamond = advanced, Master = elite, Grandmaster = elite x 1.15, Challenger = elite x 1.30. "
-    "kind bodyweight: e1RM includes bodyweight (assisted machines subtract the assistance). "
+    "schema_version": 4,
+    "description": "Strength standards per exercise. anchors = scaled e1RM at the beginner, novice, intermediate, "
+    "advanced and elite levels, as a multiple of the reference bodyweight. Loads are scaled allometrically: "
+    "scaled ratio = e1RM / (reference_bodyweight x (bodyweight / reference_bodyweight) ^ exponent), so a heavier "
+    "lifter isn't penalised for not lifting in proportion to bodyweight. Bodyweight-kind lifts (e1RM includes "
+    "bodyweight) use plain e1RM / bodyweight. Every non-bodyweight standard is base compound anchors x factor "
+    "(the typical ratio of that exercise to the compound), so a typical lifter ranks about the same on both. "
+    "Machine and cable anchors are multiplied by machine_strictness. Tier entry points: Iron 0, Bronze = beginner, "
+    "Silver = novice, Gold = midpoint novice-intermediate, Platinum = intermediate, Emerald = midpoint "
+    "intermediate-advanced, Diamond = advanced, Master = elite, Grandmaster = elite x 1.15, Challenger = elite x 1.30. "
     "per_hand: per dumbbell or per side. Source: tool/standards/exercise_data.py.",
+    "scaling": {"reference_bodyweight": 100, "exponent": 0.67},
     "machine_strictness": 1.10,
+    "bases": {k: dict(zip(["beginner", "novice", "intermediate", "advanced", "elite"], v)) for k, v in BASES.items()},
     "standards": [
         {
             "id": slug(name),
             "name": name,
             "kind": kind,
             "per_hand": per_hand,
+            **({"base": base, "factor": factor} if factor is not None else {}),
             "exercise_ids": ids,
-            "anchors": dict(zip(["beginner", "novice", "intermediate", "advanced", "elite"], anchors)),
+            "anchors": dict(zip(["beginner", "novice", "intermediate", "advanced", "elite"], standard_anchors(name))),
         }
-        for name, (kind, per_hand, anchors, ids) in STANDARDS.items()
+        for name, (kind, per_hand, base, factor, ids) in STANDARDS.items()
     ],
 }
 
