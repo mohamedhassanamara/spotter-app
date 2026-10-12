@@ -884,3 +884,41 @@ patched. Screenshots are in `docs/screenshots/vF/`: at rest, mid-edit with the k
 - **Exercise thumbnails** use `Image.network` with a small decode size (in-memory cache) rather than
   the disk cache manager. They are 40 px, and the disk cache needs SQLite and a temp directory,
   which widget tests don't have.
+
+## v2.2: ExerciseDB V2 (AscendAPI via RapidAPI), commits 1–2
+
+- **Secrets.** The key lives only in `config/secrets.json`. It's git-ignored, which `git check-ignore`
+  and a unit test both verify, and it's passed with `--dart-define-from-file`.
+  `.githooks/pre-commit` (enable with `git config core.hooksPath .githooks`) refuses any commit whose
+  tracked or staged files contain the key. The client never logs headers; its debug log records path,
+  query and status only.
+- **Budget guard.**
+  - A persistent per-month call count, which RapidAPI's `x-ratelimit-requests-limit` / `-remaining`
+    headers override whenever they're present.
+  - A warning at 1,500 calls and a hard stop at 1,850 until the 1st of the next month.
+  - Usage and the call log are in Settings → Debug → ExerciseDB V2.
+  - The library list never calls the API.
+- **AscendAPI caching policy, as read before writing code** (`guides/caching`):
+  - Exercise IDs are permanent, so the mapping table stores IDs.
+  - Media URLs rotate every Monday 00:00 UTC.
+  - On a plan without caching rights, "you must not store any data returned by the API".
+
+  Two places store small pieces of API data and need the owner's OK if the plan forbids caching:
+  - the review queue keeps candidate **names** (with IDs), so the review screen works offline;
+  - commit 3's derived muscle contributions come from V2 muscle names.
+
+  Images in the review screen come from a fresh search held in memory only.
+- **Mapping.**
+  - One fuzzy search per exercise. Candidates are scored 70 % on name tokens (equipment words
+    excluded) and 30 % on equipment named in the candidate's name.
+  - Leftover budget fetches the top candidate's details for a target-muscle check (±0.1).
+  - Auto-accept needs ≥ 0.85 and a lead of ≥ 0.08 over the runner-up. Everything else is queued.
+  - Confirmed and auto mappings export to `assets/edb_v2_map.json`, which seeds a fresh install.
+- **Initial run** (my routines first, then my Liftoff history; 111 exercises): 145 of the 150 allowed
+  calls. 24 auto-accepted, 84 queued, 3 with no candidates.
+  - Search quality is the limiting factor: many staples (leg press, leg extension, lat pulldown,
+    pec deck, chest press, shrug) return unrelated exercises. Either the catalog visible on this plan
+    doesn't contain them, or its fuzzy search doesn't surface them.
+  - Several auto-accepts reached exactly 85 % only because the candidate name names no equipment
+    ("Bench Press" for the Smith machine bench, "Romanian Deadlift" for the dumbbell RDL). They're
+    worth a look in the review screen.

@@ -8303,6 +8303,478 @@ class PinnedVideosCompanion extends UpdateCompanion<PinnedVideo> {
   }
 }
 
+class $EdbV2MapsTable extends EdbV2Maps
+    with TableInfo<$EdbV2MapsTable, EdbV2Map> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $EdbV2MapsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _exerciseIdMeta = const VerificationMeta(
+    'exerciseId',
+  );
+  @override
+  late final GeneratedColumn<String> exerciseId = GeneratedColumn<String>(
+    'exercise_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _edbIdMeta = const VerificationMeta('edbId');
+  @override
+  late final GeneratedColumn<String> edbId = GeneratedColumn<String>(
+    'edb_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _statusMeta = const VerificationMeta('status');
+  @override
+  late final GeneratedColumn<String> status = GeneratedColumn<String>(
+    'status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _confidenceMeta = const VerificationMeta(
+    'confidence',
+  );
+  @override
+  late final GeneratedColumn<double> confidence = GeneratedColumn<double>(
+    'confidence',
+    aliasedName,
+    false,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _queryMeta = const VerificationMeta('query');
+  @override
+  late final GeneratedColumn<String> query = GeneratedColumn<String>(
+    'query',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _candidatesMeta = const VerificationMeta(
+    'candidates',
+  );
+  @override
+  late final GeneratedColumn<String> candidates = GeneratedColumn<String>(
+    'candidates',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('[]'),
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    exerciseId,
+    edbId,
+    status,
+    confidence,
+    query,
+    candidates,
+    updatedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'edb_v2_maps';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<EdbV2Map> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('exercise_id')) {
+      context.handle(
+        _exerciseIdMeta,
+        exerciseId.isAcceptableOrUnknown(data['exercise_id']!, _exerciseIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_exerciseIdMeta);
+    }
+    if (data.containsKey('edb_id')) {
+      context.handle(
+        _edbIdMeta,
+        edbId.isAcceptableOrUnknown(data['edb_id']!, _edbIdMeta),
+      );
+    }
+    if (data.containsKey('status')) {
+      context.handle(
+        _statusMeta,
+        status.isAcceptableOrUnknown(data['status']!, _statusMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_statusMeta);
+    }
+    if (data.containsKey('confidence')) {
+      context.handle(
+        _confidenceMeta,
+        confidence.isAcceptableOrUnknown(data['confidence']!, _confidenceMeta),
+      );
+    }
+    if (data.containsKey('query')) {
+      context.handle(
+        _queryMeta,
+        query.isAcceptableOrUnknown(data['query']!, _queryMeta),
+      );
+    }
+    if (data.containsKey('candidates')) {
+      context.handle(
+        _candidatesMeta,
+        candidates.isAcceptableOrUnknown(data['candidates']!, _candidatesMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {exerciseId};
+  @override
+  EdbV2Map map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return EdbV2Map(
+      exerciseId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}exercise_id'],
+      )!,
+      edbId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}edb_id'],
+      ),
+      status: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}status'],
+      )!,
+      confidence: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}confidence'],
+      )!,
+      query: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}query'],
+      )!,
+      candidates: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}candidates'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+    );
+  }
+
+  @override
+  $EdbV2MapsTable createAlias(String alias) {
+    return $EdbV2MapsTable(attachedDatabase, alias);
+  }
+}
+
+class EdbV2Map extends DataClass implements Insertable<EdbV2Map> {
+  final String exerciseId;
+
+  /// Null while queued or when nothing fits.
+  final String? edbId;
+
+  /// auto (high-confidence) | confirmed (picked in the debug screen) | queued (needs review) | none
+  final String status;
+  final double confidence;
+
+  /// The search term used.
+  final String query;
+
+  /// Queued items: top candidates as JSON [{id, name, score}] for the review screen.
+  final String candidates;
+  final DateTime updatedAt;
+  const EdbV2Map({
+    required this.exerciseId,
+    this.edbId,
+    required this.status,
+    required this.confidence,
+    required this.query,
+    required this.candidates,
+    required this.updatedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['exercise_id'] = Variable<String>(exerciseId);
+    if (!nullToAbsent || edbId != null) {
+      map['edb_id'] = Variable<String>(edbId);
+    }
+    map['status'] = Variable<String>(status);
+    map['confidence'] = Variable<double>(confidence);
+    map['query'] = Variable<String>(query);
+    map['candidates'] = Variable<String>(candidates);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    return map;
+  }
+
+  EdbV2MapsCompanion toCompanion(bool nullToAbsent) {
+    return EdbV2MapsCompanion(
+      exerciseId: Value(exerciseId),
+      edbId: edbId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(edbId),
+      status: Value(status),
+      confidence: Value(confidence),
+      query: Value(query),
+      candidates: Value(candidates),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory EdbV2Map.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return EdbV2Map(
+      exerciseId: serializer.fromJson<String>(json['exerciseId']),
+      edbId: serializer.fromJson<String?>(json['edbId']),
+      status: serializer.fromJson<String>(json['status']),
+      confidence: serializer.fromJson<double>(json['confidence']),
+      query: serializer.fromJson<String>(json['query']),
+      candidates: serializer.fromJson<String>(json['candidates']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'exerciseId': serializer.toJson<String>(exerciseId),
+      'edbId': serializer.toJson<String?>(edbId),
+      'status': serializer.toJson<String>(status),
+      'confidence': serializer.toJson<double>(confidence),
+      'query': serializer.toJson<String>(query),
+      'candidates': serializer.toJson<String>(candidates),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+    };
+  }
+
+  EdbV2Map copyWith({
+    String? exerciseId,
+    Value<String?> edbId = const Value.absent(),
+    String? status,
+    double? confidence,
+    String? query,
+    String? candidates,
+    DateTime? updatedAt,
+  }) => EdbV2Map(
+    exerciseId: exerciseId ?? this.exerciseId,
+    edbId: edbId.present ? edbId.value : this.edbId,
+    status: status ?? this.status,
+    confidence: confidence ?? this.confidence,
+    query: query ?? this.query,
+    candidates: candidates ?? this.candidates,
+    updatedAt: updatedAt ?? this.updatedAt,
+  );
+  EdbV2Map copyWithCompanion(EdbV2MapsCompanion data) {
+    return EdbV2Map(
+      exerciseId: data.exerciseId.present
+          ? data.exerciseId.value
+          : this.exerciseId,
+      edbId: data.edbId.present ? data.edbId.value : this.edbId,
+      status: data.status.present ? data.status.value : this.status,
+      confidence: data.confidence.present
+          ? data.confidence.value
+          : this.confidence,
+      query: data.query.present ? data.query.value : this.query,
+      candidates: data.candidates.present
+          ? data.candidates.value
+          : this.candidates,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('EdbV2Map(')
+          ..write('exerciseId: $exerciseId, ')
+          ..write('edbId: $edbId, ')
+          ..write('status: $status, ')
+          ..write('confidence: $confidence, ')
+          ..write('query: $query, ')
+          ..write('candidates: $candidates, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    exerciseId,
+    edbId,
+    status,
+    confidence,
+    query,
+    candidates,
+    updatedAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is EdbV2Map &&
+          other.exerciseId == this.exerciseId &&
+          other.edbId == this.edbId &&
+          other.status == this.status &&
+          other.confidence == this.confidence &&
+          other.query == this.query &&
+          other.candidates == this.candidates &&
+          other.updatedAt == this.updatedAt);
+}
+
+class EdbV2MapsCompanion extends UpdateCompanion<EdbV2Map> {
+  final Value<String> exerciseId;
+  final Value<String?> edbId;
+  final Value<String> status;
+  final Value<double> confidence;
+  final Value<String> query;
+  final Value<String> candidates;
+  final Value<DateTime> updatedAt;
+  final Value<int> rowid;
+  const EdbV2MapsCompanion({
+    this.exerciseId = const Value.absent(),
+    this.edbId = const Value.absent(),
+    this.status = const Value.absent(),
+    this.confidence = const Value.absent(),
+    this.query = const Value.absent(),
+    this.candidates = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  EdbV2MapsCompanion.insert({
+    required String exerciseId,
+    this.edbId = const Value.absent(),
+    required String status,
+    this.confidence = const Value.absent(),
+    this.query = const Value.absent(),
+    this.candidates = const Value.absent(),
+    required DateTime updatedAt,
+    this.rowid = const Value.absent(),
+  }) : exerciseId = Value(exerciseId),
+       status = Value(status),
+       updatedAt = Value(updatedAt);
+  static Insertable<EdbV2Map> custom({
+    Expression<String>? exerciseId,
+    Expression<String>? edbId,
+    Expression<String>? status,
+    Expression<double>? confidence,
+    Expression<String>? query,
+    Expression<String>? candidates,
+    Expression<DateTime>? updatedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (exerciseId != null) 'exercise_id': exerciseId,
+      if (edbId != null) 'edb_id': edbId,
+      if (status != null) 'status': status,
+      if (confidence != null) 'confidence': confidence,
+      if (query != null) 'query': query,
+      if (candidates != null) 'candidates': candidates,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  EdbV2MapsCompanion copyWith({
+    Value<String>? exerciseId,
+    Value<String?>? edbId,
+    Value<String>? status,
+    Value<double>? confidence,
+    Value<String>? query,
+    Value<String>? candidates,
+    Value<DateTime>? updatedAt,
+    Value<int>? rowid,
+  }) {
+    return EdbV2MapsCompanion(
+      exerciseId: exerciseId ?? this.exerciseId,
+      edbId: edbId ?? this.edbId,
+      status: status ?? this.status,
+      confidence: confidence ?? this.confidence,
+      query: query ?? this.query,
+      candidates: candidates ?? this.candidates,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (exerciseId.present) {
+      map['exercise_id'] = Variable<String>(exerciseId.value);
+    }
+    if (edbId.present) {
+      map['edb_id'] = Variable<String>(edbId.value);
+    }
+    if (status.present) {
+      map['status'] = Variable<String>(status.value);
+    }
+    if (confidence.present) {
+      map['confidence'] = Variable<double>(confidence.value);
+    }
+    if (query.present) {
+      map['query'] = Variable<String>(query.value);
+    }
+    if (candidates.present) {
+      map['candidates'] = Variable<String>(candidates.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('EdbV2MapsCompanion(')
+          ..write('exerciseId: $exerciseId, ')
+          ..write('edbId: $edbId, ')
+          ..write('status: $status, ')
+          ..write('confidence: $confidence, ')
+          ..write('query: $query, ')
+          ..write('candidates: $candidates, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -8326,6 +8798,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $AppSettingsTable appSettings = $AppSettingsTable(this);
   late final $MediaMatchesTable mediaMatches = $MediaMatchesTable(this);
   late final $PinnedVideosTable pinnedVideos = $PinnedVideosTable(this);
+  late final $EdbV2MapsTable edbV2Maps = $EdbV2MapsTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -8346,6 +8819,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     appSettings,
     mediaMatches,
     pinnedVideos,
+    edbV2Maps,
   ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
@@ -13627,6 +14101,253 @@ typedef $$PinnedVideosTableProcessedTableManager =
       PinnedVideo,
       PrefetchHooks Function()
     >;
+typedef $$EdbV2MapsTableCreateCompanionBuilder =
+    EdbV2MapsCompanion Function({
+      required String exerciseId,
+      Value<String?> edbId,
+      required String status,
+      Value<double> confidence,
+      Value<String> query,
+      Value<String> candidates,
+      required DateTime updatedAt,
+      Value<int> rowid,
+    });
+typedef $$EdbV2MapsTableUpdateCompanionBuilder =
+    EdbV2MapsCompanion Function({
+      Value<String> exerciseId,
+      Value<String?> edbId,
+      Value<String> status,
+      Value<double> confidence,
+      Value<String> query,
+      Value<String> candidates,
+      Value<DateTime> updatedAt,
+      Value<int> rowid,
+    });
+
+class $$EdbV2MapsTableFilterComposer
+    extends Composer<_$AppDatabase, $EdbV2MapsTable> {
+  $$EdbV2MapsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get exerciseId => $composableBuilder(
+    column: $table.exerciseId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get edbId => $composableBuilder(
+    column: $table.edbId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get confidence => $composableBuilder(
+    column: $table.confidence,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get query => $composableBuilder(
+    column: $table.query,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get candidates => $composableBuilder(
+    column: $table.candidates,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$EdbV2MapsTableOrderingComposer
+    extends Composer<_$AppDatabase, $EdbV2MapsTable> {
+  $$EdbV2MapsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get exerciseId => $composableBuilder(
+    column: $table.exerciseId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get edbId => $composableBuilder(
+    column: $table.edbId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get confidence => $composableBuilder(
+    column: $table.confidence,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get query => $composableBuilder(
+    column: $table.query,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get candidates => $composableBuilder(
+    column: $table.candidates,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$EdbV2MapsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $EdbV2MapsTable> {
+  $$EdbV2MapsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get exerciseId => $composableBuilder(
+    column: $table.exerciseId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get edbId =>
+      $composableBuilder(column: $table.edbId, builder: (column) => column);
+
+  GeneratedColumn<String> get status =>
+      $composableBuilder(column: $table.status, builder: (column) => column);
+
+  GeneratedColumn<double> get confidence => $composableBuilder(
+    column: $table.confidence,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get query =>
+      $composableBuilder(column: $table.query, builder: (column) => column);
+
+  GeneratedColumn<String> get candidates => $composableBuilder(
+    column: $table.candidates,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+}
+
+class $$EdbV2MapsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $EdbV2MapsTable,
+          EdbV2Map,
+          $$EdbV2MapsTableFilterComposer,
+          $$EdbV2MapsTableOrderingComposer,
+          $$EdbV2MapsTableAnnotationComposer,
+          $$EdbV2MapsTableCreateCompanionBuilder,
+          $$EdbV2MapsTableUpdateCompanionBuilder,
+          (EdbV2Map, BaseReferences<_$AppDatabase, $EdbV2MapsTable, EdbV2Map>),
+          EdbV2Map,
+          PrefetchHooks Function()
+        > {
+  $$EdbV2MapsTableTableManager(_$AppDatabase db, $EdbV2MapsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$EdbV2MapsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$EdbV2MapsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$EdbV2MapsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> exerciseId = const Value.absent(),
+                Value<String?> edbId = const Value.absent(),
+                Value<String> status = const Value.absent(),
+                Value<double> confidence = const Value.absent(),
+                Value<String> query = const Value.absent(),
+                Value<String> candidates = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => EdbV2MapsCompanion(
+                exerciseId: exerciseId,
+                edbId: edbId,
+                status: status,
+                confidence: confidence,
+                query: query,
+                candidates: candidates,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String exerciseId,
+                Value<String?> edbId = const Value.absent(),
+                required String status,
+                Value<double> confidence = const Value.absent(),
+                Value<String> query = const Value.absent(),
+                Value<String> candidates = const Value.absent(),
+                required DateTime updatedAt,
+                Value<int> rowid = const Value.absent(),
+              }) => EdbV2MapsCompanion.insert(
+                exerciseId: exerciseId,
+                edbId: edbId,
+                status: status,
+                confidence: confidence,
+                query: query,
+                candidates: candidates,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$EdbV2MapsTable, EdbV2Map>(table),
+                  BaseReferences<_$AppDatabase, $EdbV2MapsTable, EdbV2Map>(
+                    db,
+                    table,
+                    e,
+                  ),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$EdbV2MapsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $EdbV2MapsTable,
+      EdbV2Map,
+      $$EdbV2MapsTableFilterComposer,
+      $$EdbV2MapsTableOrderingComposer,
+      $$EdbV2MapsTableAnnotationComposer,
+      $$EdbV2MapsTableCreateCompanionBuilder,
+      $$EdbV2MapsTableUpdateCompanionBuilder,
+      (EdbV2Map, BaseReferences<_$AppDatabase, $EdbV2MapsTable, EdbV2Map>),
+      EdbV2Map,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -13661,4 +14382,6 @@ class $AppDatabaseManager {
       $$MediaMatchesTableTableManager(_db, _db.mediaMatches);
   $$PinnedVideosTableTableManager get pinnedVideos =>
       $$PinnedVideosTableTableManager(_db, _db.pinnedVideos);
+  $$EdbV2MapsTableTableManager get edbV2Maps =>
+      $$EdbV2MapsTableTableManager(_db, _db.edbV2Maps);
 }

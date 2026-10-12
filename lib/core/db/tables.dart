@@ -232,3 +232,27 @@ class PinnedVideos extends Table {
   @override
   Set<Column<Object>> get primaryKey => {exerciseId};
 }
+
+/// Schema v6: our exercise → ExerciseDB V2 exerciseId. Exercise IDs are stable and may be kept
+/// permanently (AscendAPI caching policy); media URLs and text never live here.
+@DataClassName('EdbV2Map')
+class EdbV2Maps extends Table {
+  TextColumn get exerciseId => text()();
+
+  /// Null while queued or when nothing fits.
+  TextColumn get edbId => text().nullable()();
+
+  /// auto (high-confidence) | confirmed (picked in the debug screen) | queued (needs review) | none
+  TextColumn get status => text()();
+  RealColumn get confidence => real().withDefault(const Constant(0))();
+
+  /// The search term used.
+  TextColumn get query => text().withDefault(const Constant(''))();
+
+  /// Queued items: top candidates as JSON [{id, name, score}] for the review screen.
+  TextColumn get candidates => text().withDefault(const Constant('[]'))();
+  DateTimeColumn get updatedAt => dateTime()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {exerciseId};
+}

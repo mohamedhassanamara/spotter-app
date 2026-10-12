@@ -11,6 +11,7 @@ import '../../tutorials/data/media_repository.dart';
 import '../../tutorials/domain/media_matcher.dart';
 import '../../tutorials/presentation/exercise_demo.dart';
 import '../../workout/data/routine_repository.dart';
+import 'edb_v2_review.dart';
 
 final _allMatchesProvider = StreamProvider<List<MediaMatchRow>>((ref) => ref.watch(mediaRepositoryProvider).watchAll());
 
@@ -54,9 +55,12 @@ class _MediaMatchingScreenState extends ConsumerState<MediaMatchingScreen> {
     }).toList()
       ..sort((a, b) => (catalog[a.exerciseId]?.name ?? '').compareTo(catalog[b.exerciseId]?.name ?? ''));
 
-    return Scaffold(
+    return DefaultTabController(
+      length: 2,
+      child: Scaffold(
       appBar: AppBar(
         title: const Text('Media matching'),
+        bottom: const TabBar(tabs: [Tab(text: 'V1 GIFs'), Tab(key: ValueKey('tab-v2'), text: 'V2 videos')]),
         actions: [
           IconButton(
             tooltip: 'Copy overrides JSON',
@@ -73,7 +77,7 @@ class _MediaMatchingScreenState extends ConsumerState<MediaMatchingScreen> {
           ),
         ],
       ),
-      body: Column(
+      body: TabBarView(children: [Column(
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
@@ -129,7 +133,8 @@ class _MediaMatchingScreenState extends ConsumerState<MediaMatchingScreen> {
                   ),
           ),
         ],
-      ),
+      ), const EdbV2Review()]),
+    ),
     );
   }
 

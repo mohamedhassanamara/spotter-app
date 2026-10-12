@@ -24,6 +24,7 @@ part 'database.g.dart';
     AppSettings,
     MediaMatches,
     PinnedVideos,
+    EdbV2Maps,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -33,7 +34,7 @@ class AppDatabase extends _$AppDatabase {
   factory AppDatabase.open() => AppDatabase(driftDatabase(name: 'spotter'));
 
   @override
-  int get schemaVersion => 5;
+  int get schemaVersion => 6;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -75,6 +76,9 @@ class AppDatabase extends _$AppDatabase {
             await m.addColumn(workoutSets, workoutSets.setType);
             await m.addColumn(sessionExercises, sessionExercises.restEnabled);
             await m.addColumn(sessionExercises, sessionExercises.supersetGroup);
+          }
+          if (from < 6) {
+            await m.createTable(edbV2Maps);
           }
         },
         beforeOpen: (details) async {
