@@ -6492,6 +6492,890 @@ class AppSettingsCompanion extends UpdateCompanion<AppSetting> {
   }
 }
 
+class $MediaMatchesTable extends MediaMatches
+    with TableInfo<$MediaMatchesTable, MediaMatchRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $MediaMatchesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _exerciseIdMeta = const VerificationMeta(
+    'exerciseId',
+  );
+  @override
+  late final GeneratedColumn<String> exerciseId = GeneratedColumn<String>(
+    'exercise_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _edbIdMeta = const VerificationMeta('edbId');
+  @override
+  late final GeneratedColumn<String> edbId = GeneratedColumn<String>(
+    'edb_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _edbNameMeta = const VerificationMeta(
+    'edbName',
+  );
+  @override
+  late final GeneratedColumn<String> edbName = GeneratedColumn<String>(
+    'edb_name',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _gifUrlMeta = const VerificationMeta('gifUrl');
+  @override
+  late final GeneratedColumn<String> gifUrl = GeneratedColumn<String>(
+    'gif_url',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _confidenceMeta = const VerificationMeta(
+    'confidence',
+  );
+  @override
+  late final GeneratedColumn<double> confidence = GeneratedColumn<double>(
+    'confidence',
+    aliasedName,
+    false,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _sourceMeta = const VerificationMeta('source');
+  @override
+  late final GeneratedColumn<String> source = GeneratedColumn<String>(
+    'source',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('auto'),
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    exerciseId,
+    edbId,
+    edbName,
+    gifUrl,
+    confidence,
+    source,
+    updatedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'media_matches';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<MediaMatchRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('exercise_id')) {
+      context.handle(
+        _exerciseIdMeta,
+        exerciseId.isAcceptableOrUnknown(data['exercise_id']!, _exerciseIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_exerciseIdMeta);
+    }
+    if (data.containsKey('edb_id')) {
+      context.handle(
+        _edbIdMeta,
+        edbId.isAcceptableOrUnknown(data['edb_id']!, _edbIdMeta),
+      );
+    }
+    if (data.containsKey('edb_name')) {
+      context.handle(
+        _edbNameMeta,
+        edbName.isAcceptableOrUnknown(data['edb_name']!, _edbNameMeta),
+      );
+    }
+    if (data.containsKey('gif_url')) {
+      context.handle(
+        _gifUrlMeta,
+        gifUrl.isAcceptableOrUnknown(data['gif_url']!, _gifUrlMeta),
+      );
+    }
+    if (data.containsKey('confidence')) {
+      context.handle(
+        _confidenceMeta,
+        confidence.isAcceptableOrUnknown(data['confidence']!, _confidenceMeta),
+      );
+    }
+    if (data.containsKey('source')) {
+      context.handle(
+        _sourceMeta,
+        source.isAcceptableOrUnknown(data['source']!, _sourceMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {exerciseId};
+  @override
+  MediaMatchRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return MediaMatchRow(
+      exerciseId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}exercise_id'],
+      )!,
+      edbId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}edb_id'],
+      ),
+      edbName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}edb_name'],
+      ),
+      gifUrl: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}gif_url'],
+      ),
+      confidence: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}confidence'],
+      )!,
+      source: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}source'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+    );
+  }
+
+  @override
+  $MediaMatchesTable createAlias(String alias) {
+    return $MediaMatchesTable(attachedDatabase, alias);
+  }
+}
+
+class MediaMatchRow extends DataClass implements Insertable<MediaMatchRow> {
+  final String exerciseId;
+
+  /// Null when nothing matched (or a manual override says "no demo").
+  final String? edbId;
+  final String? edbName;
+  final String? gifUrl;
+  final double confidence;
+
+  /// auto | override (assets/media_overrides.json) | manual (picked in the debug screen)
+  final String source;
+  final DateTime updatedAt;
+  const MediaMatchRow({
+    required this.exerciseId,
+    this.edbId,
+    this.edbName,
+    this.gifUrl,
+    required this.confidence,
+    required this.source,
+    required this.updatedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['exercise_id'] = Variable<String>(exerciseId);
+    if (!nullToAbsent || edbId != null) {
+      map['edb_id'] = Variable<String>(edbId);
+    }
+    if (!nullToAbsent || edbName != null) {
+      map['edb_name'] = Variable<String>(edbName);
+    }
+    if (!nullToAbsent || gifUrl != null) {
+      map['gif_url'] = Variable<String>(gifUrl);
+    }
+    map['confidence'] = Variable<double>(confidence);
+    map['source'] = Variable<String>(source);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    return map;
+  }
+
+  MediaMatchesCompanion toCompanion(bool nullToAbsent) {
+    return MediaMatchesCompanion(
+      exerciseId: Value(exerciseId),
+      edbId: edbId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(edbId),
+      edbName: edbName == null && nullToAbsent
+          ? const Value.absent()
+          : Value(edbName),
+      gifUrl: gifUrl == null && nullToAbsent
+          ? const Value.absent()
+          : Value(gifUrl),
+      confidence: Value(confidence),
+      source: Value(source),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory MediaMatchRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return MediaMatchRow(
+      exerciseId: serializer.fromJson<String>(json['exerciseId']),
+      edbId: serializer.fromJson<String?>(json['edbId']),
+      edbName: serializer.fromJson<String?>(json['edbName']),
+      gifUrl: serializer.fromJson<String?>(json['gifUrl']),
+      confidence: serializer.fromJson<double>(json['confidence']),
+      source: serializer.fromJson<String>(json['source']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'exerciseId': serializer.toJson<String>(exerciseId),
+      'edbId': serializer.toJson<String?>(edbId),
+      'edbName': serializer.toJson<String?>(edbName),
+      'gifUrl': serializer.toJson<String?>(gifUrl),
+      'confidence': serializer.toJson<double>(confidence),
+      'source': serializer.toJson<String>(source),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+    };
+  }
+
+  MediaMatchRow copyWith({
+    String? exerciseId,
+    Value<String?> edbId = const Value.absent(),
+    Value<String?> edbName = const Value.absent(),
+    Value<String?> gifUrl = const Value.absent(),
+    double? confidence,
+    String? source,
+    DateTime? updatedAt,
+  }) => MediaMatchRow(
+    exerciseId: exerciseId ?? this.exerciseId,
+    edbId: edbId.present ? edbId.value : this.edbId,
+    edbName: edbName.present ? edbName.value : this.edbName,
+    gifUrl: gifUrl.present ? gifUrl.value : this.gifUrl,
+    confidence: confidence ?? this.confidence,
+    source: source ?? this.source,
+    updatedAt: updatedAt ?? this.updatedAt,
+  );
+  MediaMatchRow copyWithCompanion(MediaMatchesCompanion data) {
+    return MediaMatchRow(
+      exerciseId: data.exerciseId.present
+          ? data.exerciseId.value
+          : this.exerciseId,
+      edbId: data.edbId.present ? data.edbId.value : this.edbId,
+      edbName: data.edbName.present ? data.edbName.value : this.edbName,
+      gifUrl: data.gifUrl.present ? data.gifUrl.value : this.gifUrl,
+      confidence: data.confidence.present
+          ? data.confidence.value
+          : this.confidence,
+      source: data.source.present ? data.source.value : this.source,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('MediaMatchRow(')
+          ..write('exerciseId: $exerciseId, ')
+          ..write('edbId: $edbId, ')
+          ..write('edbName: $edbName, ')
+          ..write('gifUrl: $gifUrl, ')
+          ..write('confidence: $confidence, ')
+          ..write('source: $source, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    exerciseId,
+    edbId,
+    edbName,
+    gifUrl,
+    confidence,
+    source,
+    updatedAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is MediaMatchRow &&
+          other.exerciseId == this.exerciseId &&
+          other.edbId == this.edbId &&
+          other.edbName == this.edbName &&
+          other.gifUrl == this.gifUrl &&
+          other.confidence == this.confidence &&
+          other.source == this.source &&
+          other.updatedAt == this.updatedAt);
+}
+
+class MediaMatchesCompanion extends UpdateCompanion<MediaMatchRow> {
+  final Value<String> exerciseId;
+  final Value<String?> edbId;
+  final Value<String?> edbName;
+  final Value<String?> gifUrl;
+  final Value<double> confidence;
+  final Value<String> source;
+  final Value<DateTime> updatedAt;
+  final Value<int> rowid;
+  const MediaMatchesCompanion({
+    this.exerciseId = const Value.absent(),
+    this.edbId = const Value.absent(),
+    this.edbName = const Value.absent(),
+    this.gifUrl = const Value.absent(),
+    this.confidence = const Value.absent(),
+    this.source = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  MediaMatchesCompanion.insert({
+    required String exerciseId,
+    this.edbId = const Value.absent(),
+    this.edbName = const Value.absent(),
+    this.gifUrl = const Value.absent(),
+    this.confidence = const Value.absent(),
+    this.source = const Value.absent(),
+    required DateTime updatedAt,
+    this.rowid = const Value.absent(),
+  }) : exerciseId = Value(exerciseId),
+       updatedAt = Value(updatedAt);
+  static Insertable<MediaMatchRow> custom({
+    Expression<String>? exerciseId,
+    Expression<String>? edbId,
+    Expression<String>? edbName,
+    Expression<String>? gifUrl,
+    Expression<double>? confidence,
+    Expression<String>? source,
+    Expression<DateTime>? updatedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (exerciseId != null) 'exercise_id': exerciseId,
+      if (edbId != null) 'edb_id': edbId,
+      if (edbName != null) 'edb_name': edbName,
+      if (gifUrl != null) 'gif_url': gifUrl,
+      if (confidence != null) 'confidence': confidence,
+      if (source != null) 'source': source,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  MediaMatchesCompanion copyWith({
+    Value<String>? exerciseId,
+    Value<String?>? edbId,
+    Value<String?>? edbName,
+    Value<String?>? gifUrl,
+    Value<double>? confidence,
+    Value<String>? source,
+    Value<DateTime>? updatedAt,
+    Value<int>? rowid,
+  }) {
+    return MediaMatchesCompanion(
+      exerciseId: exerciseId ?? this.exerciseId,
+      edbId: edbId ?? this.edbId,
+      edbName: edbName ?? this.edbName,
+      gifUrl: gifUrl ?? this.gifUrl,
+      confidence: confidence ?? this.confidence,
+      source: source ?? this.source,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (exerciseId.present) {
+      map['exercise_id'] = Variable<String>(exerciseId.value);
+    }
+    if (edbId.present) {
+      map['edb_id'] = Variable<String>(edbId.value);
+    }
+    if (edbName.present) {
+      map['edb_name'] = Variable<String>(edbName.value);
+    }
+    if (gifUrl.present) {
+      map['gif_url'] = Variable<String>(gifUrl.value);
+    }
+    if (confidence.present) {
+      map['confidence'] = Variable<double>(confidence.value);
+    }
+    if (source.present) {
+      map['source'] = Variable<String>(source.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('MediaMatchesCompanion(')
+          ..write('exerciseId: $exerciseId, ')
+          ..write('edbId: $edbId, ')
+          ..write('edbName: $edbName, ')
+          ..write('gifUrl: $gifUrl, ')
+          ..write('confidence: $confidence, ')
+          ..write('source: $source, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $PinnedVideosTable extends PinnedVideos
+    with TableInfo<$PinnedVideosTable, PinnedVideo> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $PinnedVideosTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _exerciseIdMeta = const VerificationMeta(
+    'exerciseId',
+  );
+  @override
+  late final GeneratedColumn<String> exerciseId = GeneratedColumn<String>(
+    'exercise_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _videoIdMeta = const VerificationMeta(
+    'videoId',
+  );
+  @override
+  late final GeneratedColumn<String> videoId = GeneratedColumn<String>(
+    'video_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _titleMeta = const VerificationMeta('title');
+  @override
+  late final GeneratedColumn<String> title = GeneratedColumn<String>(
+    'title',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _channelMeta = const VerificationMeta(
+    'channel',
+  );
+  @override
+  late final GeneratedColumn<String> channel = GeneratedColumn<String>(
+    'channel',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _startSecondsMeta = const VerificationMeta(
+    'startSeconds',
+  );
+  @override
+  late final GeneratedColumn<int> startSeconds = GeneratedColumn<int>(
+    'start_seconds',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _pinnedAtMeta = const VerificationMeta(
+    'pinnedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> pinnedAt = GeneratedColumn<DateTime>(
+    'pinned_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    exerciseId,
+    videoId,
+    title,
+    channel,
+    startSeconds,
+    pinnedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'pinned_videos';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<PinnedVideo> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('exercise_id')) {
+      context.handle(
+        _exerciseIdMeta,
+        exerciseId.isAcceptableOrUnknown(data['exercise_id']!, _exerciseIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_exerciseIdMeta);
+    }
+    if (data.containsKey('video_id')) {
+      context.handle(
+        _videoIdMeta,
+        videoId.isAcceptableOrUnknown(data['video_id']!, _videoIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_videoIdMeta);
+    }
+    if (data.containsKey('title')) {
+      context.handle(
+        _titleMeta,
+        title.isAcceptableOrUnknown(data['title']!, _titleMeta),
+      );
+    }
+    if (data.containsKey('channel')) {
+      context.handle(
+        _channelMeta,
+        channel.isAcceptableOrUnknown(data['channel']!, _channelMeta),
+      );
+    }
+    if (data.containsKey('start_seconds')) {
+      context.handle(
+        _startSecondsMeta,
+        startSeconds.isAcceptableOrUnknown(
+          data['start_seconds']!,
+          _startSecondsMeta,
+        ),
+      );
+    }
+    if (data.containsKey('pinned_at')) {
+      context.handle(
+        _pinnedAtMeta,
+        pinnedAt.isAcceptableOrUnknown(data['pinned_at']!, _pinnedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_pinnedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {exerciseId};
+  @override
+  PinnedVideo map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return PinnedVideo(
+      exerciseId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}exercise_id'],
+      )!,
+      videoId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}video_id'],
+      )!,
+      title: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}title'],
+      )!,
+      channel: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}channel'],
+      )!,
+      startSeconds: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}start_seconds'],
+      )!,
+      pinnedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}pinned_at'],
+      )!,
+    );
+  }
+
+  @override
+  $PinnedVideosTable createAlias(String alias) {
+    return $PinnedVideosTable(attachedDatabase, alias);
+  }
+}
+
+class PinnedVideo extends DataClass implements Insertable<PinnedVideo> {
+  final String exerciseId;
+  final String videoId;
+  final String title;
+  final String channel;
+  final int startSeconds;
+  final DateTime pinnedAt;
+  const PinnedVideo({
+    required this.exerciseId,
+    required this.videoId,
+    required this.title,
+    required this.channel,
+    required this.startSeconds,
+    required this.pinnedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['exercise_id'] = Variable<String>(exerciseId);
+    map['video_id'] = Variable<String>(videoId);
+    map['title'] = Variable<String>(title);
+    map['channel'] = Variable<String>(channel);
+    map['start_seconds'] = Variable<int>(startSeconds);
+    map['pinned_at'] = Variable<DateTime>(pinnedAt);
+    return map;
+  }
+
+  PinnedVideosCompanion toCompanion(bool nullToAbsent) {
+    return PinnedVideosCompanion(
+      exerciseId: Value(exerciseId),
+      videoId: Value(videoId),
+      title: Value(title),
+      channel: Value(channel),
+      startSeconds: Value(startSeconds),
+      pinnedAt: Value(pinnedAt),
+    );
+  }
+
+  factory PinnedVideo.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return PinnedVideo(
+      exerciseId: serializer.fromJson<String>(json['exerciseId']),
+      videoId: serializer.fromJson<String>(json['videoId']),
+      title: serializer.fromJson<String>(json['title']),
+      channel: serializer.fromJson<String>(json['channel']),
+      startSeconds: serializer.fromJson<int>(json['startSeconds']),
+      pinnedAt: serializer.fromJson<DateTime>(json['pinnedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'exerciseId': serializer.toJson<String>(exerciseId),
+      'videoId': serializer.toJson<String>(videoId),
+      'title': serializer.toJson<String>(title),
+      'channel': serializer.toJson<String>(channel),
+      'startSeconds': serializer.toJson<int>(startSeconds),
+      'pinnedAt': serializer.toJson<DateTime>(pinnedAt),
+    };
+  }
+
+  PinnedVideo copyWith({
+    String? exerciseId,
+    String? videoId,
+    String? title,
+    String? channel,
+    int? startSeconds,
+    DateTime? pinnedAt,
+  }) => PinnedVideo(
+    exerciseId: exerciseId ?? this.exerciseId,
+    videoId: videoId ?? this.videoId,
+    title: title ?? this.title,
+    channel: channel ?? this.channel,
+    startSeconds: startSeconds ?? this.startSeconds,
+    pinnedAt: pinnedAt ?? this.pinnedAt,
+  );
+  PinnedVideo copyWithCompanion(PinnedVideosCompanion data) {
+    return PinnedVideo(
+      exerciseId: data.exerciseId.present
+          ? data.exerciseId.value
+          : this.exerciseId,
+      videoId: data.videoId.present ? data.videoId.value : this.videoId,
+      title: data.title.present ? data.title.value : this.title,
+      channel: data.channel.present ? data.channel.value : this.channel,
+      startSeconds: data.startSeconds.present
+          ? data.startSeconds.value
+          : this.startSeconds,
+      pinnedAt: data.pinnedAt.present ? data.pinnedAt.value : this.pinnedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PinnedVideo(')
+          ..write('exerciseId: $exerciseId, ')
+          ..write('videoId: $videoId, ')
+          ..write('title: $title, ')
+          ..write('channel: $channel, ')
+          ..write('startSeconds: $startSeconds, ')
+          ..write('pinnedAt: $pinnedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(exerciseId, videoId, title, channel, startSeconds, pinnedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is PinnedVideo &&
+          other.exerciseId == this.exerciseId &&
+          other.videoId == this.videoId &&
+          other.title == this.title &&
+          other.channel == this.channel &&
+          other.startSeconds == this.startSeconds &&
+          other.pinnedAt == this.pinnedAt);
+}
+
+class PinnedVideosCompanion extends UpdateCompanion<PinnedVideo> {
+  final Value<String> exerciseId;
+  final Value<String> videoId;
+  final Value<String> title;
+  final Value<String> channel;
+  final Value<int> startSeconds;
+  final Value<DateTime> pinnedAt;
+  final Value<int> rowid;
+  const PinnedVideosCompanion({
+    this.exerciseId = const Value.absent(),
+    this.videoId = const Value.absent(),
+    this.title = const Value.absent(),
+    this.channel = const Value.absent(),
+    this.startSeconds = const Value.absent(),
+    this.pinnedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  PinnedVideosCompanion.insert({
+    required String exerciseId,
+    required String videoId,
+    this.title = const Value.absent(),
+    this.channel = const Value.absent(),
+    this.startSeconds = const Value.absent(),
+    required DateTime pinnedAt,
+    this.rowid = const Value.absent(),
+  }) : exerciseId = Value(exerciseId),
+       videoId = Value(videoId),
+       pinnedAt = Value(pinnedAt);
+  static Insertable<PinnedVideo> custom({
+    Expression<String>? exerciseId,
+    Expression<String>? videoId,
+    Expression<String>? title,
+    Expression<String>? channel,
+    Expression<int>? startSeconds,
+    Expression<DateTime>? pinnedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (exerciseId != null) 'exercise_id': exerciseId,
+      if (videoId != null) 'video_id': videoId,
+      if (title != null) 'title': title,
+      if (channel != null) 'channel': channel,
+      if (startSeconds != null) 'start_seconds': startSeconds,
+      if (pinnedAt != null) 'pinned_at': pinnedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  PinnedVideosCompanion copyWith({
+    Value<String>? exerciseId,
+    Value<String>? videoId,
+    Value<String>? title,
+    Value<String>? channel,
+    Value<int>? startSeconds,
+    Value<DateTime>? pinnedAt,
+    Value<int>? rowid,
+  }) {
+    return PinnedVideosCompanion(
+      exerciseId: exerciseId ?? this.exerciseId,
+      videoId: videoId ?? this.videoId,
+      title: title ?? this.title,
+      channel: channel ?? this.channel,
+      startSeconds: startSeconds ?? this.startSeconds,
+      pinnedAt: pinnedAt ?? this.pinnedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (exerciseId.present) {
+      map['exercise_id'] = Variable<String>(exerciseId.value);
+    }
+    if (videoId.present) {
+      map['video_id'] = Variable<String>(videoId.value);
+    }
+    if (title.present) {
+      map['title'] = Variable<String>(title.value);
+    }
+    if (channel.present) {
+      map['channel'] = Variable<String>(channel.value);
+    }
+    if (startSeconds.present) {
+      map['start_seconds'] = Variable<int>(startSeconds.value);
+    }
+    if (pinnedAt.present) {
+      map['pinned_at'] = Variable<DateTime>(pinnedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PinnedVideosCompanion(')
+          ..write('exerciseId: $exerciseId, ')
+          ..write('videoId: $videoId, ')
+          ..write('title: $title, ')
+          ..write('channel: $channel, ')
+          ..write('startSeconds: $startSeconds, ')
+          ..write('pinnedAt: $pinnedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -6513,6 +7397,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       $AchievementsUnlockedTable(this);
   late final $QuestsTable quests = $QuestsTable(this);
   late final $AppSettingsTable appSettings = $AppSettingsTable(this);
+  late final $MediaMatchesTable mediaMatches = $MediaMatchesTable(this);
+  late final $PinnedVideosTable pinnedVideos = $PinnedVideosTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -6531,6 +7417,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     achievementsUnlocked,
     quests,
     appSettings,
+    mediaMatches,
+    pinnedVideos,
   ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
@@ -10980,6 +11868,489 @@ typedef $$AppSettingsTableProcessedTableManager =
       AppSetting,
       PrefetchHooks Function()
     >;
+typedef $$MediaMatchesTableCreateCompanionBuilder =
+    MediaMatchesCompanion Function({
+      required String exerciseId,
+      Value<String?> edbId,
+      Value<String?> edbName,
+      Value<String?> gifUrl,
+      Value<double> confidence,
+      Value<String> source,
+      required DateTime updatedAt,
+      Value<int> rowid,
+    });
+typedef $$MediaMatchesTableUpdateCompanionBuilder =
+    MediaMatchesCompanion Function({
+      Value<String> exerciseId,
+      Value<String?> edbId,
+      Value<String?> edbName,
+      Value<String?> gifUrl,
+      Value<double> confidence,
+      Value<String> source,
+      Value<DateTime> updatedAt,
+      Value<int> rowid,
+    });
+
+class $$MediaMatchesTableFilterComposer
+    extends Composer<_$AppDatabase, $MediaMatchesTable> {
+  $$MediaMatchesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get exerciseId => $composableBuilder(
+    column: $table.exerciseId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get edbId => $composableBuilder(
+    column: $table.edbId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get edbName => $composableBuilder(
+    column: $table.edbName,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get gifUrl => $composableBuilder(
+    column: $table.gifUrl,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get confidence => $composableBuilder(
+    column: $table.confidence,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get source => $composableBuilder(
+    column: $table.source,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$MediaMatchesTableOrderingComposer
+    extends Composer<_$AppDatabase, $MediaMatchesTable> {
+  $$MediaMatchesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get exerciseId => $composableBuilder(
+    column: $table.exerciseId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get edbId => $composableBuilder(
+    column: $table.edbId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get edbName => $composableBuilder(
+    column: $table.edbName,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get gifUrl => $composableBuilder(
+    column: $table.gifUrl,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get confidence => $composableBuilder(
+    column: $table.confidence,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get source => $composableBuilder(
+    column: $table.source,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$MediaMatchesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $MediaMatchesTable> {
+  $$MediaMatchesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get exerciseId => $composableBuilder(
+    column: $table.exerciseId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get edbId =>
+      $composableBuilder(column: $table.edbId, builder: (column) => column);
+
+  GeneratedColumn<String> get edbName =>
+      $composableBuilder(column: $table.edbName, builder: (column) => column);
+
+  GeneratedColumn<String> get gifUrl =>
+      $composableBuilder(column: $table.gifUrl, builder: (column) => column);
+
+  GeneratedColumn<double> get confidence => $composableBuilder(
+    column: $table.confidence,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get source =>
+      $composableBuilder(column: $table.source, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+}
+
+class $$MediaMatchesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $MediaMatchesTable,
+          MediaMatchRow,
+          $$MediaMatchesTableFilterComposer,
+          $$MediaMatchesTableOrderingComposer,
+          $$MediaMatchesTableAnnotationComposer,
+          $$MediaMatchesTableCreateCompanionBuilder,
+          $$MediaMatchesTableUpdateCompanionBuilder,
+          (
+            MediaMatchRow,
+            BaseReferences<_$AppDatabase, $MediaMatchesTable, MediaMatchRow>,
+          ),
+          MediaMatchRow,
+          PrefetchHooks Function()
+        > {
+  $$MediaMatchesTableTableManager(_$AppDatabase db, $MediaMatchesTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$MediaMatchesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$MediaMatchesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$MediaMatchesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> exerciseId = const Value.absent(),
+                Value<String?> edbId = const Value.absent(),
+                Value<String?> edbName = const Value.absent(),
+                Value<String?> gifUrl = const Value.absent(),
+                Value<double> confidence = const Value.absent(),
+                Value<String> source = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => MediaMatchesCompanion(
+                exerciseId: exerciseId,
+                edbId: edbId,
+                edbName: edbName,
+                gifUrl: gifUrl,
+                confidence: confidence,
+                source: source,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String exerciseId,
+                Value<String?> edbId = const Value.absent(),
+                Value<String?> edbName = const Value.absent(),
+                Value<String?> gifUrl = const Value.absent(),
+                Value<double> confidence = const Value.absent(),
+                Value<String> source = const Value.absent(),
+                required DateTime updatedAt,
+                Value<int> rowid = const Value.absent(),
+              }) => MediaMatchesCompanion.insert(
+                exerciseId: exerciseId,
+                edbId: edbId,
+                edbName: edbName,
+                gifUrl: gifUrl,
+                confidence: confidence,
+                source: source,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$MediaMatchesTable, MediaMatchRow>(table),
+                  BaseReferences<
+                    _$AppDatabase,
+                    $MediaMatchesTable,
+                    MediaMatchRow
+                  >(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$MediaMatchesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $MediaMatchesTable,
+      MediaMatchRow,
+      $$MediaMatchesTableFilterComposer,
+      $$MediaMatchesTableOrderingComposer,
+      $$MediaMatchesTableAnnotationComposer,
+      $$MediaMatchesTableCreateCompanionBuilder,
+      $$MediaMatchesTableUpdateCompanionBuilder,
+      (
+        MediaMatchRow,
+        BaseReferences<_$AppDatabase, $MediaMatchesTable, MediaMatchRow>,
+      ),
+      MediaMatchRow,
+      PrefetchHooks Function()
+    >;
+typedef $$PinnedVideosTableCreateCompanionBuilder =
+    PinnedVideosCompanion Function({
+      required String exerciseId,
+      required String videoId,
+      Value<String> title,
+      Value<String> channel,
+      Value<int> startSeconds,
+      required DateTime pinnedAt,
+      Value<int> rowid,
+    });
+typedef $$PinnedVideosTableUpdateCompanionBuilder =
+    PinnedVideosCompanion Function({
+      Value<String> exerciseId,
+      Value<String> videoId,
+      Value<String> title,
+      Value<String> channel,
+      Value<int> startSeconds,
+      Value<DateTime> pinnedAt,
+      Value<int> rowid,
+    });
+
+class $$PinnedVideosTableFilterComposer
+    extends Composer<_$AppDatabase, $PinnedVideosTable> {
+  $$PinnedVideosTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get exerciseId => $composableBuilder(
+    column: $table.exerciseId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get videoId => $composableBuilder(
+    column: $table.videoId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get channel => $composableBuilder(
+    column: $table.channel,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get startSeconds => $composableBuilder(
+    column: $table.startSeconds,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get pinnedAt => $composableBuilder(
+    column: $table.pinnedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$PinnedVideosTableOrderingComposer
+    extends Composer<_$AppDatabase, $PinnedVideosTable> {
+  $$PinnedVideosTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get exerciseId => $composableBuilder(
+    column: $table.exerciseId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get videoId => $composableBuilder(
+    column: $table.videoId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get channel => $composableBuilder(
+    column: $table.channel,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get startSeconds => $composableBuilder(
+    column: $table.startSeconds,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get pinnedAt => $composableBuilder(
+    column: $table.pinnedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$PinnedVideosTableAnnotationComposer
+    extends Composer<_$AppDatabase, $PinnedVideosTable> {
+  $$PinnedVideosTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get exerciseId => $composableBuilder(
+    column: $table.exerciseId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get videoId =>
+      $composableBuilder(column: $table.videoId, builder: (column) => column);
+
+  GeneratedColumn<String> get title =>
+      $composableBuilder(column: $table.title, builder: (column) => column);
+
+  GeneratedColumn<String> get channel =>
+      $composableBuilder(column: $table.channel, builder: (column) => column);
+
+  GeneratedColumn<int> get startSeconds => $composableBuilder(
+    column: $table.startSeconds,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get pinnedAt =>
+      $composableBuilder(column: $table.pinnedAt, builder: (column) => column);
+}
+
+class $$PinnedVideosTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $PinnedVideosTable,
+          PinnedVideo,
+          $$PinnedVideosTableFilterComposer,
+          $$PinnedVideosTableOrderingComposer,
+          $$PinnedVideosTableAnnotationComposer,
+          $$PinnedVideosTableCreateCompanionBuilder,
+          $$PinnedVideosTableUpdateCompanionBuilder,
+          (
+            PinnedVideo,
+            BaseReferences<_$AppDatabase, $PinnedVideosTable, PinnedVideo>,
+          ),
+          PinnedVideo,
+          PrefetchHooks Function()
+        > {
+  $$PinnedVideosTableTableManager(_$AppDatabase db, $PinnedVideosTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$PinnedVideosTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$PinnedVideosTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$PinnedVideosTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> exerciseId = const Value.absent(),
+                Value<String> videoId = const Value.absent(),
+                Value<String> title = const Value.absent(),
+                Value<String> channel = const Value.absent(),
+                Value<int> startSeconds = const Value.absent(),
+                Value<DateTime> pinnedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => PinnedVideosCompanion(
+                exerciseId: exerciseId,
+                videoId: videoId,
+                title: title,
+                channel: channel,
+                startSeconds: startSeconds,
+                pinnedAt: pinnedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String exerciseId,
+                required String videoId,
+                Value<String> title = const Value.absent(),
+                Value<String> channel = const Value.absent(),
+                Value<int> startSeconds = const Value.absent(),
+                required DateTime pinnedAt,
+                Value<int> rowid = const Value.absent(),
+              }) => PinnedVideosCompanion.insert(
+                exerciseId: exerciseId,
+                videoId: videoId,
+                title: title,
+                channel: channel,
+                startSeconds: startSeconds,
+                pinnedAt: pinnedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$PinnedVideosTable, PinnedVideo>(table),
+                  BaseReferences<
+                    _$AppDatabase,
+                    $PinnedVideosTable,
+                    PinnedVideo
+                  >(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$PinnedVideosTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $PinnedVideosTable,
+      PinnedVideo,
+      $$PinnedVideosTableFilterComposer,
+      $$PinnedVideosTableOrderingComposer,
+      $$PinnedVideosTableAnnotationComposer,
+      $$PinnedVideosTableCreateCompanionBuilder,
+      $$PinnedVideosTableUpdateCompanionBuilder,
+      (
+        PinnedVideo,
+        BaseReferences<_$AppDatabase, $PinnedVideosTable, PinnedVideo>,
+      ),
+      PinnedVideo,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -11010,4 +12381,8 @@ class $AppDatabaseManager {
       $$QuestsTableTableManager(_db, _db.quests);
   $$AppSettingsTableTableManager get appSettings =>
       $$AppSettingsTableTableManager(_db, _db.appSettings);
+  $$MediaMatchesTableTableManager get mediaMatches =>
+      $$MediaMatchesTableTableManager(_db, _db.mediaMatches);
+  $$PinnedVideosTableTableManager get pinnedVideos =>
+      $$PinnedVideosTableTableManager(_db, _db.pinnedVideos);
 }

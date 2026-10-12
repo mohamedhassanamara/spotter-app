@@ -7,6 +7,7 @@ import 'app_providers.dart';
 
 import 'features/debug/presentation/badge_gallery_screen.dart';
 import 'features/debug/presentation/debug_menu_screen.dart';
+import 'features/debug/presentation/media_matching_screen.dart';
 import 'features/history/presentation/exercise_history_screen.dart';
 import 'features/history/presentation/session_detail_screen.dart';
 import 'features/home/presentation/home_screen.dart';
@@ -36,6 +37,7 @@ abstract final class Routes {
   static const summary = '/summary';
   static const rankUp = '/rank-up';
   static const badgeGallery = '/settings/debug/badges';
+  static const mediaMatching = '/settings/debug/media';
   static const pickExercise = '/pick-exercise';
   static const newExercise = '/exercise-new';
   static const settings = '/settings';
@@ -143,6 +145,7 @@ GoRouter buildRouter(ValueListenable<bool> onboarded) {
               builder: (_, _) => const DebugMenuScreen(),
               routes: [
                 GoRoute(path: 'badges', parentNavigatorKey: rootNavigatorKey, builder: (_, _) => const BadgeGalleryScreen()),
+                GoRoute(path: 'media', parentNavigatorKey: rootNavigatorKey, builder: (_, _) => const MediaMatchingScreen()),
                 GoRoute(
                   path: 'rank-up-preview',
                   parentNavigatorKey: rootNavigatorKey,

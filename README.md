@@ -76,6 +76,16 @@ The debug menu and the fake Health source are compiled out of release builds (`k
 To open a specific screen at launch in debug, e.g. on the simulator:
 `flutter run --route=/progress`.
 
+## Tutorials
+
+- Each exercise page has **3D | Video | Steps** tabs. The 3D demo loops, with play/pause and 0.5×.
+- **Pin a video:** paste a YouTube link in the Video tab, or add an optional **YouTube Data API key** in
+  Settings → Tutorials (stored in the iOS Keychain) to search inside the app. To get a key: Google Cloud
+  Console → enable "YouTube Data API v3" → Credentials → API key.
+- **Fix a wrong or missing 3D demo:** debug build → Settings → Debug menu → **Media matching**. Pick
+  the right animation (stored on the device), tap the copy icon, and paste the JSON into
+  `assets/media_overrides.json` to make it permanent.
+
 ## Editable data
 
 - **Strength standards:** `assets/strength_standards.json`. For each lift: the dataset exercise
@@ -97,11 +107,13 @@ To open a specific screen at launch in debug, e.g. on the simulator:
 - Exercise library: [free-exercise-db](https://github.com/yuhonas/free-exercise-db) (public domain).
 - Anatomical body map paths: [react-native-body-highlighter](https://github.com/HichamELBSI/react-native-body-highlighter)
   by ELABBASSI Hicham, MIT License (`docs/licenses/react-native-body-highlighter-LICENSE.txt`).
+- 3D exercise demos: [ExerciseDB](https://exercisedb.dev) V1 free dataset (non-commercial use, attribution
+  required). Only metadata is bundled; GIFs download on first view.
 - Display font: [Oxanium](https://fonts.google.com/specimen/Oxanium) (SIL Open Font License, `docs/licenses/`).
 - Rank emblems: original artwork drawn in code for this app.
 
 ## Privacy
 
 There is no backend, account or analytics. All data stays in the on-device SQLite database. The
-only network requests load exercise images from GitHub, and the form-tutorial button opens a
-YouTube search.
+only network requests download exercise images and 3D demo GIFs, play embedded YouTube videos and,
+if you've set a key, run YouTube searches.

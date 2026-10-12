@@ -15,6 +15,7 @@ import '../../../router.dart';
 import '../../coach/domain/suggestion_engine.dart';
 import '../../library/domain/exercise_info.dart';
 import '../data/session_repository.dart';
+import '../../tutorials/presentation/form_check_sheet.dart';
 import 'rest_timer.dart';
 import 'set_editor_sheet.dart';
 
@@ -299,6 +300,12 @@ class _ExerciseCardState extends ConsumerState<_ExerciseCard> {
                     visualDensity: VisualDensity.compact,
                   ),
                 ),
+              IconButton(
+                tooltip: 'Form check',
+                iconSize: 26,
+                onPressed: () => showFormCheckSheet(context, ex.row.exerciseId),
+                icon: const Icon(Icons.info_outline_rounded),
+              ),
               PopupMenuButton<String>(
                 icon: const Icon(Icons.more_vert_rounded),
                 onSelected: _menu,

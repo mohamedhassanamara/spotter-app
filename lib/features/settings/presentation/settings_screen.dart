@@ -12,6 +12,7 @@ import '../../../core/widgets/common.dart';
 import '../../../router.dart';
 import '../../coach/domain/suggestion_engine.dart' show formatKg;
 import '../../export/data/export_service.dart';
+import '../../tutorials/presentation/tutorial_video.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -167,6 +168,8 @@ class SettingsScreen extends ConsumerWidget {
               },
             ),
           ),
+          const SectionHeader('Tutorials'),
+          const AppCard(padding: EdgeInsets.symmetric(vertical: 4), child: _YouTubeKeyTile()),
           const SectionHeader('Export'),
           AppCard(
             child: Column(
@@ -252,6 +255,33 @@ class SettingsScreen extends ConsumerWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _YouTubeKeyTile extends ConsumerWidget {
+  const _YouTubeKeyTile();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final key = ref.watch(youtubeKeyProvider).value;
+    final masked = key == null ? 'Not set: paste YouTube links to pin tutorials' : 'Set (…${key.substring(key.length - 4)}). Stored in the iOS Keychain';
+    return ListTile(
+      leading: const Icon(Icons.smart_display_outlined),
+      title: const Text('YouTube Data API key (optional)'),
+      subtitle: Text(masked),
+      trailing: key == null ? const Icon(Icons.chevron_right_rounded) : const Icon(Icons.check_circle_rounded, color: AppColors.primary),
+      onTap: () async {
+        final value = await promptText(context, title: 'YouTube Data API key', initial: key ?? '', hint: 'AIza… (leave empty to remove)');
+        if (value == null) return;
+        await ref.read(youtubeKeyStoreProvider).write(value);
+        ref.invalidate(youtubeKeyProvider);
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(value.trim().isEmpty ? 'API key removed' : 'API key saved to the Keychain')),
+          );
+        }
+      },
     );
   }
 }

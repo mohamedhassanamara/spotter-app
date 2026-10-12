@@ -22,16 +22,18 @@ part 'database.g.dart';
     AchievementsUnlocked,
     Quests,
     AppSettings,
+    MediaMatches,
+    PinnedVideos,
   ],
 )
 class AppDatabase extends _$AppDatabase {
   AppDatabase(super.e);
 
-  /// The on-device database (Application Support/spotter.sqlite).
+  /// The on-device database (Documents/spotter.sqlite).
   factory AppDatabase.open() => AppDatabase(driftDatabase(name: 'spotter'));
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -44,7 +46,11 @@ class AppDatabase extends _$AppDatabase {
           await customStatement('CREATE INDEX idx_routine_ex_routine ON routine_exercises (routine_id)');
         },
         onUpgrade: (m, from, to) async {
-          // Step-by-step migrations go here as the schema evolves (v1 → v2 → …).
+          // Step by step, so any older install reaches the current version.
+          if (from < 2) {
+            await m.createTable(mediaMatches);
+            await m.createTable(pinnedVideos);
+          }
         },
         beforeOpen: (details) async {
           await customStatement('PRAGMA foreign_keys = ON');

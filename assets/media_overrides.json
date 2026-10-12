@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "description": "Manual fixes for the ExerciseDB V1 matcher. Map a free-exercise-db id to an ExerciseDB exerciseId, or to null when V1 has no faithful demo (the app then shows the library photos). Overrides win over automatic matches; picks made in the debug 'Media matching' screen win over this file and can be exported from there to paste here.",
+  "overrides": {
+    "Barbell_Squat": "qXTaZnJ",
+    "Barbell_Full_Squat": "qXTaZnJ",
+    "Leg_Press": "10Z2DXU",
+    "Machine_Bench_Press": "DOoWcnA",
+    "Cable_Crunch": "CUmLRTA",
+    "Standing_Military_Press": "Kyd9Rz5",
+    "T-Bar_Row_with_Handle": "aaXr7ld",
+    "Wide-Grip_Lat_Pulldown": "0MlxeMn",
+    "EZ-Bar_Skullcrusher": "h8LFzo9",
+    "Triceps_Pushdown": "3ZflifB",
+    "Pullups": "lBDjFxJ",
+    "Barbell_Deadlift": "ila4NZS",
+    "Barbell_Bench_Press_-_Medium_Grip": "EIeI8Vf",
+    "Side_Lateral_Raise": "DsgkuIt",
+    "Romanian_Deadlift": "o6LqKKP",
+    "Seated_Cable_Rows": "A3P4O0R",
+    "Incline_Dumbbell_Press": "ns0SIbU",
+    "Face_Pull": null,
+    "Barbell_Hip_Thrust": null
+  }
+}

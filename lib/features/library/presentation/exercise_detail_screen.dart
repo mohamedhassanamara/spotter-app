@@ -1,15 +1,15 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../../../app_providers.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/common.dart';
 import '../../../router.dart';
 import '../../coach/domain/suggestion_engine.dart';
+import '../../tutorials/presentation/exercise_demo.dart';
+import '../../tutorials/presentation/tutorial_video.dart';
 import '../domain/exercise_info.dart';
 
 class ExerciseDetailScreen extends ConsumerWidget {
@@ -41,11 +41,22 @@ class ExerciseDetailScreen extends ConsumerWidget {
   }
 }
 
-class _DetailView extends ConsumerWidget {
+enum _MediaTab { demo, video, steps }
+
+class _DetailView extends ConsumerStatefulWidget {
   const _DetailView({required this.info});
   final ExerciseInfo info;
 
-  Future<void> _delete(BuildContext context, WidgetRef ref) async {
+  @override
+  ConsumerState<_DetailView> createState() => _DetailViewState();
+}
+
+class _DetailViewState extends ConsumerState<_DetailView> {
+  _MediaTab? _tab;
+
+  ExerciseInfo get info => widget.info;
+
+  Future<void> _delete(BuildContext context) async {
     final ok = await confirm(
       context,
       title: 'Delete exercise?',
@@ -66,7 +77,10 @@ class _DetailView extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
+    final pinned = ref.watch(pinnedVideoProvider(info.id));
+    // Default: 3D, or Video when a tutorial is pinned (decided once the pin is known).
+    final tab = _tab ?? (pinned.hasValue ? (pinned.value != null ? _MediaTab.video : _MediaTab.demo) : _MediaTab.demo);
     final freeze = ref.watch(activeFreezesProvider)[info.id];
     final now = ref.watch(clockProvider)();
     return Scaffold(
@@ -87,7 +101,7 @@ class _DetailView extends ConsumerWidget {
             ),
             IconButton(
               tooltip: 'Delete',
-              onPressed: () => _delete(context, ref),
+              onPressed: () => _delete(context),
               icon: const Icon(Icons.delete_outline_rounded),
             ),
           ],
@@ -96,8 +110,6 @@ class _DetailView extends ConsumerWidget {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 0, 16, 40),
         children: [
-          if (info.imageUrls.isNotEmpty) _ImageCarousel(urls: info.imageUrls),
-          const SizedBox(height: 16),
           Text(info.name, style: Theme.of(context).textTheme.headlineSmall),
           const SizedBox(height: 10),
           Wrap(spacing: 8, runSpacing: 8, children: [
@@ -127,108 +139,61 @@ class _DetailView extends ConsumerWidget {
             ),
           ],
           const SizedBox(height: 16),
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton.icon(
-              onPressed: () async {
-                final ok = await launchUrl(info.formTutorialUri, mode: LaunchMode.externalApplication);
-                if (!ok && context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Couldn’t open YouTube.')));
-                }
-              },
-              icon: const Icon(Icons.play_circle_fill_rounded),
-              label: const Text('Watch form tutorial'),
-            ),
+          SegmentedButton<_MediaTab>(
+            showSelectedIcon: false,
+            segments: const [
+              ButtonSegment(value: _MediaTab.demo, label: Text('3D'), icon: Icon(Icons.view_in_ar_rounded)),
+              ButtonSegment(value: _MediaTab.video, label: Text('Video'), icon: Icon(Icons.smart_display_rounded)),
+              ButtonSegment(value: _MediaTab.steps, label: Text('Steps'), icon: Icon(Icons.format_list_numbered_rounded)),
+            ],
+            selected: {tab},
+            onSelectionChanged: (v) => setState(() => _tab = v.first),
           ),
+          const SizedBox(height: 16),
+          switch (tab) {
+            _MediaTab.demo => ExerciseDemo(exerciseId: info.id, fallbackImages: info.imageUrls),
+            _MediaTab.video => TutorialVideoTab(exerciseId: info.id, exerciseName: info.name, searchUri: info.formTutorialUri),
+            _MediaTab.steps => _Steps(info: info),
+          },
           const SectionHeader('Muscles'),
           _MuscleBlock(info: info),
           _HistorySection(info: info),
-          if (info.instructions.isNotEmpty) ...[
-            const SectionHeader('How to'),
-            for (var i = 0; i < info.instructions.length; i++)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  CircleAvatar(
-                    radius: 14,
-                    backgroundColor: AppColors.surfaceHigh,
-                    child: Text('${i + 1}', style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13)),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(child: Text(info.instructions[i], style: const TextStyle(fontSize: 15, height: 1.4))),
-                ]),
-              ),
-          ],
-          if (info.notes != null && info.notes!.isNotEmpty) ...[
-            const SectionHeader('Notes'),
-            Text(info.notes!, style: const TextStyle(fontSize: 15, height: 1.4)),
-          ],
         ],
       ),
     );
   }
 }
 
-class _ImageCarousel extends StatefulWidget {
-  const _ImageCarousel({required this.urls});
-  final List<String> urls;
-
-  @override
-  State<_ImageCarousel> createState() => _ImageCarouselState();
-}
-
-class _ImageCarouselState extends State<_ImageCarousel> {
-  int _page = 0;
+class _Steps extends StatelessWidget {
+  const _Steps({required this.info});
+  final ExerciseInfo info;
 
   @override
   Widget build(BuildContext context) {
-    return Column(children: [
-      ClipRRect(
-        borderRadius: BorderRadius.circular(20),
-        child: AspectRatio(
-          aspectRatio: 4 / 3,
-          child: PageView.builder(
-            itemCount: widget.urls.length,
-            onPageChanged: (i) => setState(() => _page = i),
-            itemBuilder: (_, i) => CachedNetworkImage(
-              imageUrl: widget.urls[i],
-              fit: BoxFit.cover,
-              placeholder: (_, _) => Container(
-                color: AppColors.surfaceHigh,
-                child: const Center(child: CircularProgressIndicator()),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (info.instructions.isEmpty)
+          const Text('No steps for this exercise.', style: TextStyle(color: AppColors.textSecondary)),
+        for (var i = 0; i < info.instructions.length; i++)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              CircleAvatar(
+                radius: 14,
+                backgroundColor: AppColors.surfaceHigh,
+                child: Text('${i + 1}', style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13)),
               ),
-              errorWidget: (_, _, _) => Container(
-                color: AppColors.surfaceHigh,
-                child: const Center(
-                  child: Column(mainAxisSize: MainAxisSize.min, children: [
-                    Icon(Icons.wifi_off_rounded, color: AppColors.textSecondary, size: 36),
-                    SizedBox(height: 8),
-                    Text('Image unavailable offline', style: TextStyle(color: AppColors.textSecondary)),
-                  ]),
-                ),
-              ),
-            ),
+              const SizedBox(width: 12),
+              Expanded(child: Text(info.instructions[i], style: const TextStyle(fontSize: 15, height: 1.4))),
+            ]),
           ),
-        ),
-      ),
-      if (widget.urls.length > 1)
-        Padding(
-          padding: const EdgeInsets.only(top: 10),
-          child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-            for (var i = 0; i < widget.urls.length; i++)
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                margin: const EdgeInsets.symmetric(horizontal: 4),
-                width: i == _page ? 20 : 8,
-                height: 8,
-                decoration: BoxDecoration(
-                  color: i == _page ? AppColors.primary : AppColors.outline,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-          ]),
-        ),
-    ]);
+        if (info.notes != null && info.notes!.isNotEmpty) ...[
+          const SectionHeader('Notes'),
+          Text(info.notes!, style: const TextStyle(fontSize: 15, height: 1.4)),
+        ],
+      ],
+    );
   }
 }
 

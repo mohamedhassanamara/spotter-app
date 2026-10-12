@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import 'app_providers.dart';
 import 'core/theme/app_theme.dart';
+import 'features/tutorials/presentation/exercise_demo.dart';
 import 'router.dart';
 
 class SpotterApp extends ConsumerStatefulWidget {
@@ -25,6 +26,10 @@ class _SpotterAppState extends ConsumerState<SpotterApp> {
       final v = next.value?.onboarded;
       if (v != null) _onboarded.value = v;
     }, fireImmediately: true);
+    // Exercise ↔ ExerciseDB matching and GIF prefetch for routine exercises (re-runs when routines change).
+    ref.listenManual(mediaBootstrapProvider, (_, next) {
+      if (next.hasError) debugPrint('Media bootstrap failed: ${next.error}');
+    });
     _lifecycle = AppLifecycleListener(onResume: _refreshHealth);
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await ref.read(notificationServiceProvider).init();

@@ -138,3 +138,46 @@ bodyweight lifts uses 2.5 kg. Both are editable in Settings.
   smallest increase.
 - **Deep links:** the Progress route takes `?tab=`, `?back=1`, `?mode=volume` and `?group=<name>`. These
   also make the states reachable for review screenshots on a headless simulator.
+
+## v2 phase 4: exercise tutorials
+- **ExerciseDB V1, license.** The GitHub repo `ExerciseDB/exercisedb-api` is **AGPL-3.0**. That covers
+  the code, and since November 2025 the repo holds only a README and the LICENSE (the history was
+  rewritten). The V1 dataset is served at `https://oss.exercisedb.dev/api/v1` (1,500 exercises, 180p
+  GIFs on `static.exercisedb.dev`). Its OpenAPI description states no data or media license. ExerciseDB's
+  public descriptions of V1 say "free, **non-commercial use only, attribution required**". I treated
+  that as the governing term:
+  - Spotter is a personal, non-commercial app that isn't distributed.
+  - Only the metadata is bundled: `assets/exercisedb_v1.json`, fetched 2026-10-12, with no instructions
+    and no media.
+  - GIFs are downloaded on first view and cached on the device.
+  - Every demo is credited "3D demo: ExerciseDB", and so is the README.
+
+  If the app is ever distributed or monetised, this must be revisited: V1's terms don't allow
+  commercial use, and ExerciseDB sells commercial licences.
+- **IDs unchanged.** The free-exercise-db library and its IDs stay the source of truth. ExerciseDB is
+  only a media source, joined through the new `media_matches` table (schema v2).
+- **Matching** (`media_matcher.dart`, pure Dart):
+  - Score = 0.6 × name + 0.25 × equipment + 0.15 × target muscle.
+  - Name: names are normalised (lowercase; phrase fixes such as pullups → pull up and military press
+    → shoulder press; plurals; stop-words), then compared as 0.7 × IDF-weighted token Dice + 0.3 ×
+    character-trigram Dice.
+  - Equipment: 1 = compatible, 0.6 = compatible but needs extra kit, 0 = different, 0.5 = unknown.
+  - Muscle: 1 = their target is one of our primary muscles, 0.7 = one of our secondary muscles.
+  - Confidence: ≥ 0.72 high, ≥ 0.5 low (used, but listed for review), below that no demo.
+  - On the full library: 566 high, 222 low and 88 none before overrides. With overrides, 786 of 876
+    exercises have a demo.
+- **Overrides.** `assets/media_overrides.json` holds manual fixes, and `null` means "no faithful demo":
+  V1 has no face pull and no barbell hip thrust, so those show library photos. Picks made in the
+  debug "Media matching" screen are stored with `source = manual`, survive re-matching, and can be
+  copied out in the same JSON format.
+- **3D player.** The GIF is decoded into frames and driven by a ticker. That allows play/pause and 0.5×,
+  which Flutter's `Image` can't do. Cached with `flutter_cache_manager` (1-year stale period). Every
+  exercise in a routine is prefetched at launch and whenever routines change.
+- **YouTube.** Pinned videos are stored per exercise (`pinned_videos`, with a start time) and play
+  in-app via `youtube_player_iframe`. In-app search uses the YouTube Data API v3 only when you've
+  stored a key. The key lives in the iOS Keychain (`flutter_secure_storage`), never in the DB or the
+  exports. Without a key, you paste a link (watch, youtu.be, shorts or embed; `t=` is kept).
+- **Network.** The only calls are GIF and image downloads, YouTube embeds, and the optional
+  YouTube search.
+- **Schema v2** adds `media_matches` and `pinned_videos`. The migration is tested with drift's schema
+  verifier: `drift_schemas/` holds the v1 and v2 dumps, and `test/generated_migrations/` the helpers.

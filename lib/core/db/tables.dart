@@ -153,3 +153,35 @@ class AppSettings extends Table {
   @override
   Set<Column<Object>> get primaryKey => {key};
 }
+
+/// Schema v2: which ExerciseDB V1 animation demonstrates each library exercise.
+@DataClassName('MediaMatchRow')
+class MediaMatches extends Table {
+  TextColumn get exerciseId => text()();
+
+  /// Null when nothing matched (or a manual override says "no demo").
+  TextColumn get edbId => text().nullable()();
+  TextColumn get edbName => text().nullable()();
+  TextColumn get gifUrl => text().nullable()();
+  RealColumn get confidence => real().withDefault(const Constant(0))();
+
+  /// auto | override (assets/media_overrides.json) | manual (picked in the debug screen)
+  TextColumn get source => text().withDefault(const Constant('auto'))();
+  DateTimeColumn get updatedAt => dateTime()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {exerciseId};
+}
+
+/// Schema v2: a YouTube tutorial pinned to an exercise.
+class PinnedVideos extends Table {
+  TextColumn get exerciseId => text()();
+  TextColumn get videoId => text()();
+  TextColumn get title => text().withDefault(const Constant(''))();
+  TextColumn get channel => text().withDefault(const Constant(''))();
+  IntColumn get startSeconds => integer().withDefault(const Constant(0))();
+  DateTimeColumn get pinnedAt => dateTime()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {exerciseId};
+}

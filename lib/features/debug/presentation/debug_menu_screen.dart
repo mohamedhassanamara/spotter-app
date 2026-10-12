@@ -147,6 +147,12 @@ class _DebugMenuScreenState extends ConsumerState<DebugMenuScreen> {
                         }),
               ),
               ListTile(
+                leading: const Icon(Icons.view_in_ar_rounded),
+                title: const Text('Media matching'),
+                subtitle: const Text('Unmatched and low-confidence 3D demos'),
+                onTap: () => context.push(Routes.mediaMatching),
+              ),
+              ListTile(
                 leading: const Icon(Icons.shield_rounded),
                 title: const Text('Rank badges & rank-up preview'),
                 onTap: () => context.push(Routes.badgeGallery),
