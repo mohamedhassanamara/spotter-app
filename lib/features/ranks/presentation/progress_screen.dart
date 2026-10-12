@@ -12,18 +12,37 @@ import '../../../core/domain/muscle_group.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/common.dart';
 import '../../../router.dart';
-import '../../coach/domain/suggestion_engine.dart' show formatKg;
 import '../../gamification/domain/streaks.dart';
 import '../../readiness/domain/readiness.dart';
 import '../domain/ranks.dart';
-import 'body_graph.dart';
+import '../domain/body_regions.dart';
+import 'anatomy_graph.dart';
+import 'muscle_sheet.dart';
 
+/// Progress tab. Deep-linkable: `/progress?tab=ranks`, `/progress?back=1&mode=volume&group=chest`.
 class ProgressScreen extends StatelessWidget {
-  const ProgressScreen({super.key});
+  const ProgressScreen({super.key, this.initialTab = 0, this.back = false, this.mode = BodyGraphMode.ranks, this.openGroup});
+
+  final int initialTab;
+  final bool back;
+  final BodyGraphMode mode;
+
+  /// Opens this muscle's sheet on arrival.
+  final MuscleGroup? openGroup;
+
+  static const tabs = ['body', 'ranks', 'lifts', 'history'];
+
+  factory ProgressScreen.fromQuery(Map<String, String> q) => ProgressScreen(
+        initialTab: tabs.indexOf(q['tab'] ?? 'body').clamp(0, 3),
+        back: q['back'] == '1',
+        mode: q['mode'] == 'volume' ? BodyGraphMode.volume : BodyGraphMode.ranks,
+        openGroup: q['group'] == null ? null : MuscleGroup.fromName(q['group']!),
+      );
 
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
+      initialIndex: initialTab,
       length: 4,
       child: Scaffold(
         appBar: AppBar(
@@ -33,7 +52,7 @@ class ProgressScreen extends StatelessWidget {
             tabs: [Tab(text: 'Body'), Tab(text: 'Ranks'), Tab(text: 'Lifts'), Tab(text: 'History')],
           ),
         ),
-        body: const TabBarView(children: [_BodyTab(), _RanksTab(), _LiftsTab(), _HistoryTab()]),
+        body: TabBarView(children: [_BodyTab(back: back, mode: mode, openGroup: openGroup), const _RanksTab(), const _LiftsTab(), const _HistoryTab()]),
       ),
     );
   }
@@ -83,68 +102,129 @@ Future<void> enterBodyweight(BuildContext context, WidgetRef ref) async {
 // ---------------------------------------------------------------------------
 
 class _BodyTab extends ConsumerStatefulWidget {
-  const _BodyTab();
+  const _BodyTab({this.back = false, this.mode = BodyGraphMode.ranks, this.openGroup});
+  final bool back;
+  final BodyGraphMode mode;
+  final MuscleGroup? openGroup;
 
   @override
   ConsumerState<_BodyTab> createState() => _BodyTabState();
 }
 
 class _BodyTabState extends ConsumerState<_BodyTab> {
-  bool _back = false;
+  late bool _back = widget.back;
+  late BodyGraphMode _mode = widget.mode;
   MuscleGroup? _selected;
+  bool _openedDeepLink = false;
+
+  Future<void> _open(MuscleGroup g, RankSummary summary, Map<MuscleGroup, GroupVolume> volume) async {
+    setState(() => _selected = g);
+    await showMuscleSheet(context, group: g, mode: _mode, summary: summary, volume: volume[g]);
+    if (mounted) setState(() => _selected = null);
+  }
 
   @override
   Widget build(BuildContext context) {
     final ranks = ref.watch(ranksProvider);
     final bw = ref.watch(latestBodyWeightProvider);
+    final volume = ref.watch(groupVolumeProvider);
     return AsyncBody(
       value: ranks,
       builder: (summary) {
         final scores = {for (final g in MuscleGroup.values) g: summary.groups[g]?.score};
+        final deepLink = widget.openGroup;
+        if (deepLink != null && !_openedDeepLink) {
+          _openedDeepLink = true;
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) _open(deepLink, summary, volume);
+          });
+        }
         return ListView(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
           children: [
             if (bw.hasValue && bw.value == null) ...[const _BodyweightCard(), const SizedBox(height: 12)],
-            _OverallCard(score: summary.overall, rankedGroups: summary.groups.length),
+            if (_mode == BodyGraphMode.ranks) _OverallCard(score: summary.overall, rankedGroups: summary.groups.length),
             const SizedBox(height: 16),
-            Center(
-              child: SegmentedButton<bool>(
-                segments: const [
-                  ButtonSegment(value: false, label: Text('Front'), icon: Icon(Icons.accessibility_new_rounded)),
-                  ButtonSegment(value: true, label: Text('Back'), icon: Icon(Icons.flip_rounded)),
-                ],
-                selected: {_back},
-                onSelectionChanged: (v) => setState(() {
-                  _back = v.first;
-                  _selected = null;
-                }),
-              ),
+            Row(
+              children: [
+                Expanded(
+                  child: SegmentedButton<BodyGraphMode>(
+                    showSelectedIcon: false,
+                    segments: const [
+                      ButtonSegment(value: BodyGraphMode.ranks, label: Text('Ranks'), icon: Icon(Icons.shield_rounded)),
+                      ButtonSegment(value: BodyGraphMode.volume, label: Text('Volume'), icon: Icon(Icons.local_fire_department_rounded)),
+                    ],
+                    selected: {_mode},
+                    onSelectionChanged: (v) => setState(() => _mode = v.first),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                IconButton.filledTonal(
+                  tooltip: _back ? 'Show front' : 'Show back',
+                  iconSize: 26,
+                  style: IconButton.styleFrom(minimumSize: const Size(52, 52)),
+                  onPressed: () => setState(() {
+                    _back = !_back;
+                    _selected = null;
+                  }),
+                  icon: const Icon(Icons.threesixty_rounded),
+                ),
+              ],
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 4),
+            Center(
+              child: Text(_back ? 'BACK' : 'FRONT',
+                  style: const TextStyle(color: AppColors.textSecondary, fontWeight: FontWeight.w800, letterSpacing: 2, fontSize: 12)),
+            ),
+            const SizedBox(height: 8),
             Center(
               child: ConstrainedBox(
-                constraints: const BoxConstraints(maxHeight: 460),
-                child: BodyGraph(
-                  scores: scores,
+                constraints: const BoxConstraints(maxHeight: 520),
+                child: AnatomyGraph(
                   back: _back,
+                  mode: _mode,
+                  scores: scores,
+                  volume: volume,
                   selected: _selected,
-                  onTap: (g) async {
-                    setState(() => _selected = g);
-                    await showGroupSheet(context, g, summary, bw.value?.kg ?? 0);
-                    if (mounted) setState(() => _selected = null);
-                  },
+                  onTap: (g) => _open(g, summary, volume),
                 ),
               ),
             ),
             const SizedBox(height: 8),
-            const Center(
-              child: Text('Tap a muscle to see its rank', style: TextStyle(color: AppColors.textSecondary)),
+            Center(
+              child: Text(
+                _mode == BodyGraphMode.ranks
+                    ? 'Tap a muscle to see its rank · grey = unranked'
+                    : 'Working sets, last 7 days vs. your 4-week weekly average',
+                style: const TextStyle(color: AppColors.textSecondary),
+              ),
             ),
             const SizedBox(height: 16),
-            const _TierLegend(),
+            if (_mode == BodyGraphMode.ranks) const _TierLegend() else const _VolumeLegend(),
           ],
         );
       },
+    );
+  }
+}
+
+class _VolumeLegend extends StatelessWidget {
+  const _VolumeLegend();
+
+  @override
+  Widget build(BuildContext context) {
+    return Wrap(
+      spacing: 14,
+      runSpacing: 8,
+      alignment: WrapAlignment.center,
+      children: [
+        for (final l in [VolumeLevel.under, VolumeLevel.low, VolumeLevel.onTrack, VolumeLevel.high, VolumeLevel.new_, VolumeLevel.none])
+          Row(mainAxisSize: MainAxisSize.min, children: [
+            Container(width: 12, height: 12, decoration: BoxDecoration(color: volumeColor(l), shape: BoxShape.circle)),
+            const SizedBox(width: 6),
+            Text(volumeLabel(l), style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+          ]),
+      ],
     );
   }
 }
@@ -217,107 +297,6 @@ class _TierLegend extends StatelessWidget {
   }
 }
 
-Future<void> showGroupSheet(BuildContext context, MuscleGroup group, RankSummary summary, double bodyweight) {
-  return showModalBottomSheet<void>(
-    context: context,
-    isScrollControlled: true,
-    builder: (ctx) => DraggableScrollableSheet(
-      expand: false,
-      initialChildSize: 0.55,
-      maxChildSize: 0.9,
-      builder: (ctx, scroll) => _GroupSheet(group: group, summary: summary, bodyweight: bodyweight, controller: scroll),
-    ),
-  );
-}
-
-class _GroupSheet extends StatelessWidget {
-  const _GroupSheet({required this.group, required this.summary, required this.bodyweight, required this.controller});
-  final MuscleGroup group;
-  final RankSummary summary;
-  final double bodyweight;
-  final ScrollController controller;
-
-  @override
-  Widget build(BuildContext context) {
-    final g = summary.groups[group];
-    final title = Text(group.label, style: Theme.of(context).textTheme.headlineSmall);
-    if (g == null) {
-      final hints = summary.unrankedHints[group] ?? const [];
-      return ListView(
-        controller: controller,
-        padding: const EdgeInsets.fromLTRB(20, 0, 20, 32),
-        children: [
-          Row(children: [Expanded(child: title), const TierBadge(null, large: true)]),
-          const SizedBox(height: 16),
-          Text(
-            bodyweight <= 0
-                ? 'Enter your bodyweight to unlock ranks.'
-                : 'Not ranked yet. Ranks use your best valid e1RM from the last 90 days.',
-            style: const TextStyle(color: AppColors.textSecondary),
-          ),
-          if (hints.isNotEmpty) ...[
-            const SectionHeader('Log any of these to rank it'),
-            for (final s in hints)
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: const Icon(Icons.add_circle_outline, color: AppColors.textSecondary),
-                title: Text(s.name),
-              ),
-          ],
-        ],
-      );
-    }
-    final top = g.contributions.first.rank;
-    final topNext = top.nextThresholdKg;
-    final topNextLabel = nextDivisionLabel(top.score);
-    final next = nextDivisionLabel(g.score);
-    return ListView(
-      controller: controller,
-      padding: const EdgeInsets.fromLTRB(20, 0, 20, 32),
-      children: [
-        Row(children: [Expanded(child: title), TierBadge(g.score, large: true)]),
-        const SizedBox(height: 16),
-        ProgressBar(value: g.score.divisionProgress, color: tierColor(g.score.tier)),
-        const SizedBox(height: 8),
-        Text(
-          next == null ? 'Maxed out.' : '${g.score.lp} LP · next: $next',
-          style: const TextStyle(color: AppColors.textSecondary),
-        ),
-        if (topNext != null && topNextLabel != null) ...[
-          const SizedBox(height: 16),
-          AppCard(
-            padding: const EdgeInsets.all(14),
-            color: AppColors.surfaceHigh,
-            child: Row(
-              children: [
-                const Icon(Icons.flag_rounded, color: AppColors.primary),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    'Next: e1RM ${formatKg(double.parse(topNext.toStringAsFixed(1)))} kg on ${top.standard.name} for $topNextLabel',
-                    style: const TextStyle(fontWeight: FontWeight.w700),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-        const SectionHeader('Contributing lifts'),
-        for (final c in g.contributions)
-          ListTile(
-            contentPadding: EdgeInsets.zero,
-            title: Text(c.rank.standard.name, style: const TextStyle(fontWeight: FontWeight.w700)),
-            subtitle: Text(
-              'Best e1RM ${c.rank.bestE1rm.toStringAsFixed(1)} kg · ×${c.rank.ratio.toStringAsFixed(2)} BW · '
-              '${c.weight >= 1 ? 'primary ×1.0' : 'secondary ×0.3'}',
-            ),
-            trailing: TierBadge(c.rank.score),
-          ),
-      ],
-    );
-  }
-}
-
 // ---------------------------------------------------------------------------
 // Ranks list
 // ---------------------------------------------------------------------------
@@ -346,7 +325,7 @@ class _RanksTab extends ConsumerWidget {
                 children: [
                   for (final g in ranked)
                     ListTile(
-                      onTap: () => showGroupSheet(context, g.group, summary, bw.value?.kg ?? 0),
+                      onTap: () => showMuscleSheet(context, group: g.group, mode: BodyGraphMode.ranks, summary: summary, volume: null),
                       leading: _Dot(tierColor(g.score.tier)),
                       title: Text(g.group.label, style: const TextStyle(fontWeight: FontWeight.w700)),
                       subtitle: Text('${g.contributions.length} lift${g.contributions.length == 1 ? '' : 's'}'),
@@ -354,7 +333,7 @@ class _RanksTab extends ConsumerWidget {
                     ),
                   for (final g in unranked)
                     ListTile(
-                      onTap: () => showGroupSheet(context, g, summary, bw.value?.kg ?? 0),
+                      onTap: () => showMuscleSheet(context, group: g, mode: BodyGraphMode.ranks, summary: summary, volume: null),
                       leading: const _Dot(AppColors.unranked),
                       title: Text(g.label, style: const TextStyle(color: AppColors.textSecondary)),
                       subtitle: Text(

@@ -243,6 +243,43 @@ class GroupRank {
   final List<GroupContribution> contributions;
 }
 
+/// The cheapest single-lift improvement that moves a group to its next division.
+class GroupNextStep {
+  const GroupNextStep({required this.standard, required this.kg, required this.targetE1rm, required this.nextLabel});
+  final StrengthStandard standard;
+
+  /// e1RM increase needed on [standard], in kg.
+  final double kg;
+  final double targetE1rm;
+  final String nextLabel;
+}
+
+/// For each contributing lift: the e1RM it needs (others unchanged) for the group's weighted average
+/// to reach the next division's points. Returns the smallest increase, or null at Challenger.
+GroupNextStep? groupNextStep(GroupRank g) {
+  final label = g.score.nextLabel;
+  if (label == null) return null;
+  final target = switch (g.score.tier) {
+    Tier.master => RankScore.grandmasterPoints,
+    Tier.grandmaster => RankScore.challengerPoints,
+    _ => (g.score.value + 1e-9).floorToDouble() + 1,
+  };
+  final totalW = g.contributions.fold<double>(0, (a, c) => a + c.weight);
+  GroupNextStep? best;
+  for (final c in g.contributions) {
+    final r = c.rank;
+    if (r.ratio <= 0) continue;
+    final bodyweight = r.bestE1rm / r.ratio;
+    final needPoints = r.score.value + (target - g.score.value) * totalW / c.weight;
+    final targetE1rm = r.standard.ratioForPoints(needPoints) * bodyweight;
+    final kg = targetE1rm - r.bestE1rm;
+    if (best == null || kg < best.kg) {
+      best = GroupNextStep(standard: r.standard, kg: kg, targetE1rm: targetE1rm, nextLabel: label);
+    }
+  }
+  return best;
+}
+
 class RankSummary {
   const RankSummary({
     required this.exercises,

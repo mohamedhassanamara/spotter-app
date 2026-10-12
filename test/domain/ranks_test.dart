@@ -99,6 +99,18 @@ void main() {
       expect(r.overall!.labelWithLp, 'Emerald IV · 82 LP');
     });
 
+    test('group gap to next division: cheapest single-lift e1RM increase', () {
+      // Chest = (bench 22 + dips 20) / 2 = 21 (Emerald III) → needs 22 (Emerald II).
+      // Bench alone: needs 22 + (22 − 21) × 2 / 1 = 24 points → ratio 1.4 → 112 kg (+6).
+      // Dips alone: needs 20 + 2 = 22 points → ratio 1.6 → 128 kg (+8). Bench wins.
+      final r = calc.compute(bestE1rmByExercise: {'Bench': 106, 'Dips': 120}, bodyweight: 80);
+      final step = groupNextStep(r.groups[MuscleGroup.chest]!)!;
+      expect(step.standard.id, 'bench');
+      expect(step.kg, closeTo(6, 1e-9));
+      expect(step.targetE1rm, closeTo(112, 1e-9));
+      expect(step.nextLabel, 'Emerald II');
+    });
+
     test('unranked groups get hints, ranked ones do not', () {
       final r = calc.compute(bestE1rmByExercise: {'Bench': 100}, bodyweight: 80);
       expect(r.groups.containsKey(MuscleGroup.back), isFalse);

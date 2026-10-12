@@ -67,7 +67,7 @@ GoRouter buildRouter(ValueListenable<bool> onboarded) {
           StatefulShellBranch(routes: [GoRoute(path: Routes.home, builder: (_, _) => const HomeScreen())]),
           StatefulShellBranch(routes: [GoRoute(path: Routes.train, builder: (_, _) => const TrainScreen())]),
           StatefulShellBranch(routes: [GoRoute(path: Routes.library, builder: (_, _) => const LibraryScreen())]),
-          StatefulShellBranch(routes: [GoRoute(path: Routes.progress, builder: (_, _) => const ProgressScreen())]),
+          StatefulShellBranch(routes: [GoRoute(path: Routes.progress, builder: (_, s) => ProgressScreen.fromQuery(s.uri.queryParameters))]),
           StatefulShellBranch(routes: [GoRoute(path: Routes.profile, builder: (_, _) => const ProfileScreen())]),
         ],
       ),

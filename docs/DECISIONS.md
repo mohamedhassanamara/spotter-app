@@ -103,3 +103,38 @@ bodyweight lifts uses 2.5 kg. Both are editable in Settings.
   `migrateRankLadder` runs once at startup (setting `rank_ladder_version` = 2): it keeps everything
   already earned and unlocks rank achievements the new ladder now qualifies for. Two new ones were
   added: Diamond and Master.
+
+## v2 phase 2: rank emblems
+- The emblems are original vector art drawn in code (`rank_badge.dart`, a CustomPainter), built from
+  generic primitives: shield, chevrons, hexagonal gem, blades, feathered wings, crown, halo. Nothing
+  was traced or copied from Riot's or Liftoff's artwork.
+- **Escalation:** Iron and Bronze are matte shields with bars. Silver and Gold are metallic gradients
+  with a rim and chevrons. Platinum and Emerald add a gem inset with side blades. Diamond is a crystal
+  body with facets and wings. Master, Grandmaster and Challenger add a crown, a halo and an animated
+  glow plus shimmer; Challenger also gets rays.
+- **Sizes:** small (list rows), medium (cards), hero (rank screen, rank-up).
+- **Rank-up:** a full-screen sequence (fly-in, burst, title) of 2.6 s, skippable, with a heavy haptic
+  on impact. It plays when an exercise, group or overall rank moves to a better division or tier. A
+  first placement isn't a rank-up. Rank-downs appear as one muted line in the summary.
+
+## v2 phase 3: anatomical body graph
+- **Source:** muscle paths from
+  [react-native-body-highlighter](https://github.com/HichamELBSI/react-native-body-highlighter) v3.2.0,
+  **MIT License**, © 2022 ELABBASSI Hicham. I checked the LICENSE file in the repo; a copy is in
+  `docs/licenses/`. The TypeScript path arrays were converted to `assets/body_map.json` without
+  changing the paths. They're parsed at runtime with `path_parsing` 1.1.0.
+- **Mapping** (`body_regions.dart`):
+  - Ranked: chest; abs + obliques → abs; biceps; triceps; forearm → forearms; deltoids → shoulders;
+    trapezius → traps; upper-back → back; gluteal → glutes; quadriceps → quads;
+    hamstring → hamstrings; calves.
+  - Neutral (drawn, never ranked): adductors, lower back, neck, tibialis.
+  - Silhouette: head, hair, hands, feet, knees, ankles.
+- **Glow:** from Platinum up, stronger for higher tiers.
+- **Volume mode:** working sets in the last 7 days ÷ the weekly average of the 28 days before (primary
+  groups, the same windows as the readiness load modifier). Under-trained < 50 %, below usual < 85 %,
+  on track ≤ 150 %, high > 150 %.
+- **Gap to next division:** for each contributing lift, the e1RM it would need, with the others
+  unchanged, for the group's weighted average to reach the next division. The sheet shows the
+  smallest increase.
+- **Deep links:** the Progress route takes `?tab=`, `?back=1`, `?mode=volume` and `?group=<name>`. These
+  also make the states reachable for review screenshots on a headless simulator.

@@ -92,6 +92,14 @@ To open a specific screen at launch in debug, e.g. on the simulator:
   again and bump `exerciseDatasetVersion` in `lib/features/library/data/exercise_repository.dart`.
 - **Increments, rep ranges, RIR, rest times and the weekly goal:** in the app's Settings.
 
+## Credits
+
+- Exercise library: [free-exercise-db](https://github.com/yuhonas/free-exercise-db) (public domain).
+- Anatomical body map paths: [react-native-body-highlighter](https://github.com/HichamELBSI/react-native-body-highlighter)
+  by ELABBASSI Hicham, MIT License (`docs/licenses/react-native-body-highlighter-LICENSE.txt`).
+- Display font: [Oxanium](https://fonts.google.com/specimen/Oxanium) (SIL Open Font License, `docs/licenses/`).
+- Rank emblems: original artwork drawn in code for this app.
+
 ## Privacy
 
 There is no backend, account or analytics. All data stays in the on-device SQLite database. The

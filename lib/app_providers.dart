@@ -21,6 +21,7 @@ import 'features/library/data/exercise_repository.dart';
 import 'features/library/domain/exercise_info.dart';
 import 'features/ranks/data/ladder_migration.dart';
 import 'features/ranks/data/ranks_repository.dart';
+import 'features/ranks/domain/body_regions.dart';
 import 'features/ranks/domain/ranks.dart';
 import 'features/readiness/data/readiness_repository.dart';
 import 'features/readiness/domain/readiness.dart';
@@ -312,4 +313,12 @@ final rankLadderMigrationProvider = FutureProvider<List<String>>((ref) async {
     defs: await GamificationRepository.loadAchievementDefs(),
     now: ref.read(clockProvider)(),
   );
+});
+
+/// Working sets per group: last 7 days vs. weekly average of the 4 weeks before (body-graph heatmap).
+final groupVolumeProvider = Provider<Map<MuscleGroup, GroupVolume>>((ref) {
+  final history = ref.watch(historyProvider).value;
+  if (history == null) return const {};
+  final counts = const TrainingLoad().counts(ref.watch(clockProvider)(), groupSetEntries(history));
+  return {for (final e in counts.entries) e.key: GroupVolume(recentSets: e.value.$1, weeklyAverage: e.value.$2)};
 });
