@@ -1,6 +1,6 @@
 {
  "schema_version": 1,
- "description": "Our exercise id -> ExerciseDB V2 exerciseId (stable IDs only; media URLs and text are never stored). status: auto | confirmed | queued | none. Queued rows keep their top candidates for review in Settings -> Debug -> Media matching.",
+ "description": "Our exercise id -> ExerciseDB V2 exerciseId (stable IDs only; no names, media URLs or text from the API). status: auto | confirmed | queued | none. Only used when Settings -> Debug -> \"Use ExerciseDB V2\" is on (default off).",
  "mappings": {
   "Barbell_Bench_Press_-_Medium_Grip": {
    "edbId": "exr_41n2hxnFMotsXTj3",
@@ -12,39 +12,7 @@
    "edbId": null,
    "status": "queued",
    "confidence": 0.517,
-   "query": "Barbell Deadlift",
-   "candidates": [
-    {
-     "id": "exr_41n2hn8rpbYihzEW",
-     "name": "Romanian Deadlift",
-     "score": 0.517
-    },
-    {
-     "id": "exr_41n2hrHSqBnVWRRB",
-     "name": "Bodyweight Single Leg Deadlift",
-     "score": 0.43
-    },
-    {
-     "id": "exr_41n2hcw2FN534HcA",
-     "name": "Dumbbell Stiff Leg Deadlift",
-     "score": 0.35
-    },
-    {
-     "id": "exr_41n2hLpyk6MsV85U",
-     "name": "Single Leg Bodyweight Deadlift with Arm and Leg Extended ",
-     "score": 0.35
-    },
-    {
-     "id": "exr_41n2hQp1pR7heQq9",
-     "name": "Dumbbell Stiff Leg Deadlift ",
-     "score": 0.35
-    },
-    {
-     "id": "exr_41n2hwoc6PkW1UJJ",
-     "name": "Barbell Standing Calf Raise",
-     "score": 0.3
-    }
-   ]
+   "query": "Barbell Deadlift"
   },
   "Barbell_Hip_Thrust": {
    "edbId": "exr_41n2hxxePSdr5oN1",
@@ -56,275 +24,49 @@
    "edbId": null,
    "status": "queued",
    "confidence": 0.675,
-   "query": "Barbell Incline Bench Press",
-   "candidates": [
-    {
-     "id": "exr_41n2hsVHu7B1MTdr",
-     "name": "Palms In Incline Bench Press",
-     "score": 0.675
-    },
-    {
-     "id": "exr_41n2hxnFMotsXTj3",
-     "name": "Bench Press",
-     "score": 0.61
-    },
-    {
-     "id": "exr_41n2haNJ3NA8yCE2",
-     "name": "Dumbbell Incline One Arm Hammer Press",
-     "score": 0.35
-    },
-    {
-     "id": "exr_41n2hXfpvSshoXWG",
-     "name": "Dumbbell Clean and Press",
-     "score": 0.28
-    },
-    {
-     "id": "exr_41n2hZ7uoN5JnUJY",
-     "name": "Dumbbell Decline One Arm Hammer Press",
-     "score": 0.175
-    },
-    {
-     "id": "exr_41n2hTs4q3ihihZs",
-     "name": "Seated Calf Raise",
-     "score": 0.15
-    }
-   ]
+   "query": "Barbell Incline Bench Press"
   },
   "Barbell_Lunge": {
    "edbId": null,
    "status": "queued",
    "confidence": 0.717,
-   "query": "Barbell Lunge",
-   "candidates": [
-    {
-     "id": "exr_41n2hGNrmUnF58Yy",
-     "name": "Reverse Lunge ",
-     "score": 0.717
-    },
-    {
-     "id": "exr_41n2hNjcmNgtPJ1H",
-     "name": "Bodyweight Rear Lunge",
-     "score": 0.5
-    },
-    {
-     "id": "exr_41n2hmFcGGUCS289",
-     "name": "Walking High Knees Lunge",
-     "score": 0.43
-    },
-    {
-     "id": "exr_41n2hwoc6PkW1UJJ",
-     "name": "Barbell Standing Calf Raise",
-     "score": 0.3
-    },
-    {
-     "id": "exr_41n2hvzxocyjoGgL",
-     "name": "Standing Leg Calf Raise",
-     "score": 0.15
-    },
-    {
-     "id": "exr_41n2hxnFMotsXTj3",
-     "name": "Bench Press",
-     "score": 0.15
-    }
-   ]
+   "query": "Barbell Lunge"
   },
   "Barbell_Shoulder_Press": {
    "edbId": null,
    "status": "queued",
    "confidence": 0.81,
-   "query": "Barbell Shoulder Press",
-   "candidates": [
-    {
-     "id": "exr_41n2hs6camM22yBG",
-     "name": "Seated Shoulder Press",
-     "score": 0.81
-    },
-    {
-     "id": "exr_41n2hMRXm49mM62z",
-     "name": "Arnold Press",
-     "score": 0.5
-    },
-    {
-     "id": "exr_41n2hZqkvM55qJve",
-     "name": "Shoulder Stretch Behind the Back",
-     "score": 0.383
-    },
-    {
-     "id": "exr_41n2hXfpvSshoXWG",
-     "name": "Dumbbell Clean and Press",
-     "score": 0.35
-    },
-    {
-     "id": "exr_41n2hJ5Harig7K7F",
-     "name": "Seated Shoulder Flexor Depresor Retractor Stretch",
-     "score": 0.325
-    },
-    {
-     "id": "exr_41n2hw4iksLYXESz",
-     "name": "Seated Shoulder Flexor Depresor Retractor Stretch Bent Knee",
-     "score": 0.29
-    }
-   ]
+   "query": "Barbell Shoulder Press"
   },
   "Barbell_Squat": {
    "edbId": null,
    "status": "queued",
    "confidence": 0.717,
-   "query": "Barbell Squat",
-   "candidates": [
-    {
-     "id": "exr_41n2hQDiSwTZXM4F",
-     "name": "Goblet Squat",
-     "score": 0.717
-    },
-    {
-     "id": "exr_41n2huf7mAC2rhfC",
-     "name": "Dumbbell Jumping Squat",
-     "score": 0.467
-    },
-    {
-     "id": "exr_41n2hsSnmS946i2k",
-     "name": "Single Leg Squat with Support",
-     "score": 0.43
-    },
-    {
-     "id": "exr_41n2hwoc6PkW1UJJ",
-     "name": "Barbell Standing Calf Raise",
-     "score": 0.3
-    },
-    {
-     "id": "exr_41n2hvzxocyjoGgL",
-     "name": "Standing Leg Calf Raise",
-     "score": 0.15
-    },
-    {
-     "id": "exr_41n2hxnFMotsXTj3",
-     "name": "Bench Press",
-     "score": 0.15
-    }
-   ]
+   "query": "Barbell Squat"
   },
   "Bent_Over_Barbell_Row": {
    "edbId": null,
    "status": "queued",
    "confidence": 0.775,
-   "query": "Bent Over Barbell Row",
-   "candidates": [
-    {
-     "id": "exr_41n2hHdjQpnyNdie",
-     "name": "One Arm Bent-over Row",
-     "score": 0.775
-    },
-    {
-     "id": "exr_41n2hY9EdwkdGz9a",
-     "name": "Dumbbell One Arm Bent-over Row",
-     "score": 0.525
-    },
-    {
-     "id": "exr_41n2hwoc6PkW1UJJ",
-     "name": "Barbell Standing Calf Raise",
-     "score": 0.3
-    },
-    {
-     "id": "exr_41n2hTs4q3ihihZs",
-     "name": "Seated Calf Raise",
-     "score": 0.15
-    },
-    {
-     "id": "exr_41n2hvzxocyjoGgL",
-     "name": "Standing Leg Calf Raise",
-     "score": 0.15
-    },
-    {
-     "id": "exr_41n2hTCBiQVsEfZ7",
-     "name": "Dumbbell Side Bend",
-     "score": 0.0
-    }
-   ]
+   "query": "Bent Over Barbell Row"
   },
   "Butterfly": {
    "edbId": null,
    "status": "queued",
    "confidence": 0.5,
-   "query": "Butterfly",
-   "candidates": [
-    {
-     "id": "exr_41n2hnougzKKhhqu",
-     "name": "Butterfly Yoga Pose",
-     "score": 0.5
-    },
-    {
-     "id": "exr_41n2hPRWorCfCPov",
-     "name": "Flutter Kicks",
-     "score": 0.15
-    }
-   ]
+   "query": "Butterfly"
   },
   "Cable_Crossover": {
    "edbId": null,
    "status": "queued",
    "confidence": 0.3,
-   "query": "Cable Crossover",
-   "candidates": [
-    {
-     "id": "exr_41n2hn2kPMag9WCf",
-     "name": "Cable Seated Neck Extension ",
-     "score": 0.3
-    },
-    {
-     "id": "exr_41n2hUDuvCas2EB3",
-     "name": "Cable Seated Neck Flexion ",
-     "score": 0.3
-    },
-    {
-     "id": "exr_41n2hLZZAH2F2UkS",
-     "name": "Walk Elliptical Cross Trainer ",
-     "score": 0.15
-    },
-    {
-     "id": "exr_41n2hGioS8HumEF7",
-     "name": "Hammer Curl",
-     "score": 0.15
-    }
-   ]
+   "query": "Cable Crossover"
   },
   "Cable_Crunch": {
    "edbId": null,
    "status": "queued",
    "confidence": 0.717,
-   "query": "Cable Crunch",
-   "candidates": [
-    {
-     "id": "exr_41n2hskeb9dXgBoC",
-     "name": "Crunch Floor",
-     "score": 0.717
-    },
-    {
-     "id": "exr_41n2hUDuvCas2EB3",
-     "name": "Cable Seated Neck Flexion ",
-     "score": 0.3
-    },
-    {
-     "id": "exr_41n2hn2kPMag9WCf",
-     "name": "Cable Seated Neck Extension ",
-     "score": 0.3
-    },
-    {
-     "id": "exr_41n2hSkc2tRLxVVS",
-     "name": "Calf Stretch with Rope ",
-     "score": 0.3
-    },
-    {
-     "id": "exr_41n2hezAZ6CdkAcM",
-     "name": "Alternate Punching ",
-     "score": 0.15
-    },
-    {
-     "id": "exr_41n2hHCXQpZYhxhc",
-     "name": "Calf Stretch With Hands Against Wall",
-     "score": 0.15
-    }
-   ]
+   "query": "Cable Crunch"
   },
   "Cable_Hammer_Curls_-_Rope_Attachment": {
    "edbId": "exr_41n2hGioS8HumEF7",
@@ -336,174 +78,37 @@
    "edbId": null,
    "status": "queued",
    "confidence": 0.5,
-   "query": "Cable One Arm Tricep Extension",
-   "candidates": [
-    {
-     "id": "exr_41n2hn2kPMag9WCf",
-     "name": "Cable Seated Neck Extension ",
-     "score": 0.5
-    },
-    {
-     "id": "exr_41n2hSF5U97sFAr8",
-     "name": "Wrist - Extension - Articulations",
-     "score": 0.35
-    },
-    {
-     "id": "exr_41n2hNRM1dGGhGYL",
-     "name": "Seated Flexion And Extension Neck ",
-     "score": 0.325
-    },
-    {
-     "id": "exr_41n2hZ7uoN5JnUJY",
-     "name": "Dumbbell Decline One Arm Hammer Press",
-     "score": 0.311
-    },
-    {
-     "id": "exr_41n2haNJ3NA8yCE2",
-     "name": "Dumbbell Incline One Arm Hammer Press",
-     "score": 0.311
-    }
-   ]
+   "query": "Cable One Arm Tricep Extension"
   },
   "Cable_Rear_Delt_Fly": {
    "edbId": null,
    "status": "queued",
    "confidence": 0.8,
-   "query": "Cable Rear Delt Fly",
-   "candidates": [
-    {
-     "id": "exr_41n2hyNf5GebszTf",
-     "name": "Dumbbell Rear Delt Fly ",
-     "score": 0.8
-    },
-    {
-     "id": "exr_41n2hn2kPMag9WCf",
-     "name": "Cable Seated Neck Extension ",
-     "score": 0.3
-    },
-    {
-     "id": "exr_41n2hUDuvCas2EB3",
-     "name": "Cable Seated Neck Flexion ",
-     "score": 0.3
-    }
-   ]
+   "query": "Cable Rear Delt Fly"
   },
   "Cable_Rope_Overhead_Triceps_Extension": {
    "edbId": null,
    "status": "queued",
    "confidence": 0.533,
-   "query": "Cable Rope Overhead Triceps Extension",
-   "candidates": [
-    {
-     "id": "exr_41n2hn2kPMag9WCf",
-     "name": "Cable Seated Neck Extension ",
-     "score": 0.533
-    },
-    {
-     "id": "exr_41n2hSF5U97sFAr8",
-     "name": "Wrist - Extension - Articulations",
-     "score": 0.383
-    },
-    {
-     "id": "exr_41n2hmhxk35fbHbC",
-     "name": "Push-up on Forearms",
-     "score": 0.15
-    }
-   ]
+   "query": "Cable Rope Overhead Triceps Extension"
   },
   "Cable_Wrist_Curl": {
    "edbId": null,
    "status": "queued",
    "confidence": 0.717,
-   "query": "Cable Wrist Curl",
-   "candidates": [
-    {
-     "id": "exr_41n2hGy6zE7fN6v2",
-     "name": "One arm Wrist Curl",
-     "score": 0.717
-    },
-    {
-     "id": "exr_41n2hpeHAizgtrEw",
-     "name": "One arm Revers Wrist Curl",
-     "score": 0.55
-    },
-    {
-     "id": "exr_41n2hGioS8HumEF7",
-     "name": "Hammer Curl",
-     "score": 0.5
-    },
-    {
-     "id": "exr_41n2hozyXuCmDTdZ",
-     "name": "Wrist Circles",
-     "score": 0.5
-    },
-    {
-     "id": "exr_41n2hPxDaq9kFjiL",
-     "name": "Side Wrist Pull Stretch",
-     "score": 0.383
-    },
-    {
-     "id": "exr_41n2hgCHNgtVLHna",
-     "name": "Cross Body Hammer Curl",
-     "score": 0.383
-    }
-   ]
+   "query": "Cable Wrist Curl"
   },
   "Calf_Press_On_The_Leg_Press_Machine": {
    "edbId": null,
    "status": "queued",
    "confidence": 0.533,
-   "query": "Calf Press On The Leg Press Machine",
-   "candidates": [
-    {
-     "id": "exr_41n2hhiWL8njJDZe",
-     "name": "Lever Seated Calf Raise",
-     "score": 0.533
-    },
-    {
-     "id": "exr_41n2hmhb4jD7H8Qk",
-     "name": "Assault Bike Run",
-     "score": 0.15
-    }
-   ]
+   "query": "Calf Press On The Leg Press Machine"
   },
   "Close-Grip_Dumbbell_Press": {
    "edbId": null,
    "status": "queued",
    "confidence": 0.5,
-   "query": "Close-Grip Dumbbell Press",
-   "candidates": [
-    {
-     "id": "exr_41n2haNJ3NA8yCE2",
-     "name": "Dumbbell Incline One Arm Hammer Press",
-     "score": 0.5
-    },
-    {
-     "id": "exr_41n2hZ7uoN5JnUJY",
-     "name": "Dumbbell Decline One Arm Hammer Press",
-     "score": 0.5
-    },
-    {
-     "id": "exr_41n2hPgRbN1KtJuD",
-     "name": "Close-grip Push-up",
-     "score": 0.43
-    },
-    {
-     "id": "exr_41n2hs6camM22yBG",
-     "name": "Seated Shoulder Press",
-     "score": 0.43
-    },
-    {
-     "id": "exr_41n2hQp1pR7heQq9",
-     "name": "Dumbbell Stiff Leg Deadlift ",
-     "score": 0.3
-    },
-    {
-     "id": "exr_41n2huf7mAC2rhfC",
-     "name": "Dumbbell Jumping Squat",
-     "score": 0.3
-    }
-   ]
+   "query": "Close-Grip Dumbbell Press"
   },
   "Close-Grip_Front_Lat_Pulldown": {
    "edbId": null,
@@ -527,191 +132,31 @@
    "edbId": null,
    "status": "queued",
    "confidence": 0.58,
-   "query": "Decline Crunch",
-   "candidates": [
-    {
-     "id": "exr_41n2hGUso7JFmuYR",
-     "name": "Decline Push-Up",
-     "score": 0.58
-    },
-    {
-     "id": "exr_41n2hXXpvbykPY3q",
-     "name": "Incline Push-up",
-     "score": 0.3
-    },
-    {
-     "id": "exr_41n2hsVHu7B1MTdr",
-     "name": "Palms In Incline Bench Press",
-     "score": 0.3
-    },
-    {
-     "id": "exr_41n2hezAZ6CdkAcM",
-     "name": "Alternate Punching ",
-     "score": 0.3
-    },
-    {
-     "id": "exr_41n2hkCHzg1AXdkV",
-     "name": "Walking on Incline Treadmill",
-     "score": 0.3
-    },
-    {
-     "id": "exr_41n2hpnZ6oASM662",
-     "name": "Kneeling Push up to Child Pose ",
-     "score": 0.3
-    }
-   ]
+   "query": "Decline Crunch"
   },
   "Dumbbell_Bench_Press": {
    "edbId": null,
    "status": "queued",
    "confidence": 0.55,
-   "query": "Dumbbell Bench Press",
-   "candidates": [
-    {
-     "id": "exr_41n2hXfpvSshoXWG",
-     "name": "Dumbbell Clean and Press",
-     "score": 0.55
-    },
-    {
-     "id": "exr_41n2hsVHu7B1MTdr",
-     "name": "Palms In Incline Bench Press",
-     "score": 0.55
-    },
-    {
-     "id": "exr_41n2haNJ3NA8yCE2",
-     "name": "Dumbbell Incline One Arm Hammer Press",
-     "score": 0.5
-    },
-    {
-     "id": "exr_41n2hZ7uoN5JnUJY",
-     "name": "Dumbbell Decline One Arm Hammer Press",
-     "score": 0.5
-    },
-    {
-     "id": "exr_41n2huf7mAC2rhfC",
-     "name": "Dumbbell Jumping Squat",
-     "score": 0.3
-    },
-    {
-     "id": "exr_41n2hdHtZrMPkcqY",
-     "name": "Dumbbell Lying Floor Skull Crusher",
-     "score": 0.3
-    }
-   ]
+   "query": "Dumbbell Bench Press"
   },
   "Dumbbell_Bicep_Curl": {
    "edbId": null,
    "status": "queued",
    "confidence": 0.5,
-   "query": "Dumbbell Bicep Curl",
-   "candidates": [
-    {
-     "id": "exr_41n2hx6oyEujP1B6",
-     "name": "Two Legs Reverse Biceps Curl with Towel ",
-     "score": 0.5
-    },
-    {
-     "id": "exr_41n2huf7mAC2rhfC",
-     "name": "Dumbbell Jumping Squat",
-     "score": 0.3
-    },
-    {
-     "id": "exr_41n2hdHtZrMPkcqY",
-     "name": "Dumbbell Lying Floor Skull Crusher",
-     "score": 0.3
-    },
-    {
-     "id": "exr_41n2hcw2FN534HcA",
-     "name": "Dumbbell Stiff Leg Deadlift",
-     "score": 0.3
-    },
-    {
-     "id": "exr_41n2hQp1pR7heQq9",
-     "name": "Dumbbell Stiff Leg Deadlift ",
-     "score": 0.3
-    },
-    {
-     "id": "exr_41n2haNJ3NA8yCE2",
-     "name": "Dumbbell Incline One Arm Hammer Press",
-     "score": 0.3
-    }
-   ]
+   "query": "Dumbbell Bicep Curl"
   },
   "Dumbbell_Lunges": {
    "edbId": null,
    "status": "queued",
    "confidence": 0.3,
-   "query": "Dumbbell Lunges",
-   "candidates": [
-    {
-     "id": "exr_41n2huf7mAC2rhfC",
-     "name": "Dumbbell Jumping Squat",
-     "score": 0.3
-    },
-    {
-     "id": "exr_41n2hQtaWxPLNFwX",
-     "name": "Dumbbell Standing Calf Raise",
-     "score": 0.3
-    },
-    {
-     "id": "exr_41n2hTaeNKWhMQHH",
-     "name": "Dumbbell burpee",
-     "score": 0.3
-    },
-    {
-     "id": "exr_41n2hdHtZrMPkcqY",
-     "name": "Dumbbell Lying Floor Skull Crusher",
-     "score": 0.3
-    },
-    {
-     "id": "exr_41n2hcw2FN534HcA",
-     "name": "Dumbbell Stiff Leg Deadlift",
-     "score": 0.3
-    },
-    {
-     "id": "exr_41n2hQp1pR7heQq9",
-     "name": "Dumbbell Stiff Leg Deadlift ",
-     "score": 0.3
-    }
-   ]
+   "query": "Dumbbell Lunges"
   },
   "Dumbbell_Shrug": {
    "edbId": null,
    "status": "queued",
    "confidence": 0.3,
-   "query": "Dumbbell Shrug",
-   "candidates": [
-    {
-     "id": "exr_41n2huf7mAC2rhfC",
-     "name": "Dumbbell Jumping Squat",
-     "score": 0.3
-    },
-    {
-     "id": "exr_41n2hQtaWxPLNFwX",
-     "name": "Dumbbell Standing Calf Raise",
-     "score": 0.3
-    },
-    {
-     "id": "exr_41n2hTaeNKWhMQHH",
-     "name": "Dumbbell burpee",
-     "score": 0.3
-    },
-    {
-     "id": "exr_41n2hTCBiQVsEfZ7",
-     "name": "Dumbbell Side Bend",
-     "score": 0.3
-    },
-    {
-     "id": "exr_41n2hQp1pR7heQq9",
-     "name": "Dumbbell Stiff Leg Deadlift ",
-     "score": 0.3
-    },
-    {
-     "id": "exr_41n2hbLX4XH8xgN7",
-     "name": "Dumbbell Single Leg Calf Raise",
-     "score": 0.3
-    }
-   ]
+   "query": "Dumbbell Shrug"
   },
   "Dumbbell_Side_Bend": {
    "edbId": "exr_41n2hTCBiQVsEfZ7",
@@ -723,128 +168,25 @@
    "edbId": null,
    "status": "queued",
    "confidence": 0.517,
-   "query": "EZ-Bar Curl",
-   "candidates": [
-    {
-     "id": "exr_41n2hGioS8HumEF7",
-     "name": "Hammer Curl",
-     "score": 0.517
-    },
-    {
-     "id": "exr_41n2hgCHNgtVLHna",
-     "name": "Cross Body Hammer Curl",
-     "score": 0.43
-    },
-    {
-     "id": "exr_41n2hxqpSU5p6DZv",
-     "name": "Biceps Leg Concentration Curl",
-     "score": 0.43
-    },
-    {
-     "id": "exr_41n2hqjVS3nwBoyr",
-     "name": "Two Legs Hammer Curl with Towel ",
-     "score": 0.383
-    },
-    {
-     "id": "exr_41n2hnFD2bT6sruf",
-     "name": "Sliding Floor Bridge Curl on Towel",
-     "score": 0.383
-    },
-    {
-     "id": "exr_41n2hc2VrB8ofxrW",
-     "name": "Lying Double Legs Biceps Curl with Towel",
-     "score": 0.35
-    }
-   ]
+   "query": "EZ-Bar Curl"
   },
   "EZ-Bar_Skullcrusher": {
    "edbId": null,
    "status": "queued",
    "confidence": 0.467,
-   "query": "EZ-Bar Skullcrusher",
-   "candidates": [
-    {
-     "id": "exr_41n2hdHtZrMPkcqY",
-     "name": "Dumbbell Lying Floor Skull Crusher",
-     "score": 0.467
-    }
-   ]
+   "query": "EZ-Bar Skullcrusher"
   },
   "Face_Pull": {
    "edbId": null,
    "status": "queued",
    "confidence": 0.5,
-   "query": "Face Pull",
-   "candidates": [
-    {
-     "id": "exr_41n2hsBtDXapcADg",
-     "name": "Pull-up",
-     "score": 0.5
-    },
-    {
-     "id": "exr_41n2hU4y6EaYXFhr",
-     "name": "Pull up",
-     "score": 0.5
-    },
-    {
-     "id": "exr_41n2hVCJfpAvJcdU",
-     "name": "Commando Pull-up",
-     "score": 0.43
-    },
-    {
-     "id": "exr_41n2hftBVLiXgtRQ",
-     "name": "Wide Grip Pull-Up",
-     "score": 0.43
-    },
-    {
-     "id": "exr_41n2hPxDaq9kFjiL",
-     "name": "Side Wrist Pull Stretch",
-     "score": 0.383
-    },
-    {
-     "id": "exr_41n2hQEqKxuAfV1D",
-     "name": "Pull-up with Bent Knee between Chairs",
-     "score": 0.325
-    }
-   ]
+   "query": "Face Pull"
   },
   "Flat_Bench_Lying_Leg_Raise": {
    "edbId": null,
    "status": "queued",
    "confidence": 0.72,
-   "query": "Flat Bench Lying Leg Raise",
-   "candidates": [
-    {
-     "id": "exr_41n2hqfZb8UHBvB9",
-     "name": "Alternate Lying Floor Leg Raise ",
-     "score": 0.72
-    },
-    {
-     "id": "exr_41n2hq3Wm6ANkgUz",
-     "name": "Lying Leg Raise and Hold",
-     "score": 0.667
-    },
-    {
-     "id": "exr_41n2hMZCmZBvQApL",
-     "name": "Hanging Straight Leg Raise ",
-     "score": 0.611
-    },
-    {
-     "id": "exr_41n2hdWu3oaCGdWT",
-     "name": "Standing Calf Raise",
-     "score": 0.475
-    },
-    {
-     "id": "exr_41n2hPvwqp7Pwvks",
-     "name": "Seated Single Leg Hamstring Stretch",
-     "score": 0.44
-    },
-    {
-     "id": "exr_41n2hcm5HH6H684G",
-     "name": "Calf Raise from Deficit with Chair Supported",
-     "score": 0.427
-    }
-   ]
+   "query": "Flat Bench Lying Leg Raise"
   },
   "Front_Cable_Raise": {
    "edbId": "exr_41n2howQHvcrcrW6",
@@ -868,533 +210,85 @@
    "edbId": null,
    "status": "queued",
    "confidence": 0.5,
-   "query": "Incline Dumbbell Curl",
-   "candidates": [
-    {
-     "id": "exr_41n2haNJ3NA8yCE2",
-     "name": "Dumbbell Incline One Arm Hammer Press",
-     "score": 0.5
-    },
-    {
-     "id": "exr_41n2hgCHNgtVLHna",
-     "name": "Cross Body Hammer Curl",
-     "score": 0.383
-    },
-    {
-     "id": "exr_41n2hsVHu7B1MTdr",
-     "name": "Palms In Incline Bench Press",
-     "score": 0.35
-    },
-    {
-     "id": "exr_41n2hXfpvSshoXWG",
-     "name": "Dumbbell Clean and Press",
-     "score": 0.3
-    },
-    {
-     "id": "exr_41n2hTaeNKWhMQHH",
-     "name": "Dumbbell burpee",
-     "score": 0.3
-    },
-    {
-     "id": "exr_41n2huf7mAC2rhfC",
-     "name": "Dumbbell Jumping Squat",
-     "score": 0.3
-    }
-   ]
+   "query": "Incline Dumbbell Curl"
   },
   "Incline_Dumbbell_Press": {
    "edbId": null,
    "status": "queued",
    "confidence": 0.65,
-   "query": "Incline Dumbbell Press",
-   "candidates": [
-    {
-     "id": "exr_41n2hXfpvSshoXWG",
-     "name": "Dumbbell Clean and Press",
-     "score": 0.65
-    },
-    {
-     "id": "exr_41n2haNJ3NA8yCE2",
-     "name": "Dumbbell Incline One Arm Hammer Press",
-     "score": 0.6
-    },
-    {
-     "id": "exr_41n2hsVHu7B1MTdr",
-     "name": "Palms In Incline Bench Press",
-     "score": 0.55
-    },
-    {
-     "id": "exr_41n2hZ7uoN5JnUJY",
-     "name": "Dumbbell Decline One Arm Hammer Press",
-     "score": 0.5
-    },
-    {
-     "id": "exr_41n2huf7mAC2rhfC",
-     "name": "Dumbbell Jumping Squat",
-     "score": 0.3
-    },
-    {
-     "id": "exr_41n2hyNf5GebszTf",
-     "name": "Dumbbell Rear Delt Fly ",
-     "score": 0.3
-    }
-   ]
+   "query": "Incline Dumbbell Press"
   },
   "Incline_Hammer_Curls": {
    "edbId": null,
    "status": "queued",
    "confidence": 0.65,
-   "query": "Incline Hammer Curls",
-   "candidates": [
-    {
-     "id": "exr_41n2haNJ3NA8yCE2",
-     "name": "Dumbbell Incline One Arm Hammer Press",
-     "score": 0.65
-    },
-    {
-     "id": "exr_41n2hGioS8HumEF7",
-     "name": "Hammer Curl",
-     "score": 0.61
-    },
-    {
-     "id": "exr_41n2hgCHNgtVLHna",
-     "name": "Cross Body Hammer Curl",
-     "score": 0.55
-    },
-    {
-     "id": "exr_41n2hqjVS3nwBoyr",
-     "name": "Two Legs Hammer Curl with Towel ",
-     "score": 0.5
-    },
-    {
-     "id": "exr_41n2hZ7uoN5JnUJY",
-     "name": "Dumbbell Decline One Arm Hammer Press",
-     "score": 0.475
-    },
-    {
-     "id": "exr_41n2hx9wyaRGNyvs",
-     "name": "Lying Double Legs Hammer Curl with Towel",
-     "score": 0.461
-    }
-   ]
+   "query": "Incline Hammer Curls"
   },
   "Leg_Extensions": {
    "edbId": null,
    "status": "queued",
    "confidence": 0.43,
-   "query": "Leg Extensions",
-   "candidates": [
-    {
-     "id": "exr_41n2hSF5U97sFAr8",
-     "name": "Wrist - Extension - Articulations",
-     "score": 0.43
-    },
-    {
-     "id": "exr_41n2hd78zujKUEWK",
-     "name": "Single Leg Squat ",
-     "score": 0.43
-    },
-    {
-     "id": "exr_41n2hH6VGNz6cNtv",
-     "name": "Extension And Inclination Neck Stretch",
-     "score": 0.383
-    },
-    {
-     "id": "exr_41n2hNRM1dGGhGYL",
-     "name": "Seated Flexion And Extension Neck ",
-     "score": 0.383
-    },
-    {
-     "id": "exr_41n2hn2kPMag9WCf",
-     "name": "Cable Seated Neck Extension ",
-     "score": 0.28
-    },
-    {
-     "id": "exr_41n2hfYD2sH4TRCH",
-     "name": "Hyperextension",
-     "score": 0.15
-    }
-   ]
+   "query": "Leg Extensions"
   },
   "Leg_Press": {
    "edbId": null,
    "status": "queued",
    "confidence": 0.5,
-   "query": "Leg Press",
-   "candidates": [
-    {
-     "id": "exr_41n2hMRXm49mM62z",
-     "name": "Arnold Press",
-     "score": 0.5
-    },
-    {
-     "id": "exr_41n2hdCBvmbCPaVE",
-     "name": "Diamond Press",
-     "score": 0.5
-    },
-    {
-     "id": "exr_41n2hLA8xydD4dzE",
-     "name": "Triceps Press ",
-     "score": 0.5
-    },
-    {
-     "id": "exr_41n2hxnFMotsXTj3",
-     "name": "Bench Press",
-     "score": 0.5
-    },
-    {
-     "id": "exr_41n2hs6camM22yBG",
-     "name": "Seated Shoulder Press",
-     "score": 0.43
-    },
-    {
-     "id": "exr_41n2hq3Wm6ANkgUz",
-     "name": "Lying Leg Raise and Hold",
-     "score": 0.383
-    }
-   ]
+   "query": "Leg Press"
   },
   "Leverage_Chest_Press": {
    "edbId": null,
    "status": "queued",
    "confidence": 0.35,
-   "query": "Leverage Chest Press",
-   "candidates": [
-    {
-     "id": "exr_41n2hXfpvSshoXWG",
-     "name": "Dumbbell Clean and Press",
-     "score": 0.35
-    },
-    {
-     "id": "exr_41n2hsVHu7B1MTdr",
-     "name": "Palms In Incline Bench Press",
-     "score": 0.35
-    },
-    {
-     "id": "exr_41n2hKiaWSZQTqgE",
-     "name": "Lever stepper",
-     "score": 0.3
-    },
-    {
-     "id": "exr_41n2hfa11fPnk8y9",
-     "name": "Elliptical Machine Walk",
-     "score": 0.3
-    },
-    {
-     "id": "exr_41n2hhiWL8njJDZe",
-     "name": "Lever Seated Calf Raise",
-     "score": 0.3
-    },
-    {
-     "id": "exr_41n2hLZZAH2F2UkS",
-     "name": "Walk Elliptical Cross Trainer ",
-     "score": 0.15
-    }
-   ]
+   "query": "Leverage Chest Press"
   },
   "Leverage_High_Row": {
    "edbId": null,
    "status": "queued",
    "confidence": 0.3,
-   "query": "Leverage High Row",
-   "candidates": [
-    {
-     "id": "exr_41n2hfa11fPnk8y9",
-     "name": "Elliptical Machine Walk",
-     "score": 0.3
-    },
-    {
-     "id": "exr_41n2hhiWL8njJDZe",
-     "name": "Lever Seated Calf Raise",
-     "score": 0.3
-    },
-    {
-     "id": "exr_41n2hpTMDhTxYkvi",
-     "name": "Elliptical Machine Walk ",
-     "score": 0.3
-    },
-    {
-     "id": "exr_41n2hLZZAH2F2UkS",
-     "name": "Walk Elliptical Cross Trainer ",
-     "score": 0.15
-    },
-    {
-     "id": "exr_41n2hmhb4jD7H8Qk",
-     "name": "Assault Bike Run",
-     "score": 0.15
-    },
-    {
-     "id": "exr_41n2hS5UrMusVCEE",
-     "name": "Lateral Raise with Towel",
-     "score": 0.15
-    }
-   ]
+   "query": "Leverage High Row"
   },
   "Leverage_Incline_Chest_Press": {
    "edbId": null,
    "status": "queued",
    "confidence": 0.5,
-   "query": "Leverage Incline Chest Press",
-   "candidates": [
-    {
-     "id": "exr_41n2hsVHu7B1MTdr",
-     "name": "Palms In Incline Bench Press",
-     "score": 0.5
-    },
-    {
-     "id": "exr_41n2hkCHzg1AXdkV",
-     "name": "Walking on Incline Treadmill",
-     "score": 0.383
-    },
-    {
-     "id": "exr_41n2haNJ3NA8yCE2",
-     "name": "Dumbbell Incline One Arm Hammer Press",
-     "score": 0.35
-    },
-    {
-     "id": "exr_41n2hfa11fPnk8y9",
-     "name": "Elliptical Machine Walk",
-     "score": 0.3
-    },
-    {
-     "id": "exr_41n2hpTMDhTxYkvi",
-     "name": "Elliptical Machine Walk ",
-     "score": 0.3
-    },
-    {
-     "id": "exr_41n2hXYRxFHnQAD4",
-     "name": "Stationary Bike Run ",
-     "score": 0.15
-    }
-   ]
+   "query": "Leverage Incline Chest Press"
   },
   "Leverage_Iso_Row": {
    "edbId": null,
    "status": "queued",
    "confidence": 0.3,
-   "query": "Leverage Iso Row",
-   "candidates": [
-    {
-     "id": "exr_41n2hfa11fPnk8y9",
-     "name": "Elliptical Machine Walk",
-     "score": 0.3
-    },
-    {
-     "id": "exr_41n2hhiWL8njJDZe",
-     "name": "Lever Seated Calf Raise",
-     "score": 0.3
-    },
-    {
-     "id": "exr_41n2hpTMDhTxYkvi",
-     "name": "Elliptical Machine Walk ",
-     "score": 0.3
-    },
-    {
-     "id": "exr_41n2hLZZAH2F2UkS",
-     "name": "Walk Elliptical Cross Trainer ",
-     "score": 0.15
-    },
-    {
-     "id": "exr_41n2hmhb4jD7H8Qk",
-     "name": "Assault Bike Run",
-     "score": 0.15
-    },
-    {
-     "id": "exr_41n2hkCHzg1AXdkV",
-     "name": "Walking on Incline Treadmill",
-     "score": 0.15
-    }
-   ]
+   "query": "Leverage Iso Row"
   },
   "Lying_Leg_Curls": {
    "edbId": null,
    "status": "queued",
    "confidence": 0.55,
-   "query": "Lying Leg Curls",
-   "candidates": [
-    {
-     "id": "exr_41n2hq3Wm6ANkgUz",
-     "name": "Lying Leg Raise and Hold",
-     "score": 0.55
-    },
-    {
-     "id": "exr_41n2hqfZb8UHBvB9",
-     "name": "Alternate Lying Floor Leg Raise ",
-     "score": 0.5
-    },
-    {
-     "id": "exr_41n2hc2VrB8ofxrW",
-     "name": "Lying Double Legs Biceps Curl with Towel",
-     "score": 0.461
-    },
-    {
-     "id": "exr_41n2hx9wyaRGNyvs",
-     "name": "Lying Double Legs Hammer Curl with Towel",
-     "score": 0.461
-    },
-    {
-     "id": "exr_41n2hkB3FeGM3DEL",
-     "name": "Lying Scissor Kick",
-     "score": 0.383
-    },
-    {
-     "id": "exr_41n2hvzxocyjoGgL",
-     "name": "Standing Leg Calf Raise",
-     "score": 0.35
-    }
-   ]
+   "query": "Lying Leg Curls"
   },
   "Lying_T-Bar_Row": {
    "edbId": null,
    "status": "queued",
    "confidence": 0.383,
-   "query": "Lying T-Bar Row",
-   "candidates": [
-    {
-     "id": "exr_41n2hkB3FeGM3DEL",
-     "name": "Lying Scissor Kick",
-     "score": 0.383
-    },
-    {
-     "id": "exr_41n2hq3Wm6ANkgUz",
-     "name": "Lying Leg Raise and Hold",
-     "score": 0.35
-    },
-    {
-     "id": "exr_41n2hfnnXz9shkBi",
-     "name": "Lying Lower Back Stretch ",
-     "score": 0.35
-    },
-    {
-     "id": "exr_41n2hpJxS5VQKtBL",
-     "name": "Lying Lower Back Stretch ",
-     "score": 0.35
-    },
-    {
-     "id": "exr_41n2hqfZb8UHBvB9",
-     "name": "Alternate Lying Floor Leg Raise ",
-     "score": 0.325
-    },
-    {
-     "id": "exr_41n2hHdjQpnyNdie",
-     "name": "One Arm Bent-over Row",
-     "score": 0.325
-    }
-   ]
+   "query": "Lying T-Bar Row"
   },
   "Lying_Triceps_Press": {
    "edbId": null,
    "status": "queued",
    "confidence": 0.81,
-   "query": "Lying Triceps Press",
-   "candidates": [
-    {
-     "id": "exr_41n2hLA8xydD4dzE",
-     "name": "Triceps Press ",
-     "score": 0.81
-    },
-    {
-     "id": "exr_41n2hq3Wm6ANkgUz",
-     "name": "Lying Leg Raise and Hold",
-     "score": 0.35
-    },
-    {
-     "id": "exr_41n2hsVHu7B1MTdr",
-     "name": "Palms In Incline Bench Press",
-     "score": 0.325
-    },
-    {
-     "id": "exr_41n2hdHtZrMPkcqY",
-     "name": "Dumbbell Lying Floor Skull Crusher",
-     "score": 0.2
-    },
-    {
-     "id": "exr_41n2hZ7uoN5JnUJY",
-     "name": "Dumbbell Decline One Arm Hammer Press",
-     "score": 0.175
-    },
-    {
-     "id": "exr_41n2haNJ3NA8yCE2",
-     "name": "Dumbbell Incline One Arm Hammer Press",
-     "score": 0.175
-    }
-   ]
+   "query": "Lying Triceps Press"
   },
   "Machine_Shoulder_Military_Press": {
    "edbId": null,
    "status": "queued",
    "confidence": 0.81,
-   "query": "Machine Shoulder Press",
-   "candidates": [
-    {
-     "id": "exr_41n2hs6camM22yBG",
-     "name": "Seated Shoulder Press",
-     "score": 0.81
-    },
-    {
-     "id": "exr_41n2hMRXm49mM62z",
-     "name": "Arnold Press",
-     "score": 0.5
-    },
-    {
-     "id": "exr_41n2hZqkvM55qJve",
-     "name": "Shoulder Stretch Behind the Back",
-     "score": 0.383
-    },
-    {
-     "id": "exr_41n2hJ5Harig7K7F",
-     "name": "Seated Shoulder Flexor Depresor Retractor Stretch",
-     "score": 0.325
-    },
-    {
-     "id": "exr_41n2hw4iksLYXESz",
-     "name": "Seated Shoulder Flexor Depresor Retractor Stretch Bent Knee",
-     "score": 0.29
-    },
-    {
-     "id": "exr_41n2hZ7uoN5JnUJY",
-     "name": "Dumbbell Decline One Arm Hammer Press",
-     "score": 0.2
-    }
-   ]
+   "query": "Machine Shoulder Press"
   },
   "Machine_Triceps_Extension": {
    "edbId": null,
    "status": "queued",
    "confidence": 0.5,
-   "query": "Machine Triceps Extension",
-   "candidates": [
-    {
-     "id": "exr_41n2hadQgEEX8wDN",
-     "name": "Triceps Dip",
-     "score": 0.5
-    },
-    {
-     "id": "exr_41n2hn2kPMag9WCf",
-     "name": "Cable Seated Neck Extension ",
-     "score": 0.28
-    },
-    {
-     "id": "exr_41n2hfYD2sH4TRCH",
-     "name": "Hyperextension",
-     "score": 0.15
-    },
-    {
-     "id": "exr_41n2hRH4aTB379Tp",
-     "name": "45 degree hyperextension ",
-     "score": 0.15
-    },
-    {
-     "id": "exr_41n2hmhxk35fbHbC",
-     "name": "Push-up on Forearms",
-     "score": 0.15
-    },
-    {
-     "id": "exr_41n2hUKc7JPrtJQj",
-     "name": "Dip on Floor with Chair",
-     "score": 0.15
-    }
-   ]
+   "query": "Machine Triceps Extension"
   },
   "One-Arm_Dumbbell_Row": {
    "edbId": "exr_41n2hY9EdwkdGz9a",
@@ -1406,354 +300,67 @@
    "edbId": null,
    "status": "queued",
    "confidence": 0.325,
-   "query": "One-Legged Cable Kickback",
-   "candidates": [
-    {
-     "id": "exr_41n2hhumxqyAFuTb",
-     "name": "One Leg Floor Calf Raise",
-     "score": 0.325
-    }
-   ]
+   "query": "One-Legged Cable Kickback"
   },
   "One_Arm_Dumbbell_Preacher_Curl": {
    "edbId": null,
    "status": "queued",
    "confidence": 0.611,
-   "query": "One Arm Dumbbell Preacher Curl",
-   "candidates": [
-    {
-     "id": "exr_41n2haNJ3NA8yCE2",
-     "name": "Dumbbell Incline One Arm Hammer Press",
-     "score": 0.611
-    },
-    {
-     "id": "exr_41n2hZ7uoN5JnUJY",
-     "name": "Dumbbell Decline One Arm Hammer Press",
-     "score": 0.611
-    },
-    {
-     "id": "exr_41n2hY9EdwkdGz9a",
-     "name": "Dumbbell One Arm Bent-over Row",
-     "score": 0.611
-    },
-    {
-     "id": "exr_41n2hpeHAizgtrEw",
-     "name": "One arm Revers Wrist Curl",
-     "score": 0.517
-    },
-    {
-     "id": "exr_41n2hHdjQpnyNdie",
-     "name": "One Arm Bent-over Row",
-     "score": 0.461
-    },
-    {
-     "id": "exr_41n2hgCHNgtVLHna",
-     "name": "Cross Body Hammer Curl",
-     "score": 0.325
-    }
-   ]
+   "query": "One Arm Dumbbell Preacher Curl"
   },
   "Pallof_Press": {
    "edbId": null,
    "status": "queued",
    "confidence": 0.5,
-   "query": "Pallof Press",
-   "candidates": [
-    {
-     "id": "exr_41n2hdCBvmbCPaVE",
-     "name": "Diamond Press",
-     "score": 0.5
-    },
-    {
-     "id": "exr_41n2hMRXm49mM62z",
-     "name": "Arnold Press",
-     "score": 0.5
-    },
-    {
-     "id": "exr_41n2hLA8xydD4dzE",
-     "name": "Triceps Press ",
-     "score": 0.5
-    },
-    {
-     "id": "exr_41n2hxnFMotsXTj3",
-     "name": "Bench Press",
-     "score": 0.5
-    },
-    {
-     "id": "exr_41n2hs6camM22yBG",
-     "name": "Seated Shoulder Press",
-     "score": 0.43
-    },
-    {
-     "id": "exr_41n2hXfpvSshoXWG",
-     "name": "Dumbbell Clean and Press",
-     "score": 0.35
-    }
-   ]
+   "query": "Pallof Press"
   },
   "Palms-Down_Dumbbell_Wrist_Curl_Over_A_Bench": {
    "edbId": null,
    "status": "queued",
    "confidence": 0.405,
-   "query": "Palms-Down Dumbbell Wrist Curl Over A Bench",
-   "candidates": [
-    {
-     "id": "exr_41n2hpeHAizgtrEw",
-     "name": "One arm Revers Wrist Curl",
-     "score": 0.405
-    },
-    {
-     "id": "exr_41n2hsVHu7B1MTdr",
-     "name": "Palms In Incline Bench Press",
-     "score": 0.405
-    },
-    {
-     "id": "exr_41n2hZ7uoN5JnUJY",
-     "name": "Dumbbell Decline One Arm Hammer Press",
-     "score": 0.3
-    },
-    {
-     "id": "exr_41n2hdHtZrMPkcqY",
-     "name": "Dumbbell Lying Floor Skull Crusher",
-     "score": 0.3
-    },
-    {
-     "id": "exr_41n2haNJ3NA8yCE2",
-     "name": "Dumbbell Incline One Arm Hammer Press",
-     "score": 0.3
-    },
-    {
-     "id": "exr_41n2hPxDaq9kFjiL",
-     "name": "Side Wrist Pull Stretch",
-     "score": 0.29
-    }
-   ]
+   "query": "Palms-Down Dumbbell Wrist Curl Over A Bench"
   },
   "Palms-Down_Wrist_Curl_Over_A_Bench": {
    "edbId": null,
    "status": "queued",
    "confidence": 0.43,
-   "query": "Palms-Down Wrist Curl Over A Bench",
-   "candidates": [
-    {
-     "id": "exr_41n2hGy6zE7fN6v2",
-     "name": "One arm Wrist Curl",
-     "score": 0.43
-    },
-    {
-     "id": "exr_41n2hpeHAizgtrEw",
-     "name": "One arm Revers Wrist Curl",
-     "score": 0.405
-    },
-    {
-     "id": "exr_41n2hPxDaq9kFjiL",
-     "name": "Side Wrist Pull Stretch",
-     "score": 0.29
-    }
-   ]
+   "query": "Palms-Down Wrist Curl Over A Bench"
   },
   "Palms-Up_Barbell_Wrist_Curl_Over_A_Bench": {
    "edbId": null,
    "status": "queued",
    "confidence": 0.43,
-   "query": "Palms-Up Barbell Wrist Curl Over A Bench",
-   "candidates": [
-    {
-     "id": "exr_41n2hGy6zE7fN6v2",
-     "name": "One arm Wrist Curl",
-     "score": 0.43
-    },
-    {
-     "id": "exr_41n2hpeHAizgtrEw",
-     "name": "One arm Revers Wrist Curl",
-     "score": 0.405
-    },
-    {
-     "id": "exr_41n2hsVHu7B1MTdr",
-     "name": "Palms In Incline Bench Press",
-     "score": 0.405
-    }
-   ]
+   "query": "Palms-Up Barbell Wrist Curl Over A Bench"
   },
   "Palms-Up_Dumbbell_Wrist_Curl_Over_A_Bench": {
    "edbId": null,
    "status": "queued",
    "confidence": 0.405,
-   "query": "Palms-Up Dumbbell Wrist Curl Over A Bench",
-   "candidates": [
-    {
-     "id": "exr_41n2hpeHAizgtrEw",
-     "name": "One arm Revers Wrist Curl",
-     "score": 0.405
-    },
-    {
-     "id": "exr_41n2hsVHu7B1MTdr",
-     "name": "Palms In Incline Bench Press",
-     "score": 0.405
-    },
-    {
-     "id": "exr_41n2hZ7uoN5JnUJY",
-     "name": "Dumbbell Decline One Arm Hammer Press",
-     "score": 0.3
-    },
-    {
-     "id": "exr_41n2hdHtZrMPkcqY",
-     "name": "Dumbbell Lying Floor Skull Crusher",
-     "score": 0.3
-    },
-    {
-     "id": "exr_41n2haNJ3NA8yCE2",
-     "name": "Dumbbell Incline One Arm Hammer Press",
-     "score": 0.3
-    },
-    {
-     "id": "exr_41n2hPxDaq9kFjiL",
-     "name": "Side Wrist Pull Stretch",
-     "score": 0.29
-    }
-   ]
+   "query": "Palms-Up Dumbbell Wrist Curl Over A Bench"
   },
   "Preacher_Hammer_Dumbbell_Curl": {
    "edbId": null,
    "status": "queued",
    "confidence": 0.55,
-   "query": "Preacher Hammer Dumbbell Curl",
-   "candidates": [
-    {
-     "id": "exr_41n2hgCHNgtVLHna",
-     "name": "Cross Body Hammer Curl",
-     "score": 0.55
-    },
-    {
-     "id": "exr_41n2hZ7uoN5JnUJY",
-     "name": "Dumbbell Decline One Arm Hammer Press",
-     "score": 0.475
-    },
-    {
-     "id": "exr_41n2haNJ3NA8yCE2",
-     "name": "Dumbbell Incline One Arm Hammer Press",
-     "score": 0.475
-    },
-    {
-     "id": "exr_41n2hY9EdwkdGz9a",
-     "name": "Dumbbell One Arm Bent-over Row",
-     "score": 0.3
-    },
-    {
-     "id": "exr_41n2hdHtZrMPkcqY",
-     "name": "Dumbbell Lying Floor Skull Crusher",
-     "score": 0.3
-    },
-    {
-     "id": "exr_41n2hbLX4XH8xgN7",
-     "name": "Dumbbell Single Leg Calf Raise",
-     "score": 0.3
-    }
-   ]
+   "query": "Preacher Hammer Dumbbell Curl"
   },
   "Reverse_Crunch": {
    "edbId": null,
    "status": "queued",
    "confidence": 0.65,
-   "query": "Reverse Crunch",
-   "candidates": [
-    {
-     "id": "exr_41n2hskeb9dXgBoC",
-     "name": "Crunch Floor",
-     "score": 0.65
-    },
-    {
-     "id": "exr_41n2hGNrmUnF58Yy",
-     "name": "Reverse Lunge ",
-     "score": 0.55
-    },
-    {
-     "id": "exr_41n2hx6oyEujP1B6",
-     "name": "Two Legs Reverse Biceps Curl with Towel ",
-     "score": 0.475
-    },
-    {
-     "id": "exr_41n2hpeHAizgtrEw",
-     "name": "One arm Revers Wrist Curl",
-     "score": 0.3
-    },
-    {
-     "id": "exr_41n2hezAZ6CdkAcM",
-     "name": "Alternate Punching ",
-     "score": 0.3
-    },
-    {
-     "id": "exr_41n2hmhb4jD7H8Qk",
-     "name": "Assault Bike Run",
-     "score": 0.3
-    }
-   ]
+   "query": "Reverse Crunch"
   },
   "Reverse_Flyes": {
    "edbId": null,
    "status": "queued",
    "confidence": 0.5,
-   "query": "Reverse Flyes",
-   "candidates": [
-    {
-     "id": "exr_41n2hGNrmUnF58Yy",
-     "name": "Reverse Lunge ",
-     "score": 0.5
-    },
-    {
-     "id": "exr_41n2hx6oyEujP1B6",
-     "name": "Two Legs Reverse Biceps Curl with Towel ",
-     "score": 0.325
-    },
-    {
-     "id": "exr_41n2hpeHAizgtrEw",
-     "name": "One arm Revers Wrist Curl",
-     "score": 0.15
-    },
-    {
-     "id": "exr_41n2hbYPY4jLKxW3",
-     "name": "Peroneals Stretch ",
-     "score": 0.15
-    }
-   ]
+   "query": "Reverse Flyes"
   },
   "Reverse_Machine_Flyes": {
    "edbId": null,
    "status": "queued",
    "confidence": 0.325,
-   "query": "Reverse Machine Flyes",
-   "candidates": [
-    {
-     "id": "exr_41n2hx6oyEujP1B6",
-     "name": "Two Legs Reverse Biceps Curl with Towel ",
-     "score": 0.325
-    },
-    {
-     "id": "exr_41n2hhiWL8njJDZe",
-     "name": "Lever Seated Calf Raise",
-     "score": 0.3
-    },
-    {
-     "id": "exr_41n2hfa11fPnk8y9",
-     "name": "Elliptical Machine Walk",
-     "score": 0.3
-    },
-    {
-     "id": "exr_41n2hpTMDhTxYkvi",
-     "name": "Elliptical Machine Walk ",
-     "score": 0.3
-    },
-    {
-     "id": "exr_41n2hmhb4jD7H8Qk",
-     "name": "Assault Bike Run",
-     "score": 0.15
-    },
-    {
-     "id": "exr_41n2hLZZAH2F2UkS",
-     "name": "Walk Elliptical Cross Trainer ",
-     "score": 0.15
-    }
-   ]
+   "query": "Reverse Machine Flyes"
   },
   "Romanian_Deadlift": {
    "edbId": "exr_41n2hn8rpbYihzEW",
@@ -1771,191 +378,31 @@
    "edbId": null,
    "status": "queued",
    "confidence": 0.81,
-   "query": "Seated Cable Rows",
-   "candidates": [
-    {
-     "id": "exr_41n2hcFJpBvAkXCP",
-     "name": "Seated Row with Towel",
-     "score": 0.81
-    },
-    {
-     "id": "exr_41n2hTs4q3ihihZs",
-     "name": "Seated Calf Raise",
-     "score": 0.43
-    },
-    {
-     "id": "exr_41n2hNRM1dGGhGYL",
-     "name": "Seated Flexion And Extension Neck ",
-     "score": 0.383
-    },
-    {
-     "id": "exr_41n2hPvwqp7Pwvks",
-     "name": "Seated Single Leg Hamstring Stretch",
-     "score": 0.35
-    },
-    {
-     "id": "exr_41n2hu5r8WMaLUkH",
-     "name": "Seated Straight Leg Calf Stretch",
-     "score": 0.35
-    },
-    {
-     "id": "exr_41n2hJ5Harig7K7F",
-     "name": "Seated Shoulder Flexor Depresor Retractor Stretch",
-     "score": 0.325
-    }
-   ]
+   "query": "Seated Cable Rows"
   },
   "Seated_Dumbbell_Press": {
    "edbId": null,
    "status": "queued",
    "confidence": 0.81,
-   "query": "Seated Dumbbell Press",
-   "candidates": [
-    {
-     "id": "exr_41n2hs6camM22yBG",
-     "name": "Seated Shoulder Press",
-     "score": 0.81
-    },
-    {
-     "id": "exr_41n2hXfpvSshoXWG",
-     "name": "Dumbbell Clean and Press",
-     "score": 0.65
-    },
-    {
-     "id": "exr_41n2haNJ3NA8yCE2",
-     "name": "Dumbbell Incline One Arm Hammer Press",
-     "score": 0.5
-    },
-    {
-     "id": "exr_41n2hZ7uoN5JnUJY",
-     "name": "Dumbbell Decline One Arm Hammer Press",
-     "score": 0.5
-    },
-    {
-     "id": "exr_41n2hTs4q3ihihZs",
-     "name": "Seated Calf Raise",
-     "score": 0.43
-    },
-    {
-     "id": "exr_41n2huf7mAC2rhfC",
-     "name": "Dumbbell Jumping Squat",
-     "score": 0.3
-    }
-   ]
+   "query": "Seated Dumbbell Press"
   },
   "Side_Lateral_Raise": {
    "edbId": null,
    "status": "queued",
    "confidence": 0.81,
-   "query": "Side Lateral Raise",
-   "candidates": [
-    {
-     "id": "exr_41n2hjuGpcex14w7",
-     "name": "Lateral Raise",
-     "score": 0.81
-    },
-    {
-     "id": "exr_41n2hS5UrMusVCEE",
-     "name": "Lateral Raise with Towel",
-     "score": 0.617
-    },
-    {
-     "id": "exr_41n2hbLX4XH8xgN7",
-     "name": "Dumbbell Single Leg Calf Raise",
-     "score": 0.5
-    },
-    {
-     "id": "exr_41n2hTs4q3ihihZs",
-     "name": "Seated Calf Raise",
-     "score": 0.383
-    },
-    {
-     "id": "exr_41n2hzfRXQDaLYJh",
-     "name": "Standing Calf Raise ",
-     "score": 0.383
-    },
-    {
-     "id": "exr_41n2hdWu3oaCGdWT",
-     "name": "Standing Calf Raise",
-     "score": 0.383
-    }
-   ]
+   "query": "Side Lateral Raise"
   },
   "Side_Leg_Raises": {
    "edbId": null,
    "status": "queued",
    "confidence": 0.7,
-   "query": "Side Leg Raises",
-   "candidates": [
-    {
-     "id": "exr_41n2hMZCmZBvQApL",
-     "name": "Hanging Straight Leg Raise ",
-     "score": 0.7
-    },
-    {
-     "id": "exr_41n2hqfZb8UHBvB9",
-     "name": "Alternate Lying Floor Leg Raise ",
-     "score": 0.65
-    },
-    {
-     "id": "exr_41n2hq3Wm6ANkgUz",
-     "name": "Lying Leg Raise and Hold",
-     "score": 0.6
-    },
-    {
-     "id": "exr_41n2hjuGpcex14w7",
-     "name": "Lateral Raise",
-     "score": 0.58
-    },
-    {
-     "id": "exr_41n2hzZBVbWFoLK3",
-     "name": "Feet and Ankles Side to Side Stretch ",
-     "score": 0.5
-    },
-    {
-     "id": "exr_41n2hPxDaq9kFjiL",
-     "name": "Side Wrist Pull Stretch",
-     "score": 0.5
-    }
-   ]
+   "query": "Side Leg Raises"
   },
   "Single-Leg_Leg_Extension": {
    "edbId": null,
    "status": "queued",
    "confidence": 0.717,
-   "query": "Single-Leg Leg Extension",
-   "candidates": [
-    {
-     "id": "exr_41n2hd78zujKUEWK",
-     "name": "Single Leg Squat ",
-     "score": 0.717
-    },
-    {
-     "id": "exr_41n2hrHSqBnVWRRB",
-     "name": "Bodyweight Single Leg Deadlift",
-     "score": 0.55
-    },
-    {
-     "id": "exr_41n2hsSnmS946i2k",
-     "name": "Single Leg Squat with Support",
-     "score": 0.55
-    },
-    {
-     "id": "exr_41n2hPvwqp7Pwvks",
-     "name": "Seated Single Leg Hamstring Stretch",
-     "score": 0.5
-    },
-    {
-     "id": "exr_41n2hLpyk6MsV85U",
-     "name": "Single Leg Bodyweight Deadlift with Arm and Leg Extended ",
-     "score": 0.461
-    },
-    {
-     "id": "exr_41n2hbLX4XH8xgN7",
-     "name": "Dumbbell Single Leg Calf Raise",
-     "score": 0.4
-    }
-   ]
+   "query": "Single-Leg Leg Extension"
   },
   "Smith_Machine_Bench_Press": {
    "edbId": "exr_41n2hxnFMotsXTj3",
@@ -1973,77 +420,13 @@
    "edbId": null,
    "status": "queued",
    "confidence": 0.717,
-   "query": "Smith Machine Overhead Shoulder Press",
-   "candidates": [
-    {
-     "id": "exr_41n2hs6camM22yBG",
-     "name": "Seated Shoulder Press",
-     "score": 0.717
-    },
-    {
-     "id": "exr_41n2hMRXm49mM62z",
-     "name": "Arnold Press",
-     "score": 0.43
-    },
-    {
-     "id": "exr_41n2hJ5Harig7K7F",
-     "name": "Seated Shoulder Flexor Depresor Retractor Stretch",
-     "score": 0.306
-    },
-    {
-     "id": "exr_41n2hw4iksLYXESz",
-     "name": "Seated Shoulder Flexor Depresor Retractor Stretch Bent Knee",
-     "score": 0.277
-    },
-    {
-     "id": "exr_41n2hZ7uoN5JnUJY",
-     "name": "Dumbbell Decline One Arm Hammer Press",
-     "score": 0.175
-    },
-    {
-     "id": "exr_41n2haNJ3NA8yCE2",
-     "name": "Dumbbell Incline One Arm Hammer Press",
-     "score": 0.175
-    }
-   ]
+   "query": "Smith Machine Overhead Shoulder Press"
   },
   "Smith_Machine_Squat": {
    "edbId": null,
    "status": "queued",
    "confidence": 0.717,
-   "query": "Smith Machine Squat",
-   "candidates": [
-    {
-     "id": "exr_41n2hSxsNAV8tGS6",
-     "name": "Split Squat ",
-     "score": 0.717
-    },
-    {
-     "id": "exr_41n2hQDiSwTZXM4F",
-     "name": "Goblet Squat",
-     "score": 0.617
-    },
-    {
-     "id": "exr_41n2hpTMDhTxYkvi",
-     "name": "Elliptical Machine Walk ",
-     "score": 0.3
-    },
-    {
-     "id": "exr_41n2hfa11fPnk8y9",
-     "name": "Elliptical Machine Walk",
-     "score": 0.3
-    },
-    {
-     "id": "exr_41n2hhiWL8njJDZe",
-     "name": "Lever Seated Calf Raise",
-     "score": 0.3
-    },
-    {
-     "id": "exr_41n2hjkBReJMbDJk",
-     "name": "Run on Treadmill ",
-     "score": 0.15
-    }
-   ]
+   "query": "Smith Machine Squat"
   },
   "Smith_Single-Leg_Split_Squat": {
    "edbId": "exr_41n2hd78zujKUEWK",
@@ -2067,77 +450,13 @@
    "edbId": null,
    "status": "queued",
    "confidence": 0.461,
-   "query": "Standing Biceps Cable Curl",
-   "candidates": [
-    {
-     "id": "exr_41n2hc2VrB8ofxrW",
-     "name": "Lying Double Legs Biceps Curl with Towel",
-     "score": 0.461
-    },
-    {
-     "id": "exr_41n2hzfRXQDaLYJh",
-     "name": "Standing Calf Raise ",
-     "score": 0.383
-    },
-    {
-     "id": "exr_41n2hUBVSgXaKhau",
-     "name": "Standing Arms Circling ",
-     "score": 0.383
-    },
-    {
-     "id": "exr_41n2hdWu3oaCGdWT",
-     "name": "Standing Calf Raise",
-     "score": 0.383
-    },
-    {
-     "id": "exr_41n2hvzxocyjoGgL",
-     "name": "Standing Leg Calf Raise",
-     "score": 0.35
-    },
-    {
-     "id": "exr_41n2hSGs9Q3NVGhs",
-     "name": "Bodyweight Standing Calf Raise",
-     "score": 0.35
-    }
-   ]
+   "query": "Standing Biceps Cable Curl"
   },
   "Standing_Cable_Wood_Chop": {
    "edbId": null,
    "status": "queued",
    "confidence": 0.383,
-   "query": "Standing Cable Wood Chop",
-   "candidates": [
-    {
-     "id": "exr_41n2hzfRXQDaLYJh",
-     "name": "Standing Calf Raise ",
-     "score": 0.383
-    },
-    {
-     "id": "exr_41n2hdWu3oaCGdWT",
-     "name": "Standing Calf Raise",
-     "score": 0.383
-    },
-    {
-     "id": "exr_41n2hUBVSgXaKhau",
-     "name": "Standing Arms Circling ",
-     "score": 0.383
-    },
-    {
-     "id": "exr_41n2hvzxocyjoGgL",
-     "name": "Standing Leg Calf Raise",
-     "score": 0.35
-    },
-    {
-     "id": "exr_41n2hSGs9Q3NVGhs",
-     "name": "Bodyweight Standing Calf Raise",
-     "score": 0.35
-    },
-    {
-     "id": "exr_41n2hSq88Ni3KCny",
-     "name": "Standing Alternate Arms Circling ",
-     "score": 0.35
-    }
-   ]
+   "query": "Standing Cable Wood Chop"
   },
   "Standing_Calf_Raises": {
    "edbId": "exr_41n2hzfRXQDaLYJh",
@@ -2155,280 +474,49 @@
    "edbId": null,
    "status": "queued",
    "confidence": 0.575,
-   "query": "Standing One-Arm Cable Curl",
-   "candidates": [
-    {
-     "id": "exr_41n2huXeEFSaqo4G",
-     "name": "Standing One Arm Circling ",
-     "score": 0.575
-    },
-    {
-     "id": "exr_41n2hzfRXQDaLYJh",
-     "name": "Standing Calf Raise ",
-     "score": 0.35
-    },
-    {
-     "id": "exr_41n2hUBVSgXaKhau",
-     "name": "Standing Arms Circling ",
-     "score": 0.35
-    },
-    {
-     "id": "exr_41n2hynD9srC1kY7",
-     "name": "Standing Arms Flinging ",
-     "score": 0.35
-    },
-    {
-     "id": "exr_41n2hdWu3oaCGdWT",
-     "name": "Standing Calf Raise",
-     "score": 0.35
-    },
-    {
-     "id": "exr_41n2hvzxocyjoGgL",
-     "name": "Standing Leg Calf Raise",
-     "score": 0.325
-    }
-   ]
+   "query": "Standing One-Arm Cable Curl"
   },
   "Stiff-Legged_Barbell_Deadlift": {
    "edbId": null,
    "status": "queued",
    "confidence": 0.7,
-   "query": "Stiff-Legged Barbell Deadlift",
-   "candidates": [
-    {
-     "id": "exr_41n2hQp1pR7heQq9",
-     "name": "Dumbbell Stiff Leg Deadlift ",
-     "score": 0.7
-    },
-    {
-     "id": "exr_41n2hcw2FN534HcA",
-     "name": "Dumbbell Stiff Leg Deadlift",
-     "score": 0.6
-    },
-    {
-     "id": "exr_41n2hrHSqBnVWRRB",
-     "name": "Bodyweight Single Leg Deadlift",
-     "score": 0.55
-    },
-    {
-     "id": "exr_41n2hLpyk6MsV85U",
-     "name": "Single Leg Bodyweight Deadlift with Arm and Leg Extended ",
-     "score": 0.461
-    },
-    {
-     "id": "exr_41n2hwoc6PkW1UJJ",
-     "name": "Barbell Standing Calf Raise",
-     "score": 0.3
-    },
-    {
-     "id": "exr_41n2hTs4q3ihihZs",
-     "name": "Seated Calf Raise",
-     "score": 0.15
-    }
-   ]
+   "query": "Stiff-Legged Barbell Deadlift"
   },
   "Straight-Arm_Pulldown": {
    "edbId": null,
    "status": "queued",
    "confidence": 0.35,
-   "query": "Straight-Arm Pulldown",
-   "candidates": [
-    {
-     "id": "exr_41n2hadPLLFRGvFk",
-     "name": "Sliding Floor Pulldown on Towel",
-     "score": 0.35
-    },
-    {
-     "id": "exr_41n2hu5r8WMaLUkH",
-     "name": "Seated Straight Leg Calf Stretch",
-     "score": 0.325
-    }
-   ]
+   "query": "Straight-Arm Pulldown"
   },
   "T-Bar_Row_with_Handle": {
    "edbId": null,
    "status": "queued",
    "confidence": 0.383,
-   "query": "T-Bar Row with Handle",
-   "candidates": [
-    {
-     "id": "exr_41n2hWxnJoGwbJpa",
-     "name": "Superman Row with Towel",
-     "score": 0.383
-    },
-    {
-     "id": "exr_41n2hcFJpBvAkXCP",
-     "name": "Seated Row with Towel",
-     "score": 0.383
-    },
-    {
-     "id": "exr_41n2hY9EdwkdGz9a",
-     "name": "Dumbbell One Arm Bent-over Row",
-     "score": 0.175
-    },
-    {
-     "id": "exr_41n2hHCXQpZYhxhc",
-     "name": "Calf Stretch With Hands Against Wall",
-     "score": 0.15
-    },
-    {
-     "id": "exr_41n2hezAZ6CdkAcM",
-     "name": "Alternate Punching ",
-     "score": 0.15
-    }
-   ]
+   "query": "T-Bar Row with Handle"
   },
   "Thigh_Abductor": {
    "edbId": null,
    "status": "queued",
    "confidence": 0.15,
-   "query": "Thigh Abductor",
-   "candidates": [
-    {
-     "id": "exr_41n2hZqwsLkCVnzr",
-     "name": "Butt Kicks",
-     "score": 0.15
-    },
-    {
-     "id": "exr_41n2hnougzKKhhqu",
-     "name": "Butterfly Yoga Pose",
-     "score": 0.15
-    },
-    {
-     "id": "exr_41n2hQDiSwTZXM4F",
-     "name": "Goblet Squat",
-     "score": 0.15
-    },
-    {
-     "id": "exr_41n2hrHSqBnVWRRB",
-     "name": "Bodyweight Single Leg Deadlift",
-     "score": 0.15
-    },
-    {
-     "id": "exr_41n2hSMjcavNjk3c",
-     "name": "Quick Feet ",
-     "score": 0.15
-    },
-    {
-     "id": "exr_41n2hRaLxY7YfNbg",
-     "name": "Side Lunge Stretch",
-     "score": 0.15
-    }
-   ]
+   "query": "Thigh Abductor"
   },
   "Thigh_Adductor": {
    "edbId": null,
    "status": "queued",
    "confidence": 0.15,
-   "query": "Thigh Adductor",
-   "candidates": [
-    {
-     "id": "exr_41n2hZqwsLkCVnzr",
-     "name": "Butt Kicks",
-     "score": 0.15
-    },
-    {
-     "id": "exr_41n2hnougzKKhhqu",
-     "name": "Butterfly Yoga Pose",
-     "score": 0.15
-    },
-    {
-     "id": "exr_41n2hQDiSwTZXM4F",
-     "name": "Goblet Squat",
-     "score": 0.15
-    },
-    {
-     "id": "exr_41n2hrHSqBnVWRRB",
-     "name": "Bodyweight Single Leg Deadlift",
-     "score": 0.15
-    },
-    {
-     "id": "exr_41n2hSMjcavNjk3c",
-     "name": "Quick Feet ",
-     "score": 0.15
-    },
-    {
-     "id": "exr_41n2hRaLxY7YfNbg",
-     "name": "Side Lunge Stretch",
-     "score": 0.15
-    }
-   ]
+   "query": "Thigh Adductor"
   },
   "Triceps_Pushdown": {
    "edbId": null,
    "status": "queued",
    "confidence": 0.5,
-   "query": "Triceps Pushdown",
-   "candidates": [
-    {
-     "id": "exr_41n2hLA8xydD4dzE",
-     "name": "Triceps Press ",
-     "score": 0.5
-    },
-    {
-     "id": "exr_41n2hadQgEEX8wDN",
-     "name": "Triceps Dip",
-     "score": 0.5
-    },
-    {
-     "id": "exr_41n2hndkoGHD1ogh",
-     "name": "Triceps Dip",
-     "score": 0.5
-    },
-    {
-     "id": "exr_41n2hHH9bNfi98YU",
-     "name": "Triceps Dips Floor",
-     "score": 0.43
-    },
-    {
-     "id": "exr_41n2hPgRbN1KtJuD",
-     "name": "Close-grip Push-up",
-     "score": 0.15
-    },
-    {
-     "id": "exr_41n2hoFGGwZDNFT1",
-     "name": "Bench dip on floor",
-     "score": 0.15
-    }
-   ]
+   "query": "Triceps Pushdown"
   },
   "Triceps_Pushdown_-_Rope_Attachment": {
    "edbId": null,
    "status": "queued",
    "confidence": 0.5,
-   "query": "Triceps Pushdown",
-   "candidates": [
-    {
-     "id": "exr_41n2hLA8xydD4dzE",
-     "name": "Triceps Press ",
-     "score": 0.5
-    },
-    {
-     "id": "exr_41n2hadQgEEX8wDN",
-     "name": "Triceps Dip",
-     "score": 0.5
-    },
-    {
-     "id": "exr_41n2hndkoGHD1ogh",
-     "name": "Triceps Dip",
-     "score": 0.5
-    },
-    {
-     "id": "exr_41n2hHH9bNfi98YU",
-     "name": "Triceps Dips Floor",
-     "score": 0.43
-    },
-    {
-     "id": "exr_41n2hPgRbN1KtJuD",
-     "name": "Close-grip Push-up",
-     "score": 0.15
-    },
-    {
-     "id": "exr_41n2hoFGGwZDNFT1",
-     "name": "Bench dip on floor",
-     "score": 0.15
-    }
-   ]
+   "query": "Triceps Pushdown"
   },
   "Underhand_Cable_Pulldowns": {
    "edbId": null,
@@ -2440,111 +528,31 @@
    "edbId": null,
    "status": "queued",
    "confidence": 0.3,
-   "query": "Upright Cable Row",
-   "candidates": [
-    {
-     "id": "exr_41n2hSkc2tRLxVVS",
-     "name": "Calf Stretch with Rope ",
-     "score": 0.3
-    },
-    {
-     "id": "exr_41n2hdo2vCtq4F3E",
-     "name": "Right Cross. Boxing",
-     "score": 0.15
-    },
-    {
-     "id": "exr_41n2hzfRXQDaLYJh",
-     "name": "Standing Calf Raise ",
-     "score": 0.15
-    },
-    {
-     "id": "exr_41n2hhumxqyAFuTb",
-     "name": "One Leg Floor Calf Raise",
-     "score": 0.15
-    },
-    {
-     "id": "exr_41n2hG9pRT55cGVk",
-     "name": "Calves stretch",
-     "score": 0.15
-    },
-    {
-     "id": "exr_41n2hHCXQpZYhxhc",
-     "name": "Calf Stretch With Hands Against Wall",
-     "score": 0.15
-    }
-   ]
+   "query": "Upright Cable Row"
   },
   "V-Bar_Pulldown": {
    "edbId": null,
    "status": "queued",
    "confidence": 0.43,
-   "query": "V-Bar Pulldown",
-   "candidates": [
-    {
-     "id": "exr_41n2hadPLLFRGvFk",
-     "name": "Sliding Floor Pulldown on Towel",
-     "score": 0.43
-    }
-   ]
+   "query": "V-Bar Pulldown"
   },
   "Wide-Grip_Lat_Pulldown": {
    "edbId": null,
    "status": "queued",
    "confidence": 0.383,
-   "query": "Wide-Grip Lat Pulldown",
-   "candidates": [
-    {
-     "id": "exr_41n2hftBVLiXgtRQ",
-     "name": "Wide Grip Pull-Up",
-     "score": 0.383
-    },
-    {
-     "id": "exr_41n2hadPLLFRGvFk",
-     "name": "Sliding Floor Pulldown on Towel",
-     "score": 0.35
-    },
-    {
-     "id": "exr_41n2hWgAAtQeA3Lh",
-     "name": "Wide Hand Push up",
-     "score": 0.35
-    },
-    {
-     "id": "exr_41n2hPxDaq9kFjiL",
-     "name": "Side Wrist Pull Stretch",
-     "score": 0.15
-    }
-   ]
+   "query": "Wide-Grip Lat Pulldown"
   },
   "liftoff_cable_standing_hip_abduction": {
    "edbId": null,
    "status": "queued",
    "confidence": 0.233,
-   "query": "Cable Standing Hip Abduction",
-   "candidates": [
-    {
-     "id": "exr_41n2hwoc6PkW1UJJ",
-     "name": "Barbell Standing Calf Raise",
-     "score": 0.233
-    }
-   ]
+   "query": "Cable Standing Hip Abduction"
   },
   "liftoff_dragon_flag": {
    "edbId": null,
    "status": "queued",
    "confidence": 0.3,
-   "query": "Dragon Flag",
-   "candidates": [
-    {
-     "id": "exr_41n2hoFGGwZDNFT1",
-     "name": "Bench dip on floor",
-     "score": 0.3
-    },
-    {
-     "id": "exr_41n2hUKc7JPrtJQj",
-     "name": "Dip on Floor with Chair",
-     "score": 0.3
-    }
-   ]
+   "query": "Dragon Flag"
   },
   "liftoff_dumbbell_romanian_deadlift": {
    "edbId": "exr_41n2hn8rpbYihzEW",
@@ -2556,39 +564,7 @@
    "edbId": null,
    "status": "queued",
    "confidence": 0.533,
-   "query": "Hand Grippers",
-   "candidates": [
-    {
-     "id": "exr_41n2hWgAAtQeA3Lh",
-     "name": "Wide Hand Push up",
-     "score": 0.533
-    },
-    {
-     "id": "exr_41n2hpeHAizgtrEw",
-     "name": "One arm Revers Wrist Curl",
-     "score": 0.3
-    },
-    {
-     "id": "exr_41n2hGy6zE7fN6v2",
-     "name": "One arm Wrist Curl",
-     "score": 0.3
-    },
-    {
-     "id": "exr_41n2hSq88Ni3KCny",
-     "name": "Standing Alternate Arms Circling ",
-     "score": 0.3
-    },
-    {
-     "id": "exr_41n2hR12rPqdpWP8",
-     "name": "Pike-to-Cobra Push-up",
-     "score": 0.3
-    },
-    {
-     "id": "exr_41n2hftBVLiXgtRQ",
-     "name": "Wide Grip Pull-Up",
-     "score": 0.3
-    }
-   ]
+   "query": "Hand Grippers"
   },
   "liftoff_machine_hip_thrust": {
    "edbId": "exr_41n2hxxePSdr5oN1",
@@ -2600,123 +576,25 @@
    "edbId": null,
    "status": "queued",
    "confidence": 0.5,
-   "query": "Machine Row",
-   "candidates": [
-    {
-     "id": "exr_41n2hWxnJoGwbJpa",
-     "name": "Superman Row with Towel",
-     "score": 0.5
-    },
-    {
-     "id": "exr_41n2hpTMDhTxYkvi",
-     "name": "Elliptical Machine Walk ",
-     "score": 0.3
-    },
-    {
-     "id": "exr_41n2hfa11fPnk8y9",
-     "name": "Elliptical Machine Walk",
-     "score": 0.3
-    },
-    {
-     "id": "exr_41n2hhiWL8njJDZe",
-     "name": "Lever Seated Calf Raise",
-     "score": 0.3
-    },
-    {
-     "id": "exr_41n2hmhb4jD7H8Qk",
-     "name": "Assault Bike Run",
-     "score": 0.15
-    },
-    {
-     "id": "exr_41n2hkCHzg1AXdkV",
-     "name": "Walking on Incline Treadmill",
-     "score": 0.15
-    }
-   ]
+   "query": "Machine Row"
   },
   "liftoff_one_arm_cable_reverse_fly": {
    "edbId": null,
    "status": "queued",
    "confidence": 0.461,
-   "query": "One Arm Cable Reverse Fly",
-   "candidates": [
-    {
-     "id": "exr_41n2hpeHAizgtrEw",
-     "name": "One arm Revers Wrist Curl",
-     "score": 0.461
-    },
-    {
-     "id": "exr_41n2hHdjQpnyNdie",
-     "name": "One Arm Bent-over Row",
-     "score": 0.461
-    },
-    {
-     "id": "exr_41n2hY9EdwkdGz9a",
-     "name": "Dumbbell One Arm Bent-over Row",
-     "score": 0.311
-    },
-    {
-     "id": "exr_41n2hZ7uoN5JnUJY",
-     "name": "Dumbbell Decline One Arm Hammer Press",
-     "score": 0.311
-    },
-    {
-     "id": "exr_41n2haNJ3NA8yCE2",
-     "name": "Dumbbell Incline One Arm Hammer Press",
-     "score": 0.311
-    },
-    {
-     "id": "exr_41n2hhumxqyAFuTb",
-     "name": "One Leg Floor Calf Raise",
-     "score": 0.306
-    }
-   ]
+   "query": "One Arm Cable Reverse Fly"
   },
   "liftoff_one_arm_machine_reverse_fly": {
    "edbId": null,
    "status": "queued",
    "confidence": 0.461,
-   "query": "One Arm Machine Reverse Fly",
-   "candidates": [
-    {
-     "id": "exr_41n2hpeHAizgtrEw",
-     "name": "One arm Revers Wrist Curl",
-     "score": 0.461
-    },
-    {
-     "id": "exr_41n2haNJ3NA8yCE2",
-     "name": "Dumbbell Incline One Arm Hammer Press",
-     "score": 0.311
-    },
-    {
-     "id": "exr_41n2hfa11fPnk8y9",
-     "name": "Elliptical Machine Walk",
-     "score": 0.3
-    },
-    {
-     "id": "exr_41n2hXYRxFHnQAD4",
-     "name": "Stationary Bike Run ",
-     "score": 0.15
-    },
-    {
-     "id": "exr_41n2hLZZAH2F2UkS",
-     "name": "Walk Elliptical Cross Trainer ",
-     "score": 0.15
-    }
-   ]
+   "query": "One Arm Machine Reverse Fly"
   },
   "liftoff_roman_chair_side_bend": {
    "edbId": null,
    "status": "queued",
    "confidence": 0.557,
-   "query": "Roman Chair Side Bend",
-   "candidates": [
-    {
-     "id": "exr_41n2hTCBiQVsEfZ7",
-     "name": "Dumbbell Side Bend",
-     "score": 0.557
-    }
-   ]
+   "query": "Roman Chair Side Bend"
   },
   "liftoff_side_lunge": {
    "edbId": "exr_41n2haAabPyN5t8y",
@@ -2734,153 +612,25 @@
    "edbId": null,
    "status": "queued",
    "confidence": 0.43,
-   "query": "Standing Cable Crunch",
-   "candidates": [
-    {
-     "id": "exr_41n2hzfRXQDaLYJh",
-     "name": "Standing Calf Raise ",
-     "score": 0.43
-    },
-    {
-     "id": "exr_41n2hdWu3oaCGdWT",
-     "name": "Standing Calf Raise",
-     "score": 0.43
-    },
-    {
-     "id": "exr_41n2hUBVSgXaKhau",
-     "name": "Standing Arms Circling ",
-     "score": 0.43
-    },
-    {
-     "id": "exr_41n2hynD9srC1kY7",
-     "name": "Standing Arms Flinging ",
-     "score": 0.43
-    },
-    {
-     "id": "exr_41n2hvzxocyjoGgL",
-     "name": "Standing Leg Calf Raise",
-     "score": 0.383
-    },
-    {
-     "id": "exr_41n2hSGs9Q3NVGhs",
-     "name": "Bodyweight Standing Calf Raise",
-     "score": 0.383
-    }
-   ]
+   "query": "Standing Cable Crunch"
   },
   "liftoff_supine_bench_press": {
    "edbId": null,
    "status": "queued",
    "confidence": 0.5,
-   "query": "Supine Dumbbell Press",
-   "candidates": [
-    {
-     "id": "exr_41n2haNJ3NA8yCE2",
-     "name": "Dumbbell Incline One Arm Hammer Press",
-     "score": 0.5
-    },
-    {
-     "id": "exr_41n2hZ7uoN5JnUJY",
-     "name": "Dumbbell Decline One Arm Hammer Press",
-     "score": 0.5
-    },
-    {
-     "id": "exr_41n2hsVHu7B1MTdr",
-     "name": "Palms In Incline Bench Press",
-     "score": 0.35
-    },
-    {
-     "id": "exr_41n2huf7mAC2rhfC",
-     "name": "Dumbbell Jumping Squat",
-     "score": 0.3
-    },
-    {
-     "id": "exr_41n2hyNf5GebszTf",
-     "name": "Dumbbell Rear Delt Fly ",
-     "score": 0.3
-    },
-    {
-     "id": "exr_41n2hQp1pR7heQq9",
-     "name": "Dumbbell Stiff Leg Deadlift ",
-     "score": 0.3
-    }
-   ]
+   "query": "Supine Dumbbell Press"
   },
   "sp_assisted_dip_machine": {
    "edbId": null,
    "status": "queued",
    "confidence": 0.717,
-   "query": "Assisted Dip",
-   "candidates": [
-    {
-     "id": "exr_41n2hkK8hGAcSnW7",
-     "name": "Chest Dip",
-     "score": 0.717
-    },
-    {
-     "id": "exr_41n2hUKc7JPrtJQj",
-     "name": "Dip on Floor with Chair",
-     "score": 0.5
-    },
-    {
-     "id": "exr_41n2hHH9bNfi98YU",
-     "name": "Triceps Dips Floor",
-     "score": 0.5
-    },
-    {
-     "id": "exr_41n2hdsGcuzs4WrV",
-     "name": "Self Assisted Inverted Pullover",
-     "score": 0.3
-    },
-    {
-     "id": "exr_41n2hNfaYkEKLQHK",
-     "name": "Elevanted Push-Up",
-     "score": 0.15
-    },
-    {
-     "id": "exr_41n2hcm5HH6H684G",
-     "name": "Calf Raise from Deficit with Chair Supported",
-     "score": 0.15
-    }
-   ]
+   "query": "Assisted Dip"
   },
   "sp_assisted_pull_up_machine": {
    "edbId": null,
    "status": "queued",
    "confidence": 0.81,
-   "query": "Assisted Pull-Up",
-   "candidates": [
-    {
-     "id": "exr_41n2hVCJfpAvJcdU",
-     "name": "Commando Pull-up",
-     "score": 0.81
-    },
-    {
-     "id": "exr_41n2hftBVLiXgtRQ",
-     "name": "Wide Grip Pull-Up",
-     "score": 0.71
-    },
-    {
-     "id": "exr_41n2hQEqKxuAfV1D",
-     "name": "Pull-up with Bent Knee between Chairs",
-     "score": 0.5
-    },
-    {
-     "id": "exr_41n2hushK9NGVfyK",
-     "name": "Handstand Push-Up",
-     "score": 0.43
-    },
-    {
-     "id": "exr_41n2hRZ6fgsLyd77",
-     "name": "Diamond Push-up",
-     "score": 0.43
-    },
-    {
-     "id": "exr_41n2hGUso7JFmuYR",
-     "name": "Decline Push-Up",
-     "score": 0.43
-    }
-   ]
+   "query": "Assisted Pull-Up"
   },
   "sp_cable_lateral_raise": {
    "edbId": "exr_41n2hjuGpcex14w7",
@@ -2892,77 +642,13 @@
    "edbId": null,
    "status": "queued",
    "confidence": 0.55,
-   "query": "Cable Reverse Wrist Curl",
-   "candidates": [
-    {
-     "id": "exr_41n2hGy6zE7fN6v2",
-     "name": "One arm Wrist Curl",
-     "score": 0.55
-    },
-    {
-     "id": "exr_41n2hpeHAizgtrEw",
-     "name": "One arm Revers Wrist Curl",
-     "score": 0.5
-    },
-    {
-     "id": "exr_41n2hx6oyEujP1B6",
-     "name": "Two Legs Reverse Biceps Curl with Towel ",
-     "score": 0.461
-    },
-    {
-     "id": "exr_41n2hGioS8HumEF7",
-     "name": "Hammer Curl",
-     "score": 0.43
-    },
-    {
-     "id": "exr_41n2hvzxocyjoGgL",
-     "name": "Standing Leg Calf Raise",
-     "score": 0.15
-    },
-    {
-     "id": "exr_41n2hdWu3oaCGdWT",
-     "name": "Standing Calf Raise",
-     "score": 0.15
-    }
-   ]
+   "query": "Cable Reverse Wrist Curl"
   },
   "sp_db_incline_y_raise": {
    "edbId": null,
    "status": "queued",
    "confidence": 0.533,
-   "query": "Dumbbell Incline Y Raise",
-   "candidates": [
-    {
-     "id": "exr_41n2hQtaWxPLNFwX",
-     "name": "Dumbbell Standing Calf Raise",
-     "score": 0.533
-    },
-    {
-     "id": "exr_41n2hbLX4XH8xgN7",
-     "name": "Dumbbell Single Leg Calf Raise",
-     "score": 0.5
-    },
-    {
-     "id": "exr_41n2haNJ3NA8yCE2",
-     "name": "Dumbbell Incline One Arm Hammer Press",
-     "score": 0.475
-    },
-    {
-     "id": "exr_41n2hjuGpcex14w7",
-     "name": "Lateral Raise",
-     "score": 0.43
-    },
-    {
-     "id": "exr_41n2hdHtZrMPkcqY",
-     "name": "Dumbbell Lying Floor Skull Crusher",
-     "score": 0.3
-    },
-    {
-     "id": "exr_41n2hXfpvSshoXWG",
-     "name": "Dumbbell Clean and Press",
-     "score": 0.3
-    }
-   ]
+   "query": "Dumbbell Incline Y Raise"
   },
   "sp_db_walking_lunge": {
    "edbId": "exr_41n2hQHmRSoUkk9F",
@@ -2974,77 +660,13 @@
    "edbId": null,
    "status": "queued",
    "confidence": 0.5,
-   "query": "Pendulum Squat",
-   "candidates": [
-    {
-     "id": "exr_41n2hSxsNAV8tGS6",
-     "name": "Split Squat ",
-     "score": 0.5
-    },
-    {
-     "id": "exr_41n2hQDiSwTZXM4F",
-     "name": "Goblet Squat",
-     "score": 0.5
-    },
-    {
-     "id": "exr_41n2hYAP9oGEZk2P",
-     "name": "Sumo Squat",
-     "score": 0.5
-    },
-    {
-     "id": "exr_41n2hHRszDHarrxK",
-     "name": "Split Squats",
-     "score": 0.5
-    },
-    {
-     "id": "exr_41n2hbdZww1thMKz",
-     "name": "Jump Squat ",
-     "score": 0.5
-    },
-    {
-     "id": "exr_41n2hpLLs1uU5atr",
-     "name": "Bulgarian Split Squat",
-     "score": 0.43
-    }
-   ]
+   "query": "Pendulum Squat"
   },
   "sp_standing_machine_lateral_raise": {
    "edbId": null,
    "status": "queued",
    "confidence": 0.81,
-   "query": "Standing Machine Lateral Raise",
-   "candidates": [
-    {
-     "id": "exr_41n2hjuGpcex14w7",
-     "name": "Lateral Raise",
-     "score": 0.81
-    },
-    {
-     "id": "exr_41n2hzfRXQDaLYJh",
-     "name": "Standing Calf Raise ",
-     "score": 0.617
-    },
-    {
-     "id": "exr_41n2hdWu3oaCGdWT",
-     "name": "Standing Calf Raise",
-     "score": 0.617
-    },
-    {
-     "id": "exr_41n2hSGs9Q3NVGhs",
-     "name": "Bodyweight Standing Calf Raise",
-     "score": 0.55
-    },
-    {
-     "id": "exr_41n2hvzxocyjoGgL",
-     "name": "Standing Leg Calf Raise",
-     "score": 0.55
-    },
-    {
-     "id": "exr_41n2hwoc6PkW1UJJ",
-     "name": "Barbell Standing Calf Raise",
-     "score": 0.467
-    }
-   ]
+   "query": "Standing Machine Lateral Raise"
   }
  }
 }

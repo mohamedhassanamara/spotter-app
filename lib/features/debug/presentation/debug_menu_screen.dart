@@ -169,6 +169,17 @@ class _DebugMenuScreenState extends ConsumerState<DebugMenuScreen> {
             ]),
           ),
           const SectionHeader('ExerciseDB V2'),
+          AppCard(
+            padding: const EdgeInsets.symmetric(vertical: 4),
+            child: SwitchListTile(
+              key: const ValueKey('use-edb-v2'),
+              title: const Text('Use ExerciseDB V2'),
+              subtitle: const Text('Off: the app makes zero API calls and uses free sources only'),
+              value: ref.watch(edbEnabledProvider).value ?? false,
+              onChanged: (v) => ref.read(databaseProvider).putSetting(edbEnabledKey, '$v'),
+            ),
+          ),
+          const SizedBox(height: 8),
           const AppCard(child: _EdbUsage()),
           const SectionHeader('Data'),
           AppCard(

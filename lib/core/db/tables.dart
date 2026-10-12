@@ -16,6 +16,18 @@ class Exercises extends Table {
   BoolColumn get isFavorite => boolean().withDefault(const Constant(false))();
   TextColumn get notes => text().nullable()();
 
+  /// v7: full image URLs from other free sources (wger), after the free-exercise-db [images].
+  TextColumn get extraImages => text().withDefault(const Constant('[]'))();
+
+  /// v7: fedb (free-exercise-db) | wger | edb_v1 | custom.
+  TextColumn get source => text().nullable()();
+
+  /// v7: JSON licence/author credits of the merged sources.
+  TextColumn get credit => text().nullable()();
+
+  /// v7: this exercise's own ExerciseDB V1 GIF id (V1 entries, or a merged duplicate).
+  TextColumn get edbV1Id => text().nullable()();
+
   @override
   Set<Column<Object>> get primaryKey => {id};
 }

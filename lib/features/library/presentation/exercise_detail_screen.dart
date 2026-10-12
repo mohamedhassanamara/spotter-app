@@ -10,7 +10,7 @@ import '../../../core/widgets/common.dart';
 import '../../../router.dart';
 import '../../coach/domain/suggestion_engine.dart';
 import '../../tutorials/presentation/exercise_demo.dart';
-import '../../tutorials/presentation/tutorial_video.dart';
+import '../../program/presentation/program_video.dart';
 import '../domain/exercise_info.dart';
 
 class ExerciseDetailScreen extends ConsumerWidget {
@@ -79,9 +79,10 @@ class _DetailViewState extends ConsumerState<_DetailView> {
 
   @override
   Widget build(BuildContext context) {
-    final pinned = ref.watch(pinnedVideoProvider(info.id));
-    // Default: 3D, or Video when a tutorial is pinned (decided once the pin is known).
-    final tab = _tab ?? (pinned.hasValue ? (pinned.value != null ? _MediaTab.video : _MediaTab.demo) : _MediaTab.demo);
+    // In my Min-Max program: Jeff Nippard's demo from the PDF. Otherwise the V1 GIF or photos.
+    final video = ref.watch(programVideosProvider).value?[info.id];
+    final media = video != null ? _MediaTab.video : _MediaTab.demo;
+    final tab = _tab == _MediaTab.steps ? _MediaTab.steps : media;
     final freeze = ref.watch(activeFreezesProvider)[info.id];
     final now = ref.watch(clockProvider)();
     return Scaffold(
@@ -142,10 +143,11 @@ class _DetailViewState extends ConsumerState<_DetailView> {
           const SizedBox(height: 16),
           SegmentedButton<_MediaTab>(
             showSelectedIcon: false,
-            segments: const [
-              ButtonSegment(value: _MediaTab.demo, label: Text('3D'), icon: Icon(Icons.view_in_ar_rounded)),
-              ButtonSegment(value: _MediaTab.video, label: Text('Video'), icon: Icon(Icons.smart_display_rounded)),
-              ButtonSegment(value: _MediaTab.steps, label: Text('Steps'), icon: Icon(Icons.format_list_numbered_rounded)),
+            segments: [
+              video != null
+                  ? const ButtonSegment(value: _MediaTab.video, label: Text('Video'), icon: Icon(Icons.smart_display_rounded))
+                  : const ButtonSegment(value: _MediaTab.demo, label: Text('Demo'), icon: Icon(Icons.view_in_ar_rounded)),
+              const ButtonSegment(value: _MediaTab.steps, label: Text('Steps'), icon: Icon(Icons.format_list_numbered_rounded)),
             ],
             selected: {tab},
             onSelectionChanged: (v) => setState(() => _tab = v.first),
@@ -153,9 +155,18 @@ class _DetailViewState extends ConsumerState<_DetailView> {
           const SizedBox(height: 16),
           switch (tab) {
             _MediaTab.demo => ExerciseDemo(exerciseId: info.id, fallbackImages: info.imageUrls),
-            _MediaTab.video => TutorialVideoTab(exerciseId: info.id, exerciseName: info.name, searchUri: info.formTutorialUri),
+            _MediaTab.video => ProgramVideoPlayer(video: video!),
             _MediaTab.steps => _Steps(info: info),
           },
+          if (info.credits.isNotEmpty || info.source == 'fedb' || info.source == null)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Text(
+                _creditLine(info),
+                key: const ValueKey('exercise-credit'),
+                style: const TextStyle(color: AppColors.textTertiary, fontSize: 11),
+              ),
+            ),
           const SectionHeader('Muscles'),
           _MuscleBlock(info: info),
           _HistorySection(info: info),
@@ -306,6 +317,16 @@ class _HistorySection extends ConsumerWidget {
       ),
     ]);
   }
+}
+
+/// "Sources: free-exercise-db (public domain) · wger.de, CC-BY-SA 4.0, author …".
+String _creditLine(ExerciseInfo info) {
+  final parts = <String>[
+    if (info.source == 'fedb' || info.source == null) 'free-exercise-db (public domain)',
+    for (final c in info.credits)
+      [c['source'], c['license'], if ((c['author'] as String? ?? '').isNotEmpty) c['author']].whereType<String>().join(', '),
+  ];
+  return 'Sources: ${parts.toSet().join(' · ')}';
 }
 
 String _cap(String s) => s.isEmpty ? s : s[0].toUpperCase() + s.substring(1);

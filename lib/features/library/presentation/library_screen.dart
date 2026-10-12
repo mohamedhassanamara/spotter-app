@@ -1,4 +1,3 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -9,6 +8,7 @@ import '../../../core/widgets/common.dart';
 import '../../../router.dart';
 import '../domain/exercise_filter.dart';
 import '../domain/exercise_info.dart';
+import 'exercise_thumb.dart';
 import '../domain/muscle_mapping.dart';
 
 /// Exercise catalogue: search, filter, favorites. In [pickMode] tapping an exercise returns its id.
@@ -226,38 +226,6 @@ class ExerciseListTile extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
-}
-
-/// Square thumbnail of an exercise's first image, cached; icon fallback for custom/offline.
-class ExerciseThumb extends StatelessWidget {
-  const ExerciseThumb({super.key, required this.exercise, this.size = 56});
-  final ExerciseInfo exercise;
-  final double size;
-
-  @override
-  Widget build(BuildContext context) {
-    final fallback = Container(
-      width: size,
-      height: size,
-      color: AppColors.surfaceHigh,
-      child: Icon(Icons.fitness_center_rounded, color: AppColors.textSecondary, size: size * 0.45),
-    );
-    final urls = exercise.imageUrls;
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(12),
-      child: urls.isEmpty
-          ? fallback
-          : CachedNetworkImage(
-              imageUrl: urls.first,
-              width: size,
-              height: size,
-              fit: BoxFit.cover,
-              memCacheWidth: (size * 3).round(),
-              placeholder: (_, _) => fallback,
-              errorWidget: (_, _, _) => fallback,
-            ),
     );
   }
 }

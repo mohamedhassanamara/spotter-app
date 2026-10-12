@@ -38,7 +38,8 @@ class EdbMappingRepository {
             status: status,
             confidence: Value(confidence),
             query: Value(query),
-            candidates: Value(jsonEncode([for (final c in candidates.take(6)) c.toJson()])),
+            // No candidate data is kept (names returned by the API are not stored).
+            candidates: const Value('[]'),
             updatedAt: now,
           ));
 
@@ -121,7 +122,7 @@ class EdbMappingRepository {
             status: v['status'] as String,
             confidence: Value((v['confidence'] as num?)?.toDouble() ?? 0),
             query: Value(v['query'] as String? ?? ''),
-            candidates: Value(jsonEncode(v['candidates'] ?? const [])),
+            candidates: const Value('[]'),
             updatedAt: now,
           ));
       n++;
@@ -143,7 +144,6 @@ class EdbMappingRepository {
             'status': r.status,
             'confidence': double.parse(r.confidence.toStringAsFixed(3)),
             'query': r.query,
-            if (r.status == 'queued') 'candidates': jsonDecode(r.candidates),
           },
       },
     });

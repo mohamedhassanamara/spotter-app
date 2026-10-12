@@ -8,6 +8,7 @@ import '../../../core/domain/training.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/common.dart';
 import '../../../router.dart';
+import '../../library/presentation/exercise_thumb.dart';
 import '../../program/data/program_repository.dart';
 import '../../program/domain/program.dart';
 import '../data/routine_repository.dart';
@@ -90,6 +91,10 @@ class RoutineEditorScreen extends ConsumerWidget {
                           onTap: () => _editTargets(context, ref, e),
                           child: Row(
                             children: [
+                              if (catalog[e.exerciseId] != null) ...[
+                                ExerciseThumb(exercise: catalog[e.exerciseId]!, size: 44, radius: 10),
+                                const SizedBox(width: 12),
+                              ],
                               Expanded(
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,

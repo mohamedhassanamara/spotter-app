@@ -922,3 +922,61 @@ patched. Screenshots are in `docs/screenshots/vF/`: at rest, mid-edit with the k
   - Several auto-accepts reached exactly 85 % only because the candidate name names no equipment
     ("Bench Press" for the Smith machine bench, "Romanian Deadlift" for the dumbbell RDL). They're
     worth a look in the review screen.
+
+## Finish plan, Phase A: exercise library and media (free sources only)
+
+- **ExerciseDB V2 is off by default.**
+  - Settings → Debug → "Use ExerciseDB V2". While it's off, `edbApiProvider` returns `EdbDisabled`,
+    which fails every call without opening a connection, so the app makes zero API calls.
+  - The review queue keeps no candidate data. `assets/edb_v2_map.json` holds IDs and statuses only.
+  - No muscle data is derived from V2.
+- **Unified library** (`tool/library/build_library.py` → `assets/library_sources.json`, seeded as
+  dataset v4, schema v7). It grew from 884 to **2,372** exercises:
+  - **free-exercise-db** (public domain): 873 + 11 built-in (`sp_…`) entries stay canonical, with
+    unchanged ids. A migration test checks that ids, favorites and history references survive.
+  - **wger** (wger.de exercise data, fetched from the public API with no key): 925 exercises.
+    187 were duplicates of existing entries and attach their images to them; **738 are new**
+    (`wger_<id>`).
+
+    Licences are per item, mostly CC-BY-SA 4.0 (772), CC-BY-SA 3.0 (132) and CC0 (21). Images are
+    CC-BY-SA 4.0 or 3.0. Licence and author are kept per exercise and per image, shown on the
+    exercise page ("Sources: …") and summarised under Settings → About → Credits. Attribution is the
+    obligation; nothing is modified.
+  - **ExerciseDB V1 free data** (non-commercial personal use, as before): 1,324 entries with a live GIF.
+    574 were duplicates (their GIF becomes the canonical exercise's own GIF); **750 are new**
+    (`edbv1_<id>`).
+
+  How duplicates are detected:
+  - **Key:** normalised name tokens (equipment words and noise such as "medium grip" removed;
+    plurals and pull-up/chin-up/push-up spellings unified) + dataset equipment + primary muscle group.
+  - **Same name + equipment** is also a duplicate, because sources disagree on the primary muscle
+    (wger lists lats first for deadlifts).
+  - **Nested names:** a name that contains another plus one word is a duplicate, unless that word
+    changes the movement (incline, close, single, seated, hammer…).
+  - **Machine lifts from wger:** wger has no "machine" equipment, so it's inferred from the name
+    (Multipress, Hackenschmidt, Leg Extension, Lat Pull Down…).
+
+  Exercises with only an image, or none, are kept: 526 of the new entries have no media.
+- **Media rules.**
+  - **Lists** (logger, routine editor, library and pickers) use a static thumbnail. The order is:
+    free-exercise-db photo → wger image → the first frame of the V1 GIF (decoded once, never
+    animated) → a placeholder with an equipment icon. They never show YouTube thumbnails.
+  - **Exercise page and in-workout (i):** program exercises play Jeff Nippard's video. Everything
+    else shows the V1 GIF, else photos, plus Steps.
+  - YouTube search, pinning and the YouTube API key were removed. The `pinned_videos` table stays,
+    unused.
+- **Jeff's videos** (`tool/program/extract_videos.py`):
+  - The PDF links every exercise and substitution name through link annotations, and the link
+    text alone doesn't contain the URL. The words inside each annotation's rectangle rebuild the
+    name. A name wrapped over two lines has two rectangles with the same URL that overlap by a
+    pixel, and they're joined.
+  - **73 of 73** program names (exercises and listed substitutions) have a video, each a distinct
+    URL. None carry a timestamp, so they open at 0:00.
+  - The player is youtube_player_iframe, embedded, with autoplay off.
+  - **Matching rules:**
+    - a program row gets its own slot's video;
+    - a substitution row gets only the video of the listed substitution it is (my "Cable Reverse
+      Wrist Curl" is the listed "Cable Wrist Extension");
+    - my swaps (Pendulum Squat, Straight Arm Pulldown, Decline Crunch) get none, because the PDF
+      doesn't list them;
+    - any other library exercise matching a program name at ≥ 0.85 gets that name's video.

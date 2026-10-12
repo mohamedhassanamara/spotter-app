@@ -115,6 +115,7 @@ void main() {
     await h.tap(find.text('Machine Chest Fly'));
     await h.waitFor(find.byKey(const ValueKey('count-toward-ranks')), reason: 'Count toward ranks switch');
     await h.tap(find.byKey(const ValueKey('count-toward-ranks')));
+    await h.scrollToTop();
     await tester.pageBack();
     await h.settle();
     await h.waitFor(find.text('HIDDEN FROM RANKS (1)'));

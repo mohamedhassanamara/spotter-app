@@ -13,7 +13,7 @@ import '../../library/domain/exercise_info.dart';
 import '../../library/domain/load_kinds.dart';
 import '../../program/data/program_repository.dart';
 import '../../ranks/presentation/rank_badge.dart';
-import '../../tutorials/presentation/exercise_demo.dart';
+import '../../library/presentation/exercise_thumb.dart';
 import '../data/session_repository.dart';
 import 'keypad.dart';
 
@@ -183,25 +183,8 @@ class _ExerciseBlockState extends ConsumerState<ExerciseBlock> {
       s.targetRepMin == null || s.targetRepMax == null ? null : RepRange(s.targetRepMin!, s.targetRepMax!);
 
   Widget _header(String name) {
-    final match = ref.watch(mediaMatchProvider(ex.row.exerciseId)).value;
-    final img = match?.gifUrl ?? widget.info?.imageUrls.firstOrNull;
     return Row(children: [
-      ClipRRect(
-        borderRadius: BorderRadius.circular(10),
-        child: Container(
-          width: 40,
-          height: 40,
-          color: Colors.white,
-          child: img == null
-              ? const Icon(Icons.fitness_center_rounded, color: Colors.black38, size: 22)
-              : Image.network(
-                  img,
-                  fit: BoxFit.cover,
-                  cacheWidth: 120,
-                  errorBuilder: (_, _, _) => const Icon(Icons.fitness_center_rounded, color: Colors.black38),
-                ),
-        ),
-      ),
+      if (widget.info != null) ExerciseThumb(exercise: widget.info!, size: 40, radius: 10) else const SizedBox(width: 40, height: 40),
       const SizedBox(width: 10),
       if (ctx.supersetLabel != null)
         Container(

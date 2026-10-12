@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import '../../../core/domain/dates.dart';
 import '../../../core/domain/equipment.dart';
 import '../../../core/domain/training.dart';
+import '../../tutorials/domain/youtube.dart';
 
 /// Pure model of a training program extracted from its source (see docs/program/SCHEMA.md).
 
@@ -74,11 +75,15 @@ class ProgramSlot {
     required this.notes,
     required this.rir0AttemptFailure,
     required this.weeks,
+    this.videos = const {},
   });
 
   final String id;
   final String day;
   final String exercise;
+
+  /// Jeff Nippard's demo per name (the slot's exercise and each substitution), from the PDF's links.
+  final Map<String, YouTubeRef> videos;
 
   /// "S1", "S2"… or null.
   final String? superset;
@@ -98,6 +103,11 @@ class ProgramSlot {
   final Map<int, SlotWeek> weeks;
 
   SlotWeek week(int w) => weeks[w] ?? weeks[1]!;
+}
+
+MapEntry<String, YouTubeRef>? _ref(String name, String url) {
+  final r = parseYouTubeLink(url);
+  return r == null ? null : MapEntry(name, r);
 }
 
 class ProgramDay {
@@ -203,6 +213,11 @@ class Program {
                         text: rest['text'] as String,
                       ),
                 substitutions: (s['substitutions'] as List<dynamic>).cast<String>(),
+                videos: Map.fromEntries([
+                  if (s['video'] case {'url': final String url}) ?_ref(s['exercise'] as String, url),
+                  for (final e in ((s['substitution_videos'] as Map<String, dynamic>?) ?? const {}).entries)
+                    if (e.value case {'url': final String url}) ?_ref(e.key, url),
+                ]),
                 notes: s['notes'] as String? ?? '',
                 rir0AttemptFailure: s['rir0_attempt_failure'] as bool? ?? true,
                 weeks: {

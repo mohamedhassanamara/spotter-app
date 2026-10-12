@@ -1,13 +1,17 @@
+import 'dart:io';
+
 import 'package:drift/drift.dart' show driftRuntimeOptions;
 import 'package:drift_dev/api/migrations_native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:spotter/core/db/database.dart';
+import 'package:spotter/features/library/data/exercise_repository.dart';
 
 import '../generated_migrations/schema.dart';
 import '../generated_migrations/schema_v1.dart' as v1;
 import '../generated_migrations/schema_v2.dart' as v2;
 import '../generated_migrations/schema_v3.dart' as v3;
 import '../generated_migrations/schema_v4.dart' as v4;
+import '../generated_migrations/schema_v6.dart' as v6;
 
 void main() {
   driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
@@ -25,7 +29,7 @@ void main() {
     await old.close();
 
     final db = AppDatabase(schema.newConnection());
-    await verifier.migrateAndValidate(db, 6);
+    await verifier.migrateAndValidate(db, 7);
     expect((await db.select(db.sessions).get()).single.name, 'Push A');
     expect(await db.getSetting('weekly_goal'), '5');
     expect(await db.select(db.mediaMatches).get(), isEmpty);
@@ -38,7 +42,7 @@ void main() {
     await old.customStatement("INSERT INTO routines (name, position, created_at) VALUES ('Push A', 0, 1760000000)");
     await old.close();
     final db = AppDatabase(schema.newConnection());
-    await verifier.migrateAndValidate(db, 6);
+    await verifier.migrateAndValidate(db, 7);
     final r = (await db.select(db.routines).get()).single;
     expect(r.name, 'Push A');
     expect(r.programDay, isNull);
@@ -51,7 +55,7 @@ void main() {
     await old.customStatement("INSERT INTO sessions (name, started_at, status) VALUES ('Upper', 1760000000, 'finished')");
     await old.close();
     final db = AppDatabase(schema.newConnection());
-    await verifier.migrateAndValidate(db, 6);
+    await verifier.migrateAndValidate(db, 7);
     final s = (await db.select(db.sessions).get()).single;
     expect(s.source, 'app');
     expect(s.externalId, isNull);
@@ -72,7 +76,7 @@ void main() {
     await old.customStatement('INSERT INTO workout_sets (session_exercise_id, position, weight, reps) VALUES (1, 0, 60, 8)');
     await old.close();
     final db = AppDatabase(schema.newConnection());
-    await verifier.migrateAndValidate(db, 6);
+    await verifier.migrateAndValidate(db, 7);
     final e = (await db.select(db.sessionExercises).get()).single;
     expect(e.restEnabled, isTrue);
     expect(e.supersetGroup, isNull);
@@ -83,15 +87,42 @@ void main() {
   test('v5 → v6 adds the ExerciseDB V2 mapping table', () async {
     final schema = await verifier.schemaAt(5);
     final db = AppDatabase(schema.newConnection());
-    await verifier.migrateAndValidate(db, 6);
+    await verifier.migrateAndValidate(db, 7);
     expect(await db.select(db.edbV2Maps).get(), isEmpty);
     await db.close();
   });
 
-  test('v1 → v6 in one go', () async {
+  test('v6 → v7 + the merged library: existing exercise ids and history stay put', () async {
+    final schema = await verifier.schemaAt(6);
+    final old = v6.DatabaseAtV6(schema.newConnection());
+    await old.customStatement("INSERT INTO exercises (id, name, is_favorite) VALUES ('Barbell_Bench_Press_-_Medium_Grip', 'Barbell Bench Press - Medium Grip', 1)");
+    await old.customStatement("INSERT INTO sessions (id, name, started_at, status) VALUES (1, 'Push', 1760000000, 'finished')");
+    await old.customStatement(
+        "INSERT INTO session_exercises (id, session_id, exercise_id, position, rep_min, rep_max, target_sets, rest_seconds) VALUES (1, 1, 'Barbell_Bench_Press_-_Medium_Grip', 0, 6, 8, 2, 120)");
+    await old.customStatement("INSERT INTO app_settings (key, value) VALUES ('exercise_dataset_version', '3')");
+    await old.close();
+    final db = AppDatabase(schema.newConnection());
+    await verifier.migrateAndValidate(db, 7);
+    await ExerciseRepository(db).ensureSeeded(
+      jsonOverride: File('assets/exercises.json').readAsStringSync(),
+      extraJsonOverride: File('assets/extra_exercises.json').readAsStringSync(),
+      sourcesJsonOverride: File('assets/library_sources.json').readAsStringSync(),
+    );
+    final bench = await (db.select(db.exercises)..where((t) => t.id.equals('Barbell_Bench_Press_-_Medium_Grip'))).getSingle();
+    expect(bench.isFavorite, isTrue, reason: 'favorites survive the reseed');
+    expect(bench.source, 'fedb');
+    expect((await db.select(db.sessionExercises).get()).single.exerciseId, 'Barbell_Bench_Press_-_Medium_Grip');
+    final all = await db.select(db.exercises).get();
+    expect(all.length, greaterThan(2000), reason: 'free sources merged in');
+    expect(all.where((e) => e.id.startsWith('wger_')), isNotEmpty);
+    expect(all.where((e) => e.id.startsWith('edbv1_')), isNotEmpty);
+    await db.close();
+  });
+
+  test('v1 → v7 in one go', () async {
     final schema = await verifier.schemaAt(1);
     final db = AppDatabase(schema.newConnection());
-    await verifier.migrateAndValidate(db, 6);
+    await verifier.migrateAndValidate(db, 7);
     await db.close();
   });
 }

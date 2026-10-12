@@ -154,6 +154,47 @@ class $ExercisesTable extends Exercises
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _extraImagesMeta = const VerificationMeta(
+    'extraImages',
+  );
+  @override
+  late final GeneratedColumn<String> extraImages = GeneratedColumn<String>(
+    'extra_images',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('[]'),
+  );
+  static const VerificationMeta _sourceMeta = const VerificationMeta('source');
+  @override
+  late final GeneratedColumn<String> source = GeneratedColumn<String>(
+    'source',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _creditMeta = const VerificationMeta('credit');
+  @override
+  late final GeneratedColumn<String> credit = GeneratedColumn<String>(
+    'credit',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _edbV1IdMeta = const VerificationMeta(
+    'edbV1Id',
+  );
+  @override
+  late final GeneratedColumn<String> edbV1Id = GeneratedColumn<String>(
+    'edb_v1_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -169,6 +210,10 @@ class $ExercisesTable extends Exercises
     isCustom,
     isFavorite,
     notes,
+    extraImages,
+    source,
+    credit,
+    edbV1Id,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -270,6 +315,33 @@ class $ExercisesTable extends Exercises
         notes.isAcceptableOrUnknown(data['notes']!, _notesMeta),
       );
     }
+    if (data.containsKey('extra_images')) {
+      context.handle(
+        _extraImagesMeta,
+        extraImages.isAcceptableOrUnknown(
+          data['extra_images']!,
+          _extraImagesMeta,
+        ),
+      );
+    }
+    if (data.containsKey('source')) {
+      context.handle(
+        _sourceMeta,
+        source.isAcceptableOrUnknown(data['source']!, _sourceMeta),
+      );
+    }
+    if (data.containsKey('credit')) {
+      context.handle(
+        _creditMeta,
+        credit.isAcceptableOrUnknown(data['credit']!, _creditMeta),
+      );
+    }
+    if (data.containsKey('edb_v1_id')) {
+      context.handle(
+        _edbV1IdMeta,
+        edbV1Id.isAcceptableOrUnknown(data['edb_v1_id']!, _edbV1IdMeta),
+      );
+    }
     return context;
   }
 
@@ -331,6 +403,22 @@ class $ExercisesTable extends Exercises
         DriftSqlType.string,
         data['${effectivePrefix}notes'],
       ),
+      extraImages: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}extra_images'],
+      )!,
+      source: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}source'],
+      ),
+      credit: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}credit'],
+      ),
+      edbV1Id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}edb_v1_id'],
+      ),
     );
   }
 
@@ -354,6 +442,18 @@ class Exercise extends DataClass implements Insertable<Exercise> {
   final bool isCustom;
   final bool isFavorite;
   final String? notes;
+
+  /// v7: full image URLs from other free sources (wger), after the free-exercise-db [images].
+  final String extraImages;
+
+  /// v7: fedb (free-exercise-db) | wger | edb_v1 | custom.
+  final String? source;
+
+  /// v7: JSON licence/author credits of the merged sources.
+  final String? credit;
+
+  /// v7: this exercise's own ExerciseDB V1 GIF id (V1 entries, or a merged duplicate).
+  final String? edbV1Id;
   const Exercise({
     required this.id,
     required this.name,
@@ -368,6 +468,10 @@ class Exercise extends DataClass implements Insertable<Exercise> {
     required this.isCustom,
     required this.isFavorite,
     this.notes,
+    required this.extraImages,
+    this.source,
+    this.credit,
+    this.edbV1Id,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -394,6 +498,16 @@ class Exercise extends DataClass implements Insertable<Exercise> {
     map['is_favorite'] = Variable<bool>(isFavorite);
     if (!nullToAbsent || notes != null) {
       map['notes'] = Variable<String>(notes);
+    }
+    map['extra_images'] = Variable<String>(extraImages);
+    if (!nullToAbsent || source != null) {
+      map['source'] = Variable<String>(source);
+    }
+    if (!nullToAbsent || credit != null) {
+      map['credit'] = Variable<String>(credit);
+    }
+    if (!nullToAbsent || edbV1Id != null) {
+      map['edb_v1_id'] = Variable<String>(edbV1Id);
     }
     return map;
   }
@@ -423,6 +537,16 @@ class Exercise extends DataClass implements Insertable<Exercise> {
       notes: notes == null && nullToAbsent
           ? const Value.absent()
           : Value(notes),
+      extraImages: Value(extraImages),
+      source: source == null && nullToAbsent
+          ? const Value.absent()
+          : Value(source),
+      credit: credit == null && nullToAbsent
+          ? const Value.absent()
+          : Value(credit),
+      edbV1Id: edbV1Id == null && nullToAbsent
+          ? const Value.absent()
+          : Value(edbV1Id),
     );
   }
 
@@ -445,6 +569,10 @@ class Exercise extends DataClass implements Insertable<Exercise> {
       isCustom: serializer.fromJson<bool>(json['isCustom']),
       isFavorite: serializer.fromJson<bool>(json['isFavorite']),
       notes: serializer.fromJson<String?>(json['notes']),
+      extraImages: serializer.fromJson<String>(json['extraImages']),
+      source: serializer.fromJson<String?>(json['source']),
+      credit: serializer.fromJson<String?>(json['credit']),
+      edbV1Id: serializer.fromJson<String?>(json['edbV1Id']),
     );
   }
   @override
@@ -464,6 +592,10 @@ class Exercise extends DataClass implements Insertable<Exercise> {
       'isCustom': serializer.toJson<bool>(isCustom),
       'isFavorite': serializer.toJson<bool>(isFavorite),
       'notes': serializer.toJson<String?>(notes),
+      'extraImages': serializer.toJson<String>(extraImages),
+      'source': serializer.toJson<String?>(source),
+      'credit': serializer.toJson<String?>(credit),
+      'edbV1Id': serializer.toJson<String?>(edbV1Id),
     };
   }
 
@@ -481,6 +613,10 @@ class Exercise extends DataClass implements Insertable<Exercise> {
     bool? isCustom,
     bool? isFavorite,
     Value<String?> notes = const Value.absent(),
+    String? extraImages,
+    Value<String?> source = const Value.absent(),
+    Value<String?> credit = const Value.absent(),
+    Value<String?> edbV1Id = const Value.absent(),
   }) => Exercise(
     id: id ?? this.id,
     name: name ?? this.name,
@@ -495,6 +631,10 @@ class Exercise extends DataClass implements Insertable<Exercise> {
     isCustom: isCustom ?? this.isCustom,
     isFavorite: isFavorite ?? this.isFavorite,
     notes: notes.present ? notes.value : this.notes,
+    extraImages: extraImages ?? this.extraImages,
+    source: source.present ? source.value : this.source,
+    credit: credit.present ? credit.value : this.credit,
+    edbV1Id: edbV1Id.present ? edbV1Id.value : this.edbV1Id,
   );
   Exercise copyWithCompanion(ExercisesCompanion data) {
     return Exercise(
@@ -519,6 +659,12 @@ class Exercise extends DataClass implements Insertable<Exercise> {
           ? data.isFavorite.value
           : this.isFavorite,
       notes: data.notes.present ? data.notes.value : this.notes,
+      extraImages: data.extraImages.present
+          ? data.extraImages.value
+          : this.extraImages,
+      source: data.source.present ? data.source.value : this.source,
+      credit: data.credit.present ? data.credit.value : this.credit,
+      edbV1Id: data.edbV1Id.present ? data.edbV1Id.value : this.edbV1Id,
     );
   }
 
@@ -537,7 +683,11 @@ class Exercise extends DataClass implements Insertable<Exercise> {
           ..write('images: $images, ')
           ..write('isCustom: $isCustom, ')
           ..write('isFavorite: $isFavorite, ')
-          ..write('notes: $notes')
+          ..write('notes: $notes, ')
+          ..write('extraImages: $extraImages, ')
+          ..write('source: $source, ')
+          ..write('credit: $credit, ')
+          ..write('edbV1Id: $edbV1Id')
           ..write(')'))
         .toString();
   }
@@ -557,6 +707,10 @@ class Exercise extends DataClass implements Insertable<Exercise> {
     isCustom,
     isFavorite,
     notes,
+    extraImages,
+    source,
+    credit,
+    edbV1Id,
   );
   @override
   bool operator ==(Object other) =>
@@ -574,7 +728,11 @@ class Exercise extends DataClass implements Insertable<Exercise> {
           other.images == this.images &&
           other.isCustom == this.isCustom &&
           other.isFavorite == this.isFavorite &&
-          other.notes == this.notes);
+          other.notes == this.notes &&
+          other.extraImages == this.extraImages &&
+          other.source == this.source &&
+          other.credit == this.credit &&
+          other.edbV1Id == this.edbV1Id);
 }
 
 class ExercisesCompanion extends UpdateCompanion<Exercise> {
@@ -591,6 +749,10 @@ class ExercisesCompanion extends UpdateCompanion<Exercise> {
   final Value<bool> isCustom;
   final Value<bool> isFavorite;
   final Value<String?> notes;
+  final Value<String> extraImages;
+  final Value<String?> source;
+  final Value<String?> credit;
+  final Value<String?> edbV1Id;
   final Value<int> rowid;
   const ExercisesCompanion({
     this.id = const Value.absent(),
@@ -606,6 +768,10 @@ class ExercisesCompanion extends UpdateCompanion<Exercise> {
     this.isCustom = const Value.absent(),
     this.isFavorite = const Value.absent(),
     this.notes = const Value.absent(),
+    this.extraImages = const Value.absent(),
+    this.source = const Value.absent(),
+    this.credit = const Value.absent(),
+    this.edbV1Id = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   ExercisesCompanion.insert({
@@ -622,6 +788,10 @@ class ExercisesCompanion extends UpdateCompanion<Exercise> {
     this.isCustom = const Value.absent(),
     this.isFavorite = const Value.absent(),
     this.notes = const Value.absent(),
+    this.extraImages = const Value.absent(),
+    this.source = const Value.absent(),
+    this.credit = const Value.absent(),
+    this.edbV1Id = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        name = Value(name);
@@ -639,6 +809,10 @@ class ExercisesCompanion extends UpdateCompanion<Exercise> {
     Expression<bool>? isCustom,
     Expression<bool>? isFavorite,
     Expression<String>? notes,
+    Expression<String>? extraImages,
+    Expression<String>? source,
+    Expression<String>? credit,
+    Expression<String>? edbV1Id,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -655,6 +829,10 @@ class ExercisesCompanion extends UpdateCompanion<Exercise> {
       if (isCustom != null) 'is_custom': isCustom,
       if (isFavorite != null) 'is_favorite': isFavorite,
       if (notes != null) 'notes': notes,
+      if (extraImages != null) 'extra_images': extraImages,
+      if (source != null) 'source': source,
+      if (credit != null) 'credit': credit,
+      if (edbV1Id != null) 'edb_v1_id': edbV1Id,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -673,6 +851,10 @@ class ExercisesCompanion extends UpdateCompanion<Exercise> {
     Value<bool>? isCustom,
     Value<bool>? isFavorite,
     Value<String?>? notes,
+    Value<String>? extraImages,
+    Value<String?>? source,
+    Value<String?>? credit,
+    Value<String?>? edbV1Id,
     Value<int>? rowid,
   }) {
     return ExercisesCompanion(
@@ -689,6 +871,10 @@ class ExercisesCompanion extends UpdateCompanion<Exercise> {
       isCustom: isCustom ?? this.isCustom,
       isFavorite: isFavorite ?? this.isFavorite,
       notes: notes ?? this.notes,
+      extraImages: extraImages ?? this.extraImages,
+      source: source ?? this.source,
+      credit: credit ?? this.credit,
+      edbV1Id: edbV1Id ?? this.edbV1Id,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -735,6 +921,18 @@ class ExercisesCompanion extends UpdateCompanion<Exercise> {
     if (notes.present) {
       map['notes'] = Variable<String>(notes.value);
     }
+    if (extraImages.present) {
+      map['extra_images'] = Variable<String>(extraImages.value);
+    }
+    if (source.present) {
+      map['source'] = Variable<String>(source.value);
+    }
+    if (credit.present) {
+      map['credit'] = Variable<String>(credit.value);
+    }
+    if (edbV1Id.present) {
+      map['edb_v1_id'] = Variable<String>(edbV1Id.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -757,6 +955,10 @@ class ExercisesCompanion extends UpdateCompanion<Exercise> {
           ..write('isCustom: $isCustom, ')
           ..write('isFavorite: $isFavorite, ')
           ..write('notes: $notes, ')
+          ..write('extraImages: $extraImages, ')
+          ..write('source: $source, ')
+          ..write('credit: $credit, ')
+          ..write('edbV1Id: $edbV1Id, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -8862,6 +9064,10 @@ typedef $$ExercisesTableCreateCompanionBuilder =
       Value<bool> isCustom,
       Value<bool> isFavorite,
       Value<String?> notes,
+      Value<String> extraImages,
+      Value<String?> source,
+      Value<String?> credit,
+      Value<String?> edbV1Id,
       Value<int> rowid,
     });
 typedef $$ExercisesTableUpdateCompanionBuilder =
@@ -8879,6 +9085,10 @@ typedef $$ExercisesTableUpdateCompanionBuilder =
       Value<bool> isCustom,
       Value<bool> isFavorite,
       Value<String?> notes,
+      Value<String> extraImages,
+      Value<String?> source,
+      Value<String?> credit,
+      Value<String?> edbV1Id,
       Value<int> rowid,
     });
 
@@ -8998,6 +9208,26 @@ class $$ExercisesTableFilterComposer
 
   ColumnFilters<String> get notes => $composableBuilder(
     column: $table.notes,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get extraImages => $composableBuilder(
+    column: $table.extraImages,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get source => $composableBuilder(
+    column: $table.source,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get credit => $composableBuilder(
+    column: $table.credit,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get edbV1Id => $composableBuilder(
+    column: $table.edbV1Id,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -9125,6 +9355,26 @@ class $$ExercisesTableOrderingComposer
     column: $table.notes,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get extraImages => $composableBuilder(
+    column: $table.extraImages,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get source => $composableBuilder(
+    column: $table.source,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get credit => $composableBuilder(
+    column: $table.credit,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get edbV1Id => $composableBuilder(
+    column: $table.edbV1Id,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$ExercisesTableAnnotationComposer
@@ -9182,6 +9432,20 @@ class $$ExercisesTableAnnotationComposer
 
   GeneratedColumn<String> get notes =>
       $composableBuilder(column: $table.notes, builder: (column) => column);
+
+  GeneratedColumn<String> get extraImages => $composableBuilder(
+    column: $table.extraImages,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get source =>
+      $composableBuilder(column: $table.source, builder: (column) => column);
+
+  GeneratedColumn<String> get credit =>
+      $composableBuilder(column: $table.credit, builder: (column) => column);
+
+  GeneratedColumn<String> get edbV1Id =>
+      $composableBuilder(column: $table.edbV1Id, builder: (column) => column);
 
   Expression<T> routineExercisesRefs<T extends Object>(
     Expression<T> Function($$RoutineExercisesTableAnnotationComposer a) f,
@@ -9278,6 +9542,10 @@ class $$ExercisesTableTableManager
                 Value<bool> isCustom = const Value.absent(),
                 Value<bool> isFavorite = const Value.absent(),
                 Value<String?> notes = const Value.absent(),
+                Value<String> extraImages = const Value.absent(),
+                Value<String?> source = const Value.absent(),
+                Value<String?> credit = const Value.absent(),
+                Value<String?> edbV1Id = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ExercisesCompanion(
                 id: id,
@@ -9293,6 +9561,10 @@ class $$ExercisesTableTableManager
                 isCustom: isCustom,
                 isFavorite: isFavorite,
                 notes: notes,
+                extraImages: extraImages,
+                source: source,
+                credit: credit,
+                edbV1Id: edbV1Id,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -9310,6 +9582,10 @@ class $$ExercisesTableTableManager
                 Value<bool> isCustom = const Value.absent(),
                 Value<bool> isFavorite = const Value.absent(),
                 Value<String?> notes = const Value.absent(),
+                Value<String> extraImages = const Value.absent(),
+                Value<String?> source = const Value.absent(),
+                Value<String?> credit = const Value.absent(),
+                Value<String?> edbV1Id = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ExercisesCompanion.insert(
                 id: id,
@@ -9325,6 +9601,10 @@ class $$ExercisesTableTableManager
                 isCustom: isCustom,
                 isFavorite: isFavorite,
                 notes: notes,
+                extraImages: extraImages,
+                source: source,
+                credit: credit,
+                edbV1Id: edbV1Id,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

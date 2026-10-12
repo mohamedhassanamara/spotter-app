@@ -69,7 +69,9 @@ void main() {
     expect(sessions!.map((s) => s.source).toSet(), {'liftoff'});
     final bw = await tester.runAsync(() => h.db!.select(h.db!.bodyWeights).get());
     expect(bw!.single.kg, 107);
-    final picked = await tester.runAsync(() => (h.db!.select(h.db!.sessionExercises)..where((t) => t.exerciseId.equals('Good_Morning'))).get());
+    // The picked exercise is whichever "Good Morning" the list showed (the merged library has variants).
+    final picked = await tester.runAsync(() => h.db!.customSelect(
+        "SELECT se.id FROM session_exercises se JOIN exercises e ON e.id = se.exercise_id WHERE e.name = 'Good Morning'").get());
     expect(picked, hasLength(1));
     final pullSets = await tester.runAsync(() => h.db!.customSelect(
           'SELECT ws.weight AS w FROM workout_sets ws JOIN session_exercises se ON se.id = ws.session_exercise_id '

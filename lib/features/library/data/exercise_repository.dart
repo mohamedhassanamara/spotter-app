@@ -7,7 +7,7 @@ import '../../../core/db/database.dart';
 import '../domain/exercise_info.dart';
 
 /// Bump when assets/exercises.json is refreshed so existing installs re-import it.
-const int exerciseDatasetVersion = 3; // v2: + assets/extra_exercises.json; v3: + Assisted Dip (Machine)
+const int exerciseDatasetVersion = 4; // v2: + extra_exercises.json; v3: + Assisted Dip (Machine); v4: + library_sources.json (wger, ExerciseDB V1)
 
 class ExerciseRepository {
   ExerciseRepository(this._db);
@@ -17,18 +17,27 @@ class ExerciseRepository {
 
   /// Imports the bundled free-exercise-db catalogue on first launch (or after a dataset bump).
   /// Favorites and custom exercises are preserved.
-  Future<void> ensureSeeded({String? jsonOverride, String? extraJsonOverride}) async {
+  Future<void> ensureSeeded({String? jsonOverride, String? extraJsonOverride, String? sourcesJsonOverride}) async {
     final current = int.tryParse(await _db.getSetting(_datasetKey) ?? '');
     if (current == exerciseDatasetVersion) return;
     final raw = jsonOverride ?? await rootBundle.loadString('assets/exercises.json');
     final extraRaw = extraJsonOverride ?? await rootBundle.loadString('assets/extra_exercises.json');
+    final sourcesRaw = sourcesJsonOverride ?? await rootBundle.loadString('assets/library_sources.json');
+    final sources = jsonDecode(sourcesRaw) as Map<String, dynamic>;
+    final attach = (sources['attach'] as Map<String, dynamic>).cast<String, Map<String, dynamic>>();
     final list = [
       ...(jsonDecode(raw) as List<dynamic>).cast<Map<String, dynamic>>(),
       // Built-in additions (Pendulum Squat, machine Assisted Pull-Up…), same shape, ids start with sp_.
       ...((jsonDecode(extraRaw) as Map<String, dynamic>)['exercises'] as List<dynamic>).cast<Map<String, dynamic>>(),
     ];
+    // Free sources merged in (tool/library/build_library.py): new entries get new ids (wger_…,
+    // edbv1_…); duplicates only attach their media to the existing id, so history never moves.
+    final added = (sources['exercises'] as List<dynamic>).cast<Map<String, dynamic>>();
     await _db.batch((b) {
-      for (final e in list) {
+      void put(Map<String, dynamic> e, {required String source}) {
+        final a = attach[e['id']];
+        final images = (e['images'] as List<dynamic>? ?? const []).cast<String>();
+        final full = images.where((u) => u.startsWith('http')).toList();
         final companion = ExercisesCompanion.insert(
           id: e['id'] as String,
           name: e['name'] as String,
@@ -39,13 +48,24 @@ class ExerciseRepository {
           mechanic: Value(e['mechanic'] as String?),
           category: Value(e['category'] as String?),
           instructions: Value(jsonEncode(e['instructions'] ?? const [])),
-          images: Value(jsonEncode(e['images'] ?? const [])),
+          images: Value(jsonEncode([for (final i in images) if (!i.startsWith('http')) i])),
+          extraImages: Value(jsonEncode([...full, ...?(a?['images'] as List<dynamic>?)?.cast<String>()])),
+          source: Value(source),
+          credit: Value(jsonEncode([if (e['credit'] != null) e['credit'], ...?(a?['credits'] as List<dynamic>?)])),
+          edbV1Id: Value((e['edb_v1_id'] ?? a?['edb_v1_id']) as String?),
         );
         b.insert(
           _db.exercises,
           companion,
           onConflict: DoUpdate((old) => companion.copyWith(isFavorite: const Value.absent())),
         );
+      }
+
+      for (final e in list) {
+        put(e, source: 'fedb');
+      }
+      for (final e in added) {
+        put(e, source: e['source'] as String);
       }
     });
     await _db.putSetting(_datasetKey, '$exerciseDatasetVersion');
@@ -67,6 +87,10 @@ class ExerciseRepository {
         isCustom: e.isCustom,
         isFavorite: e.isFavorite,
         notes: e.notes,
+        extraImages: _list(e.extraImages),
+        source: e.isCustom ? 'custom' : e.source,
+        edbV1Id: e.edbV1Id,
+        credits: e.credit == null ? const [] : (jsonDecode(e.credit!) as List<dynamic>).cast<Map<String, dynamic>>(),
       );
 
   /// The whole catalogue keyed by id; updates on favorite toggles and custom exercise edits.

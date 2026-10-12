@@ -13,7 +13,6 @@ import '../../../core/widgets/common.dart';
 import '../../../router.dart';
 import '../../coach/domain/suggestion_engine.dart' show formatKg;
 import '../../export/data/export_service.dart';
-import '../../tutorials/presentation/tutorial_video.dart';
 import '../../program/data/program_repository.dart';
 
 class SettingsScreen extends ConsumerWidget {
@@ -172,8 +171,6 @@ class SettingsScreen extends ConsumerWidget {
           ),
           const SectionHeader('Program'),
           const AppCard(padding: EdgeInsets.symmetric(vertical: 4), child: _ProgramTiles()),
-          const SectionHeader('Tutorials'),
-          const AppCard(padding: EdgeInsets.symmetric(vertical: 4), child: _YouTubeKeyTile()),
           const SectionHeader('Import'),
           AppCard(
             padding: const EdgeInsets.symmetric(vertical: 4),
@@ -212,10 +209,19 @@ class SettingsScreen extends ConsumerWidget {
               ListTile(
                 leading: const Icon(Icons.info_outline_rounded),
                 title: const Text('Spotter 1.0.0'),
-                subtitle: const Text('All data stays on this iPhone. Exercise data: free-exercise-db (public domain). '
-                    'Long-press for the error log.'),
+                subtitle: const Text('All data stays on this iPhone. Long-press for the error log.'),
                 // Release builds too: the error log is how bugs get reported from the phone.
                 onLongPress: () => context.push(Routes.errorLog),
+              ),
+              const ListTile(
+                key: ValueKey('credits'),
+                leading: Icon(Icons.copyright_rounded),
+                title: Text('Credits'),
+                subtitle: Text(
+                  'Exercises and photos: free-exercise-db (public domain) and wger.de (CC-BY-SA 3.0/4.0, CC-BY 4.0, CC0; '
+                  'authors on each exercise page). Animations: ExerciseDB V1 free data (non-commercial personal use). '
+                  'Program videos: Jeff Nippard, The Min-Max Program (links from your PDF). Body map: react-native-body-highlighter (MIT).',
+                ),
               ),
               if (kDebugMode)
                 ListTile(
@@ -274,33 +280,6 @@ class SettingsScreen extends ConsumerWidget {
           ],
         ),
       ),
-    );
-  }
-}
-
-class _YouTubeKeyTile extends ConsumerWidget {
-  const _YouTubeKeyTile();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final key = ref.watch(youtubeKeyProvider).value;
-    final masked = key == null ? 'Not set: paste YouTube links to pin tutorials' : 'Set (…${key.substring(key.length - 4)}). Stored in the iOS Keychain';
-    return ListTile(
-      leading: const Icon(Icons.smart_display_outlined),
-      title: const Text('YouTube Data API key (optional)'),
-      subtitle: Text(masked),
-      trailing: key == null ? const Icon(Icons.chevron_right_rounded) : const Icon(Icons.check_circle_rounded, color: AppColors.primary),
-      onTap: () async {
-        final value = await promptText(context, title: 'YouTube Data API key', initial: key ?? '', hint: 'AIza… (leave empty to remove)');
-        if (value == null) return;
-        await ref.read(youtubeKeyStoreProvider).write(value);
-        ref.invalidate(youtubeKeyProvider);
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(value.trim().isEmpty ? 'API key removed' : 'API key saved to the Keychain')),
-          );
-        }
-      },
     );
   }
 }

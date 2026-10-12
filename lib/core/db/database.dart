@@ -34,7 +34,7 @@ class AppDatabase extends _$AppDatabase {
   factory AppDatabase.open() => AppDatabase(driftDatabase(name: 'spotter'));
 
   @override
-  int get schemaVersion => 6;
+  int get schemaVersion => 7;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -79,6 +79,12 @@ class AppDatabase extends _$AppDatabase {
           }
           if (from < 6) {
             await m.createTable(edbV2Maps);
+          }
+          if (from < 7) {
+            await m.addColumn(exercises, exercises.extraImages);
+            await m.addColumn(exercises, exercises.source);
+            await m.addColumn(exercises, exercises.credit);
+            await m.addColumn(exercises, exercises.edbV1Id);
           }
         },
         beforeOpen: (details) async {

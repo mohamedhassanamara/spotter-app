@@ -5,9 +5,10 @@ import 'package:go_router/go_router.dart';
 import '../../../app_providers.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../router.dart';
+import '../../program/presentation/program_video.dart';
 import 'exercise_demo.dart';
 
-/// Compact form check during a workout: the 3D loop and the first cues, without leaving the session.
+/// In-workout (i): Jeff's demo for program exercises, else the GIF or photos, plus the first cues.
 Future<void> showFormCheckSheet(BuildContext context, String exerciseId) {
   return showModalBottomSheet<void>(
     context: context,
@@ -16,6 +17,7 @@ Future<void> showFormCheckSheet(BuildContext context, String exerciseId) {
     builder: (ctx) => Consumer(
       builder: (ctx, ref, _) {
         final info = ref.watch(catalogProvider).value?[exerciseId];
+        final video = ref.watch(programVideosProvider).value?[exerciseId];
         return SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
           child: Column(
@@ -26,7 +28,9 @@ Future<void> showFormCheckSheet(BuildContext context, String exerciseId) {
               Center(
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 300),
-                  child: ExerciseDemo(exerciseId: exerciseId, fallbackImages: info?.imageUrls ?? const [], compact: true),
+                  child: video != null
+                      ? ProgramVideoPlayer(video: video)
+                      : ExerciseDemo(exerciseId: exerciseId, fallbackImages: info?.imageUrls ?? const [], compact: true),
                 ),
               ),
               if (info != null && info.instructions.isNotEmpty) ...[
@@ -47,7 +51,7 @@ Future<void> showFormCheckSheet(BuildContext context, String exerciseId) {
                   context.push(Routes.exercise(exerciseId));
                 },
                 icon: const Icon(Icons.smart_display_rounded),
-                label: const Text('Full tutorial & video'),
+                label: const Text('Exercise page'),
               ),
             ],
           ),

@@ -21,6 +21,10 @@ class ExerciseInfo {
     required this.isCustom,
     required this.isFavorite,
     required this.notes,
+    this.extraImages = const [],
+    this.source,
+    this.edbV1Id,
+    this.credits = const [],
   })  : targets = targetsFor(id, name, primaryMuscles, secondaryMuscles),
         equipmentKind = EquipmentKind.fromDataset(equipment);
 
@@ -38,19 +42,30 @@ class ExerciseInfo {
   final bool isFavorite;
   final String? notes;
 
+  /// Full image URLs from other free sources (wger), shown after the free-exercise-db photos.
+  final List<String> extraImages;
+
+  /// fedb | wger | edb_v1 | custom (null for older rows: free-exercise-db).
+  final String? source;
+
+  /// Its own ExerciseDB V1 GIF, when it came from (or was merged with) a V1 entry.
+  final String? edbV1Id;
+
+  /// Licence/author credits of the merged sources, e.g. {source: wger.de, license: CC-BY-SA 4.0, author}.
+  final List<Map<String, dynamic>> credits;
+
   final MuscleTargets targets;
   final EquipmentKind equipmentKind;
 
   /// Compounds default to 6–10 reps, everything else to 10–15.
   bool get isCompound => mechanic == 'compound';
 
-  List<String> get imageUrls => [for (final p in images) '$exerciseImageBaseUrl$p'];
+  /// free-exercise-db photos first, then other sources' images.
+  List<String> get imageUrls => [for (final p in images) p.startsWith('http') ? p : '$exerciseImageBaseUrl$p', ...extraImages];
 
   RepRange defaultRange({RepRange compound = RepRange.compound, RepRange isolation = RepRange.isolation}) =>
       isCompound ? compound : isolation;
 
-  /// YouTube search link, never a hard-coded video.
-  Uri get formTutorialUri => Uri.https('www.youtube.com', '/results', {'search_query': '$name proper form'});
 
   String get muscleSummary {
     final all = [...primaryMuscles, ...secondaryMuscles];

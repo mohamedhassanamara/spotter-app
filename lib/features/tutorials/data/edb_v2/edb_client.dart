@@ -23,7 +23,7 @@ class EdbException implements Exception {
   final String message;
 
   /// The fallbacks the exercise page takes silently.
-  bool get fallsBack => status == 401 || status == 403 || status == 429 || code == 'BUDGET' || code == 'NO_KEY' || code == 'NETWORK';
+  bool get fallsBack => status == 401 || status == 403 || status == 429 || code == 'DISABLED' || code == 'BUDGET' || code == 'NO_KEY' || code == 'NETWORK';
 
   @override
   String toString() => 'EdbException($status $code${message.isEmpty ? '' : ': $message'})';
@@ -125,6 +125,19 @@ class EdbExercise {
 abstract interface class EdbApi {
   Future<List<EdbSearchHit>> search(String query);
   Future<EdbExercise> exercise(String exerciseId);
+}
+
+/// ExerciseDB V2 switched off (the default): every call fails at once, without any network request.
+class EdbDisabled implements EdbApi {
+  const EdbDisabled();
+
+  static const _off = EdbException(0, 'DISABLED', 'ExerciseDB V2 is off (Settings → Debug)');
+
+  @override
+  Future<List<EdbSearchHit>> search(String query) => Future.error(_off);
+
+  @override
+  Future<EdbExercise> exercise(String exerciseId) => Future.error(_off);
 }
 
 /// One line of the V2 debug log: calls, fallbacks and errors (never the key).

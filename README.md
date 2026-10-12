@@ -177,15 +177,14 @@ Importing the same file again only adds sessions that aren't already in the app.
   `LIFTOFF_CSV=~/Desktop/DOCS/liftoff_workout_data.csv LIFTOFF_BW=108@2026-04-19,106@2026-10-11 flutter test test/tool/import_summary_test.dart`.
   The CSV is personal data; never commit it.
 
-## Tutorials
+## Exercise media
 
-- Each exercise page has **3D | Video | Steps** tabs. The 3D demo loops, with play/pause and 0.5×.
-- **Pin a video:** paste a YouTube link in the Video tab, or add an optional **YouTube Data API key** in
-  Settings → Tutorials (stored in the iOS Keychain) to search inside the app. To get a key: Google Cloud
-  Console → enable "YouTube Data API v3" → Credentials → API key.
-- **Fix a wrong or missing 3D demo:** debug build → Settings → Debug menu → **Media matching**. Pick
-  the right animation (stored on the device), tap the copy icon, and paste the JSON into
-  `assets/media_overrides.json` to make it permanent.
+- Program exercises (your routines and the program's listed substitutions) play Jeff Nippard's demo video
+  from the Min-Max PDF, embedded in the app.
+- Everything else shows the ExerciseDB V1 GIF, or photos, plus the Steps tab.
+- Lists show a static thumbnail.
+- **Fix a wrong or missing GIF:** debug build → Settings → Debug menu → **Media matching**. Pick the right
+  animation, tap the copy icon, and paste the JSON into `assets/media_overrides.json`.
 
 ## Editable data
 
@@ -214,11 +213,16 @@ Importing the same file again only adds sessions that aren't already in the app.
 
 ## Credits
 
-- Exercise library: [free-exercise-db](https://github.com/yuhonas/free-exercise-db) (public domain).
+- Exercise library: [free-exercise-db](https://github.com/yuhonas/free-exercise-db) (public domain) and
+  [wger](https://wger.de) exercise data and images (CC-BY-SA 3.0/4.0, CC-BY 4.0, CC0; licence and author
+  per exercise, shown on its page), merged by `tool/library/build_library.py`.
+- Program demo videos: Jeff Nippard, The Min-Max Program (links extracted from your own PDF by
+  `tool/program/extract_videos.py`).
 - Anatomical body map paths: [react-native-body-highlighter](https://github.com/HichamELBSI/react-native-body-highlighter)
   by ELABBASSI Hicham, MIT License (`docs/licenses/react-native-body-highlighter-LICENSE.txt`).
-- 3D exercise demos: [ExerciseDB](https://exercisedb.dev) V1 free dataset (non-commercial use, attribution
-  required). Only metadata is bundled; GIFs download on first view.
+- Exercise animations: [ExerciseDB](https://exercisedb.dev) V1 free dataset (non-commercial personal use,
+  attribution required). Only metadata is bundled; GIFs download on first view. ExerciseDB V2 (paid,
+  RapidAPI) is off by default (Settings → Debug).
 - Fonts: [Oxanium](https://fonts.google.com/specimen/Oxanium) and [Barlow](https://fonts.google.com/specimen/Barlow) (SIL Open Font License, `docs/licenses/`).
 - Rank emblems: original artwork drawn in code for this app.
 

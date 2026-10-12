@@ -12,7 +12,7 @@ import '../domain/media_matcher.dart';
 
 /// Bump when the matcher or the ExerciseDB asset changes so matches are recomputed
 /// (manual picks are kept).
-const int mediaMatchVersion = 2; // v2: dead GIFs (HTTP 404) excluded
+const int mediaMatchVersion = 3; // v2: dead GIFs (HTTP 404) excluded; v3: exercises with their own V1 GIF
 
 /// GIFs are downloaded on first view and kept for a year.
 final gifCacheManager = CacheManager(Config(
@@ -86,7 +86,20 @@ class MediaRepository {
     await _db.batch((b) {
       for (final r in results) {
         final MediaMatchesCompanion row;
-        if (overrides.containsKey(r.exerciseId)) {
+        final own = catalog[r.exerciseId]?.edbV1Id;
+        if (!overrides.containsKey(r.exerciseId) && own != null && byId.containsKey(own)) {
+          // The exercise came from (or was merged with) this V1 entry: its own GIF, no guessing.
+          final e = byId[own]!;
+          row = MediaMatchesCompanion.insert(
+            exerciseId: r.exerciseId,
+            edbId: Value(e.id),
+            edbName: Value(e.name),
+            gifUrl: Value(e.gifUrl),
+            confidence: const Value(1),
+            source: const Value('library'),
+            updatedAt: now,
+          );
+        } else if (overrides.containsKey(r.exerciseId)) {
           final e = byId[overrides[r.exerciseId]];
           row = MediaMatchesCompanion.insert(
             exerciseId: r.exerciseId,

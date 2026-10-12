@@ -10,17 +10,11 @@ import '../../../app_providers.dart';
 import '../../../core/db/database.dart';
 import '../../../core/theme/app_theme.dart';
 import '../data/media_repository.dart';
-import '../data/video_repository.dart';
 
 final mediaRepositoryProvider = Provider((ref) => MediaRepository(ref.watch(databaseProvider)));
-final pinnedVideoRepositoryProvider = Provider((ref) => PinnedVideoRepository(ref.watch(databaseProvider)));
 
 final mediaMatchProvider = StreamProvider.family<MediaMatchRow?, String>(
   (ref, id) => ref.watch(mediaRepositoryProvider).watchMatch(id),
-);
-
-final pinnedVideoProvider = StreamProvider.family<PinnedVideo?, String>(
-  (ref, id) => ref.watch(pinnedVideoRepositoryProvider).watch(id),
 );
 
 /// Decoded GIF frames, cached per URL for the session.

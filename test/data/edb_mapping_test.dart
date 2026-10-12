@@ -98,7 +98,7 @@ void main() {
       expect((await repo.get(bench.id))!.edbId, 'exr_bench');
       final q = (await repo.get(fly.id))!;
       expect(q.edbId, isNull);
-      expect(q.candidates, contains('exr_c1'));
+      expect(q.candidates, '[]', reason: 'no candidate data from the API is stored');
     });
 
     test('never spends more than the run budget; leftover calls check muscles of borderline matches', () async {
@@ -133,5 +133,10 @@ void main() {
     test('the bundled asset parses', () async {
       expect(await repo.seedFromAsset(File(EdbMappingRepository.assetPath).readAsStringSync(), now: now), greaterThanOrEqualTo(0));
     });
+  });
+
+  test('disabled (the default): no network, every call fails as a fallback', () async {
+    const api = EdbDisabled();
+    await expectLater(api.search('bench'), throwsA(isA<EdbException>().having((e) => e.fallsBack, 'fallsBack', true)));
   });
 }
