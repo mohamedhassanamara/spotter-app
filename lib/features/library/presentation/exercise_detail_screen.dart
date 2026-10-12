@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../../app_providers.dart';
+import '../../ranks/data/rank_exclusions.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/common.dart';
 import '../../../router.dart';
@@ -291,6 +292,17 @@ class _HistorySection extends ConsumerWidget {
             Icon(Icons.chevron_right_rounded, color: AppColors.primary),
           ]),
         ]),
+      ),
+      const SizedBox(height: 12),
+      AppCard(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: SwitchListTile(
+          key: const ValueKey('count-toward-ranks'),
+          title: const Text('Count toward ranks'),
+          subtitle: const Text('Off: the sets stay in your history and PRs, but this exercise never affects a rank.'),
+          value: !(ref.watch(rankExclusionsProvider).value ?? const <String>{}).contains(info.id),
+          onChanged: (on) => RankExclusions(ref.read(databaseProvider)).set(info.id, excluded: !on),
+        ),
       ),
     ]);
   }

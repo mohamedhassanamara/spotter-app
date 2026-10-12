@@ -15,6 +15,7 @@ import '../../gamification/domain/streaks.dart';
 import '../../gamification/domain/xp.dart';
 import '../../library/domain/exercise_info.dart';
 import '../../program/data/program_repository.dart';
+import '../../ranks/data/rank_exclusions.dart';
 import '../../ranks/data/ranks_repository.dart';
 import '../../ranks/domain/ranks.dart';
 import '../../readiness/data/readiness_repository.dart';
@@ -136,8 +137,9 @@ class FinishService {
     final defs = await GamificationRepository.loadAchievementDefs();
     final bwLoaded = RanksRepository.bodyweightLoadedIds(standards, catalog);
     final bodyweight = (await _bodyweights.latest())?.kg ?? 0;
+    final excluded = await RankExclusions(_db).load();
     final history = await _history.load(catalog);
-    final ranks = RanksRepository.compute(history: history, standards: standards, bodyweightLoaded: bwLoaded, bodyweight: bodyweight, now: now);
+    final ranks = RanksRepository.compute(history: history, standards: standards, bodyweightLoaded: bwLoaded, bodyweight: bodyweight, now: now, excluded: excluded);
     final stats = buildAchievementStats(
       history: history,
       redDays: await _readiness.redDays(),
@@ -164,6 +166,7 @@ class FinishService {
     final defs = await GamificationRepository.loadAchievementDefs();
     final bwLoaded = RanksRepository.bodyweightLoadedIds(standards, catalog);
     final bodyweight = (await _bodyweights.latest())?.kg ?? 0;
+    final excluded = await RankExclusions(_db).load();
 
     final before = await _history.load(catalog);
     final xpBefore = await _gami.totalXp();
@@ -240,13 +243,13 @@ class FinishService {
 
     // Rank changes.
     final rankChanges = _rankChanges(
-      RanksRepository.compute(history: before, standards: standards, bodyweightLoaded: bwLoaded, bodyweight: bodyweight, now: now),
-      RanksRepository.compute(history: after, standards: standards, bodyweightLoaded: bwLoaded, bodyweight: bodyweight, now: now),
+      RanksRepository.compute(history: before, standards: standards, bodyweightLoaded: bwLoaded, bodyweight: bodyweight, now: now, excluded: excluded),
+      RanksRepository.compute(history: after, standards: standards, bodyweightLoaded: bwLoaded, bodyweight: bodyweight, now: now, excluded: excluded),
     );
 
     // Achievements.
     final ranksAfter =
-        RanksRepository.compute(history: after, standards: standards, bodyweightLoaded: bwLoaded, bodyweight: bodyweight, now: now);
+        RanksRepository.compute(history: after, standards: standards, bodyweightLoaded: bwLoaded, bodyweight: bodyweight, now: now, excluded: excluded);
     final bestTier = ranksAfter.exercises.fold<int>(-1, (m, r) => r.score.tier.index > m ? r.score.tier.index : m);
     final allPrs = findPrs(after, bodyweightLoaded: bwLoaded, bodyweight: bodyweight).length;
     final stats = buildAchievementStats(

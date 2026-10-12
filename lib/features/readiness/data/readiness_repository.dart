@@ -82,6 +82,10 @@ class ReadinessRepository {
 
     BodyMassSample? mass;
     try {
+      // The whole year, so imported and older sessions are ranked at the bodyweight of their day.
+      for (final s in await source.bodyMassHistory(now.subtract(const Duration(days: 365)), now)) {
+        await _storeBodyMass(s);
+      }
       mass = await source.latestBodyMass();
     } catch (e) {
       debugPrint('Body mass read failed: $e');

@@ -140,6 +140,17 @@ class FakeHealthDataSource implements HealthDataSource {
     return BodyMassSample(day, bodyMassOn(day));
   }
 
+  /// One weigh-in a week at 07:00.
+  @override
+  Future<List<BodyMassSample>> bodyMassHistory(DateTime from, DateTime to) async {
+    final out = <BodyMassSample>[];
+    for (var d = dateOnly(from); !d.isAfter(to); d = addDays(d, 7)) {
+      final at = DateTime(d.year, d.month, d.day, 7);
+      if (_inRange(at, from, to)) out.add(BodyMassSample(at, bodyMassOn(d)));
+    }
+    return out;
+  }
+
   @override
   Future<bool> writeStrengthWorkout({required DateTime start, required DateTime end, String? title}) async {
     workouts?.add((start, end));

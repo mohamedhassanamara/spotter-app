@@ -241,53 +241,95 @@ class _RoundButton extends StatelessWidget {
 }
 
 /// Prompts for a number with a numeric keyboard. Returns null if cancelled.
-Future<double?> promptNumber(BuildContext context, {required String title, double? initial, String? suffix, bool decimal = true}) async {
-  final controller = TextEditingController(text: initial == null ? '' : _trim(initial));
-  final result = await showDialog<double>(
-    context: context,
-    builder: (ctx) => AlertDialog(
-      title: Text(title),
-      content: TextField(
-        controller: controller,
-        autofocus: true,
+Future<double?> promptNumber(BuildContext context, {required String title, double? initial, String? suffix, bool decimal = true, String? message}) =>
+    showDialog<double>(
+      context: context,
+      builder: (_) => _PromptDialog(
+        title: title,
+        initial: initial == null ? '' : _trim(initial),
+        message: message,
+        action: 'OK',
         keyboardType: TextInputType.numberWithOptions(decimal: decimal),
-        decoration: InputDecoration(suffixText: suffix),
-        onSubmitted: (v) => Navigator.of(ctx).pop(double.tryParse(v.replaceAll(',', '.'))),
+        suffix: suffix,
+        parse: (v) => double.tryParse(v.replaceAll(',', '.')),
       ),
-      actions: [
-        TextButton(onPressed: () => Navigator.of(ctx).pop(), child: const Text('Cancel')),
-        FilledButton(
-          onPressed: () => Navigator.of(ctx).pop(double.tryParse(controller.text.replaceAll(',', '.'))),
-          child: const Text('OK'),
-        ),
-      ],
-    ),
-  );
-  controller.dispose();
-  return result;
+    );
+
+Future<String?> promptText(BuildContext context, {required String title, String initial = '', String? hint, int maxLines = 1}) =>
+    showDialog<String>(
+      context: context,
+      builder: (_) => _PromptDialog(
+        title: title,
+        initial: initial,
+        hint: hint,
+        maxLines: maxLines,
+        action: 'Save',
+        parse: (v) => v,
+      ),
+    );
+
+/// Text-entry dialog that owns its controller, so the controller outlives the closing animation
+/// (disposing it right after `showDialog` returned crashed while the dialog was still fading out).
+class _PromptDialog<T> extends StatefulWidget {
+  const _PromptDialog({
+    required this.title,
+    required this.initial,
+    required this.action,
+    required this.parse,
+    this.message,
+    this.hint,
+    this.suffix,
+    this.maxLines = 1,
+    this.keyboardType,
+  });
+
+  final String title;
+  final String initial;
+  final String action;
+  final T? Function(String) parse;
+  final String? message;
+  final String? hint;
+  final String? suffix;
+  final int maxLines;
+  final TextInputType? keyboardType;
+
+  @override
+  State<_PromptDialog<T>> createState() => _PromptDialogState<T>();
 }
 
-Future<String?> promptText(BuildContext context, {required String title, String initial = '', String? hint, int maxLines = 1}) async {
-  final controller = TextEditingController(text: initial);
-  final result = await showDialog<String>(
-    context: context,
-    builder: (ctx) => AlertDialog(
-      title: Text(title),
-      content: TextField(
-        controller: controller,
-        autofocus: true,
-        maxLines: maxLines,
-        textCapitalization: TextCapitalization.sentences,
-        decoration: InputDecoration(hintText: hint),
-      ),
+class _PromptDialogState<T> extends State<_PromptDialog<T>> {
+  late final TextEditingController _controller = TextEditingController(text: widget.initial);
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _submit() => Navigator.of(context).pop(widget.parse(_controller.text));
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text(widget.title),
+      content: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+        if (widget.message != null) ...[Text(widget.message!), const SizedBox(height: 12)],
+        TextField(
+          controller: _controller,
+          autofocus: true,
+          maxLines: widget.maxLines,
+          keyboardType: widget.keyboardType,
+          textCapitalization: widget.keyboardType == null ? TextCapitalization.sentences : TextCapitalization.none,
+          decoration: InputDecoration(hintText: widget.hint, suffixText: widget.suffix),
+          onSubmitted: widget.maxLines == 1 ? (_) => _submit() : null,
+        ),
+      ]),
       actions: [
-        TextButton(onPressed: () => Navigator.of(ctx).pop(), child: const Text('Cancel')),
-        FilledButton(onPressed: () => Navigator.of(ctx).pop(controller.text), child: const Text('Save')),
+        TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Cancel')),
+        FilledButton(onPressed: _submit, child: Text(widget.action)),
       ],
-    ),
-  );
-  controller.dispose();
-  return result;
+    );
+  }
 }
 
 Future<bool> confirm(BuildContext context, {required String title, required String message, String action = 'Confirm', bool destructive = false}) async {

@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "description": "Liftoff exercise name -> Spotter exercise id. Checked before routine names, exact names and fuzzy matching. An object with \"custom\" creates a stable custom exercise (id liftoff_<slug>) for names the library has no equivalent for. Edit freely; re-importing applies changes to new imports only. Different Liftoff names never share one exercise when their loads aren't comparable (dumbbell vs barbell, one arm vs two, machine vs barbell), so each keeps its own history and suggestions.",
+  "description": "Liftoff exercise name -> Spotter exercise id. Checked before routine names, exact names and fuzzy matching. An object with \"custom\" creates a stable custom exercise (id liftoff_<slug>) for names the library has no equivalent for. Edit freely; re-importing applies changes to new imports only. Different Liftoff names never share one exercise when their loads aren't comparable (dumbbell vs barbell, one arm vs two, machine vs barbell), so each keeps its own history and suggestions. Value forms: a library id; {\"id\", \"exclude_from_ranks\": true} to keep an exercise out of ranking (its records stay); {\"by_weight\": [...]} when one Liftoff name covered different equipment depending on the load (heaviest band first, chosen per session by its top weight); {\"custom\": {...}}.",
   "map": {
     "Assisted Dips": "sp_assisted_dip_machine",
     "Assisted Pull Ups": "sp_assisted_pull_up_machine",
@@ -10,7 +10,7 @@
     "Bent Over Row": "Bent_Over_Barbell_Row",
     "Cable Fly": "Cable_Crossover",
     "Cable Hammer Curl": "Cable_Hammer_Curls_-_Rope_Attachment",
-    "Cable Kickback": "One-Legged_Cable_Kickback",
+    "Cable Kickback": {"id": "One-Legged_Cable_Kickback", "exclude_from_ranks": true},
     "Cable Reverse Fly": "Cable_Rear_Delt_Fly",
     "Cable Woodchopper": "Standing_Cable_Wood_Chop",
     "Close Grip Dumbbell Bench Press": "Close-Grip_Dumbbell_Press",
@@ -40,7 +40,7 @@
     "Reverse Grip Lat Pulldown": "Underhand_Cable_Pulldowns",
     "Reverse Wrist Curl": "Palms-Down_Wrist_Curl_Over_A_Bench",
     "Seated Dumbbell Shoulder Press": "Seated_Dumbbell_Press",
-    "Shoulder Press": "Leverage_Shoulder_Press",
+    "Shoulder Press": {"by_weight": [{"min_kg": 80, "id": "Machine_Shoulder_Military_Press", "name": "Machine Shoulder Press"}, {"min_kg": 0, "id": "Barbell_Shoulder_Press", "name": "Barbell Shoulder Press"}]},
     "Single Arm Tricep Pushdown": "Cable_One_Arm_Tricep_Extension",
     "Sled Leg Press": "Leg_Press",
     "Smith Machine Bulgarian Split Squat": "Smith_Single-Leg_Split_Squat",

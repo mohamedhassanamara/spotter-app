@@ -10,6 +10,7 @@ import '../../../core/settings/app_settings.dart';
 import '../../gamification/domain/achievements.dart';
 import '../../library/domain/exercise_info.dart';
 import '../../library/domain/load_kinds.dart';
+import '../../ranks/data/rank_exclusions.dart';
 import '../../workout/data/finish_service.dart';
 import '../domain/liftoff.dart';
 import '../domain/liftoff_mapping.dart';
@@ -141,7 +142,10 @@ class LiftoffImportService {
               ..where((t) => t.source.equals(liftoffSource) & t.externalId.equals(s.key)))
             .getSingleOrNull();
         if (already != null) continue;
-        final ids = [for (final e in s.exercises) mapping[e.name]!.exerciseId!];
+        final resolved = [
+          for (final e in s.exercises) mapping[e.name]!.resolveFor(e.sets.map((x) => x.weightKg).reduce(math.max)),
+        ];
+        final ids = [for (final r in resolved) r.$1];
         final routine = _guessRoutine(ids, routines);
         final sessionId = await _db.into(_db.sessions).insert(SessionsCompanion.insert(
               name: routine?.$2 ?? 'Liftoff workout',
@@ -158,14 +162,14 @@ class LiftoffImportService {
         var setIndex = 0;
         for (var i = 0; i < s.exercises.length; i++) {
           final e = s.exercises[i];
-          final m = mapping[e.name]!;
           final scheme = e.scheme;
           final observed = RepRange(e.sets.map((x) => x.reps).reduce(math.min), e.sets.map((x) => x.reps).reduce(math.max));
           final first = scheme.rangeFor(0) ?? observed;
-          final assisted = isAssisted(m.exerciseId!) || isLiftoffAssisted(e.name);
+          final (exerciseId, displayName) = resolved[i];
+          final assisted = isAssisted(exerciseId) || isLiftoffAssisted(e.name);
           final exId = await _db.into(_db.sessionExercises).insert(SessionExercisesCompanion.insert(
                 sessionId: sessionId,
-                exerciseId: m.exerciseId!,
+                exerciseId: exerciseId,
                 position: i,
                 repMin: first.min,
                 repMax: first.max,
@@ -173,7 +177,7 @@ class LiftoffImportService {
                 restSeconds: 120,
                 targetRir: const Value(0),
                 notes: Value(e.sets.map((x) => x.note).firstWhere((n) => n.isNotEmpty, orElse: () => '')),
-                displayName: Value(m.displayName),
+                displayName: Value(displayName),
               ));
           for (var j = 0; j < e.sets.length; j++) {
             final x = e.sets[j];
@@ -196,6 +200,8 @@ class LiftoffImportService {
           }
         }
       }
+      final excluded = {for (final m in preview.mappings) if (m.excludeFromRanks) m.exerciseId!};
+      if (excluded.isNotEmpty) await RankExclusions(_db).addAll(excluded);
       if (sessions > 0 && await _db.getSetting(liftoffImportedAtKey) == null) {
         await _db.putSetting(liftoffImportedAtKey, now.toIso8601String());
       }

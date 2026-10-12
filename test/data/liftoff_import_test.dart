@@ -14,6 +14,7 @@ import 'package:spotter/features/import/data/liftoff_import_service.dart';
 import 'package:spotter/features/import/domain/liftoff_mapping.dart';
 import 'package:spotter/features/library/data/exercise_repository.dart';
 import 'package:spotter/features/library/domain/exercise_info.dart';
+import 'package:spotter/features/ranks/data/rank_exclusions.dart';
 import 'package:spotter/features/workout/data/history_repository.dart';
 
 void main() {
@@ -111,5 +112,20 @@ void main() {
     // A slot range never done is re-anchored from recent e1RM.
     final r = ctx.suggest(cat['Leverage_Chest_Press']!, const RepRange(10, 12), 2, 1);
     expect(r.kind, SuggestionKind.seeded);
+  });
+
+  test('weight-banded names pick the exercise per session; excluded names stay out of ranking', () async {
+    const csv2 = 'Date,Duration,Workout Name,Exercise Name,Set Order,Weight,Reps,Distance,Seconds,RPE,Notes\n'
+        '2026-05-01 08:00:00,00 hours 50 minutes 00 seconds,,Shoulder Press,0,66.1386786555,8,0,0,,\n'
+        '2026-05-01 08:00:00,00 hours 50 minutes 00 seconds,,Cable Kickback,0,4.4092452437,30,0,0,,\n'
+        '2026-06-01 08:00:00,00 hours 50 minutes 00 seconds,,Shoulder Press,0,198.416035967,6,0,0,,\n';
+    final p = await service.preview(csv2, catalog: catalog);
+    expect(p.mappingFor('Shoulder Press').weightRules, hasLength(2));
+    await service.commit(p, catalog: catalog, settings: const SettingsModel(), now: now);
+    final rows = await (db.select(db.sessionExercises)..orderBy([(t) => OrderingTerm.asc(t.id)])).get();
+    final press = rows.where((r) => r.exerciseId != 'One-Legged_Cable_Kickback').toList();
+    expect(press.map((r) => r.exerciseId), ['Barbell_Shoulder_Press', 'Machine_Shoulder_Military_Press']);
+    expect(press.map((r) => r.displayName), ['Barbell Shoulder Press', 'Machine Shoulder Press']);
+    expect(await RankExclusions(db).load(), {'One-Legged_Cable_Kickback'});
   });
 }

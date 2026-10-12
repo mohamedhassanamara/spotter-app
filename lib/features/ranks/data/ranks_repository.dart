@@ -36,6 +36,7 @@ class RanksRepository {
     required Set<String> bodyweightLoaded,
     required double bodyweight,
     required DateTime now,
+    Set<String> excluded = const {},
   }) {
     final best = history.bestValidE1rm(
       from: addDays(dateOnly(now), -RankCalculator.windowDays),
@@ -43,6 +44,7 @@ class RanksRepository {
       bodyweightLoaded: bodyweightLoaded,
       bodyweight: bodyweight,
     );
+    best.removeWhere((id, _) => excluded.contains(id));
     return RankCalculator(standards).compute(bestE1rmByExercise: best, bodyweight: bodyweight);
   }
 }

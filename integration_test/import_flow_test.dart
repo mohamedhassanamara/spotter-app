@@ -55,14 +55,20 @@ void main() {
     await h.waitFor(find.text('PICKED'), reason: 'manual pick applied');
     expect(find.textContaining('CHECK THESE'), findsNothing);
 
-    debugPrint('STEP import');
+    debugPrint('STEP import: no bodyweight known yet, so the app asks for it');
+    await tester.runAsync(() => h.db!.delete(h.db!.bodyWeights).go());
     await h.tap(find.text('Import 2 sessions'));
+    await h.waitFor(find.text('Your bodyweight'), reason: 'bodyweight prompt');
+    await tester.enterText(find.descendant(of: find.byType(AlertDialog), matching: find.byType(TextField)), '107');
+    await h.tap(find.text('OK'));
     await h.waitFor(find.text('IMPORT COMPLETE'), timeout: const Duration(seconds: 30));
     expect(find.text('2 sessions · 9 sets'), findsOneWidget);
     expect(find.text('1 custom exercises created'), findsOneWidget, reason: 'Dragon Flag from the name map');
 
     final sessions = await tester.runAsync(() => h.db!.select(h.db!.sessions).get());
     expect(sessions!.map((s) => s.source).toSet(), {'liftoff'});
+    final bw = await tester.runAsync(() => h.db!.select(h.db!.bodyWeights).get());
+    expect(bw!.single.kg, 107);
     final picked = await tester.runAsync(() => (h.db!.select(h.db!.sessionExercises)..where((t) => t.exerciseId.equals('Good_Morning'))).get());
     expect(picked, hasLength(1));
     final pullSets = await tester.runAsync(() => h.db!.customSelect(

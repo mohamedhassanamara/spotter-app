@@ -23,6 +23,7 @@ import 'features/library/domain/exercise_info.dart';
 import 'features/program/data/program_repository.dart';
 import 'features/program/domain/program.dart';
 import 'features/ranks/data/ladder_migration.dart';
+import 'features/ranks/data/rank_exclusions.dart';
 import 'features/ranks/data/ranks_repository.dart';
 import 'features/ranks/domain/body_regions.dart';
 import 'features/ranks/domain/ranks.dart';
@@ -167,6 +168,9 @@ final bodyweightLoadedIdsProvider = FutureProvider<Set<String>>((ref) async {
   return RanksRepository.bodyweightLoadedIds(standards, catalog);
 });
 
+/// Exercises hidden from ranking.
+final rankExclusionsProvider = StreamProvider<Set<String>>((ref) => RankExclusions(ref.watch(databaseProvider)).watch());
+
 final ranksProvider = FutureProvider<RankSummary>((ref) async {
   final history = await ref.watch(historyProvider.future);
   final standards = await ref.watch(standardsProvider.future);
@@ -178,6 +182,7 @@ final ranksProvider = FutureProvider<RankSummary>((ref) async {
     bodyweightLoaded: bwIds,
     bodyweight: bw,
     now: ref.watch(clockProvider)(),
+    excluded: await ref.watch(rankExclusionsProvider.future),
   );
 });
 

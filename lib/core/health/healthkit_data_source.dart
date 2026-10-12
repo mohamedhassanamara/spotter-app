@@ -119,6 +119,15 @@ class HealthKitDataSource implements HealthDataSource {
   }
 
   @override
+  Future<List<BodyMassSample>> bodyMassHistory(DateTime from, DateTime to) async {
+    final points = await _read([HealthDataType.WEIGHT], from, to);
+    return [
+      for (final p in points)
+        if ((_num(p) ?? 0) > 0) BodyMassSample(p.dateFrom.toLocal(), _num(p)!),
+    ]..sort((a, b) => a.at.compareTo(b.at));
+  }
+
+  @override
   Future<bool> writeStrengthWorkout({required DateTime start, required DateTime end, String? title}) async {
     if (!Platform.isIOS) return false;
     try {

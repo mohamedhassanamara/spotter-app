@@ -358,3 +358,23 @@ lift. The new rules:
 72 kg × 12 comes out as Challenger. The import therefore unlocked the Diamond and Master rank
 achievements. Section 8 replaces the standards with machine- and cable-specific ones and should revoke
 rank achievements that are no longer earned.
+
+## Section 3 follow-ups (owner review)
+
+- **Shoulder Press** in Liftoff covered two pieces of equipment. The name map now picks per session
+  from the session's top weight: 80 kg and up is **Machine Shoulder Press**
+  (`Machine_Shoulder_Military_Press`); anything lighter is **Barbell Shoulder Press**
+  (`Barbell_Shoulder_Press`). In the export every Shoulder Press session was 20–30 kg, so all of them
+  import as barbell.
+- **Cable Kickback** maps to the glute kickback and is imported **hidden from ranks**.
+- **Hide from ranks** is a general feature: Exercise page → *Count toward ranks*. A hidden exercise
+  keeps its records (history, PRs, volume) but never feeds a rank. The setting is
+  `rank_excluded_exercises`, and a name-map entry can set it with `"exclude_from_ranks": true`.
+- **Bodyweight on import.** Apple Health sync now stores every weigh-in from the last year, not only
+  the latest, so section 8 can rank each set against the bodyweight of its day (as Liftoff does). If no
+  bodyweight is known when you import, the app asks for it instead of assuming one. The summary
+  generator has no default either: `LIFTOFF_BW` is required, either as one weight or as weigh-ins
+  (`108@2026-04-19,106@2026-10-11`).
+- **Bug fixed along the way.** The number and text prompts disposed their text controller while the
+  dialog was still animating closed. That threw "TextEditingController was used after being
+  disposed", for example from the Settings bodyweight prompt. The dialog now owns its controller.

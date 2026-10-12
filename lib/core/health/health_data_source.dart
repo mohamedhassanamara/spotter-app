@@ -36,6 +36,10 @@ abstract interface class HealthDataSource {
 
   Future<BodyMassSample?> latestBodyMass();
 
+  /// Every body mass sample in the window, oldest first. Ranks score each set against the
+  /// bodyweight on its day, so the history matters, not just the latest value.
+  Future<List<BodyMassSample>> bodyMassHistory(DateTime from, DateTime to);
+
   /// Saves a Traditional Strength Training workout. Returns true on success.
   Future<bool> writeStrengthWorkout({required DateTime start, required DateTime end, String? title});
 }

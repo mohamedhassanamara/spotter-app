@@ -1,7 +1,11 @@
 // Imports the owner's real Liftoff export into an in-memory database and writes
 // docs/IMPORT_SUMMARY.md. Skipped unless LIFTOFF_CSV points at the file (never committed):
 //
-//   LIFTOFF_CSV=~/Desktop/DOCS/liftoff_workout_data.csv LIFTOFF_BW=80 flutter test test/tool/import_summary_test.dart
+//   LIFTOFF_CSV=~/Desktop/DOCS/liftoff_workout_data.csv LIFTOFF_BW=108@2026-04-19,106@2026-10-11 \
+//     flutter test test/tool/import_summary_test.dart
+//
+// LIFTOFF_BW is required (no default): a weight, or weigh-ins as kg@yyyy-mm-dd separated by commas,
+// standing in for the Apple Health history the phone reads.
 import 'dart:io';
 import 'dart:math' as math;
 
@@ -33,11 +37,21 @@ void main() {
 
   test('import the real Liftoff export and write docs/IMPORT_SUMMARY.md', () async {
     final now = DateTime(2026, 10, 12, 9);
-    final bw = double.tryParse(Platform.environment['LIFTOFF_BW'] ?? '') ?? 80;
+    final bwSpec = Platform.environment['LIFTOFF_BW'];
+    if (bwSpec == null) fail('Set LIFTOFF_BW (e.g. 108@2026-04-19,106@2026-10-11): ranks depend on bodyweight.');
+    final weighIns = [
+      for (final part in bwSpec.split(','))
+        part.contains('@')
+            ? (double.parse(part.split('@')[0]), DateTime.parse(part.split('@')[1]))
+            : (double.parse(part), now),
+    ]..sort((a, b) => a.$2.compareTo(b.$2));
+    final bw = weighIns.last.$1;
     final db = AppDatabase(NativeDatabase.memory());
     addTearDown(db.close);
     await bootstrapDatabase(db);
-    await BodyWeightRepository(db).addManual(bw, at: now);
+    for (final (kg, at) in weighIns) {
+      await BodyWeightRepository(db).addManual(kg, at: at);
+    }
     final catalog = await ExerciseRepository(db).watchCatalog().first;
     final service = LiftoffImportService(db);
     final csv = File(path!).readAsStringSync();
@@ -70,7 +84,7 @@ void main() {
       ..writeln('| Custom exercises created | ${result.customsCreated} |')
       ..writeln('| Re-import of the same file | ${again.alreadyImported} already imported, 0 new |')
       ..writeln('| Achievements unlocked (no XP) | ${result.achievements.isEmpty ? '—' : result.achievements.map((a) => a.title).join(', ')} |')
-      ..writeln('| Bodyweight used for assisted/bodyweight lifts | ${formatKg(bw)} kg |')
+      ..writeln('| Bodyweight (weigh-ins) | ${weighIns.map((w) => '${formatKg(w.$1)} kg on ${fmt.format(w.$2)}').join(', ')} |')
       ..writeln()
       ..writeln('## Skipped rows')
       ..writeln()

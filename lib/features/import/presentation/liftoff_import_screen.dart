@@ -76,8 +76,29 @@ class _LiftoffImportScreenState extends ConsumerState<LiftoffImportScreen> {
     await _refreshPreview();
   }
 
+  /// Ranks compare lifts to bodyweight. With nothing from Apple Health or onboarding, ask once
+  /// rather than assume a number.
+  Future<bool> _ensureBodyweight() async {
+    if (await ref.read(bodyWeightRepositoryProvider).latest() != null) return true;
+    if (!mounted) return false;
+    final kg = await promptNumber(
+      context,
+      title: 'Your bodyweight',
+      suffix: 'kg',
+      message: 'Apple Health has no weight for you. Ranks compare your lifts to your bodyweight, '
+          'so enter it once (you can change it in Settings).',
+    );
+    if (kg == null || kg < 30 || kg > 300) {
+      if (mounted) setState(() => _error = 'Import needs a bodyweight between 30 and 300 kg.');
+      return false;
+    }
+    await ref.read(bodyWeightRepositoryProvider).addManual(kg);
+    return true;
+  }
+
   Future<void> _import() async {
     final p = _preview!;
+    if (!await _ensureBodyweight()) return;
     setState(() => _busy = true);
     try {
       final r = await ref.read(liftoffImportServiceProvider).commit(
