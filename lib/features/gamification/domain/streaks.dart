@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:math' as math;
 
 import '../../../core/domain/dates.dart';
@@ -124,5 +125,139 @@ class StreakCalculator {
       perWeek[weekStart(d)] = (perWeek[weekStart(d)] ?? 0) + 1;
     }
     return perWeek.values.fold<int>(0, (s, v) => s + math.min(maxSmartRestPerWeek, v));
+  }
+}
+
+
+/// A streak carried over from another app (Liftoff): on [date] the streak was [days] long.
+/// Stored as a setting, never as fake sessions; weeks before [date] aren't evaluated.
+class StreakOffset {
+  const StreakOffset({required this.date, required this.days});
+  final DateTime date;
+  final int days;
+
+  static const settingKey = 'streak_offset';
+
+  String encode() => jsonEncode({'date': dayKey(date), 'days': days});
+
+  static StreakOffset? decode(String? raw) {
+    if (raw == null) return null;
+    final j = jsonDecode(raw) as Map<String, dynamic>;
+    return StreakOffset(date: parseDayKey(j['date'] as String), days: (j['days'] as num).toInt());
+  }
+}
+
+class DayStreak {
+  const DayStreak({
+    required this.days,
+    required this.longestDays,
+    required this.frozen,
+    required this.sessionsNeeded,
+    required this.daysLeftInWeek,
+    required this.goal,
+    required this.carriedOver,
+  });
+
+  /// Current streak in days (rest days included).
+  final int days;
+  final int longestDays;
+
+  /// This week's goal can no longer be reached: the count has stopped and the streak ends on Sunday
+  /// unless more sessions than days remain are logged.
+  final bool frozen;
+
+  /// Sessions still needed this week (0 when the goal is met).
+  final int sessionsNeeded;
+
+  /// Days after today until the week ends (Sunday).
+  final int daysLeftInWeek;
+
+  /// This week's effective goal (smart rest included).
+  final int goal;
+
+  /// Part of the current streak comes from a [StreakOffset].
+  final bool carriedOver;
+
+  bool get met => sessionsNeeded == 0;
+}
+
+/// Liftoff-style day streak on top of the weekly goal:
+/// - every day counts (rest days too) while that week's goal is still achievable (at most one
+///   session per remaining day) or already met;
+/// - the streak breaks only when a week ends below its goal (smart rest lowers the goal), and the new
+///   one starts on the following Monday;
+/// - with no history before it, the first streak starts on the first session day.
+class DayStreakCalculator {
+  const DayStreakCalculator();
+
+  DayStreak compute({
+    required StreakResult weekly,
+    required List<DateTime> sessionDays,
+    required DateTime now,
+    StreakOffset? offset,
+  }) {
+    final today = dateOnly(now);
+    final perDay = <DateTime, int>{};
+    for (final d in sessionDays) {
+      final day = dateOnly(d);
+      perDay[day] = (perDay[day] ?? 0) + 1;
+    }
+    final firstSession = perDay.keys.fold<DateTime?>(null, (m, d) => m == null || d.isBefore(m) ? d : m);
+
+    final offsetDay = offset == null ? null : dateOnly(offset.date);
+    if (offsetDay == null && firstSession == null) {
+      final w = weekly.thisWeek;
+      return DayStreak(days: 0, longestDays: 0, frozen: false, sessionsNeeded: w.effectiveGoal, daysLeftInWeek: 7 - today.weekday, goal: w.effectiveGoal, carriedOver: false);
+    }
+    final evalFrom = offsetDay != null ? weekStart(offsetDay) : (firstSession == null ? weekStart(today) : weekStart(firstSession));
+    // Days before [runStart] belong to the previous run (or to the offset).
+    var runStart = offsetDay ?? firstSession ?? today;
+    var run = offset == null ? 0 : offset.days - 1;
+    var longest = offset?.days ?? 0;
+    var carried = offset != null;
+    var frozen = false;
+    WeekStatus? current;
+
+    for (final w in weekly.weeks) {
+      if (w.weekStart.isBefore(evalFrom)) continue;
+      final isCurrent = w.weekStart == weekStart(today);
+      if (isCurrent) current = w;
+      var done = 0;
+      for (var i = 0; i < 7; i++) {
+        final d = addDays(w.weekStart, i);
+        if (d.isAfter(today)) break;
+        done += perDay[d] ?? 0;
+        final remaining = 6 - i;
+        final counts = done >= w.effectiveGoal || done + remaining >= w.effectiveGoal;
+        if (d.isBefore(runStart)) continue;
+        if (counts) {
+          run++;
+        } else if (isCurrent && d == today) {
+          frozen = true;
+        }
+      }
+      if (!isCurrent && !w.met) {
+        longest = math.max(longest, run);
+        run = 0;
+        carried = false;
+        runStart = addDays(w.weekStart, 7);
+      }
+    }
+    longest = math.max(longest, run);
+
+    final week = current ?? weekly.thisWeek;
+    var doneThisWeek = 0;
+    for (var d = weekStart(today); !d.isAfter(today); d = addDays(d, 1)) {
+      doneThisWeek += perDay[d] ?? 0;
+    }
+    return DayStreak(
+      days: run,
+      longestDays: longest,
+      frozen: frozen,
+      sessionsNeeded: math.max(0, week.effectiveGoal - doneThisWeek),
+      daysLeftInWeek: 7 - today.weekday,
+      goal: week.effectiveGoal,
+      carriedOver: carried && run > 0,
+    );
   }
 }

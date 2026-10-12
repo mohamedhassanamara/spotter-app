@@ -801,3 +801,35 @@ then × 1.10.
 | Dumbbell side bend | free | yes | bench press × 0.33 | 0.38 | 0.627 |
 | Cable wood chop | cable |  | bench press × 0.33 | 0.38 | 0.627 |
 | Pallof press | cable |  | bench press × 0.23 | 0.265 | 0.437 |
+
+## v2.1 section 4: day streak (Liftoff style)
+
+- **Shown in days, decided by weeks.** The weekly-goal streak stays underneath
+  (`StreakCalculator`; achievements such as "On a Roll" still use goal weeks). The day count
+  (`DayStreakCalculator`) works like this:
+  - **Counting:** a day counts, rest days included, while that week's goal is still achievable or
+    already met.
+  - **"Achievable":** sessions so far + days left in the week ≥ the week's effective goal. That
+    assumes at most one session per remaining day, so a goal that would need double sessions counts
+    as out of reach.
+  - **Pausing:** if the goal goes out of reach mid-week, the count pauses. Home says how many sessions
+    are needed and how many days are left. Logging enough sessions resumes the count.
+  - **Breaking:** the streak breaks only when a week ends below its goal. The new one starts on the
+    following Monday.
+  - Smart rest days still lower the goal. A Red day on a planned rest day (Wed, Sun) doesn't count
+    as smart rest, because you weren't going to train that day anyway.
+  - With no history, the first streak starts on the first session day, not on that week's Monday.
+- **The 177-day Liftoff streak is a migration offset, not sessions.** The first Liftoff import writes
+  `streak_offset = {date: import date, days: 177}` (`liftoffStreakDays`).
+  - On that date the streak is 177, then it counts on.
+  - Weeks before that date are not evaluated, so Liftoff weeks that missed today's 5-a-week goal can't
+    break it.
+  - A missed week after the import breaks it like any other.
+- **Longest streak** is the longest run in days, and at least the carried-over 177 (it includes the
+  offset run).
+- **Settings → Streak → Carried-over streak** shows and edits the offset; 0 removes it. The date stays
+  the import date.
+- **Fixed along the way:** onboarding showed a fixed weekly goal of 6 and saved it over the 5 sessions
+  a week the program install had set. It now starts from the stored goal.
+- **Known limitation:** Liftoff's extra 1-minute sessions (for example one Side Leg Raise set hours
+  after the main workout) count as sessions toward the weekly goal, as recorded.

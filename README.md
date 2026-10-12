@@ -76,7 +76,8 @@ next routine from Home), Pull (assisted pull-ups with negative load) and Setting
 Liftoff (preview, fixing an unmatched name, bodyweight prompt, import, re-import is a no-op, and the
 next workout's suggestion built from the imported sessions; a fixture CSV stands in for the iOS file
 picker), and Ranks (regions with X/Y ranked, muscle rows and sheet, tapping muscles on the front and
-back body map, hiding an exercise from ranks, old rank badges revoked silently). A flow fails if anything is
+back body map, hiding an exercise from ranks, old rank badges revoked silently), and Streak (the
+carried-over Liftoff streak on Home, edited in Settings, shown in days on Profile). A flow fails if anything is
 written to the in-app error log.
 
 ### Reporting bugs from the phone
@@ -118,6 +119,13 @@ Useful routes:
 - In a workout, each set shows its own target (reps and RIR, where RIR 0 = failure). Warm-up sets are
   generated from the program's % pyramid, and Block 2 techniques appear on the last set; tap one to see
   how it works.
+
+## Streak
+
+The streak is counted in days, like Liftoff. Every day counts, rest days included, as long as this
+week's session goal is still reachable. A week that ends below its goal breaks the streak, and smart
+rest days lower the goal. Your Liftoff streak (177 days on the import date) carries over as an offset
+that you can edit in Settings → Streak.
 
 ## Ranks
 

@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../../app_providers.dart';
+import '../../gamification/domain/streaks.dart';
 import '../../../core/domain/equipment.dart';
 import '../../../core/domain/training.dart';
 import '../../../core/theme/app_theme.dart';
@@ -184,6 +185,8 @@ class SettingsScreen extends ConsumerWidget {
               onTap: () => context.push(Routes.importLiftoff),
             ),
           ),
+          const SectionHeader('Streak'),
+          const AppCard(padding: EdgeInsets.symmetric(vertical: 4), child: _StreakOffsetTile()),
           const SectionHeader('Export'),
           AppCard(
             child: Column(
@@ -399,4 +402,42 @@ class _ProgramTiles extends ConsumerWidget {
     ]);
   }
 
+}
+
+
+/// The streak carried over from Liftoff: shown and editable, never turned into sessions.
+class _StreakOffsetTile extends ConsumerWidget {
+  const _StreakOffsetTile();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final offset = ref.watch(streakOffsetProvider).value;
+    return ListTile(
+      key: const ValueKey('streak-offset'),
+      leading: const Icon(Icons.local_fire_department_rounded, color: AppColors.warning),
+      title: const Text('Carried-over streak'),
+      subtitle: Text(offset == null
+          ? 'None. Set the day streak you had in another app; it continues from today.'
+          : '${offset.days} days on ${DateFormat.yMMMd().format(offset.date)}, counted on from there'),
+      trailing: Text(offset == null ? 'Set' : '${offset.days} d', style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
+      onTap: () async {
+        final v = await promptNumber(
+          context,
+          title: 'Carried-over streak',
+          suffix: 'days',
+          decimal: false,
+          initial: offset?.days.toDouble(),
+          message: 'Your streak in days on ${DateFormat.yMMMd().format(offset?.date ?? DateTime.now())}. '
+              'Weeks before that date are not checked against your goal.',
+        );
+        if (v == null || v < 0 || v > 5000) return;
+        final db = ref.read(databaseProvider);
+        if (v == 0) {
+          await db.deleteSetting(StreakOffset.settingKey);
+        } else {
+          await db.putSetting(StreakOffset.settingKey, StreakOffset(date: offset?.date ?? ref.read(clockProvider)(), days: v.round()).encode());
+        }
+      },
+    );
+  }
 }

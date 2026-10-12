@@ -17,7 +17,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   final _pages = PageController();
   final _bw = TextEditingController();
   int _page = 0;
-  int _goal = 6;
+  /// Follows the stored goal (the program install sets 5 a week) until the lifter changes it here.
+  int? _goalChoice;
+  int get _goal => _goalChoice ?? ref.read(currentSettingsProvider).weeklyGoal;
   bool _healthAsked = false;
   bool _healthBusy = false;
   String? _healthStatus;
@@ -73,6 +75,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   @override
   Widget build(BuildContext context) {
+    ref.watch(currentSettingsProvider);
     return Scaffold(
       body: SafeArea(
         child: Column(
@@ -182,8 +185,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         StepperField(
           label: 'Sessions per week',
           value: '$_goal',
-          onMinus: () => setState(() => _goal = (_goal - 1).clamp(1, 14)),
-          onPlus: () => setState(() => _goal = (_goal + 1).clamp(1, 14)),
+          onMinus: () => setState(() => _goalChoice = (_goal - 1).clamp(1, 14)),
+          onPlus: () => setState(() => _goalChoice = (_goal + 1).clamp(1, 14)),
         ),
         const SizedBox(height: 28),
         FilledButton(onPressed: _finish, child: const Text('Let\'s lift')),

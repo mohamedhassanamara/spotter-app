@@ -296,6 +296,7 @@ class _Streak extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final streak = ref.watch(streakProvider);
+    final days = ref.watch(dayStreakProvider);
     final history = ref.watch(historyProvider).value;
     final red = ref.watch(redDaysProvider);
     final now = ref.watch(clockProvider)();
@@ -322,7 +323,7 @@ class _Streak extends ConsumerWidget {
         const SectionLabel('Streak'),
         GameCard(
           onTap: () => context.go(Routes.profile),
-          accent: streak.current > 0 ? AppColors.warning : null,
+          accent: (days?.days ?? 0) > 0 ? AppColors.warning : null,
           child: Column(
             children: [
               Row(
@@ -331,8 +332,8 @@ class _Streak extends ConsumerWidget {
                   const SizedBox(width: 10),
                   Expanded(
                     child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      Text('${streak.current}-week streak', style: AppType.title),
-                      Text('Longest ${streak.longest} weeks', style: AppType.bodyS.copyWith(color: AppColors.textSecondary)),
+                      Text('${days?.days ?? 0}-day streak', key: const ValueKey('day-streak'), style: AppType.title),
+                      Text('Longest ${days?.longestDays ?? 0} days', style: AppType.bodyS.copyWith(color: AppColors.textSecondary)),
                     ]),
                   ),
                   Text(
@@ -343,6 +344,17 @@ class _Streak extends ConsumerWidget {
               ),
               const SizedBox(height: 14),
               DayDots(states: [for (var i = 0; i < 7; i++) stateFor(addDays(monday, i))]),
+              if (days != null && days.days > 0 && !days.met)
+                Padding(
+                  padding: const EdgeInsets.only(top: 10),
+                  child: Text(
+                    days.frozen
+                        ? 'Streak paused: ${days.sessionsNeeded} more session${days.sessionsNeeded == 1 ? '' : 's'} needed and '
+                            '${days.daysLeftInWeek} day${days.daysLeftInWeek == 1 ? '' : 's'} left. It ends on Sunday below ${days.goal}.'
+                        : '${days.sessionsNeeded} more session${days.sessionsNeeded == 1 ? '' : 's'} by Sunday keeps it going.',
+                    style: AppType.bodyS.copyWith(color: days.frozen ? AppColors.danger : AppColors.textSecondary),
+                  ),
+                ),
               if (week.smartRestDays > 0)
                 Padding(
                   padding: const EdgeInsets.only(top: 10),

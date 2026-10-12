@@ -37,6 +37,7 @@ class ProfileScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final level = ref.watch(levelProvider);
     final streak = ref.watch(streakProvider);
+    final days = ref.watch(dayStreakProvider);
     final discipline = ref.watch(disciplineProvider);
     final bw = ref.watch(latestBodyWeightProvider).value;
     final overall = ref.watch(ranksProvider).value?.overall;
@@ -106,13 +107,16 @@ class ProfileScreen extends ConsumerWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       StatTile(
-                        label: 'Weekly streak',
-                        value: '${streak?.current ?? 0} wk',
+                        label: 'Streak',
+                        value: '${days?.days ?? 0} days',
                         icon: Icons.local_fire_department_rounded,
                         color: AppColors.warning,
                       ),
                       const SizedBox(height: 6),
-                      Text('Longest: ${streak?.longest ?? 0} wk', style: const TextStyle(color: AppColors.textSecondary)),
+                      Text(
+                        'Longest: ${days?.longestDays ?? 0} days · ${streak?.current ?? 0} goal week${streak?.current == 1 ? '' : 's'} in a row',
+                        style: const TextStyle(color: AppColors.textSecondary),
+                      ),
                     ],
                   ),
                 ),

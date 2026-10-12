@@ -212,6 +212,24 @@ final streakProvider = Provider<StreakResult?>((ref) {
   );
 });
 
+/// Streak carried over from Liftoff (setting `streak_offset`), if any.
+final streakOffsetProvider = StreamProvider<StreakOffset?>(
+  (ref) => ref.watch(databaseProvider).watchSettings().map((m) => StreakOffset.decode(m[StreakOffset.settingKey])),
+);
+
+/// Liftoff-style day streak on top of the weekly goal.
+final dayStreakProvider = Provider<DayStreak?>((ref) {
+  final weekly = ref.watch(streakProvider);
+  final history = ref.watch(historyProvider).value;
+  if (weekly == null || history == null) return null;
+  return const DayStreakCalculator().compute(
+    weekly: weekly,
+    sessionDays: [for (final s in history.sessions) s.startedAt],
+    now: ref.watch(clockProvider)(),
+    offset: ref.watch(streakOffsetProvider).value,
+  );
+});
+
 final disciplineProvider = Provider<double?>((ref) {
   final history = ref.watch(historyProvider).value;
   if (history == null) return null;

@@ -8,6 +8,7 @@ import '../../../core/db/database.dart';
 import '../../../core/domain/training.dart';
 import '../../../core/settings/app_settings.dart';
 import '../../gamification/domain/achievements.dart';
+import '../../gamification/domain/streaks.dart';
 import '../../library/domain/exercise_info.dart';
 import '../../library/domain/load_kinds.dart';
 import '../../ranks/data/rank_exclusions.dart';
@@ -20,6 +21,10 @@ const liftoffSource = 'liftoff';
 /// Setting written on the first successful import (ISO date). The day streak's starting offset is
 /// anchored to it.
 const liftoffImportedAtKey = 'liftoff_imported_at';
+
+/// The owner's Liftoff day streak on the day of the import (section 4). It becomes a
+/// [StreakOffset] on the first import; Settings → Streak can change it.
+const int liftoffStreakDays = 177;
 
 /// What an import would do, shown before anything is written.
 class LiftoffPreview {
@@ -205,6 +210,9 @@ class LiftoffImportService {
       if (excluded.isNotEmpty) await RankExclusions(_db).addAll(excluded);
       if (sessions > 0 && await _db.getSetting(liftoffImportedAtKey) == null) {
         await _db.putSetting(liftoffImportedAtKey, now.toIso8601String());
+        if (await _db.getSetting(StreakOffset.settingKey) == null) {
+          await _db.putSetting(StreakOffset.settingKey, StreakOffset(date: now, days: liftoffStreakDays).encode());
+        }
       }
     });
 

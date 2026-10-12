@@ -11,6 +11,7 @@ import 'package:spotter/core/domain/training.dart';
 import 'package:spotter/core/settings/app_settings.dart';
 import 'package:spotter/features/coach/data/coach_context.dart';
 import 'package:spotter/features/gamification/domain/stats.dart';
+import 'package:spotter/features/gamification/domain/streaks.dart';
 import 'package:spotter/features/import/data/liftoff_import_service.dart';
 import 'package:spotter/features/import/domain/liftoff_mapping.dart';
 import 'package:spotter/features/library/data/exercise_repository.dart';
@@ -62,6 +63,9 @@ void main() {
     expect(sessions.first.endedAt, DateTime(2026, 9, 1, 9, 10));
     expect(sessions.every((s) => s.xpEarned == 0), isTrue);
     expect(await db.getSetting(liftoffImportedAtKey), now.toIso8601String());
+    final offset = StreakOffset.decode(await db.getSetting(StreakOffset.settingKey))!;
+    expect(offset.days, 177, reason: 'the Liftoff streak carries over as an offset on the import date');
+    expect(offset.date, DateTime(2026, 10, 12));
 
     final sets = await db.select(db.workoutSets).get();
     expect(sets.every((s) => s.completed && s.suggestedWeight == null && !s.isOverride), isTrue);
