@@ -19,20 +19,26 @@ class RankScore {
 
   final double value;
 
-  Tier get tier => Tier.values[value.floor()];
+  // Floors use a small epsilon so a score sitting on a boundary (or an average of identical
+  // scores that lost an ulp) never drops into the previous division.
+  static const double _eps = 1e-9;
+
+  int get _tierIndex => (value + _eps).floor().clamp(0, Tier.values.length - 1);
+
+  Tier get tier => Tier.values[_tierIndex];
 
   /// Progress within the tier, 0..1.
-  double get tierProgress => value - value.floor();
+  double get tierProgress => (value - _tierIndex).clamp(0.0, 1.0);
 
   /// 0 = III (lowest), 1 = II, 2 = I (highest).
-  int get divisionIndex => (tierProgress * 3).floor().clamp(0, 2);
+  int get divisionIndex => (tierProgress * 3 + _eps).floor().clamp(0, 2);
 
   String get divisionLabel => const ['III', 'II', 'I'][divisionIndex];
 
   String get label => '${tier.label} $divisionLabel';
 
   /// Progress within the current division, 0..1.
-  double get divisionProgress => (tierProgress * 3) - divisionIndex;
+  double get divisionProgress => ((tierProgress * 3) - divisionIndex).clamp(0.0, 1.0);
 
   @override
   String toString() => label;
@@ -160,6 +166,12 @@ class RankSummary {
   final Map<MuscleGroup, List<StrengthStandard>> unrankedHints;
 }
 
+/// Mean of rank scores on the same continuous scale. Identical scores average back to the same rank.
+RankScore averageScore(Iterable<RankScore> scores) {
+  final list = scores.toList();
+  return RankScore(list.fold<double>(0, (a, s) => a + s.value) / list.length);
+}
+
 class RankCalculator {
   const RankCalculator(this.standards);
 
@@ -206,9 +218,7 @@ class RankCalculator {
       groups[g] = GroupRank(group: g, score: RankScore(value), contributions: contributions);
     }
 
-    final overall = groups.isEmpty
-        ? null
-        : RankScore(groups.values.fold<double>(0, (a, g) => a + g.score.value) / groups.length);
+    final overall = groups.isEmpty ? null : averageScore(groups.values.map((g) => g.score));
     return RankSummary(exercises: ranks, groups: groups, overall: overall, unrankedHints: hints);
   }
 }

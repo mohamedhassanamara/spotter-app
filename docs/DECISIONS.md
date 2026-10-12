@@ -59,3 +59,14 @@ session's top weight if there was no suggestion). It's fixed for the 7 days, so 
 ## Extra equipment increments
 Besides barbell 2.5, dumbbell 2 and machine/cable 2.5, kettlebells use 4 kg and added load on
 bodyweight lifts uses 2.5 kg. Both are editable in Settings.
+
+## v2 phase 0: overall rank and volume
+- **Overall rank.** Overall was already the mean of the group scores on the continuous scale. In
+  the reported screenshot it was right: five groups (biceps, forearms, abs, quads, hamstrings,
+  calves) were Silver, which averaged to 2.994 = Silver I. The real defect was at boundaries: a
+  score exactly on a division threshold, or an average of identical scores that lost a floating-point
+  ulp, could floor into the previous division. Tier and division floors now use a 1e-9 epsilon, and a
+  test checks every tier/division (including exact boundaries) round-trips: all groups at X Y →
+  overall X Y.
+- **Volume.** One pure formatter (`lib/core/domain/format.dart`) is used everywhere: whole kg with
+  thousands separators below 10,000 kg ("6,763 kg"), then tonnes with one decimal ("15.6 t").

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+export '../domain/format.dart';
+
 import '../../features/ranks/domain/ranks.dart';
 import '../../features/readiness/domain/readiness.dart';
 import '../theme/app_theme.dart';
@@ -340,4 +342,3 @@ String formatClock(Duration d) {
   return '${neg ? '-' : ''}$m:${s.toString().padLeft(2, '0')}';
 }
 
-String formatVolume(double kg) => kg >= 10000 ? '${(kg / 1000).toStringAsFixed(1)} t' : '${kg.round()} kg';
