@@ -23,11 +23,14 @@ Suggestion run(
   bool calibrating = false,
   List<String> loadGroups = const [],
   FreezeState? freeze,
+  int targetRir = 2,
+  bool rangeMatched = true,
 }) =>
     const SuggestionEngine().suggest(SuggestionInput(
       range: range,
       targetSets: 3,
-      targetRir: 2,
+      targetRir: targetRir,
+      rangeMatched: rangeMatched,
       increment: increment ?? Increments.defaults.of(eq),
       equipment: eq,
       history: history,
@@ -83,10 +86,37 @@ void main() {
       expect(s.reps, 6);
     });
 
-    test('any set at RPE 10 → −5%', () {
+    test('a set to failure inside the range is not a failed set → same weight, beat the reps', () {
       final s = run([log([(80, 8, 8), (80, 8, 9), (80, 8, 10)])]);
-      expect(s.kind, SuggestionKind.reduce);
-      expect(s.weight, 75);
+      expect(s.kind, SuggestionKind.addReps);
+      expect(s.weight, 80);
+      expect(s.reps, 9);
+    });
+
+    test('failure prescribed: top of the range at failure → +1 increment', () {
+      final s = run([log([(80, 10, 10), (80, 10, 10)])], targetRir: 0);
+      expect(s.kind, SuggestionKind.increase);
+      expect(s.weight, 82.5);
+      expect(s.reps, 6);
+    });
+
+    test('top of the range only by going past the prescribed RIR → hold', () {
+      final s = run([log([(80, 10, 10), (80, 10, 10)])], targetRir: 1);
+      expect(s.kind, SuggestionKind.addReps);
+      expect(s.weight, 80);
+    });
+
+    test('no history at this range → re-anchored from the best e1RM of the last 3 sessions, not all-time', () {
+      final s = run([
+        log([(120, 12, 10)], day: 1), // old all-time best, ignored
+        log([(60, 12, 10)], day: 2),
+        log([(62.5, 12, 10)], day: 3),
+        log([(60, 11, 10)], day: 4),
+      ], rangeMatched: false);
+      expect(s.kind, SuggestionKind.seeded);
+      // 62.5 × (1 + 12/30) = 87.5 e1RM → 87.5 / (1 + 8/30) = 69.08 → 67.5 kg for 6 reps at 2 RIR.
+      expect(s.weight, 67.5);
+      expect(s.reps, 6);
     });
 
     test('plateau: two consecutive sessions without progress → −10% for one session', () {

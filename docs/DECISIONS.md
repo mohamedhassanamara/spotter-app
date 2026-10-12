@@ -279,3 +279,82 @@ bodyweight lifts uses 2.5 kg. Both are editable in Settings.
 - **Replace exercise.** In the workout menu, replacing offers the program's exercise and its
   substitutions first, resolved to library exercises by `ExerciseNameResolver` (exact name, then
   token similarity), then library search. The replacement keeps the slot's prescription and set count.
+
+## v2.1 section 3: Liftoff import
+
+**What the owner's export contains** (`liftoff_workout_data.csv`, 1,692 rows, 19 Apr → 11 Oct 2026):
+
+- **Workout Name is always empty.** A session is the set of rows sharing one exact `Date` timestamp.
+  That timestamp is also the session's `external_id`, which makes re-imports idempotent (unique index
+  on `sessions(source, external_id)`, schema v4).
+- **129 Date values → 124 strength sessions on 117 days.** Five Date values hold only rows the importer
+  skips: four Walking entries and one empty 18-second workout with no exercise. Five days have extra
+  short sessions (for example a 1-minute Side Leg Raise or Hand Grippers entry hours after the main
+  workout). They're kept as separate sessions, as Liftoff recorded them.
+- **Set Order is 0-based and consecutive** per exercise within a session. There is no warm-up flag, so
+  every imported set is a working set.
+- **Weights are in pounds** and are exact conversions of kg loads at Liftoff's factor (2.20462262).
+  As specified, the importer divides by 2.20462, so 20 kg arrives as 20.0000238 kg. It's stored at full
+  precision and displayed rounded to 0.5 kg; multiples of 0.25 kg display exactly. Rounding helpers and
+  suggestions absorb that noise (`snapNoise`, 0.001 increment tolerance), so 30 kg of assistance stays
+  30 kg rather than flooring to 32.5. Two loads aren't whole quarters in kg either way: 7.2 and 22.2 kg.
+- **Assisted machines** (Assisted Pull Ups, Assisted Dips) log the assistance as a positive weight.
+  They're imported as negative loads (−30 = 30 kg of help), the same convention the app already uses.
+  A machine Assisted Dip exercise (`sp_assisted_dip_machine`) was added for them.
+- **Bodyweight exercises** have weight 0. **Cardio and timed rows** (Walking: distance and 2,400 s;
+  Dead Hang: 30 s, 0 reps) are skipped and listed in the preview.
+- **RPE is filled on 1 row (RPE 8).** Every other imported set is logged as RPE 10, i.e. taken to
+  failure, as specified.
+- **Notes hold the rep scheme**, written once per exercise and repeated on each row: `10-12`, `6-8/8-10`,
+  `2*6-8/20` (two sets of 6–8 then one of 20), `20/10`, `10 per leg`, with an optional trailing
+  technique letter (`6-8   D`, `4-6.  M`, `10-12   H`) or `Pause` / `Failure`. Each set gets its own
+  target range from the scheme (the last range repeats for extra sets). The first range becomes the
+  exercise range. With no note, the range is the reps actually done. The raw note is kept in the
+  exercise notes; technique letters aren't interpreted.
+
+**Name mapping.** Order: a manual pick in the preview → `assets/liftoff_name_map.json` (a library id, or
+a `custom` definition that creates a stable `liftoff_<name>` exercise) → your routine names
+(punctuation- and plural-insensitive, so "Chest Supported T Bar Row" = "Chest Supported T-Bar Row") →
+exact library name → fuzzy token match ≥ 80 % → unmatched. An unmatched name becomes a custom exercise
+of the same name unless you pick one. Fuzzy matches under 90 % and unmatched names are listed under
+"Check these" in the preview. All 114 names in the export resolve with no manual picks; 13 become
+custom exercises. Liftoff names whose loads aren't comparable never share one exercise (dumbbell vs
+barbell RDL, machine vs barbell hip thrust, one-arm vs two-arm reverse fly, cable vs machine
+abduction, standing vs kneeling cable crunch). Otherwise one history would mix 37.5 kg dumbbells with
+an 85 kg barbell. Three near-identical pairs do share one: Cable Fly + High to Low Cable Fly, Machine
+Lateral Raise + Standing Machine Lateral Raise, Seated Cable Row + Wide Grip Seated Cable Row. The full
+mapping is in `docs/IMPORT_SUMMARY.md`.
+
+**What imported sessions count for.** They're finished sessions with `source = 'liftoff'`, named after
+the routine they share most exercises with ("Liftoff workout" otherwise). Sets carry no suggested
+weight and no override flag, so they never enter discipline, override or ego statistics, and the
+sessions earn no XP. They do count for history, PRs, ranks, streak days and the training-load
+modifier. Achievements are re-evaluated once after the import, without XP. `liftoff_imported_at` is
+saved for the section 4 streak offset.
+
+**Suggestions after an import** build on recent performance, never the all-time best:
+
+- Progression uses the last session at the slot's rep range; the plateau check uses the last three.
+- When none of your recent sets was at that range (for example a 4–6 slot after 10–12 work in
+  Liftoff), the load is re-anchored from the best e1RM of the **last 3 sessions**:
+  e1RM ÷ (1 + (bottom of range + RIR) / 30).
+- All-time bests are only used for PRs and history.
+
+**Progression rules moved here from section 7.** Treating every imported set as failure broke the old
+rules: an RPE 10 set meant −5 %, and an increase required RPE ≤ 8. That would have cut every imported
+lift. The new rules:
+- A set taken to failure is never a failed set; only missing the bottom of the range is (−5 %).
+- The top of the range at the prescribed effort (RPE ≤ 10 − target RIR, so failure counts when the
+  program prescribes failure) → +1 increment.
+- Within the range → same load, beat the reps.
+- An increase is exactly one increment above what was lifted. It no longer snaps to a 2.5 kg grid,
+  which turned +2.5 kg on a 4 kg cable into +3.5 kg.
+- The plateau rule is unchanged.
+- The seeded-history test now checks that the main working weight trends up rather than the e1RM. The
+  simulated lifter stops at the top of the range +2 reps and logs an honest low RPE when the load is
+  light, so its e1RM estimates were too noisy to compare.
+
+**Machine and cable lifts are over-ranked by the current standards.** For example, triceps pushdown at
+72 kg × 12 comes out as Challenger. The import therefore unlocked the Diamond and Master rank
+achievements. Section 8 replaces the standards with machine- and cable-specific ones and should revoke
+rank achievements that are no longer earned.

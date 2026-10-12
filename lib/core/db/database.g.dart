@@ -2031,6 +2031,27 @@ class $SessionsTable extends Sessions with TableInfo<$SessionsTable, Session> {
     requiredDuringInsert: false,
     defaultValue: const Constant(0),
   );
+  static const VerificationMeta _sourceMeta = const VerificationMeta('source');
+  @override
+  late final GeneratedColumn<String> source = GeneratedColumn<String>(
+    'source',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('app'),
+  );
+  static const VerificationMeta _externalIdMeta = const VerificationMeta(
+    'externalId',
+  );
+  @override
+  late final GeneratedColumn<String> externalId = GeneratedColumn<String>(
+    'external_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -2044,6 +2065,8 @@ class $SessionsTable extends Sessions with TableInfo<$SessionsTable, Session> {
     readinessBand,
     healthSynced,
     xpEarned,
+    source,
+    externalId,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -2133,6 +2156,18 @@ class $SessionsTable extends Sessions with TableInfo<$SessionsTable, Session> {
         xpEarned.isAcceptableOrUnknown(data['xp_earned']!, _xpEarnedMeta),
       );
     }
+    if (data.containsKey('source')) {
+      context.handle(
+        _sourceMeta,
+        source.isAcceptableOrUnknown(data['source']!, _sourceMeta),
+      );
+    }
+    if (data.containsKey('external_id')) {
+      context.handle(
+        _externalIdMeta,
+        externalId.isAcceptableOrUnknown(data['external_id']!, _externalIdMeta),
+      );
+    }
     return context;
   }
 
@@ -2186,6 +2221,14 @@ class $SessionsTable extends Sessions with TableInfo<$SessionsTable, Session> {
         DriftSqlType.int,
         data['${effectivePrefix}xp_earned'],
       )!,
+      source: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}source'],
+      )!,
+      externalId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}external_id'],
+      ),
     );
   }
 
@@ -2207,6 +2250,13 @@ class Session extends DataClass implements Insertable<Session> {
   final String? readinessBand;
   final bool healthSynced;
   final int xpEarned;
+
+  /// v4: app | liftoff. Imported sessions count for history, PRs and ranks but not for
+  /// discipline/override stats or XP.
+  final String source;
+
+  /// v4: the source's id for the session (Liftoff: its Date string), unique, so re-imports skip it.
+  final String? externalId;
   const Session({
     required this.id,
     this.routineId,
@@ -2219,6 +2269,8 @@ class Session extends DataClass implements Insertable<Session> {
     this.readinessBand,
     required this.healthSynced,
     required this.xpEarned,
+    required this.source,
+    this.externalId,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -2242,6 +2294,10 @@ class Session extends DataClass implements Insertable<Session> {
     }
     map['health_synced'] = Variable<bool>(healthSynced);
     map['xp_earned'] = Variable<int>(xpEarned);
+    map['source'] = Variable<String>(source);
+    if (!nullToAbsent || externalId != null) {
+      map['external_id'] = Variable<String>(externalId);
+    }
     return map;
   }
 
@@ -2266,6 +2322,10 @@ class Session extends DataClass implements Insertable<Session> {
           : Value(readinessBand),
       healthSynced: Value(healthSynced),
       xpEarned: Value(xpEarned),
+      source: Value(source),
+      externalId: externalId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(externalId),
     );
   }
 
@@ -2286,6 +2346,8 @@ class Session extends DataClass implements Insertable<Session> {
       readinessBand: serializer.fromJson<String?>(json['readinessBand']),
       healthSynced: serializer.fromJson<bool>(json['healthSynced']),
       xpEarned: serializer.fromJson<int>(json['xpEarned']),
+      source: serializer.fromJson<String>(json['source']),
+      externalId: serializer.fromJson<String?>(json['externalId']),
     );
   }
   @override
@@ -2303,6 +2365,8 @@ class Session extends DataClass implements Insertable<Session> {
       'readinessBand': serializer.toJson<String?>(readinessBand),
       'healthSynced': serializer.toJson<bool>(healthSynced),
       'xpEarned': serializer.toJson<int>(xpEarned),
+      'source': serializer.toJson<String>(source),
+      'externalId': serializer.toJson<String?>(externalId),
     };
   }
 
@@ -2318,6 +2382,8 @@ class Session extends DataClass implements Insertable<Session> {
     Value<String?> readinessBand = const Value.absent(),
     bool? healthSynced,
     int? xpEarned,
+    String? source,
+    Value<String?> externalId = const Value.absent(),
   }) => Session(
     id: id ?? this.id,
     routineId: routineId.present ? routineId.value : this.routineId,
@@ -2334,6 +2400,8 @@ class Session extends DataClass implements Insertable<Session> {
         : this.readinessBand,
     healthSynced: healthSynced ?? this.healthSynced,
     xpEarned: xpEarned ?? this.xpEarned,
+    source: source ?? this.source,
+    externalId: externalId.present ? externalId.value : this.externalId,
   );
   Session copyWithCompanion(SessionsCompanion data) {
     return Session(
@@ -2354,6 +2422,10 @@ class Session extends DataClass implements Insertable<Session> {
           ? data.healthSynced.value
           : this.healthSynced,
       xpEarned: data.xpEarned.present ? data.xpEarned.value : this.xpEarned,
+      source: data.source.present ? data.source.value : this.source,
+      externalId: data.externalId.present
+          ? data.externalId.value
+          : this.externalId,
     );
   }
 
@@ -2370,7 +2442,9 @@ class Session extends DataClass implements Insertable<Session> {
           ..write('readinessScore: $readinessScore, ')
           ..write('readinessBand: $readinessBand, ')
           ..write('healthSynced: $healthSynced, ')
-          ..write('xpEarned: $xpEarned')
+          ..write('xpEarned: $xpEarned, ')
+          ..write('source: $source, ')
+          ..write('externalId: $externalId')
           ..write(')'))
         .toString();
   }
@@ -2388,6 +2462,8 @@ class Session extends DataClass implements Insertable<Session> {
     readinessBand,
     healthSynced,
     xpEarned,
+    source,
+    externalId,
   );
   @override
   bool operator ==(Object other) =>
@@ -2403,7 +2479,9 @@ class Session extends DataClass implements Insertable<Session> {
           other.readinessScore == this.readinessScore &&
           other.readinessBand == this.readinessBand &&
           other.healthSynced == this.healthSynced &&
-          other.xpEarned == this.xpEarned);
+          other.xpEarned == this.xpEarned &&
+          other.source == this.source &&
+          other.externalId == this.externalId);
 }
 
 class SessionsCompanion extends UpdateCompanion<Session> {
@@ -2418,6 +2496,8 @@ class SessionsCompanion extends UpdateCompanion<Session> {
   final Value<String?> readinessBand;
   final Value<bool> healthSynced;
   final Value<int> xpEarned;
+  final Value<String> source;
+  final Value<String?> externalId;
   const SessionsCompanion({
     this.id = const Value.absent(),
     this.routineId = const Value.absent(),
@@ -2430,6 +2510,8 @@ class SessionsCompanion extends UpdateCompanion<Session> {
     this.readinessBand = const Value.absent(),
     this.healthSynced = const Value.absent(),
     this.xpEarned = const Value.absent(),
+    this.source = const Value.absent(),
+    this.externalId = const Value.absent(),
   });
   SessionsCompanion.insert({
     this.id = const Value.absent(),
@@ -2443,6 +2525,8 @@ class SessionsCompanion extends UpdateCompanion<Session> {
     this.readinessBand = const Value.absent(),
     this.healthSynced = const Value.absent(),
     this.xpEarned = const Value.absent(),
+    this.source = const Value.absent(),
+    this.externalId = const Value.absent(),
   }) : name = Value(name),
        startedAt = Value(startedAt);
   static Insertable<Session> custom({
@@ -2457,6 +2541,8 @@ class SessionsCompanion extends UpdateCompanion<Session> {
     Expression<String>? readinessBand,
     Expression<bool>? healthSynced,
     Expression<int>? xpEarned,
+    Expression<String>? source,
+    Expression<String>? externalId,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -2470,6 +2556,8 @@ class SessionsCompanion extends UpdateCompanion<Session> {
       if (readinessBand != null) 'readiness_band': readinessBand,
       if (healthSynced != null) 'health_synced': healthSynced,
       if (xpEarned != null) 'xp_earned': xpEarned,
+      if (source != null) 'source': source,
+      if (externalId != null) 'external_id': externalId,
     });
   }
 
@@ -2485,6 +2573,8 @@ class SessionsCompanion extends UpdateCompanion<Session> {
     Value<String?>? readinessBand,
     Value<bool>? healthSynced,
     Value<int>? xpEarned,
+    Value<String>? source,
+    Value<String?>? externalId,
   }) {
     return SessionsCompanion(
       id: id ?? this.id,
@@ -2498,6 +2588,8 @@ class SessionsCompanion extends UpdateCompanion<Session> {
       readinessBand: readinessBand ?? this.readinessBand,
       healthSynced: healthSynced ?? this.healthSynced,
       xpEarned: xpEarned ?? this.xpEarned,
+      source: source ?? this.source,
+      externalId: externalId ?? this.externalId,
     );
   }
 
@@ -2537,6 +2629,12 @@ class SessionsCompanion extends UpdateCompanion<Session> {
     if (xpEarned.present) {
       map['xp_earned'] = Variable<int>(xpEarned.value);
     }
+    if (source.present) {
+      map['source'] = Variable<String>(source.value);
+    }
+    if (externalId.present) {
+      map['external_id'] = Variable<String>(externalId.value);
+    }
     return map;
   }
 
@@ -2553,7 +2651,9 @@ class SessionsCompanion extends UpdateCompanion<Session> {
           ..write('readinessScore: $readinessScore, ')
           ..write('readinessBand: $readinessBand, ')
           ..write('healthSynced: $healthSynced, ')
-          ..write('xpEarned: $xpEarned')
+          ..write('xpEarned: $xpEarned, ')
+          ..write('source: $source, ')
+          ..write('externalId: $externalId')
           ..write(')'))
         .toString();
   }
@@ -9558,6 +9658,8 @@ typedef $$SessionsTableCreateCompanionBuilder =
       Value<String?> readinessBand,
       Value<bool> healthSynced,
       Value<int> xpEarned,
+      Value<String> source,
+      Value<String?> externalId,
     });
 typedef $$SessionsTableUpdateCompanionBuilder =
     SessionsCompanion Function({
@@ -9572,6 +9674,8 @@ typedef $$SessionsTableUpdateCompanionBuilder =
       Value<String?> readinessBand,
       Value<bool> healthSynced,
       Value<int> xpEarned,
+      Value<String> source,
+      Value<String?> externalId,
     });
 
 final class $$SessionsTableReferences
@@ -9660,6 +9764,16 @@ class $$SessionsTableFilterComposer
 
   ColumnFilters<int> get xpEarned => $composableBuilder(
     column: $table.xpEarned,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get source => $composableBuilder(
+    column: $table.source,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get externalId => $composableBuilder(
+    column: $table.externalId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -9752,6 +9866,16 @@ class $$SessionsTableOrderingComposer
     column: $table.xpEarned,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get source => $composableBuilder(
+    column: $table.source,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get externalId => $composableBuilder(
+    column: $table.externalId,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$SessionsTableAnnotationComposer
@@ -9801,6 +9925,14 @@ class $$SessionsTableAnnotationComposer
 
   GeneratedColumn<int> get xpEarned =>
       $composableBuilder(column: $table.xpEarned, builder: (column) => column);
+
+  GeneratedColumn<String> get source =>
+      $composableBuilder(column: $table.source, builder: (column) => column);
+
+  GeneratedColumn<String> get externalId => $composableBuilder(
+    column: $table.externalId,
+    builder: (column) => column,
+  );
 
   Expression<T> sessionExercisesRefs<T extends Object>(
     Expression<T> Function($$SessionExercisesTableAnnotationComposer a) f,
@@ -9867,6 +9999,8 @@ class $$SessionsTableTableManager
                 Value<String?> readinessBand = const Value.absent(),
                 Value<bool> healthSynced = const Value.absent(),
                 Value<int> xpEarned = const Value.absent(),
+                Value<String> source = const Value.absent(),
+                Value<String?> externalId = const Value.absent(),
               }) => SessionsCompanion(
                 id: id,
                 routineId: routineId,
@@ -9879,6 +10013,8 @@ class $$SessionsTableTableManager
                 readinessBand: readinessBand,
                 healthSynced: healthSynced,
                 xpEarned: xpEarned,
+                source: source,
+                externalId: externalId,
               ),
           createCompanionCallback:
               ({
@@ -9893,6 +10029,8 @@ class $$SessionsTableTableManager
                 Value<String?> readinessBand = const Value.absent(),
                 Value<bool> healthSynced = const Value.absent(),
                 Value<int> xpEarned = const Value.absent(),
+                Value<String> source = const Value.absent(),
+                Value<String?> externalId = const Value.absent(),
               }) => SessionsCompanion.insert(
                 id: id,
                 routineId: routineId,
@@ -9905,6 +10043,8 @@ class $$SessionsTableTableManager
                 readinessBand: readinessBand,
                 healthSynced: healthSynced,
                 xpEarned: xpEarned,
+                source: source,
+                externalId: externalId,
               ),
           withReferenceMapper: (p0) => p0
               .map(

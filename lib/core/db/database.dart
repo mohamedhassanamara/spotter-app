@@ -33,7 +33,7 @@ class AppDatabase extends _$AppDatabase {
   factory AppDatabase.open() => AppDatabase(driftDatabase(name: 'spotter'));
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -44,6 +44,7 @@ class AppDatabase extends _$AppDatabase {
           await customStatement('CREATE INDEX idx_session_ex_exercise ON session_exercises (exercise_id)');
           await customStatement('CREATE INDEX idx_sets_session_ex ON workout_sets (session_exercise_id)');
           await customStatement('CREATE INDEX idx_routine_ex_routine ON routine_exercises (routine_id)');
+          await customStatement(_externalIdIndex);
         },
         onUpgrade: (m, from, to) async {
           // Step by step, so any older install reaches the current version.
@@ -65,11 +66,18 @@ class AppDatabase extends _$AppDatabase {
             await m.addColumn(workoutSets, workoutSets.targetRir);
             await m.addColumn(workoutSets, workoutSets.technique);
           }
+          if (from < 4) {
+            await m.addColumn(sessions, sessions.source);
+            await m.addColumn(sessions, sessions.externalId);
+            await customStatement(_externalIdIndex);
+          }
         },
         beforeOpen: (details) async {
           await customStatement('PRAGMA foreign_keys = ON');
         },
       );
+
+  static const _externalIdIndex = 'CREATE UNIQUE INDEX IF NOT EXISTS idx_sessions_external ON sessions (source, external_id)';
 
   // ---- settings key/value ----
 

@@ -93,6 +93,7 @@ class CoachContext {
         freeze: freezeFor(info.id),
         bodyweight: bodyweightLoaded.contains(info.id) ? bodyweight : 0,
         assisted: isAssisted(info.id),
+        rangeMatched: history.logsFor(info.id).isEmpty || history.hasLogsAtRange(info.id, range),
       ));
 }
 

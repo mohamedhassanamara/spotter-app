@@ -53,6 +53,8 @@ flutter test
 - `test/domain/` holds pure unit tests with fixed fixtures and exact expected numbers. They cover
   readiness, the suggestion engine, the guardrail, ranks, streaks, XP, aggregation, quests and
   achievements.
+- `test/domain/liftoff_test.dart` and `test/data/liftoff_import_test.dart` cover CSV parsing, rep-scheme
+  notes, name mapping, the import itself and idempotency, using `test/fixtures/liftoff_sample.csv`.
 - `test/data/seed_and_export_test.dart` seeds 12 weeks through the real logging pipeline into an
   in-memory database, then checks the JSON and CSV exports.
 
@@ -70,7 +72,9 @@ flutter test integration_test -d <simulator-id>
 The flows start from a fresh install (and an upgraded v2 install) with only your five routines.
 They tap through Train → Upper (warm-ups, working sets including the 1×20 row, steppers, add/remove
 set, replace via substitutions, background/resume, cold restart, finish, summary, history, start the
-next routine from Home) and Pull (assisted pull-ups with negative load). A flow fails if anything is
+next routine from Home), Pull (assisted pull-ups with negative load) and Settings → Import from
+Liftoff (preview, fixing an unmatched name, import, re-import is a no-op, and the next workout's
+suggestion built from the imported sessions; a fixture CSV stands in for the iOS file picker). A flow fails if anything is
 written to the in-app error log.
 
 ### Reporting bugs from the phone
@@ -113,6 +117,21 @@ Useful routes:
   generated from the program's % pyramid, and Block 2 techniques appear on the last set; tap one to see
   how it works.
 
+## Import from Liftoff
+
+Settings → **Import from Liftoff**. In Liftoff, export your data as CSV and save it to Files, then
+choose it in the app. Before anything is written, the preview shows:
+- the new sessions and sets, and the date range;
+- rows that will be skipped (cardio, timed, empty);
+- every exercise name mapping with its method and confidence. Tap a name to pick a different exercise.
+
+Importing the same file again only adds sessions that aren't already in the app.
+- Name fixes that should stick go in `assets/liftoff_name_map.json`.
+- `docs/IMPORT_SUMMARY.md` shows the result for your export: mappings, current best per lift, ranks
+  and the first suggestion for every routine exercise. To regenerate it:
+  `LIFTOFF_CSV=~/Desktop/DOCS/liftoff_workout_data.csv LIFTOFF_BW=80 flutter test test/tool/import_summary_test.dart`.
+  The CSV is personal data; never commit it.
+
 ## Tutorials
 
 - Each exercise page has **3D | Video | Steps** tabs. The 3D demo loops, with play/pause and 0.5×.
@@ -137,6 +156,8 @@ Useful routes:
   [yuhonas/free-exercise-db](https://github.com/yuhonas/free-exercise-db) (public domain). Images are
   loaded from the repo at runtime and cached. To refresh the file, download `dist/exercises.json`
   again and bump `exerciseDatasetVersion` in `lib/features/library/data/exercise_repository.dart`.
+- **Liftoff names:** `assets/liftoff_name_map.json` maps Liftoff exercise names to library ids, or defines
+  a custom exercise for them.
 - **Increments, rep ranges, RIR, rest times and the weekly goal:** in the app's Settings.
 
 ## Credits

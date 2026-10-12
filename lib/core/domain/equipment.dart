@@ -58,8 +58,9 @@ class Increments {
   Increments copyWith(EquipmentKind kind, double value) => Increments({...values, kind: value});
 }
 
-// Rounding tolerates floating-point noise such as 79.99999.
-const double _eps = 1e-6;
+// Rounding tolerates floating-point noise such as 79.99999, and the pound-conversion noise of
+// Liftoff imports (30 kg arrives as 30.0000357 kg).
+const double _eps = 1e-3;
 
 double roundToIncrement(double weight, double increment) {
   if (increment <= 0) return weight;
@@ -74,6 +75,12 @@ double floorToIncrement(double weight, double increment) {
 double ceilToIncrement(double weight, double increment) {
   if (increment <= 0) return weight;
   return _clean(((weight / increment) - _eps).ceilToDouble() * increment);
+}
+
+/// Removes conversion noise: values within 0.001 kg of a 0.25 kg step snap to it, others stay.
+double snapNoise(double v) {
+  final q = (v * 4).roundToDouble() / 4;
+  return (v - q).abs() < 1e-3 ? q : v;
 }
 
 double _clean(double v) => (v * 1000).roundToDouble() / 1000;

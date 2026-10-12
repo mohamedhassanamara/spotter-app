@@ -64,6 +64,7 @@ class HistSession {
     required this.readinessBand,
     required this.xpEarned,
     required this.exercises,
+    this.imported = false,
   });
 
   final int id;
@@ -76,6 +77,9 @@ class HistSession {
   final String? readinessBand;
   final int xpEarned;
   final List<HistExercise> exercises;
+
+  /// Came from the Liftoff import (no suggestions, no XP).
+  final bool imported;
 
   Duration get duration => (endedAt ?? startedAt).difference(startedAt);
 
@@ -132,6 +136,10 @@ class TrainingHistory {
     }
     return out.isEmpty ? logsFor(exerciseId) : out;
   }
+
+  /// Whether any working set of [exerciseId] was prescribed at [range].
+  bool hasLogsAtRange(String exerciseId, RepRange range) => sessions.any((s) => s.exercises.any((e) =>
+      e.exerciseId == exerciseId && e.sets.any((h) => h.set.isWorking && (h.targetRange ?? e.range) == range)));
 
   Iterable<String> get exerciseIds => _byExercise.keys;
 

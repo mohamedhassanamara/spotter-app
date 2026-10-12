@@ -6,7 +6,6 @@ import 'package:drift/drift.dart' show Variable, driftRuntimeOptions;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:spotter/core/db/database.dart';
-import 'package:spotter/core/domain/training.dart';
 import 'package:spotter/core/settings/app_settings.dart';
 import 'package:spotter/features/debug/data/seed_generator.dart';
 import 'package:spotter/features/export/data/export_service.dart';
@@ -33,25 +32,26 @@ void main() {
     expect(report.sessions, lessThanOrEqualTo(60));
     expect(report.freezes, greaterThanOrEqualTo(2));
 
-    // Gradual progression: the best valid e1RM (ego sets excluded, missing RPE = 9) trends up.
+    // Gradual progression: the working weight on the main (lowest-rep) slot trends up. Override
+    // sets are excluded. (The simulated lifter stops at the top of the range +2 and logs an honest
+    // low RPE when the load is light, so e1RM estimates from its sets are too noisy to compare.)
     for (final id in ['Leverage_Chest_Press', 'sp_pendulum_squat']) {
       final rows = await db.customSelect(
-        'SELECT se.id AS ex, ws.weight AS w, ws.reps AS r, ws.rpe AS rpe, ws.is_override AS o '
+        'SELECT se.id AS ex, ws.weight AS w, ws.is_override AS o, ws.target_rep_max AS hi '
         'FROM session_exercises se JOIN sessions s ON s.id = se.session_id '
         'JOIN workout_sets ws ON ws.session_exercise_id = se.id '
-        "WHERE se.exercise_id = ? AND ws.is_warmup = 0 AND se.suggestion_kind != 'calibration' ORDER BY s.started_at",
+        "WHERE se.exercise_id = ? AND ws.is_warmup = 0 AND se.suggestion_kind NOT IN ('calibration', 'egoFreeze') ORDER BY s.started_at",
         variables: [Variable.withString(id)],
       ).get();
-      final best = <int, double>{};
+      final mainHi = rows.map((r) => r.readNullable<int>('hi') ?? 99).reduce(math.min);
+      final top = <int, double>{};
       for (final r in rows) {
-        final rpe = r.readNullable<double>('rpe');
-        if (r.read<bool>('o') && (rpe ?? 0) >= 9.5) continue;
-        final e = estimateOneRm(r.read<double>('w'), r.read<int>('r'), rpe);
-        best[r.read<int>('ex')] = math.max(best[r.read<int>('ex')] ?? 0, e);
+        if (r.read<bool>('o') || (r.readNullable<int>('hi') ?? 99) != mainHi) continue;
+        top[r.read<int>('ex')] = math.max(top[r.read<int>('ex')] ?? 0, r.read<double>('w'));
       }
-      final series = best.values.toList();
+      final series = top.values.toList();
       double avg(Iterable<double> v) => v.reduce((a, b) => a + b) / v.length;
-      expect(avg(series.skip(series.length - 3)), greaterThan(avg(series.take(3)) /* each lift is trained once a week in the 5x split: expect a gain, not +5% */), reason: '$id e1RM should trend up');
+      expect(avg(series.skip(series.length - 3)), greaterThan(avg(series.take(3))), reason: '$id working weight should trend up');
     }
     final overrides = await (db.select(db.workoutSets)..where((t) => t.isOverride.equals(true))).get();
     expect(overrides, isNotEmpty);

@@ -7,7 +7,7 @@ import '../../../core/db/database.dart';
 import '../domain/exercise_info.dart';
 
 /// Bump when assets/exercises.json is refreshed so existing installs re-import it.
-const int exerciseDatasetVersion = 2; // v2: + assets/extra_exercises.json
+const int exerciseDatasetVersion = 3; // v2: + assets/extra_exercises.json; v3: + Assisted Dip (Machine)
 
 class ExerciseRepository {
   ExerciseRepository(this._db);

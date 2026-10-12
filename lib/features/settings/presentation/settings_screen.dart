@@ -173,6 +173,17 @@ class SettingsScreen extends ConsumerWidget {
           const AppCard(padding: EdgeInsets.symmetric(vertical: 4), child: _ProgramTiles()),
           const SectionHeader('Tutorials'),
           const AppCard(padding: EdgeInsets.symmetric(vertical: 4), child: _YouTubeKeyTile()),
+          const SectionHeader('Import'),
+          AppCard(
+            padding: const EdgeInsets.symmetric(vertical: 4),
+            child: ListTile(
+              leading: const Icon(Icons.download_rounded),
+              title: const Text('Import from Liftoff'),
+              subtitle: const Text('Workout history from a Liftoff CSV export'),
+              trailing: const Icon(Icons.chevron_right_rounded),
+              onTap: () => context.push(Routes.importLiftoff),
+            ),
+          ),
           const SectionHeader('Export'),
           AppCard(
             child: Column(

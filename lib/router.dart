@@ -10,6 +10,7 @@ import 'features/debug/presentation/debug_menu_screen.dart';
 import 'features/debug/presentation/media_matching_screen.dart';
 import 'features/debug/presentation/summary_preview.dart';
 import 'features/history/presentation/exercise_history_screen.dart';
+import 'features/import/presentation/liftoff_import_screen.dart';
 import 'features/history/presentation/session_detail_screen.dart';
 import 'features/home/presentation/home_screen.dart';
 import 'features/library/presentation/custom_exercise_screen.dart';
@@ -46,6 +47,7 @@ abstract final class Routes {
   static const settings = '/settings';
   static const debug = '/settings/debug';
   static const errorLog = '/settings/errors';
+  static const importLiftoff = '/settings/import-liftoff';
 
   static String routine(int id) => '/routine/$id';
   static String exercise(String id) => '/exercise/${Uri.encodeComponent(id)}';
@@ -144,6 +146,7 @@ GoRouter buildRouter(ValueListenable<bool> onboarded) {
         routes: [
           // Available in release builds too: that's how bugs get reported from the phone.
           GoRoute(path: 'errors', parentNavigatorKey: rootNavigatorKey, builder: (_, _) => const ErrorLogScreen()),
+          GoRoute(path: 'import-liftoff', parentNavigatorKey: rootNavigatorKey, builder: (_, _) => const LiftoffImportScreen()),
           if (kDebugMode)
             GoRoute(
               path: 'debug',

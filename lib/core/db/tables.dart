@@ -66,6 +66,13 @@ class Sessions extends Table {
   TextColumn get readinessBand => text().nullable()();
   BoolColumn get healthSynced => boolean().withDefault(const Constant(false))();
   IntColumn get xpEarned => integer().withDefault(const Constant(0))();
+
+  /// v4: app | liftoff. Imported sessions count for history, PRs and ranks but not for
+  /// discipline/override stats or XP.
+  TextColumn get source => text().withDefault(const Constant('app'))();
+
+  /// v4: the source's id for the session (Liftoff: its Date string), unique, so re-imports skip it.
+  TextColumn get externalId => text().nullable()();
 }
 
 class SessionExercises extends Table {

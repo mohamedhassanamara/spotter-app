@@ -125,6 +125,34 @@ class FinishService {
     }
   }
 
+  /// Unlocks achievements earned by sessions that didn't go through [finish] (the Liftoff import).
+  /// Awards no XP.
+  Future<List<AchievementDef>> reevaluateAchievements({
+    required DateTime now,
+    required Map<String, ExerciseInfo> catalog,
+    required SettingsModel settings,
+  }) async {
+    final standards = await RanksRepository.loadStandards();
+    final defs = await GamificationRepository.loadAchievementDefs();
+    final bwLoaded = RanksRepository.bodyweightLoadedIds(standards, catalog);
+    final bodyweight = (await _bodyweights.latest())?.kg ?? 0;
+    final history = await _history.load(catalog);
+    final ranks = RanksRepository.compute(history: history, standards: standards, bodyweightLoaded: bwLoaded, bodyweight: bodyweight, now: now);
+    final stats = buildAchievementStats(
+      history: history,
+      redDays: await _readiness.redDays(),
+      weeklyGoal: settings.weeklyGoal,
+      now: now,
+      bestTierIndex: ranks.exercises.fold<int>(-1, (m, r) => r.score.tier.index > m ? r.score.tier.index : m),
+      totalXp: await _gami.totalXp(),
+      prCount: findPrs(history, bodyweightLoaded: bwLoaded, bodyweight: bodyweight).length,
+      plannedRestWeekdays: (await ProgramRepository.load()).plannedRestWeekdays,
+    );
+    final unlocked = const AchievementEvaluator().newlyUnlocked(defs, stats, await _gami.unlockedKeys());
+    if (unlocked.isNotEmpty) await _gami.unlock(unlocked.map((d) => d.key), now);
+    return unlocked;
+  }
+
   Future<SessionSummary> finish({
     required int sessionId,
     required DateTime now,

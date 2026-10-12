@@ -56,6 +56,7 @@ class SuggestionInput {
     this.freeze,
     this.bodyweight = 0,
     this.assisted = false,
+    this.rangeMatched = true,
   });
 
   final RepRange range;
@@ -75,6 +76,10 @@ class SuggestionInput {
 
   /// Assisted machines log assistance as negative weight (−25 = 25 kg of help).
   final bool assisted;
+
+  /// False when none of [history] was done at [range] (e.g. imported 10–12 work for a 4–6 slot):
+  /// the load is then re-anchored from the best e1RM of the last 3 sessions.
+  final bool rangeMatched;
 }
 
 class Suggestion {
@@ -105,7 +110,12 @@ class Suggestion {
   final ReadinessBand band;
 }
 
+/// Loads as the lifter reads them. Multiples of 0.25 kg (plates, micro-plates) show exactly;
+/// anything else (pound conversions from the Liftoff import, stored at full precision) is
+/// rounded to the nearest 0.5 kg for display.
 String formatKg(double kg) {
+  final quarters = kg * 4;
+  if ((quarters - quarters.roundToDouble()).abs() > 1e-6) kg = (kg * 2).roundToDouble() / 2;
   if (kg == kg.roundToDouble()) return kg.toStringAsFixed(0);
   final s = kg.toStringAsFixed(2);
   return s.replaceFirst(RegExp(r'0+$'), '').replaceFirst(RegExp(r'\.$'), '');
@@ -142,19 +152,29 @@ class SuggestionEngine {
     int reps;
     final lastTop = last.topWeight;
 
-    if (last.suggestionKind == SuggestionKind.calibration) {
-      final best = _bestSet(last, input.bodyweight);
+    if (last.suggestionKind == SuggestionKind.calibration || !input.rangeMatched) {
+      final recent = logs.sublist(math.max(0, logs.length - 3));
+      final best = recent.map((l) => _bestSet(l, input.bodyweight)).reduce(
+          (a, b) => b.e1rm(bodyweight: input.bodyweight) > a.e1rm(bodyweight: input.bodyweight) ? b : a);
       final e1rm = best.e1rm(bodyweight: input.bodyweight);
       weight = floorToIncrement(e1rm / (1 + (range.min + input.targetRir) / 30) - input.bodyweight, inc);
       weight = math.max(weight, _minLoad(input));
       reps = range.min;
       kind = SuggestionKind.seeded;
-      why.add('Calibration best set ${formatKg(best.weight)} kg × ${best.reps} @ RPE ${formatRpe(best.effectiveRpe)} '
-          '→ e1RM ${e1rm.toStringAsFixed(1)} kg. Working weight for ${range.min} reps at ${input.targetRir} RIR.');
+      why.add(last.suggestionKind == SuggestionKind.calibration
+          ? 'Calibration best set ${formatKg(best.weight)} kg × ${best.reps} @ RPE ${formatRpe(best.effectiveRpe)} '
+              '→ e1RM ${e1rm.toStringAsFixed(1)} kg. Working weight for ${range.min} reps at ${input.targetRir} RIR.'
+          : 'No recent sets at $range. Best of the last ${recent.length} session(s): ${_loadText(best.weight)} × ${best.reps} '
+              '@ RPE ${formatRpe(best.effectiveRpe)} → e1RM ${e1rm.toStringAsFixed(1)} kg, '
+              'so ${_loadText(weight)} for ${range.min} reps at ${input.targetRir} RIR.');
     } else {
       final working = last.workingSets;
-      final failed = working.any((s) => s.reps < range.min || s.effectiveRpe >= 10);
-      final allTop = working.every((s) => s.reps >= range.max && s.effectiveRpe <= 8);
+      // Effort is judged against the prescription: going to failure is never a failed set, only
+      // missing the bottom of the range is. The top of the range only counts if it was reached
+      // without going past the prescribed reps in reserve.
+      final maxRpe = 10.0 - input.targetRir;
+      final failed = working.any((s) => s.reps < range.min);
+      final allTop = working.every((s) => s.reps >= range.max && s.effectiveRpe <= maxRpe);
       final topSets = last.topSets;
       final minTopReps = topSets.map((s) => s.reps).reduce(math.min);
 
@@ -163,14 +183,16 @@ class SuggestionEngine {
         weight = _scaled(input, lastTop, 1 - failureReduction);
         if (weight >= lastTop) weight = _lowered(input, lastTop);
         reps = range.min;
-        why.add('A working set fell below $range reps or hit RPE 10 → weight −5% '
+        why.add('A working set fell below $range reps → weight −5% '
             '(${formatKg(lastTop)} → ${formatKg(weight)} kg), target ${range.min} reps.');
       } else if (allTop) {
         kind = SuggestionKind.increase;
-        final step = math.min(inc, math.max(inc, lastTop * maxIncreaseFraction));
-        weight = roundToIncrement(lastTop + step, inc);
+        // Exactly one increment up from what was lifted (cable stacks and dumbbells aren't on a
+        // 2.5 kg grid, so snapping to it would turn +2.5 into +3.5).
+        weight = snapNoise(lastTop + inc);
         reps = range.min;
-        why.add('All working sets hit the top of $range at RPE ≤ 8 → +${formatKg(weight - lastTop)} kg, '
+        why.add('All working sets hit the top of $range at the prescribed effort '
+            '(${input.targetRir == 0 ? 'failure' : 'RPE ≤ ${formatRpe(maxRpe)}'}) → +${formatKg(weight - lastTop)} kg, '
             'reps reset to ${range.min}.');
       } else if (_isPlateau(logs)) {
         kind = SuggestionKind.plateauDeload;
@@ -184,8 +206,8 @@ class SuggestionEngine {
         weight = lastTop;
         reps = math.min(range.max, minTopReps + 1);
         why.add(minTopReps >= range.max
-            ? 'Top of $range reached but RPE was above 8 → same weight, own the reps.'
-            : 'Within $range → same weight, aim for +1 rep on at least one set.');
+            ? 'Top of $range reached but past the prescribed effort → same weight, own the reps.'
+            : 'Within $range → same weight, beat last time\'s reps on at least one set.');
       }
     }
 
@@ -232,6 +254,7 @@ class SuggestionEngine {
             '${formatKg(before)} → ${formatKg(weight)} kg (−10%) and one fewer working set.');
     }
 
+    weight = snapNoise(weight);
     return Suggestion(
       kind: kind,
       weight: weight,
@@ -280,7 +303,7 @@ class SuggestionEngine {
   }
 
   static String _headline(double w, int reps, int sets, int rir, bool technique, EquipmentKind eq) {
-    final load = (w == 0 && eq == EquipmentKind.bodyweight) ? 'Bodyweight' : '${formatKg(w)} kg';
+    final load = (w == 0 && eq == EquipmentKind.bodyweight) ? 'Bodyweight' : (w < 0 ? '${formatKg(-w)} kg assistance' : '${formatKg(w)} kg');
     final core = '$load × $reps, $sets ${sets == 1 ? 'set' : 'sets'}, stop at $rir reps in reserve';
     return technique ? 'Technique day: $core' : 'Today: $core';
   }

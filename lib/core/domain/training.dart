@@ -23,7 +23,7 @@ class RepRange {
   static const isolation = RepRange(10, 15);
 
   @override
-  String toString() => '$min–$max';
+  String toString() => min == max ? '$min' : '$min–$max';
 
   @override
   bool operator ==(Object other) => other is RepRange && other.min == min && other.max == max;

@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:drift/drift.dart' show driftRuntimeOptions;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:spotter/app.dart';
@@ -17,8 +18,12 @@ class AppHarness {
   final WidgetTester tester;
   AppDatabase? db;
 
+  /// Extra provider overrides (e.g. a fixture instead of the iOS document picker).
+  List<Override> overrides = const [];
+
   /// Deletes the database (fresh install), opens a new one, launches the app.
-  Future<void> launchFresh() async {
+  Future<void> launchFresh({List<Override> overrides = const []}) async {
+    this.overrides = overrides;
     driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
     final docs = await getApplicationDocumentsDirectory();
     for (final suffix in ['', '-wal', '-shm', '-journal']) {
@@ -36,7 +41,7 @@ class AppHarness {
   Future<void> pumpApp() async {
     await tester.pumpWidget(const SizedBox());
     await tester.pumpWidget(ProviderScope(
-      overrides: [databaseProvider.overrideWithValue(db!)],
+      overrides: [databaseProvider.overrideWithValue(db!), ...overrides],
       child: const SpotterApp(),
     ));
     await settle();

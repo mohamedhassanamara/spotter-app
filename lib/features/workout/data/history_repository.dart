@@ -79,6 +79,7 @@ class HistoryRepository {
           readinessScore: s.readinessScore,
           readinessBand: s.readinessBand,
           xpEarned: s.xpEarned,
+          imported: s.source != 'app',
           exercises: [
             for (final e in exBySession[s.id] ?? const <SessionExercise>[])
               HistExercise(

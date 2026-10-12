@@ -47,3 +47,6 @@ app.*.map.json
 # Personal source files (program PDFs, exports). Never commit.
 private/
 *.pdf
+
+# Personal Liftoff exports (test/fixtures holds a synthetic sample)
+liftoff_workout_data*.csv
