@@ -7,6 +7,9 @@ import '../../../app_providers.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/common.dart';
 import '../../../router.dart';
+import '../../tutorials/data/edb_v2/edb_budget.dart';
+import '../../tutorials/data/edb_v2/edb_client.dart';
+import '../../tutorials/data/edb_v2/edb_providers.dart';
 import '../data/seed_generator.dart';
 
 final _tableCountsProvider = FutureProvider.autoDispose<Map<String, int>>((ref) async {
@@ -165,6 +168,8 @@ class _DebugMenuScreenState extends ConsumerState<DebugMenuScreen> {
               ),
             ]),
           ),
+          const SectionHeader('ExerciseDB V2'),
+          const AppCard(child: _EdbUsage()),
           const SectionHeader('Data'),
           AppCard(
             padding: const EdgeInsets.symmetric(vertical: 4),
@@ -201,5 +206,38 @@ class _DebugMenuScreenState extends ConsumerState<DebugMenuScreen> {
         ],
       ),
     );
+  }
+}
+
+
+/// API calls this month against the 2,000/month plan, where the figure comes from, and recent calls,
+/// fallbacks and errors.
+class _EdbUsage extends ConsumerWidget {
+  const _EdbUsage();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final b = ref.watch(edbBudgetProvider).value;
+    final log = ref.watch(edbLogProvider).value ?? const <EdbLogEntry>[];
+    if (b == null) return const SizedBox(height: 40);
+    final color = b.stopped ? AppColors.danger : (b.warn ? AppColors.warning : AppColors.primary);
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Text('${b.used} / ${EdbBudget.planLimit} calls · ${b.month}', key: const ValueKey('edb-usage'), style: AppType.title.copyWith(color: color)),
+      const SizedBox(height: 6),
+      ProgressBar(value: (b.used / EdbBudget.planLimit).clamp(0.0, 1.0), color: color),
+      const SizedBox(height: 6),
+      Text(
+        '${b.fromHeaders ? 'From RapidAPI headers' : 'Local count'} · warning at ${EdbBudget.softLimit} · stops at ${EdbBudget.hardLimit}'
+        '${b.stopped ? ' · STOPPED until ${b.resumesOn().toIso8601String().substring(0, 10)}' : ''}'
+        '${edbApiKey.isEmpty ? ' · no API key in this build' : ''}',
+        style: AppType.bodyS.copyWith(color: AppColors.textSecondary),
+      ),
+      if (log.isNotEmpty) ...[
+        const SizedBox(height: 10),
+        for (final e in log.reversed.take(15))
+          Text('${e.at.toIso8601String().substring(5, 16)}  ${e.kind}  ${e.detail}',
+              style: AppType.bodyS.copyWith(fontSize: 11, color: e.kind == 'call' ? AppColors.textSecondary : AppColors.warning)),
+      ],
+    ]);
   }
 }

@@ -1,0 +1,18 @@
+#!/bin/sh
+# Refuses a commit if the ExerciseDB/RapidAPI key from config/secrets.json (git-ignored) appears in any
+# staged or tracked file. Enable once per clone: git config core.hooksPath .githooks
+SECRETS="config/secrets.json"
+[ -f "$SECRETS" ] || exit 0
+KEY=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1])).get("EDB_RAPIDAPI_KEY",""))' "$SECRETS" 2>/dev/null)
+[ -n "$KEY" ] || exit 0
+if git ls-files --error-unmatch "$SECRETS" >/dev/null 2>&1; then
+  echo "pre-commit: $SECRETS is tracked. Remove it from the index (git rm --cached $SECRETS)." >&2
+  exit 1
+fi
+# Staged content first, then everything already tracked.
+if git grep --cached -l -F -e "$KEY" >/dev/null 2>&1 || git grep -l -F -e "$KEY" -- $(git ls-files) >/dev/null 2>&1; then
+  echo "pre-commit: the RapidAPI key appears in a tracked or staged file:" >&2
+  git grep --cached -l -F -e "$KEY" >&2
+  exit 1
+fi
+exit 0

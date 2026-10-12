@@ -50,3 +50,6 @@ private/
 
 # Personal Liftoff exports (test/fixtures holds a synthetic sample)
 liftoff_workout_data*.csv
+
+# API keys (passed with --dart-define-from-file=config/secrets.json); never commit
+config/secrets.json

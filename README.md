@@ -43,6 +43,23 @@ Readiness needs your Apple Watch to record HRV, resting heart rate and sleep: we
 Sleep tracking on. It shows "Calibrating (X/14 days)" until 14 days of baseline exist, and treats
 those days as Green for suggestions.
 
+## ExerciseDB V2 (videos and images) setup
+
+The exercise videos come from ExerciseDB V2 (AscendAPI) via RapidAPI. Your key lives in
+`config/secrets.json`, which is git-ignored. Copy `config/secrets.example.json` to that path, put your
+key in it, and pass the file to every run or build:
+
+```sh
+flutter run --dart-define-from-file=config/secrets.json
+```
+
+- Without the key, the app still works and uses the V1 GIFs.
+- Enable the pre-commit check once per clone with `git config core.hooksPath .githooks`. It refuses
+  any commit where the key appears in a tracked or staged file.
+- Your plan allows 2,000 API calls a month; CDN media doesn't count. The app shows a warning at
+  1,500 and stops calling at 1,850 until the 1st of the next month, falling back to the V1 GIFs.
+  Usage is in Settings → Debug → ExerciseDB V2.
+
 ## Tests
 
 ```sh
