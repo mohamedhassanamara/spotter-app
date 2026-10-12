@@ -464,11 +464,16 @@ class SessionRepository {
         isWarmup: isWarmup == null ? const Value.absent() : Value(isWarmup),
       ));
 
-  /// Would completing this set with [weight] count as an override?
+  /// Would completing this set with [weight] count as an override (more than 5 % above the suggestion)?
   bool wouldOverride(WorkoutSet set, double weight, {bool? isWarmup}) =>
-      _guardrail.isOverride(weight: weight, suggested: set.suggestedWeight, isWarmup: isWarmup ?? set.isWarmup);
+      set.setType != 'drop' && _guardrail.isOverride(weight: weight, suggested: set.suggestedWeight, isWarmup: isWarmup ?? set.isWarmup);
 
-  /// Marks a set done. Override sets must carry an RPE and a reason (enforced by the UI and here).
+  /// Section 7: a reason is asked for only when the set was too heavy, i.e. an override whose reps also
+  /// fell below the bottom of its range. Failure inside the range is never flagged.
+  bool needsReason(WorkoutSet set, {required double weight, required int reps, required int exerciseRepMin}) =>
+      wouldOverride(set, weight) && reps < (set.targetRepMin ?? exerciseRepMin);
+
+  /// Marks a set done. Ego sets (see [needsReason]) must carry a reason.
   Future<void> completeSet(
     WorkoutSet set, {
     required double weight,
@@ -477,10 +482,11 @@ class SessionRepository {
     required bool isWarmup,
     OverrideReason? reason,
     required DateTime now,
+    int? exerciseRepMin,
   }) async {
     final override = wouldOverride(set, weight, isWarmup: isWarmup);
-    if (override && (rpe == null || reason == null)) {
-      throw StateError('Override sets need an RPE and a reason');
+    if (exerciseRepMin != null && needsReason(set, weight: weight, reps: reps, exerciseRepMin: exerciseRepMin) && reason == null) {
+      throw StateError('A set that was too heavy (override below the rep range) needs a reason');
     }
     await (_db.update(_db.workoutSets)..where((t) => t.id.equals(set.id))).write(WorkoutSetsCompanion(
       weight: Value(weight),
@@ -490,9 +496,36 @@ class SessionRepository {
       completed: const Value(true),
       completedAt: Value(now),
       isOverride: Value(override),
-      overrideReason: Value(override ? reason!.name : null),
+      overrideReason: Value(override ? reason?.name : null),
     ));
   }
+
+  /// SET-cell menu: working, warm-up (W), drop set (D) under the set before it, or a program technique.
+  Future<void> setSetKind(WorkoutSet set, {required String kind}) async {
+    final w = WorkoutSetsCompanion(
+      isWarmup: Value(kind == 'warmup'),
+      setType: Value(kind == 'drop' ? 'drop' : null),
+      technique: Value(kind.startsWith('technique:') ? kind.substring('technique:'.length) : (kind == 'working' ? null : set.technique)),
+      suggestedWeight: kind == 'warmup' || kind == 'drop' ? const Value(null) : const Value.absent(),
+    );
+    await (_db.update(_db.workoutSets)..where((t) => t.id.equals(set.id))).write(w);
+  }
+
+  Future<void> setRest(int sessionExerciseId, {bool? enabled, int? seconds}) =>
+      (_db.update(_db.sessionExercises)..where((t) => t.id.equals(sessionExerciseId))).write(SessionExercisesCompanion(
+        restEnabled: enabled == null ? const Value.absent() : Value(enabled),
+        restSeconds: seconds == null ? const Value.absent() : Value(seconds),
+      ));
+
+  /// Links two exercises into one superset (A1/A2). Joining an exercise that's already in a group adds to it.
+  Future<void> superset(ActiveExercise a, ActiveExercise b) async {
+    final group = a.row.supersetGroup ?? b.row.supersetGroup ?? a.row.id;
+    await (_db.update(_db.sessionExercises)..where((t) => t.id.isIn([a.row.id, b.row.id])))
+        .write(SessionExercisesCompanion(supersetGroup: Value(group)));
+  }
+
+  Future<void> leaveSuperset(int sessionExerciseId) => (_db.update(_db.sessionExercises)..where((t) => t.id.equals(sessionExerciseId)))
+      .write(const SessionExercisesCompanion(supersetGroup: Value(null)));
 
   Future<void> uncompleteSet(int id) => (_db.update(_db.workoutSets)..where((t) => t.id.equals(id))).write(
         const WorkoutSetsCompanion(

@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -13,16 +11,22 @@ import '../../../core/domain/training.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/common.dart';
 import '../../../router.dart';
+import '../../coach/domain/guardrail.dart';
 import '../../coach/domain/suggestion_engine.dart';
 import '../../library/domain/exercise_info.dart';
+import '../../library/domain/load_kinds.dart';
 import '../../library/domain/name_resolver.dart';
 import '../../program/data/program_repository.dart';
-import '../data/session_repository.dart';
 import '../../tutorials/presentation/form_check_sheet.dart';
-import '../../program/presentation/program_widgets.dart';
+import '../data/session_repository.dart';
+import 'exercise_block.dart';
+import 'keypad.dart';
 import 'rest_timer.dart';
-import 'set_editor_sheet.dart';
 
+const _supersetColors = [AppColors.accent, AppColors.xp, AppColors.warning, Color(0xFFFF7A45)];
+
+/// The active workout, Liftoff-style: compact set rows, a custom keypad for KG/REPS, rest shown in the
+/// header (never full screen), and a minimize button that leaves a mini bar over the tabs.
 class ActiveWorkoutScreen extends ConsumerStatefulWidget {
   const ActiveWorkoutScreen({super.key});
 
@@ -31,20 +35,31 @@ class ActiveWorkoutScreen extends ConsumerStatefulWidget {
 }
 
 class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
-  Timer? _clock;
   bool _finishing = false;
+  bool _hideWarmups = false;
+  KeypadTarget? _target;
+  KeypadBuffer? _buffer;
+  final Set<KeypadTarget> _edited = {};
+  final Map<KeypadTarget, GlobalKey> _cellKeys = {};
+  final _notes = TextEditingController();
+  final _notesFocus = FocusNode();
+  bool _notesLoaded = false;
+
+  GlobalKey _keyFor(KeypadTarget t) => _cellKeys.putIfAbsent(t, GlobalKey.new);
 
   @override
   void initState() {
     super.initState();
-    _clock = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (mounted) setState(() {});
+    _notesFocus.addListener(() {
+      if (!_notesFocus.hasFocus) _saveNotes();
+      setState(() {});
     });
   }
 
   @override
   void dispose() {
-    _clock?.cancel();
+    _notes.dispose();
+    _notesFocus.dispose();
     super.dispose();
   }
 
@@ -67,46 +82,59 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
             ),
           );
         }
+        if (!_notesLoaded) {
+          _notes.text = session.session.notes;
+          _notesLoaded = true;
+        }
         return _buildActive(context, session, catalog);
       },
     );
   }
 
+  // ---------------------------------------------------------------------------
+  // Layout
+  // ---------------------------------------------------------------------------
+
   Widget _buildActive(BuildContext context, ActiveSession session, Map<String, ExerciseInfo> catalog) {
-    final elapsed = ref.read(clockProvider)().difference(session.session.startedAt);
+    final target = _target;
+    ActiveExercise? targetEx;
+    if (target != null) {
+      targetEx = session.exercises.where((e) => e.sets.any((s) => s.id == target.setId)).firstOrNull;
+      if (targetEx == null) {
+        // The set disappeared (deleted / exercise removed): close the keypad.
+        WidgetsBinding.instance.addPostFrameCallback((_) => _closeKeypad(commit: false));
+      }
+    }
+    final groups = <int, List<ActiveExercise>>{};
+    for (final e in session.exercises) {
+      if (e.row.supersetGroup != null) (groups[e.row.supersetGroup!] ??= []).add(e);
+    }
+    final groupOrder = groups.keys.toList();
+
     return Scaffold(
       appBar: AppBar(
-        titleSpacing: Navigator.of(context).canPop() ? 0 : 16,
-        title: InkWell(
-          onTap: () async {
-            final name = await promptText(context, title: 'Workout name', initial: session.session.name);
-            if (name != null && name.trim().isNotEmpty) {
-              await ref.read(sessionRepositoryProvider).renameSession(session.session.id, name.trim());
-            }
-          },
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(session.session.name, overflow: TextOverflow.ellipsis, style: AppType.title.copyWith(fontSize: 20)),
-              Row(children: [
-                Text(formatClock(elapsed), style: AppType.bodyS.copyWith(fontFamily: AppType.display, color: AppColors.primary, fontWeight: FontWeight.w700)),
-                Flexible(
-                  child: Text(
-                    '  ·  ${session.completedWorkingSets} working sets',
-                    overflow: TextOverflow.ellipsis,
-                    style: AppType.bodyS.copyWith(color: AppColors.textSecondary),
-                  ),
-                ),
-              ]),
-            ],
-          ),
+        leading: IconButton(
+          tooltip: 'Minimize workout',
+          icon: const Icon(Icons.keyboard_arrow_down_rounded, size: 32),
+          onPressed: _minimize,
         ),
+        titleSpacing: 0,
+        title: Row(children: [
+          Flexible(
+            child: InkWell(
+              onTap: () => _rename(session),
+              child: Text(session.session.name, overflow: TextOverflow.ellipsis, style: AppType.title.copyWith(fontSize: 18)),
+            ),
+          ),
+          const SizedBox(width: 8),
+          WorkoutClock(startedAt: session.session.startedAt),
+        ]),
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 12),
             child: FilledButton(
               onPressed: _finishing ? null : () => _finish(session, catalog),
-              style: FilledButton.styleFrom(minimumSize: const Size(96, 44)),
+              style: FilledButton.styleFrom(minimumSize: const Size(84, 40)),
               child: _finishing
                   ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
                   : const Text('Finish'),
@@ -114,321 +142,340 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
           ),
         ],
       ),
-      bottomNavigationBar: const RestTimerBar(),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(12, 8, 12, 32),
-        children: [
-          for (var i = 0; i < session.exercises.length; i++)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: _ExerciseCard(
-                key: ValueKey(session.exercises[i].row.id),
-                exercise: session.exercises[i],
-                info: catalog[session.exercises[i].row.exerciseId],
-                index: i,
-                count: session.exercises.length,
-                onMove: (delta) => _move(session, i, delta),
-              ),
-            ),
-          if (session.exercises.isEmpty)
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 24),
-              child: Text('Empty workout. Add your first exercise.',
-                  textAlign: TextAlign.center, style: TextStyle(color: AppColors.textSecondary)),
-            ),
-          OutlinedButton.icon(
-            onPressed: () => _addExercise(session),
-            icon: const Icon(Icons.add_rounded),
-            label: const Text('Add exercise'),
-          ),
-          const SizedBox(height: 12),
-          AppCard(
-            onTap: () async {
-              final notes = await promptText(context, title: 'Session notes', initial: session.session.notes, maxLines: 4);
-              if (notes != null) await ref.read(sessionRepositoryProvider).setSessionNotes(session.session.id, notes);
-            },
-            child: Row(children: [
-              const Icon(Icons.sticky_note_2_outlined, color: AppColors.textSecondary),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  session.session.notes.isEmpty ? 'Add session notes' : session.session.notes,
-                  style: TextStyle(color: session.session.notes.isEmpty ? AppColors.textSecondary : AppColors.textPrimary),
-                ),
-              ),
-            ]),
-          ),
-          const SizedBox(height: 12),
-          TextButton.icon(
-            style: TextButton.styleFrom(foregroundColor: AppColors.danger),
-            onPressed: () => _discard(session),
-            icon: const Icon(Icons.delete_forever_outlined),
-            label: const Text('Discard workout'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _move(ActiveSession session, int index, int delta) async {
-    final ids = session.exercises.map((e) => e.row.id).toList();
-    final target = index + delta;
-    if (target < 0 || target >= ids.length) return;
-    final id = ids.removeAt(index);
-    ids.insert(target, id);
-    await ref.read(sessionRepositoryProvider).reorderExercises(ids);
-  }
-
-  Future<void> _addExercise(ActiveSession session) async {
-    final id = await context.push<String>(Routes.pickExercise);
-    if (id == null || !mounted) return;
-    final catalog = await ref.read(catalogProvider.future);
-    final info = catalog[id];
-    if (info == null) return;
-    final settings = ref.read(currentSettingsProvider);
-    final coach = await ref.read(coachContextBuilderProvider)();
-    final range = info.defaultRange(compound: settings.compoundRange, isolation: settings.isolationRange);
-    await ref.read(sessionRepositoryProvider).addExercise(
-          sessionId: session.session.id,
-          info: info,
-          range: range,
-          targetSets: 3,
-          restSeconds: info.isCompound ? settings.defaultRestCompound : settings.defaultRestIsolation,
-          targetRir: settings.defaultRir,
-          coach: coach,
-        );
-  }
-
-  Future<void> _discard(ActiveSession session) async {
-    final ok = await confirm(context,
-        title: 'Discard workout?', message: 'All sets logged in this session will be deleted.', action: 'Discard', destructive: true);
-    if (!ok || !mounted) return;
-    await ref.read(restTimerProvider).stop();
-    await ref.read(sessionRepositoryProvider).discard(session.session.id);
-    if (mounted) context.go(Routes.home);
-  }
-
-  Future<void> _finish(ActiveSession session, Map<String, ExerciseInfo> catalog) async {
-    final done = session.completedWorkingSets;
-    if (done == 0) {
-      final discard = await confirm(context,
-          title: 'No working sets completed',
-          message: 'Complete at least one working set to finish, or discard this workout.',
-          action: 'Discard',
-          destructive: true);
-      if (discard) await _discard(session);
-      return;
-    }
-    final pending = session.exercises.expand((e) => e.sets).where((s) => !s.completed).length;
-    if (pending > 0) {
-      final ok = await confirm(context,
-          title: 'Finish workout?',
-          message: '$pending set${pending == 1 ? '' : 's'} not completed will be dropped.',
-          action: 'Finish');
-      if (!ok) return;
-    }
-    setState(() => _finishing = true);
-    try {
-      await ref.read(restTimerProvider).stop();
-      final summary = await ref.read(finishServiceProvider).finish(
-            sessionId: session.session.id,
-            now: ref.read(clockProvider)(),
-            catalog: catalog,
-            settings: ref.read(currentSettingsProvider),
-            health: ref.read(healthSourceProvider),
-          );
-      ref.read(lastSummaryProvider.notifier).set(summary);
-      if (mounted) context.pushReplacement(summary.rankUps.isEmpty ? Routes.summary : Routes.rankUp);
-    } catch (e, st) {
-      ErrorLog.instance.recordCaught(e, st);
-      if (mounted) {
-        setState(() => _finishing = false);
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Could not finish: $e')));
-      }
-    }
-  }
-}
-
-class _ExerciseCard extends ConsumerStatefulWidget {
-  const _ExerciseCard({
-    super.key,
-    required this.exercise,
-    required this.info,
-    required this.index,
-    required this.count,
-    required this.onMove,
-  });
-
-  final ActiveExercise exercise;
-  final ExerciseInfo? info;
-  final int index;
-  final int count;
-  final ValueChanged<int> onMove;
-
-  @override
-  ConsumerState<_ExerciseCard> createState() => _ExerciseCardState();
-}
-
-class _ExerciseCardState extends ConsumerState<_ExerciseCard> {
-  bool _whyOpen = false;
-
-  ActiveExercise get ex => widget.exercise;
-
-  double get _increment => ref.read(currentSettingsProvider).increments.of(widget.info?.equipmentKind ?? EquipmentKind.other);
-
-  @override
-  Widget build(BuildContext context) {
-    final sug = ex.suggestion;
-    final freeze = ref.watch(activeFreezesProvider)[ex.row.exerciseId];
-    final now = ref.watch(clockProvider)();
-    final name = ex.row.displayName ?? widget.info?.name ?? ex.row.exerciseId;
-    final workingIdx = <int, int>{};
-    var n = 0;
-    for (final s in ex.sets) {
-      if (!s.isWarmup) workingIdx[s.id] = ++n;
-    }
-    final done = ex.sets.where((s) => s.completed && !s.isWarmup).length;
-    final total = ex.sets.where((s) => !s.isWarmup).length;
-
-    return GameCard(
-      padding: const EdgeInsets.fromLTRB(14, 8, 6, 12),
-      accent: sug?.techniqueDay == true ? AppColors.red : (done == total && total > 0 ? AppColors.primary : null),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: InkWell(
-                  onTap: () => context.push(Routes.exercise(ex.row.exerciseId)),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 6),
-                    child: Text(name, style: AppType.title.copyWith(fontSize: 19)),
-                  ),
-                ),
-              ),
-              Text('$done/$total', style: AppType.bodyS.copyWith(fontFamily: AppType.display, color: AppColors.textSecondary, fontWeight: FontWeight.w700)),
-              IconButton(
-                tooltip: 'Form check',
-                iconSize: 26,
-                onPressed: () => showFormCheckSheet(context, ex.row.exerciseId),
-                icon: const Icon(Icons.info_outline_rounded),
-              ),
-              PopupMenuButton<String>(
-                icon: const Icon(Icons.more_vert_rounded),
-                onSelected: _menu,
-                itemBuilder: (_) => [
-                  if (widget.index > 0) const PopupMenuItem(value: 'up', child: Text('Move up')),
-                  if (widget.index < widget.count - 1) const PopupMenuItem(value: 'down', child: Text('Move down')),
-                  const PopupMenuItem(value: 'replace', child: Text('Replace exercise')),
-                  const PopupMenuItem(value: 'notes', child: Text('Exercise notes')),
-                  const PopupMenuItem(value: 'remove', child: Text('Remove exercise')),
-                ],
-              ),
-            ],
-          ),
-          Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: Text(
-              '${ex.range} reps · ${ex.row.targetSets} sets · RIR ${ex.row.targetRir} · rest ${formatClock(Duration(seconds: ex.row.restSeconds))}',
-              style: AppType.bodyS.copyWith(color: AppColors.textSecondary),
-            ),
-          ),
-          if (freeze != null) ...[
-            const SizedBox(height: 10),
-            Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: GuardrailBanner(
-                tone: GuardrailTone.egoFlag,
-                title: 'Progression frozen · ${FreezeState(until: freeze.until, baseWeight: freeze.baseWeight).daysLeft(now)} day(s) left',
-                details: freeze.reason,
-              ),
-            ),
-          ],
-          if (sug != null) ...[
-            const SizedBox(height: 10),
-            _SuggestionBanner(suggestion: sug, open: _whyOpen, onToggle: () => setState(() => _whyOpen = !_whyOpen)),
-          ],
-          _ProgramCue(row: ex.row),
-          if (ex.row.notes.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.only(top: 8, right: 8),
-              child: Text('📝 ${ex.row.notes}', style: const TextStyle(color: AppColors.textSecondary)),
-            ),
-          const SizedBox(height: 6),
-          for (final s in ex.sets)
-            _SetRow(
-              key: ValueKey(s.id),
-              set: s,
-              label: s.isWarmup ? 'W' : '${workingIdx[s.id]}',
-              increment: _increment,
-              targetRir: ex.row.targetRir,
-              onComplete: () => _complete(s, workingIdx[s.id] ?? 0),
-              onUndo: () => ref.read(sessionRepositoryProvider).uncompleteSet(s.id),
-              onEdit: () => _edit(s, workingIdx[s.id] ?? 0),
-            ),
-          const SizedBox(height: 6),
-          Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: Row(
+      body: Column(children: [
+        Expanded(
+          child: GestureDetector(
+            behavior: HitTestBehavior.translucent,
+            onTap: () => FocusScope.of(context).unfocus(),
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(10, 4, 10, 32),
               children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: () => ref.read(sessionRepositoryProvider).addSet(ex),
-                    icon: const Icon(Icons.add_rounded),
-                    label: const Text('Set'),
+                _notesField(),
+                for (final e in session.exercises)
+                  ExerciseBlock(
+                    key: ValueKey('exercise-${e.row.id}'),
+                    exercise: e,
+                    info: catalog[e.row.exerciseId],
+                    ctx: BlockContext(
+                      focused: _target,
+                      buffer: _buffer,
+                      edited: _edited,
+                      cellKey: _keyFor,
+                      onFocus: (t) => _focus(t),
+                      onComplete: (s) => _complete(session, e, s),
+                      hideWarmups: _hideWarmups,
+                      onToggleWarmups: () => setState(() => _hideWarmups = !_hideWarmups),
+                      supersetLabel: e.row.supersetGroup == null
+                          ? null
+                          : '${String.fromCharCode(65 + groupOrder.indexOf(e.row.supersetGroup!))}${groups[e.row.supersetGroup!]!.indexOf(e) + 1}',
+                      supersetColor: e.row.supersetGroup == null ? null : _supersetColors[groupOrder.indexOf(e.row.supersetGroup!) % _supersetColors.length],
+                      onMenu: (a) => _exerciseMenu(session, e, catalog, a),
+                    ),
                   ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: () => ref.read(sessionRepositoryProvider).addSet(ex, warmup: true),
-                    icon: const Icon(Icons.local_fire_department_outlined),
-                    label: const Text('Warm-up'),
+                if (session.exercises.isEmpty)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 24),
+                    child: Text('Empty workout. Add your first exercise.', textAlign: TextAlign.center, style: TextStyle(color: AppColors.textSecondary)),
                   ),
+                OutlinedButton.icon(onPressed: () => _addExercise(session), icon: const Icon(Icons.add_rounded), label: const Text('Add exercise')),
+                const SizedBox(height: 8),
+                TextButton.icon(
+                  style: TextButton.styleFrom(foregroundColor: AppColors.danger),
+                  onPressed: () => _discard(session),
+                  icon: const Icon(Icons.delete_forever_outlined),
+                  label: const Text('Discard workout'),
                 ),
               ],
             ),
           ),
-        ],
+        ),
+        if (target != null && targetEx != null && _buffer != null)
+          WorkoutKeypad(
+            field: target.field,
+            increment: _increment(catalog[targetEx.row.exerciseId]),
+            signToggle: isAssisted(targetEx.row.exerciseId),
+            onDigit: (d) => setState(() => _buffer!.digit(d)),
+            onDot: () => setState(_buffer!.dot),
+            onBackspace: () => setState(_buffer!.backspace),
+            onStep: (dir) => setState(() => _buffer!.step(dir, increment: _increment(catalog[targetEx!.row.exerciseId]), fallback: _cellValue(session, target))),
+            onCopy: () => _copy(session, targetEx!),
+            onSign: () => setState(_buffer!.toggleSign),
+            onNext: () => _next(session),
+            onHide: () => _closeKeypad(),
+          ),
+      ]),
+    );
+  }
+
+  Widget _notesField() {
+    final open = _notesFocus.hasFocus;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: TextField(
+        key: const ValueKey('workout-notes'),
+        controller: _notes,
+        focusNode: _notesFocus,
+        minLines: 1,
+        maxLines: open ? 4 : 1,
+        textCapitalization: TextCapitalization.sentences,
+        onTap: () => _closeKeypad(),
+        decoration: const InputDecoration(
+          isDense: true,
+          prefixIcon: Icon(Icons.sticky_note_2_outlined, size: 20),
+          hintText: 'Workout notes',
+          border: InputBorder.none,
+        ),
       ),
     );
   }
 
-  Future<void> _menu(String v) async {
+  Future<void> _saveNotes() async {
+    final session = ref.read(activeSessionProvider).value;
+    if (session == null || _notes.text == session.session.notes) return;
+    await ref.read(sessionRepositoryProvider).setSessionNotes(session.session.id, _notes.text);
+  }
+
+  double _increment(ExerciseInfo? info) => ref.read(currentSettingsProvider).increments.of(info?.equipmentKind ?? EquipmentKind.other);
+
+  // ---------------------------------------------------------------------------
+  // Keypad
+  // ---------------------------------------------------------------------------
+
+  WorkoutSet? _setById(ActiveSession session, int id) =>
+      session.exercises.expand((e) => e.sets).where((s) => s.id == id).firstOrNull;
+
+  double _cellValue(ActiveSession session, KeypadTarget t) {
+    final s = _setById(session, t.setId);
+    if (s == null) return 0;
+    return t.field == KeypadField.kg ? s.weight : s.reps.toDouble();
+  }
+
+  Future<void> _focus(KeypadTarget t) async {
+    FocusScope.of(context).unfocus();
+    await _commit();
+    final session = ref.read(activeSessionProvider).value;
+    final assisted = session?.exercises.any((e) => isAssisted(e.row.exerciseId) && e.sets.any((s) => s.id == t.setId)) ?? false;
+    setState(() {
+      _target = t;
+      _buffer = KeypadBuffer(field: t.field, text: assisted && t.field == KeypadField.kg ? '-' : '');
+    });
+    // Keep the edited cell above the keypad.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final c = _keyFor(t).currentContext;
+      if (c != null && c.mounted) Scrollable.ensureVisible(c, alignment: 0.35, duration: const Duration(milliseconds: 200));
+    });
+  }
+
+  /// Writes what's typed into the focused cell (nothing when the buffer is empty).
+  Future<void> _commit() async {
+    final t = _target, b = _buffer;
+    if (t == null || b == null || b.isEmpty) return;
+    final v = b.value;
+    if (v == null) return;
     final repo = ref.read(sessionRepositoryProvider);
-    switch (v) {
-      case 'up':
-        widget.onMove(-1);
-      case 'down':
-        widget.onMove(1);
+    if (t.field == KeypadField.kg) {
+      await repo.updateSet(t.setId, weight: v);
+    } else {
+      await repo.updateSet(t.setId, reps: v.round().clamp(0, 999));
+    }
+    _edited.add(t);
+    b.text = '';
+  }
+
+  Future<void> _closeKeypad({bool commit = true}) async {
+    if (commit) await _commit();
+    if (mounted) {
+      setState(() {
+        _target = null;
+        _buffer = null;
+      });
+    }
+  }
+
+  /// NEXT: KG → REPS → the next set's KG (next exercise after the last set), then close.
+  Future<void> _next(ActiveSession session) async {
+    final t = _target;
+    if (t == null) return;
+    await _commit();
+    if (t.field == KeypadField.kg) return _focus(KeypadTarget(t.setId, KeypadField.reps));
+    final all = [
+      for (final e in session.exercises)
+        for (final s in e.sets)
+          if (!(_hideWarmups && s.isWarmup)) s,
+    ];
+    final i = all.indexWhere((s) => s.id == t.setId);
+    final next = all.skip(i + 1).where((s) => !s.completed).firstOrNull;
+    if (next == null) return _closeKeypad(commit: false);
+    return _focus(KeypadTarget(next.id, KeypadField.kg));
+  }
+
+  /// Copy: PREV for this set, or the set above when there's no PREV.
+  Future<void> _copy(ActiveSession session, ActiveExercise ex) async {
+    final t = _target;
+    if (t == null) return;
+    final history = ref.read(historyProvider).value;
+    final prevLog = history?.sessions.reversed.expand((s) => s.exercises).where((e) => e.exerciseId == ex.row.exerciseId).firstOrNull;
+    final s = _setById(session, t.setId);
+    if (s == null) return;
+    double? w;
+    int? r;
+    final prev = prevLog == null ? null : PrevSets(prevLog.loggedSets).forSet(s, ex.sets);
+    if (prev != null) {
+      w = prev.weight;
+      r = prev.reps;
+    } else {
+      final i = ex.sets.indexWhere((x) => x.id == s.id);
+      if (i > 0) {
+        w = ex.sets[i - 1].weight;
+        r = ex.sets[i - 1].reps;
+      }
+    }
+    if (w == null || r == null) return;
+    await ref.read(sessionRepositoryProvider).updateSet(s.id, weight: w, reps: r);
+    _edited
+      ..add(KeypadTarget(s.id, KeypadField.kg))
+      ..add(KeypadTarget(s.id, KeypadField.reps));
+    setState(() => _buffer!.text = '');
+  }
+
+  // ---------------------------------------------------------------------------
+  // Sets
+  // ---------------------------------------------------------------------------
+
+  /// ✓: logs what's in the row (the suggestion when the cells weren't touched), with the effort shown.
+  /// The reason sheet appears only for a set that was too heavy: load above the suggestion and reps
+  /// below the bottom of the range (section 7).
+  Future<void> _complete(ActiveSession session, ActiveExercise ex, WorkoutSet tapped) async {
+    final repo = ref.read(sessionRepositoryProvider);
+    if (_target?.setId == tapped.id) {
+      await _closeKeypad();
+    } else {
+      await _commit();
+    }
+    final fresh = (await ref.read(activeSessionProvider.future))?.exercises.expand((e) => e.sets).where((s) => s.id == tapped.id).firstOrNull;
+    final s = fresh ?? tapped;
+    if (s.completed) return repo.uncompleteSet(s.id);
+    final rpe = s.isWarmup ? null : (s.rpe ?? Effort.fromRir(s.targetRir ?? ex.row.targetRir).rpe);
+    OverrideReason? reason;
+    if (repo.needsReason(s, weight: s.weight, reps: s.reps, exerciseRepMin: ex.row.repMin)) {
+      if (!mounted) return;
+      reason = await _askReason(s);
+      if (reason == null) return;
+    }
+    HapticFeedback.lightImpact();
+    await repo.completeSet(
+      s,
+      weight: s.weight,
+      reps: s.reps,
+      rpe: rpe,
+      isWarmup: s.isWarmup,
+      reason: reason,
+      now: ref.read(clockProvider)(),
+      exerciseRepMin: ex.row.repMin,
+    );
+    await _startRest(session, ex, s);
+  }
+
+  /// Rest after working sets: none between drops, none between superset partners until the round ends
+  /// (then the longest rest of the group).
+  Future<void> _startRest(ActiveSession session, ActiveExercise ex, WorkoutSet s) async {
+    if (s.isWarmup || !ex.row.restEnabled) return;
+    final idx = ex.sets.indexWhere((x) => x.id == s.id);
+    final nextSet = idx >= 0 && idx + 1 < ex.sets.length ? ex.sets[idx + 1] : null;
+    if (nextSet?.setType == 'drop') return;
+    var seconds = ex.row.restSeconds;
+    final group = ex.row.supersetGroup;
+    if (group != null) {
+      final members = session.exercises.where((e) => e.row.supersetGroup == group).toList();
+      if (members.last.row.id != ex.row.id) return;
+      seconds = members.map((e) => e.row.restSeconds).reduce((a, b) => a > b ? a : b);
+    }
+    await ref.read(restTimerProvider).start(seconds);
+  }
+
+  Future<OverrideReason?> _askReason(WorkoutSet s) => showModalBottomSheet<OverrideReason>(
+        context: context,
+        builder: (ctx) => SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+            child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text('Heavier than suggested and short of the range', style: AppType.title),
+              const SizedBox(height: 6),
+              Text(
+                '${formatKg(s.weight)} kg vs ${formatKg(s.suggestedWeight ?? 0)} kg suggested, ${s.reps} reps. '
+                'This set won\'t count for ranks or PRs. Why the extra weight?',
+                style: AppType.bodyS.copyWith(color: AppColors.textSecondary),
+              ),
+              const SizedBox(height: 10),
+              for (final r in OverrideReason.values)
+                ListTile(contentPadding: EdgeInsets.zero, title: Text(r.label), onTap: () => Navigator.of(ctx).pop(r)),
+            ]),
+          ),
+        ),
+      );
+
+  // ---------------------------------------------------------------------------
+  // Exercise menu
+  // ---------------------------------------------------------------------------
+
+  Future<void> _exerciseMenu(ActiveSession session, ActiveExercise ex, Map<String, ExerciseInfo> catalog, String action) async {
+    final repo = ref.read(sessionRepositoryProvider);
+    switch (action) {
       case 'replace':
-        await _replace();
+        await _replace(ex, catalog);
+      case 'superset':
+        if (ex.row.supersetGroup != null) {
+          await repo.leaveSuperset(ex.row.id);
+          final rest = session.exercises.where((e) => e.row.supersetGroup == ex.row.supersetGroup && e.row.id != ex.row.id).toList();
+          if (rest.length == 1) await repo.leaveSuperset(rest.single.row.id);
+          return;
+        }
+        final others = session.exercises.where((e) => e.row.id != ex.row.id).toList();
+        final picked = await showModalBottomSheet<ActiveExercise>(
+          context: context,
+          builder: (ctx) => SafeArea(
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              const ListTile(title: Text('Superset with…')),
+              for (final o in others)
+                ListTile(
+                  title: Text(o.row.displayName ?? catalog[o.row.exerciseId]?.name ?? o.row.exerciseId),
+                  onTap: () => Navigator.of(ctx).pop(o),
+                ),
+            ]),
+          ),
+        );
+        if (picked != null) await repo.superset(ex, picked);
       case 'notes':
         final notes = await promptText(context, title: 'Exercise notes', initial: ex.row.notes, maxLines: 3);
         if (notes != null) await repo.setExerciseNotes(ex.row.id, notes);
+      case 'howto':
+        await showFormCheckSheet(context, ex.row.exerciseId);
+      case 'up' || 'down':
+        final ids = session.exercises.map((e) => e.row.id).toList();
+        final i = ids.indexOf(ex.row.id);
+        final j = action == 'up' ? i - 1 : i + 1;
+        if (j < 0 || j >= ids.length) return;
+        ids
+          ..removeAt(i)
+          ..insert(j, ex.row.id);
+        await repo.reorderExercises(ids);
       case 'remove':
-        final ok = await confirm(context,
-            title: 'Remove exercise?', message: 'Its sets in this workout will be deleted.', action: 'Remove', destructive: true);
+        final ok = await confirm(context, title: 'Remove exercise?', message: 'Its sets in this workout will be deleted.', action: 'Remove', destructive: true);
         if (ok) await repo.removeExercise(ex.row.id);
     }
   }
 
   /// Program substitutions first (resolved to library exercises), then a library search.
-  Future<void> _replace() async {
-    final catalog = await ref.read(catalogProvider.future);
+  Future<void> _replace(ActiveExercise ex, Map<String, ExerciseInfo> catalog) async {
     final program = await ref.read(programProvider.future);
     if (!mounted) return;
     final slots = decodeSlots(ex.row.programSlots);
     final slot = slots.isEmpty ? null : program.slot(slots.first);
     final options = <String>[if (slot != null) slot.exercise, ...?slot?.substitutions];
     final resolver = ExerciseNameResolver(catalog.values);
-    final resolved = <(String, ExerciseInfo?)>[
-      for (final o in options) (o, resolver.resolve(o)?.exercise),
-    ];
+    final resolved = <(String, ExerciseInfo?)>[for (final o in options) (o, resolver.resolve(o)?.exercise)];
     if (ex.sets.any((s) => s.completed)) {
-      final ok = await confirm(context,
-          title: 'Replace exercise?', message: 'Sets already logged on this exercise will be removed.', action: 'Replace', destructive: true);
+      final ok = await confirm(context, title: 'Replace exercise?', message: 'Sets already logged on this exercise will be removed.', action: 'Replace', destructive: true);
       if (!ok || !mounted) return;
     }
     final picked = await showModalBottomSheet<String>(
@@ -439,7 +486,7 @@ class _ExerciseCardState extends ConsumerState<_ExerciseCard> {
         child: Padding(
           padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
           child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-            Text('Replace ${ex.row.displayName ?? widget.info?.name ?? ''}', style: AppType.title),
+            Text('Replace ${ex.row.displayName ?? catalog[ex.row.exerciseId]?.name ?? ''}', style: AppType.title),
             if (resolved.isNotEmpty) ...[
               const SectionLabel('From the program'),
               for (final (label, info) in resolved)
@@ -449,9 +496,7 @@ class _ExerciseCardState extends ConsumerState<_ExerciseCard> {
                   leading: Icon(label == slot?.exercise ? Icons.star_rounded : Icons.swap_horiz_rounded,
                       color: info == null ? AppColors.textTertiary : AppColors.primary),
                   title: Text(label),
-                  subtitle: Text(info == null
-                      ? 'Not in the library — use search'
-                      : (info.id == ex.row.exerciseId ? 'Current exercise' : info.name)),
+                  subtitle: Text(info == null ? 'Not in the library — use search' : (info.id == ex.row.exerciseId ? 'Current exercise' : info.name)),
                   onTap: info == null ? null : () => Navigator.of(ctx).pop(info.id),
                 ),
             ],
@@ -477,393 +522,128 @@ class _ExerciseCardState extends ConsumerState<_ExerciseCard> {
         );
   }
 
-  /// Swipe or check: complete with the row's values. Overrides go through the sheet (RPE + reason).
-  Future<void> _complete(WorkoutSet s, int number) async {
-    final repo = ref.read(sessionRepositoryProvider);
-    if (s.reps <= 0 || repo.wouldOverride(s, s.weight)) return _edit(s, number);
-    HapticFeedback.mediumImpact();
-    await repo.completeSet(s, weight: s.weight, reps: s.reps, rpe: s.rpe, isWarmup: s.isWarmup, now: ref.read(clockProvider)());
-    if (!s.isWarmup) await ref.read(restTimerProvider).start(ex.row.restSeconds);
+  // ---------------------------------------------------------------------------
+  // Session
+  // ---------------------------------------------------------------------------
+
+  /// Collapses the workout to the mini bar over the tabs; it keeps running.
+  Future<void> _minimize() async {
+    await _closeKeypad();
+    await _saveNotes();
+    if (!mounted) return;
+    if (context.canPop()) {
+      context.pop();
+    } else {
+      context.go(Routes.home);
+    }
   }
 
-  Future<void> _edit(WorkoutSet s, int number) async {
-    final result = await showSetEditor(
-      context,
-      set: s,
-      increment: _increment,
-      exerciseName: ex.row.displayName ?? widget.info?.name ?? ex.row.exerciseId,
-      setNumber: number,
-      targetRir: ex.row.targetRir,
-    );
-    if (result == null || !mounted) return;
-    final repo = ref.read(sessionRepositoryProvider);
-    switch (result.action) {
-      case SetEditAction.complete:
-        HapticFeedback.mediumImpact();
-        await repo.completeSet(
-          s,
-          weight: result.weight,
-          reps: result.reps,
-          rpe: result.rpe,
-          isWarmup: result.isWarmup,
-          reason: result.reason,
-          now: ref.read(clockProvider)(),
+  Future<void> _rename(ActiveSession session) async {
+    final name = await promptText(context, title: 'Workout name', initial: session.session.name);
+    if (name != null && name.trim().isNotEmpty) await ref.read(sessionRepositoryProvider).renameSession(session.session.id, name.trim());
+  }
+
+  Future<void> _addExercise(ActiveSession session) async {
+    await _closeKeypad();
+    if (!mounted) return;
+    final id = await context.push<String>(Routes.pickExercise);
+    if (id == null || !mounted) return;
+    final catalog = await ref.read(catalogProvider.future);
+    final info = catalog[id];
+    if (info == null) return;
+    final settings = ref.read(currentSettingsProvider);
+    final coach = await ref.read(coachContextBuilderProvider)();
+    await ref.read(sessionRepositoryProvider).addExercise(
+          sessionId: session.session.id,
+          info: info,
+          range: info.defaultRange(compound: settings.compoundRange, isolation: settings.isolationRange),
+          targetSets: 3,
+          restSeconds: info.isCompound ? settings.defaultRestCompound : settings.defaultRestIsolation,
+          targetRir: settings.defaultRir,
+          coach: coach,
         );
-        if (!result.isWarmup && !s.completed) await ref.read(restTimerProvider).start(ex.row.restSeconds);
-      case SetEditAction.save:
-        await repo.updateSet(s.id, weight: result.weight, reps: result.reps, rpe: () => result.rpe, isWarmup: result.isWarmup);
-      case SetEditAction.uncomplete:
-        await repo.uncompleteSet(s.id);
-        await repo.updateSet(s.id, weight: result.weight, reps: result.reps, rpe: () => result.rpe, isWarmup: result.isWarmup);
-      case SetEditAction.delete:
-        await repo.deleteSet(s);
+  }
+
+  Future<void> _discard(ActiveSession session) async {
+    final ok = await confirm(context, title: 'Discard workout?', message: 'All sets logged in this session will be deleted.', action: 'Discard', destructive: true);
+    if (!ok || !mounted) return;
+    await ref.read(restTimerProvider).stop();
+    await ref.read(sessionRepositoryProvider).discard(session.session.id);
+    if (mounted) context.go(Routes.home);
+  }
+
+  Future<void> _finish(ActiveSession session, Map<String, ExerciseInfo> catalog) async {
+    await _closeKeypad();
+    await _saveNotes();
+    final current = await ref.read(activeSessionProvider.future) ?? session;
+    if (!mounted) return;
+    final done = current.completedWorkingSets;
+    if (done == 0) {
+      final discard = await confirm(context,
+          title: 'No working sets completed',
+          message: 'Complete at least one working set to finish, or discard this workout.',
+          action: 'Discard',
+          destructive: true);
+      if (discard) await _discard(current);
+      return;
+    }
+    final pending = current.exercises.expand((e) => e.sets).where((s) => !s.completed).length;
+    if (pending > 0) {
+      final ok = await confirm(context,
+          title: 'Finish workout?', message: '$pending set${pending == 1 ? '' : 's'} not completed will be dropped.', action: 'Finish');
+      if (!ok) return;
+    }
+    setState(() => _finishing = true);
+    try {
+      await ref.read(restTimerProvider).stop();
+      final summary = await ref.read(finishServiceProvider).finish(
+            sessionId: current.session.id,
+            now: ref.read(clockProvider)(),
+            catalog: catalog,
+            settings: ref.read(currentSettingsProvider),
+            health: ref.read(healthSourceProvider),
+          );
+      ref.read(lastSummaryProvider.notifier).set(summary);
+      if (mounted) context.pushReplacement(summary.rankUps.isEmpty ? Routes.summary : Routes.rankUp);
+    } catch (e, st) {
+      ErrorLog.instance.recordCaught(e, st);
+      if (mounted) {
+        setState(() => _finishing = false);
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Could not finish: $e')));
+      }
     }
   }
 }
 
-class _SuggestionBanner extends StatelessWidget {
-  const _SuggestionBanner({required this.suggestion, required this.open, required this.onToggle});
-  final StoredSuggestion suggestion;
-  final bool open;
-  final VoidCallback onToggle;
-
-  @override
-  Widget build(BuildContext context) {
-    final color = suggestion.techniqueDay
-        ? AppColors.red
-        : suggestion.kind == SuggestionKind.egoFreeze
-            ? AppColors.warning
-            : suggestion.kind == SuggestionKind.calibration
-                ? AppColors.accent
-                : AppColors.primary;
-    return Padding(
-      padding: const EdgeInsets.only(right: 8),
-      child: InkWell(
-        onTap: onToggle,
-        borderRadius: BorderRadius.circular(Radii.control),
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(colors: [color.withValues(alpha: 0.16), color.withValues(alpha: 0.04)]),
-            borderRadius: BorderRadius.circular(Radii.control),
-            border: Border.all(color: color.withValues(alpha: 0.35)),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Icon(suggestion.kind == SuggestionKind.egoFreeze ? Icons.lock_rounded : Icons.psychology_alt_rounded,
-                      color: color, size: 20),
-                  const SizedBox(width: 8),
-                  Expanded(child: Text(suggestion.headline, style: AppType.bodyS.copyWith(fontWeight: FontWeight.w800, fontSize: 15))),
-                  Icon(open ? Icons.expand_less_rounded : Icons.expand_more_rounded, color: AppColors.textSecondary),
-                ],
-              ),
-              if (open)
-                for (final w in suggestion.why)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 6, left: 28),
-                    child: Text('• $w', style: AppType.bodyS.copyWith(color: AppColors.textSecondary)),
-                  )
-              else
-                Padding(
-                  padding: const EdgeInsets.only(top: 2, left: 28),
-                  child: Text('Why?', style: AppType.label.copyWith(fontSize: 11, color: AppColors.textTertiary)),
-                ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// "BW" for bodyweight-only sets, kg otherwise.
-String _load(double kg) => kg == 0 ? 'BW' : formatKg(kg);
-
-/// One set: target on top (muted), actual weight/reps steppers below, RPE chip, swipe right to complete.
-class _SetRow extends ConsumerWidget {
-  const _SetRow({
-    super.key,
-    required this.set,
-    required this.label,
-    required this.increment,
-    required this.targetRir,
-    required this.onComplete,
-    required this.onUndo,
-    required this.onEdit,
-  });
-
-  final WorkoutSet set;
-  final String label;
-  final double increment;
-  final int targetRir;
-  final VoidCallback onComplete;
-  final VoidCallback onUndo;
-  final VoidCallback onEdit;
+/// Shown over the tab bar while a workout runs minimized: name, clock or rest, tap to resume.
+class MiniWorkoutBar extends ConsumerWidget {
+  const MiniWorkoutBar({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final repo = ref.read(sessionRepositoryProvider);
-    final s = set;
-    final overridePct = (!s.isWarmup && s.suggestedWeight != null && s.suggestedWeight! > 0 && repo.wouldOverride(s, s.weight))
-        ? ((s.weight - s.suggestedWeight!) / s.suggestedWeight! * 100).round()
-        : null;
-    final stripe = s.completed
-        ? (s.isOverride ? AppColors.warning : AppColors.primary)
-        : overridePct != null
-            ? AppColors.warning
-            : (s.isWarmup ? AppColors.textTertiary : AppColors.outlineBright);
-    final reps = (s.targetRepMin != null && s.targetRepMax != null)
-        ? (s.targetRepMin == s.targetRepMax ? '${s.targetRepMin}' : '${s.targetRepMin}–${s.targetRepMax}')
-        : '${s.suggestedReps ?? '–'}';
-    final rir = s.targetRir == null ? '' : ' · ${s.targetRir == 0 ? 'FAILURE' : 'RIR ${s.targetRir}'}';
-    final target = s.isWarmup
-        ? 'WARM-UP · $reps reps'
-        : s.suggestedWeight == null
-            ? 'TARGET  ramp up · $reps reps$rir'
-            : 'TARGET  ${_load(s.suggestedWeight!)}${s.suggestedWeight == 0 ? '' : ' kg'} × $reps$rir';
-
-    final body = Container(
-      margin: const EdgeInsets.only(top: 8, right: 8),
-      decoration: BoxDecoration(
-        color: s.completed ? stripe.withValues(alpha: 0.09) : AppColors.surfaceHigh,
-        borderRadius: BorderRadius.circular(Radii.control),
-        border: Border(left: BorderSide(color: stripe, width: 4)),
-      ),
-      padding: const EdgeInsets.fromLTRB(10, 8, 8, 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 28,
-                height: 28,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: s.isWarmup ? AppColors.warning.withValues(alpha: 0.16) : AppColors.surfaceTop,
-                  shape: BoxShape.circle,
-                ),
-                child: Text(label,
-                    style: AppType.bodyS.copyWith(
-                        fontFamily: AppType.display, fontWeight: FontWeight.w800, color: s.isWarmup ? AppColors.warning : AppColors.textPrimary)),
-              ),
-              const SizedBox(width: 10),
-              Expanded(child: Text(target, style: AppType.label.copyWith(color: AppColors.textSecondary, fontSize: 12))),
-              if (overridePct != null || s.isOverride)
-                Container(
-                  margin: const EdgeInsets.only(right: 6),
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: AppColors.warning.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(Radii.chip),
-                  ),
-                  child: Text(
-                    overridePct != null ? '+$overridePct% override' : 'override',
-                    style: AppType.label.copyWith(color: AppColors.warning, fontSize: 11, letterSpacing: 0.4),
-                  ),
-                ),
-              _RpeChip(set: s, onTap: () => _pickRpe(context, ref)),
-            ],
-          ),
-          if (s.technique != null)
-            Padding(
-              padding: const EdgeInsets.only(top: 6),
-              child: TechniqueChip(techniqueId: s.technique!),
+    final session = ref.watch(activeSessionProvider).value;
+    if (session == null) return const SizedBox.shrink();
+    return Material(
+      color: AppColors.surfaceHigh,
+      child: InkWell(
+        key: const ValueKey('mini-workout-bar'),
+        onTap: () => context.push(Routes.workout),
+        child: Container(
+          height: 56,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          decoration: const BoxDecoration(border: Border(top: BorderSide(color: AppColors.outline))),
+          child: Row(children: [
+            const Icon(Icons.fitness_center_rounded, color: AppColors.primary),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(session.session.name, overflow: TextOverflow.ellipsis, style: AppType.body.copyWith(fontWeight: FontWeight.w800)),
             ),
-          const SizedBox(height: 8),
-          if (s.completed)
-            Row(children: [
-              Expanded(
-                child: Text(
-                  '${_load(s.weight)}${s.weight == 0 ? '' : ' kg'} × ${s.reps}',
-                  style: AppType.number.copyWith(fontSize: 24, color: s.isOverride ? AppColors.warning : AppColors.textPrimary),
-                ),
-              ),
-              _CheckButton(done: true, onTap: onUndo),
-            ])
-          else
-            Row(children: [
-              Expanded(
-                flex: 6,
-                child: StepperBox(
-                  dense: true,
-                  value: _load(s.weight),
-                  unit: s.weight == 0 ? null : 'KG',
-                  onMinus: () => repo.updateSet(s.id, weight: (s.weight - increment).clamp(0, 1000).toDouble()),
-                  onPlus: () => repo.updateSet(s.id, weight: s.weight + increment),
-                  onTapValue: () async {
-                    final v = await promptNumber(context, title: 'Weight (kg)', initial: s.weight, suffix: 'kg');
-                    if (v != null && v >= 0) await repo.updateSet(s.id, weight: v);
-                  },
-                ),
-              ),
-              const SizedBox(width: 6),
-              Expanded(
-                flex: 5,
-                child: StepperBox(
-                  dense: true,
-                  value: '${s.reps}',
-                  unit: 'REPS',
-                  onMinus: () => repo.updateSet(s.id, reps: (s.reps - 1).clamp(0, 100)),
-                  onPlus: () => repo.updateSet(s.id, reps: s.reps + 1),
-                  onTapValue: () async {
-                    final v = await promptNumber(context, title: 'Reps', initial: s.reps.toDouble(), decimal: false);
-                    if (v != null && v >= 0) await repo.updateSet(s.id, reps: v.round());
-                  },
-                ),
-              ),
-              const SizedBox(width: 6),
-              _CheckButton(done: false, onTap: onComplete),
-            ]),
-        ],
-      ),
-    );
-
-    return GestureDetector(
-      onLongPress: onEdit,
-      child: s.completed
-          ? body
-          : Dismissible(
-              key: ValueKey('swipe-${s.id}'),
-              direction: DismissDirection.startToEnd,
-              dismissThresholds: const {DismissDirection.startToEnd: 0.35},
-              confirmDismiss: (_) async {
-                onComplete();
-                return false; // the row stays; the DB update re-renders it as completed
-              },
-              background: Container(
-                margin: const EdgeInsets.only(top: 8, right: 8),
-                decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.85), borderRadius: BorderRadius.circular(Radii.control)),
-                alignment: Alignment.centerLeft,
-                padding: const EdgeInsets.only(left: 20),
-                child: const Row(children: [
-                  Icon(Icons.check_rounded, color: Color(0xFF06210F), size: 30),
-                  SizedBox(width: 8),
-                  Text('COMPLETE', style: TextStyle(fontFamily: AppType.display, fontWeight: FontWeight.w800, color: Color(0xFF06210F))),
-                ]),
-              ),
-              child: body,
-            ),
-    );
-  }
-
-  Future<void> _pickRpe(BuildContext context, WidgetRef ref) async {
-    final picked = await showModalBottomSheet<double?>(
-      context: context,
-      builder: (ctx) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-          child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text('RPE', style: AppType.title),
-            Text('Target: stop at $targetRir reps in reserve (RPE ${10 - targetRir})',
-                style: AppType.bodyS.copyWith(color: AppColors.textSecondary)),
-            const SizedBox(height: 14),
-            Wrap(spacing: 8, runSpacing: 8, children: [
-              for (final v in rpeValues)
-                ChoiceChip(
-                  label: Column(mainAxisSize: MainAxisSize.min, children: [
-                    Text(formatRpe(v), style: AppType.number.copyWith(fontSize: 18)),
-                    Text('RIR ${formatRpe(10 - v)}', style: AppType.label.copyWith(fontSize: 9, letterSpacing: 0.2)),
-                  ]),
-                  selected: set.rpe == v,
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
-                  onSelected: (_) => Navigator.of(ctx).pop(v),
-                ),
-            ]),
-            const SizedBox(height: 10),
-            TextButton(onPressed: () => Navigator.of(ctx).pop(-1), child: const Text('Clear (counts as RPE 9)')),
+            WorkoutClock(startedAt: session.session.startedAt),
+            const SizedBox(width: 6),
+            const Icon(Icons.keyboard_arrow_up_rounded, color: AppColors.textSecondary),
           ]),
         ),
       ),
-    );
-    if (picked == null) return;
-    await ref.read(sessionRepositoryProvider).updateSet(set.id, rpe: () => picked < 0 ? null : picked);
-  }
-}
-
-class _RpeChip extends StatelessWidget {
-  const _RpeChip({required this.set, required this.onTap});
-  final WorkoutSet set;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final rpe = set.rpe;
-    final hot = (rpe ?? 0) >= 9.5;
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(Radii.chip),
-      child: Container(
-        constraints: const BoxConstraints(minHeight: 36, minWidth: 64),
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-        decoration: BoxDecoration(
-          color: hot ? AppColors.danger.withValues(alpha: 0.15) : AppColors.surfaceTop,
-          borderRadius: BorderRadius.circular(Radii.chip),
-          border: Border.all(color: hot ? AppColors.danger.withValues(alpha: 0.6) : AppColors.outlineBright),
-        ),
-        child: Column(mainAxisSize: MainAxisSize.min, children: [
-          Text(rpe == null ? 'RPE –' : 'RPE ${formatRpe(rpe)}',
-              style: AppType.bodyS.copyWith(fontFamily: AppType.display, fontWeight: FontWeight.w800, color: hot ? AppColors.danger : AppColors.textPrimary)),
-          if (rpe != null)
-            Text('${formatRpe(10 - rpe)} RIR', style: AppType.label.copyWith(fontSize: 9, letterSpacing: 0.2, color: AppColors.textSecondary)),
-        ]),
-      ),
-    );
-  }
-}
-
-class _CheckButton extends StatelessWidget {
-  const _CheckButton({required this.done, required this.onTap});
-  final bool done;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: 56,
-      height: 56,
-      child: IconButton.filled(
-        tooltip: done ? 'Mark not done' : 'Complete set',
-        onPressed: onTap,
-        style: IconButton.styleFrom(
-          backgroundColor: done ? AppColors.primary : AppColors.surfaceTop,
-          foregroundColor: done ? const Color(0xFF06210F) : AppColors.textPrimary,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(Radii.control)),
-          side: done ? null : const BorderSide(color: AppColors.outlineBright),
-        ),
-        icon: const Icon(Icons.check_rounded, size: 30),
-      ),
-    );
-  }
-}
-
-/// Program week and the program's coaching cue for this exercise.
-class _ProgramCue extends ConsumerWidget {
-  const _ProgramCue({required this.row});
-  final SessionExercise row;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final slots = decodeSlots(row.programSlots);
-    final program = ref.watch(programProvider).value;
-    if (slots.isEmpty || program == null) return const SizedBox.shrink();
-    final slot = program.slot(slots.first);
-    if (slot == null) return const SizedBox.shrink();
-    return Padding(
-      padding: const EdgeInsets.only(top: 6, right: 8),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text('MIN-MAX PHASE 2', style: AppType.label.copyWith(fontSize: 10, color: AppColors.accent)),
-        if (slot.notes.isNotEmpty)
-          Padding(
-            padding: const EdgeInsets.only(top: 2),
-            child: Text(slot.notes, style: AppType.bodyS.copyWith(fontSize: 13, color: AppColors.textSecondary)),
-          ),
-      ]),
     );
   }
 }

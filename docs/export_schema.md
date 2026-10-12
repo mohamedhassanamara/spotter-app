@@ -109,7 +109,8 @@ Start an export from **Settings → Export**. The files go to the iOS share shee
 | `is_override` | bool | no | logged more than 5% above the suggestion |
 | `override_reason` | string | yes | `feltStrong`, `testingMax` or `justDidIt` |
 | `e1rm_kg` | number | yes | Epley on effective reps, `weight × (1 + (reps + RIR)/30)`, with RPE 9 assumed when it's missing. Working sets only. External load only, so bodyweight is not added. |
-| `is_ego_set` | bool | no | override at RPE ≥ 9.5. Excluded from ranks and PRs. |
+| `set_type` | string | no | `warmup`, `working` or `drop` (drop sets count for volume, never for e1RM, ranks or PRs). |
+| `is_ego_set` | bool | no | override (load > 5 % above the suggestion) whose reps fell below the set's target range. Excluded from ranks and PRs. |
 
 ### `readiness_days[]`
 | Field | Type | Null | Notes |
@@ -157,7 +158,7 @@ Start an export from **Settings → Export**. The files go to the iOS share shee
             {"set_id": 900, "position": 0, "is_warmup": false, "weight_kg": 82.5, "reps": 7,
              "rpe": 8, "rir": 2, "completed": true, "completed_at": "2026-10-10T18:12:00+02:00",
              "suggested_weight_kg": 82.5, "suggested_reps": 6, "is_override": false,
-             "override_reason": null, "e1rm_kg": 107.25, "is_ego_set": false}
+             "override_reason": null, "e1rm_kg": 107.25, "set_type": "working", "is_ego_set": false}
           ]
         }
       ]
@@ -180,6 +181,6 @@ Booleans are `true` or `false`. Nulls are empty fields. Column names match the J
 - `spotter-sessions-<yyyyMMdd-HHmm>.csv`, one row per finished session:
   `id, name, routine_id, started_at, ended_at, duration_s, notes, readiness_score, readiness_band, xp_earned, health_synced`
 - `spotter-sets-<stamp>.csv`, one row per set, denormalised:
-  `session_id, session_started_at, session_exercise_id, exercise_id, exercise_name, exercise_position, rep_min, rep_max, target_rir, suggestion_kind, set_id, position, is_warmup, weight_kg, reps, rpe, rir, completed, completed_at, suggested_weight_kg, suggested_reps, is_override, override_reason, e1rm_kg, is_ego_set`
+  `session_id, session_started_at, session_exercise_id, exercise_id, exercise_name, exercise_position, rep_min, rep_max, target_rir, suggestion_kind, set_id, position, is_warmup, weight_kg, reps, rpe, rir, completed, completed_at, suggested_weight_kg, suggested_reps, is_override, override_reason, e1rm_kg, set_type, is_ego_set`
 - `spotter-readiness-days-<stamp>.csv`, one row per day:
   `date, hrv_ms, resting_hr_bpm, sleep_minutes, active_energy_kcal, readiness_score, readiness_band, calibrating, explanation`

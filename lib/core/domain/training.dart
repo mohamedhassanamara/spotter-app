@@ -42,6 +42,9 @@ class LoggedSet {
     this.isOverride = false,
     this.suggestedWeight,
     this.completed = true,
+    this.isDrop = false,
+    this.targetMin,
+    this.targetMax,
   });
 
   final double weight;
@@ -52,21 +55,33 @@ class LoggedSet {
   final double? suggestedWeight;
   final bool completed;
 
+  /// A drop set: counts for volume, never for e1RM, ranks, PRs or progression.
+  final bool isDrop;
+
+  /// The prescribed rep range of this set, when known.
+  final int? targetMin;
+  final int? targetMax;
+
+  /// Completed, not a warm-up (drop sets included: they count for volume).
   bool get isWorking => !isWarmup && completed;
 
   double get effectiveRpe => rpe ?? defaultRpe;
 
-  /// Override sets at RPE ≥ 9.5 are excluded from ranks and PRs.
-  bool get isEgoSet => isOverride && (rpe ?? 0) >= egoRpeThreshold;
+  bool get belowRange => targetMin != null && reps < targetMin!;
 
-  /// Valid for ranks and PRs.
-  bool get isValidForRecords => isWorking && !isEgoSet;
+  /// Ego lifting (section 7): load above the suggestion *and* reps below the bottom of the range,
+  /// i.e. it was too heavy. Going to failure inside the range is never ego lifting.
+  bool get isEgoSet => isOverride && belowRange;
+
+  /// Valid for ranks and PRs: a completed working set that isn't a drop set or an ego set.
+  bool get isValidForRecords => isWorking && !isDrop && !isEgoSet;
 
   /// e1RM including [bodyweight] for bodyweight-loaded lifts.
   double e1rm({double bodyweight = 0}) => estimateOneRm(weight + bodyweight, reps, rpe);
 
-  /// Whether the set followed the suggestion (within ±5 %).
-  bool get followedSuggestion => followsSuggestion(weight, suggestedWeight);
+  /// Discipline (section 7): load within ±5 % of the suggestion and reps inside the prescribed range.
+  bool get followedSuggestion =>
+      followsSuggestion(weight, suggestedWeight) && !belowRange && (targetMax == null || reps <= targetMax!);
 }
 
 /// ±5 % tolerance. A suggestion of 0 kg (bodyweight) is followed only by 0 kg.
@@ -74,6 +89,37 @@ bool followsSuggestion(double weight, double? suggested) {
   if (suggested == null) return false;
   if (suggested <= 0) return weight <= 0;
   return (weight - suggested).abs() <= suggested * 0.05 + 1e-9;
+}
+
+/// The one-tap effort selector (section 7). Stored as RPE; never shown as RPE.
+enum Effort {
+  failure('F', 10),
+  oneLeft('1', 9),
+  twoLeft('2', 8),
+  threePlus('3+', 7);
+
+  const Effort(this.label, this.rpe);
+  final String label;
+  final double rpe;
+
+  Effort get next => values[(index + 1) % values.length];
+
+  /// From a prescribed RIR (0 = failure).
+  static Effort fromRir(int? rir) => switch (rir) {
+        null => twoLeft,
+        <= 0 => failure,
+        1 => oneLeft,
+        2 => twoLeft,
+        _ => threePlus,
+      };
+
+  static Effort? fromRpe(double? rpe) {
+    if (rpe == null) return null;
+    if (rpe >= 9.75) return failure;
+    if (rpe >= 8.75) return oneLeft;
+    if (rpe >= 7.75) return twoLeft;
+    return threePlus;
+  }
 }
 
 /// How the coach framed a session for one exercise; stored with each session exercise.
@@ -116,9 +162,10 @@ class ExerciseSessionLog {
   /// The coach cut load for low readiness (Red). Such sessions aren't used as the progression base.
   final bool techniqueDay;
 
-  List<LoggedSet> get workingSets => sets.where((s) => s.isWorking).toList();
+  /// Working sets for progression and e1RM: completed, not warm-ups, not drop sets.
+  List<LoggedSet> get workingSets => sets.where((s) => s.isWorking && !s.isDrop).toList();
 
-  bool get hasWorkingSets => sets.any((s) => s.isWorking);
+  bool get hasWorkingSets => sets.any((s) => s.isWorking && !s.isDrop);
 
   /// Heaviest working weight of the session.
   /// Heaviest working weight (may be negative for assisted lifts); 0 without working sets.
@@ -133,7 +180,7 @@ class ExerciseSessionLog {
   double bestE1rm({double bodyweight = 0, bool validOnly = false}) {
     var best = 0.0;
     for (final s in workingSets) {
-      if (validOnly && s.isEgoSet) continue;
+      if (validOnly && !s.isValidForRecords) continue;
       final e = s.e1rm(bodyweight: bodyweight);
       if (e > best) best = e;
     }
@@ -144,5 +191,6 @@ class ExerciseSessionLog {
 
   bool get hasEgoOverrides => workingSets.any((s) => s.isEgoSet);
 
-  double get volume => workingSets.fold<double>(0, (v, s) => v + s.weight * s.reps);
+  /// Drop sets included.
+  double get volume => sets.where((s) => s.isWorking).fold<double>(0, (v, s) => v + s.weight * s.reps);
 }

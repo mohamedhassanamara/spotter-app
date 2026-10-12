@@ -9,7 +9,7 @@ import '../../../core/domain/muscles.dart';
 import '../../../core/domain/training.dart';
 import '../../library/domain/exercise_info.dart';
 
-LoggedSet loggedSetFromRow(WorkoutSet s) => LoggedSet(
+LoggedSet loggedSetFromRow(WorkoutSet s, {int? repMin, int? repMax}) => LoggedSet(
       weight: s.weight,
       reps: s.reps,
       rpe: s.rpe,
@@ -17,6 +17,9 @@ LoggedSet loggedSetFromRow(WorkoutSet s) => LoggedSet(
       isOverride: s.isOverride,
       suggestedWeight: s.suggestedWeight,
       completed: s.completed,
+      isDrop: s.setType == 'drop',
+      targetMin: s.targetRepMin ?? repMin,
+      targetMax: s.targetRepMax ?? repMax,
     );
 
 /// Loads finished sessions into the pure [TrainingHistory] model.
@@ -99,7 +102,7 @@ class HistoryRepository {
                   for (final w in setsByEx[e.id] ?? const <WorkoutSet>[])
                     HistSet(
                       id: w.id,
-                      set: loggedSetFromRow(w),
+                      set: loggedSetFromRow(w, repMin: e.repMin, repMax: e.repMax),
                       completedAt: w.completedAt,
                       overrideReason: w.overrideReason,
                       targetRange: w.targetRepMin == null || w.targetRepMax == null ? null : RepRange(w.targetRepMin!, w.targetRepMax!),

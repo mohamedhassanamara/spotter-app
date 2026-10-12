@@ -182,7 +182,7 @@ void main() {
     // Outliers that sit more than 2 tiers from the rest, each justified in docs/DECISIONS.md
     // ("Rank calibration v4 → justified outliers").
     const justified = {
-      'Triceps_Pushdown': 'load doubled overnight on 13 Sep (34 → 72 kg): a different station',
+      'Triceps_Pushdown': 'owner confirmed 72 kg; stack labels before 13 Sep were wrong',
       'liftoff_machine_hip_thrust': 'new machine since 13 Aug, 4 sessions',
       'Standing_Calf_Raises': 'a single session',
       'Leg_Extensions': 'machine quad strength above the barbell squat',

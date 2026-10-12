@@ -663,10 +663,10 @@ Master entry after machine strictness.
 ### Justified outliers
 
 **Data, not strength.**
-- **Triceps Pushdown** (Master, 72 kg × 12). The logged load doubled overnight on 13 Sep 2026, from
-  34 kg × 8 to 72 kg × 6, and has stayed there. Meanwhile the rope pushdown is 20 kg × 12 and the
-  single-arm pushdown 10 kg × 8. That's a different station or pulley ratio, or a stack in pounds, so
-  the numbers aren't comparable. Asked the owner.
+- **Triceps Pushdown** (Master, 72 kg × 12). The owner confirmed that 72 kg is correct. The gym's stack
+  labels were wrong before 13 Sep 2026 and have since been fixed. The older 24–36 kg sets (and the rope
+  and single-arm pushdowns on the same labels) understate the load, so this lift stands far above
+  its siblings until they're re-logged on the corrected stack. The older sets are left as recorded.
 - **Machine Hip Thrust** (Iron II, 42.5 kg × 12). A new machine since 13 Aug, with 4 sessions at
   35–45 kg. Plate-loaded hip thrust machines differ a lot in leverage.
 - **Machine Calf Raise** (Iron, 50 kg × 12). A single session (26 Aug).
@@ -833,3 +833,54 @@ then × 1.10.
   a week the program install had set. It now starts from the stored goal.
 - **Known limitation:** Liftoff's extra 1-minute sessions (for example one Side Leg Raise set hours
   after the main workout) count as sessions toward the weekly goal, as recorded.
+
+## Phase F addendum: the workout logging screen, rebuilt
+
+The old screen (a card per set, steppers, an RPE button, big banners, a rest bar) was replaced, not
+patched. Screenshots are in `docs/screenshots/vF/`: at rest, mid-edit with the keypad, and resting.
+
+- **Exercise block, top to bottom:**
+  - Header: thumbnail, name, collapse, ⋮ menu. The menu has Replace, Superset with…, Notes, How to
+    and Remove, plus Move up/down until section 5 adds drag reordering.
+  - Rest timer row with an on/off switch. The duration defaults from the program.
+  - Rank strip: badge, division, LP bar and the kg gap ("+2.5 kg e1RM to Gold IV"). It says
+    "Unranked · complete a set" or "Not ranked" instead of ever showing "???".
+  - One prescription line ("2×4–6 · 1×20 · last set to failure", or a one-line calibration hint). ⓘ
+    shows the coach's why, the program notes and any freeze.
+  - The set table.
+- **Set table: SET | PREV | KG | REPS | EFFORT | ✓.**
+  - **SET:** tap it to make the set a warm-up (W, dimmed), a drop set (D, indented under the set
+    above), a program technique tag, or to delete it. Higher-rep rows show their own target
+    ("2 · ×20").
+  - **PREV:** the matching set of the last session (warm-up i ↔ warm-up i, working ↔ working,
+    drop ↔ drop). Tap it to copy.
+  - **KG / REPS:** untouched cells show the coach's suggestion in grey, and ✓ logs exactly that.
+    Assisted lifts show negative load ("−40").
+  - **EFFORT:** one chip, F / 1 / 2 / 3+, pre-filled from the set's prescribed RIR. Tap to cycle. It's
+    stored as RPE 10 / 9 / 8 / 7, and RPE appears nowhere in the UI.
+  - **✓:** completes the set with a light haptic and starts the rest timer.
+- **Custom keypad:** digits, point, backspace, ± the equipment increment, Copy (PREV, else the set
+  above), +/− for assisted lifts, NEXT (KG → REPS → next set's KG) and hide. The edited cell scrolls
+  above the keypad; the integration test checks that the keypad never covers it.
+- **Rest:** never full screen. While resting, the header shows "REST 1:26" instead of the elapsed
+  time. Tapping it opens a small sheet with the ring, −15, +15 and Skip. Fixed along the way: Skip
+  closed the sheet twice, and the second pop closed the workout.
+- **Minimize:** ↓ collapses the workout to a mini bar above the tab bar, on every tab. Tap it to
+  resume.
+- **Guardrail in the row:** a load more than 5 % over the suggestion shows an amber "+n%" badge on
+  the KG cell. The reason sheet appears only when that set's reps also fall below the range.
+- **Section 7 logic moved here, its UI replaced by the EFFORT chip:**
+  - ego set = override + reps below the range;
+  - failure inside the range is never ego;
+  - discipline = load within ±5 % and reps in range;
+  - the ego trigger "2 of the last 3 sessions" now counts these ego sets instead of overrides at
+    RPE ≥ 9.5.
+- **Section 6 groundwork (schema v5):**
+  - `workout_sets.set_type` ('drop'): drop sets count for volume, never for e1RM, ranks, PRs or
+    progression, and there's no rest between drops.
+  - `session_exercises.rest_enabled`.
+  - `session_exercises.superset_group`: a colored bar plus A1/A2 labels, with rest only after the
+    round, using the group's longest rest.
+- **Exercise thumbnails** use `Image.network` with a small decode size (in-memory cache) rather than
+  the disk cache manager. They are 40 px, and the disk cache needs SQLite and a temp directory,
+  which widget tests don't have.

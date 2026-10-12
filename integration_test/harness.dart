@@ -1,7 +1,9 @@
 import 'dart:io';
+import 'dart:ui' as ui;
 
 import 'package:drift/drift.dart' show driftRuntimeOptions;
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart' show OffsetLayer;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
@@ -125,6 +127,26 @@ class AppHarness {
   }
 
   Future<void> goTab(IconData icon) => tap(find.byIcon(icon));
+
+  /// Saves what's on screen as [name].png in `--dart-define=SHOTS_DIR=<host folder>` (simulator runs
+  /// can write there), else in the app's Documents/screenshots.
+  Future<void> shot(String name) async {
+    await settle(4);
+    final view = tester.binding.renderViews.first;
+    final layer = view.debugLayer! as OffsetLayer;
+    // The root layer already applies the device pixel ratio: capture its physical-pixel bounds as is.
+    final physical = view.size * tester.view.devicePixelRatio;
+    await tester.runAsync(() async {
+      final image = await layer.toImage(Offset.zero & physical, pixelRatio: 1);
+      final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
+      // SHOTS_DIR: a host folder (the simulator can write to it); otherwise the app's Documents.
+      const hostDir = String.fromEnvironment('SHOTS_DIR');
+      final base = hostDir.isNotEmpty ? hostDir : '${(await getApplicationDocumentsDirectory()).path}/screenshots';
+      final dir = Directory(base)..createSync(recursive: true);
+      File('${dir.path}/$name.png').writeAsBytesSync(bytes!.buffer.asUint8List());
+    });
+    debugPrint('SHOT $name');
+  }
 
   /// Fails the flow if anything was written to the in-app error log.
   Future<void> expectNoLoggedErrors() async {

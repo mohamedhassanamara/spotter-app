@@ -12,7 +12,6 @@ import 'package:spotter/core/domain/training.dart';
 import 'package:spotter/core/domain/history.dart';
 import 'package:spotter/core/notifications/notification_service.dart';
 import 'package:spotter/core/theme/app_theme.dart';
-import 'package:spotter/core/widgets/game_ui.dart';
 import 'package:spotter/features/coach/data/coach_context.dart';
 import 'package:spotter/features/library/data/exercise_repository.dart';
 import 'package:spotter/features/workout/data/session_repository.dart';
@@ -30,6 +29,7 @@ class _QuietNotifications extends NotificationService {
 
 void main() {
   driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
+
   final now = DateTime(2026, 10, 12, 18);
 
   Future<(AppDatabase, _QuietNotifications)> setUpSession(WidgetTester tester) async {
@@ -93,44 +93,66 @@ void main() {
     }
   }
 
-  testWidgets('swipe right completes a set and starts the rest timer', (tester) async {
+  testWidgets('✓ on an untouched row logs the suggestion; rest shows in the header, not full screen', (tester) async {
     final (db, notifications) = await setUpSession(tester);
     expect(find.text('Barbell Curl'), findsOneWidget);
-    expect(find.textContaining('TARGET'), findsNWidgets(2));
-    expect(find.byType(StepperBox), findsNWidgets(4));
+    expect(find.byTooltip('Complete set'), findsNWidgets(2));
+    final before = await tester.runAsync(() => db.select(db.workoutSets).get());
 
-    final firstSwipe = find.byType(Dismissible).first;
-    await tester.drag(firstSwipe, const Offset(380, 0));
+    await tester.tap(find.byTooltip('Complete set').first);
     await settle(tester);
 
     final sets = await tester.runAsync(() => db.select(db.workoutSets).get());
-    expect(sets!.where((s) => s.completed).length, 1);
+    final done = sets!.where((s) => s.completed).single;
+    expect(done.weight, before!.first.weight);
+    expect(done.reps, before.first.reps);
+    expect(done.rpe, 8, reason: 'effort pre-filled from the prescription (2 left → RPE 8)');
     expect(notifications.scheduled.single, now.add(const Duration(seconds: 90)));
+    expect(find.text('REST 1:30'), findsOneWidget);
     await tester.runAsync(db.close);
   });
 
-  testWidgets('steppers use the equipment increment; an override is flagged and not completed by swipe', (tester) async {
+  testWidgets('keypad: equipment increment, amber chip over the suggestion, reason only when short of the range', (tester) async {
     final (db, _) = await setUpSession(tester);
-    // Calibration sets carry no suggested weight, so give the first set one to test the guardrail.
+    // Calibration sets carry no suggested weight, so give the sets one to test the guardrail.
+    late List<WorkoutSet> sets;
     await tester.runAsync(() async {
-      final first = (await db.select(db.workoutSets).get()).first;
-      await (db.update(db.workoutSets)..where((t) => t.id.equals(first.id)))
-          .write(const WorkoutSetsCompanion(suggestedWeight: Value(20), weight: Value(20)));
+      sets = await db.select(db.workoutSets).get();
+      await (db.update(db.workoutSets)).write(const WorkoutSetsCompanion(suggestedWeight: Value(20), weight: Value(20), suggestedReps: Value(8), reps: Value(8)));
     });
     await settle(tester);
 
-    // + on the weight stepper: barbell increment 2.5 kg → 22.5 (12.5% over 20).
-    await tester.tap(find.byIcon(Icons.add_rounded).first);
+    // KG cell → keypad → +2.5 (barbell increment) → hide: 22.5 kg, 12.5 % over 20.
+    await tester.tap(find.byKey(ValueKey('cell-kg-${sets.first.id}')));
     await settle(tester);
-    expect(find.text('+13% override'), findsOneWidget);
+    expect(find.byKey(const ValueKey('workout-keypad')), findsOneWidget);
+    expect(find.text('+2.5'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('key-plus-inc')));
+    await tester.tap(find.byKey(const ValueKey('key-hide')));
+    await settle(tester);
+    expect(find.byKey(const ValueKey('workout-keypad')), findsNothing);
+    expect(find.text('+13%'), findsOneWidget);
 
-    await tester.drag(find.byType(Dismissible).first, const Offset(380, 0));
+    // Reps inside the range: logged without any interruption, flagged as an override.
+    await tester.tap(find.byTooltip('Complete set').first);
     await settle(tester);
-    // The set editor opens (RPE + reason required) instead of completing.
-    expect(find.textContaining('Why the override?'), findsOneWidget);
-    final sets = await tester.runAsync(() => db.select(db.workoutSets).get());
-    expect(sets!.first.weight, 22.5);
-    expect(sets.where((s) => s.completed), isEmpty);
+    var rows = await tester.runAsync(() => db.select(db.workoutSets).get());
+    expect(rows!.first.completed, isTrue);
+    expect(rows.first.isOverride, isTrue);
+    expect(rows.first.overrideReason, isNull);
+
+    // Second set: 22.5 kg for 5 reps (below 8): too heavy → the reason sheet.
+    await tester.runAsync(() => (db.update(db.workoutSets)..where((t) => t.id.equals(sets[1].id)))
+        .write(const WorkoutSetsCompanion(weight: Value(22.5), reps: Value(5))));
+    await settle(tester);
+    await tester.tap(find.byTooltip('Complete set').last);
+    await settle(tester);
+    expect(find.text('Heavier than suggested and short of the range'), findsOneWidget);
+    await tester.tap(find.text('Felt strong'));
+    await settle(tester);
+    rows = await tester.runAsync(() => db.select(db.workoutSets).get());
+    expect(rows!.last.completed, isTrue);
+    expect(rows.last.overrideReason, 'feltStrong');
     await tester.runAsync(db.close);
   });
 }

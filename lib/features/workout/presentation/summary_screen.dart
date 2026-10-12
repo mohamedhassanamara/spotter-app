@@ -365,7 +365,7 @@ class _GuardrailSection extends StatelessWidget {
             child: GuardrailBanner(
               tone: GuardrailTone.override,
               title: '${s.overrideSets} override set${s.overrideSets == 1 ? '' : 's'} today',
-              details: 'Override sets earn no XP. At RPE 9.5+ they don\'t count for ranks or PRs.',
+              details: 'Override sets earn no XP. If they also fell below the rep range they don\'t count for ranks or PRs.',
             ),
           ),
         for (final f in s.flags)

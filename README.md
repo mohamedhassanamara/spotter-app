@@ -69,8 +69,12 @@ xcrun simctl list devices booted          # find the simulator id
 flutter test integration_test -d <simulator-id>
 ```
 
+Screenshots of the logging screen are written by the Push flow when you pass
+`--dart-define=SHOTS_DIR=$PWD/docs/screenshots/vF`.
+
 The flows start from a fresh install (and an upgraded v2 install) with only your five routines.
-They tap through Train → Upper (warm-ups, working sets including the 1×20 row, steppers, add/remove
+They tap through Push typed entirely on the custom keypad (empty-cell ✓, PREV copy, effort chip,
+drop set, rest in the header, minimize and resume), Pull with assisted negative load (+/−), Train → Upper (warm-ups, working sets including the 1×20 row, steppers, add/remove
 set, replace via substitutions, background/resume, cold restart, finish, summary, history, start the
 next routine from Home), Pull (assisted pull-ups with negative load) and Settings → Import from
 Liftoff (preview, fixing an unmatched name, bodyweight prompt, import, re-import is a no-op, and the

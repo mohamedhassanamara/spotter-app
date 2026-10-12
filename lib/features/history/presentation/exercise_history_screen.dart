@@ -119,7 +119,7 @@ class ExerciseHistoryScreen extends ConsumerWidget {
                 Padding(
                   padding: const EdgeInsets.only(top: 8, left: 4),
                   child: Text(
-                    '$egoSets ego set${egoSets == 1 ? '' : 's'} (override at RPE 9.5+) excluded from the chart, PRs and ranks.',
+                    '$egoSets ego set${egoSets == 1 ? '' : 's'} (heavier than suggested and below the rep range) excluded from the chart, PRs and ranks.',
                     style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
                   ),
                 ),

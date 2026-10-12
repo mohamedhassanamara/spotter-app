@@ -98,6 +98,12 @@ class SessionExercises extends Table {
 
   /// v3: the owner's name for the exercise, copied from the routine.
   TextColumn get displayName => text().nullable()();
+
+  /// v5: rest timer on/off for this exercise in this workout.
+  BoolColumn get restEnabled => boolean().withDefault(const Constant(true))();
+
+  /// v5: exercises sharing a group number form a superset (A1/A2…).
+  IntColumn get supersetGroup => integer().nullable()();
 }
 
 class WorkoutSets extends Table {
@@ -122,6 +128,10 @@ class WorkoutSets extends Table {
 
   /// v3: last-set intensity technique id (e.g. drop_sets_2x25), on the set it applies to.
   TextColumn get technique => text().nullable()();
+
+  /// v5: null = a normal set (warm-up or working per [isWarmup]); 'drop' = a drop set under the set
+  /// before it. Drop sets count for volume, never for e1RM, ranks or PRs.
+  TextColumn get setType => text().nullable()();
 }
 
 /// One row per calendar day: raw Health metrics and the readiness computed from them.

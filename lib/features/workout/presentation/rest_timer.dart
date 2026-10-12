@@ -41,15 +41,17 @@ class RestTimerController {
   }
 }
 
-/// Countdown bar shown at the bottom of the active workout.
-class RestTimerBar extends ConsumerStatefulWidget {
-  const RestTimerBar({super.key});
+/// The workout header's clock: elapsed time, or "REST 1:26" while resting (tap for the rest sheet).
+/// Buzzes once when the rest ends; the local notification covers a locked phone.
+class WorkoutClock extends ConsumerStatefulWidget {
+  const WorkoutClock({super.key, required this.startedAt});
+  final DateTime startedAt;
 
   @override
-  ConsumerState<RestTimerBar> createState() => _RestTimerBarState();
+  ConsumerState<WorkoutClock> createState() => _WorkoutClockState();
 }
 
-class _RestTimerBarState extends ConsumerState<RestTimerBar> {
+class _WorkoutClockState extends ConsumerState<WorkoutClock> {
   Timer? _tick;
   bool _buzzed = false;
 
@@ -70,60 +72,109 @@ class _RestTimerBarState extends ConsumerState<RestTimerBar> {
   @override
   Widget build(BuildContext context) {
     final s = ref.watch(currentSettingsProvider);
-    final endsAt = s.restEndsAt;
-    if (endsAt == null) {
-      _buzzed = false;
-      return const SizedBox.shrink();
-    }
     final now = ref.watch(clockProvider)();
-    final remaining = endsAt.difference(now);
-    final total = (s.restTotalSeconds ?? 1).clamp(1, 3600);
-    final done = remaining.inMilliseconds <= 0;
-    if (done && !_buzzed) {
-      _buzzed = true;
-      HapticFeedback.heavyImpact();
+    final endsAt = s.restEndsAt;
+    final remaining = endsAt?.difference(now);
+    if (endsAt == null) _buzzed = false;
+    if (remaining != null && remaining.inMilliseconds <= 0) {
+      if (!_buzzed) {
+        _buzzed = true;
+        HapticFeedback.heavyImpact();
+        WidgetsBinding.instance.addPostFrameCallback((_) => ref.read(restTimerProvider).stop());
+      }
     }
-    final controller = ref.read(restTimerProvider);
-    final progress = done ? 1.0 : 1 - remaining.inMilliseconds / (total * 1000);
-
-    final color = done ? AppColors.primary : AppColors.accent;
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        border: Border(top: BorderSide(color: color.withValues(alpha: 0.5))),
-        boxShadow: [BoxShadow(color: color.withValues(alpha: 0.12), blurRadius: 20, offset: const Offset(0, -4))],
+    final resting = remaining != null && remaining.inMilliseconds > 0;
+    final text = resting ? 'REST ${formatClock(remaining)}' : formatClock(now.difference(widget.startedAt));
+    return InkWell(
+      key: const ValueKey('workout-clock'),
+      borderRadius: BorderRadius.circular(Radii.chip),
+      onTap: resting ? () => showRestSheet(context) : null,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        decoration: resting
+            ? BoxDecoration(color: AppColors.accent.withValues(alpha: 0.16), borderRadius: BorderRadius.circular(Radii.chip))
+            : null,
+        child: Text(
+          text,
+          style: AppType.title.copyWith(fontSize: 18, color: resting ? AppColors.accent : AppColors.primary, fontFeatures: AppType.tabular),
+        ),
       ),
-      child: SafeArea(
-        top: false,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
-          child: Row(
-            children: [
-              ProgressRing(
-                value: progress,
-                color: color,
-                size: 58,
-                stroke: 6,
-                child: done
-                    ? Icon(Icons.notifications_active_rounded, color: color)
-                    : Text('${(remaining.inMilliseconds / 1000).ceil()}', style: AppType.number.copyWith(fontSize: 18)),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text(done ? 'REST DONE' : 'REST', style: AppType.label.copyWith(color: color)),
-                  Text(done ? 'Next set!' : formatClock(remaining), style: AppType.displayL.copyWith(fontSize: 28)),
-                ]),
-              ),
-              if (!done) ...[
+    );
+  }
+}
+
+/// Small sheet with the progress ring, −15 / +15 and Skip. Never full screen.
+Future<void> showRestSheet(BuildContext context) => showModalBottomSheet<void>(
+      context: context,
+      builder: (_) => const _RestSheet(),
+    );
+
+class _RestSheet extends ConsumerStatefulWidget {
+  const _RestSheet();
+
+  @override
+  ConsumerState<_RestSheet> createState() => _RestSheetState();
+}
+
+class _RestSheetState extends ConsumerState<_RestSheet> {
+  Timer? _tick;
+  bool _closing = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _tick = Timer.periodic(const Duration(milliseconds: 500), (_) {
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    _tick?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final s = ref.watch(currentSettingsProvider);
+    final endsAt = s.restEndsAt;
+    final controller = ref.read(restTimerProvider);
+    if (endsAt == null) {
+      // Rest ended or was skipped: close this sheet once (never the route under it).
+      if (!_closing) {
+        _closing = true;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted && (ModalRoute.of(context)?.isCurrent ?? false)) Navigator.of(context).pop();
+        });
+      }
+      return const SizedBox(height: 120);
+    }
+    final remaining = endsAt.difference(ref.watch(clockProvider)());
+    final total = (s.restTotalSeconds ?? 1).clamp(1, 3600);
+    final progress = (1 - remaining.inMilliseconds / (total * 1000)).clamp(0.0, 1.0);
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 4, 20, 16),
+        child: Row(
+          children: [
+            ProgressRing(
+              value: progress,
+              color: AppColors.accent,
+              size: 72,
+              stroke: 7,
+              child: Text(formatClock(remaining.isNegative ? Duration.zero : remaining), style: AppType.number.copyWith(fontSize: 18)),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Row(mainAxisAlignment: MainAxisAlignment.end, children: [
                 _TimerButton(label: '−15', onTap: () => controller.adjust(-15)),
-                const SizedBox(width: 6),
+                const SizedBox(width: 8),
                 _TimerButton(label: '+15', onTap: () => controller.adjust(15)),
-                const SizedBox(width: 6),
-              ],
-              _TimerButton(label: done ? 'OK' : 'Skip', onTap: controller.stop, filled: true),
-            ],
-          ),
+                const SizedBox(width: 8),
+                _TimerButton(label: 'Skip', filled: true, onTap: controller.stop),
+              ]),
+            ),
+          ],
         ),
       ),
     );

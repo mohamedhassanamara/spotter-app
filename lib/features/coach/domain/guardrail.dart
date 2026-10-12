@@ -27,7 +27,7 @@ class EgoFlagResult {
   String get message {
     final parts = <String>[
       if (triggers.contains(EgoTrigger.repeatedMaxOverrides))
-        '2 of your last 3 sessions had overrides at RPE 9.5+',
+        '2 of your last 3 sessions had sets heavier than suggested that fell below the rep range',
       if (triggers.contains(EgoTrigger.weightUpE1rmDown))
         'the weight went up while your estimated 1RM went down',
     ];
