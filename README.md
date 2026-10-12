@@ -79,10 +79,10 @@ To open a specific screen at launch in debug, e.g. on the simulator:
 ## Editable data
 
 - **Strength standards:** `assets/strength_standards.json`. For each lift: the dataset exercise
-  ids it covers, 7 tier-entry thresholds as e1RM ÷ bodyweight (Iron…Champion), its primary and
+  ids it covers, 10 tier-entry thresholds as e1RM ÷ bodyweight (Iron…Challenger) derived from its `anchors`, its primary and
   secondary muscle groups, and the `bodyweight_loaded` and `per_hand` flags.
 - **Achievements:** `assets/achievements.json`. Each has a key, title, description, icon, a metric
-  `type` (sessions, cleanSessionStreak, smartRestDays, comebacks, weeklyStreak, bestExerciseTier,
+  `type` (sessions, cleanSessionStreak, smartRestDays, comebacks, weeklyStreak, bestExerciseTier (tier index 0–9),
   discipline, prs, totalVolumeKg or level) and a `threshold`.
 - **Muscle mapping:** dataset muscles → the 12 ranking groups live in
   `lib/features/library/domain/muscle_mapping.dart`.

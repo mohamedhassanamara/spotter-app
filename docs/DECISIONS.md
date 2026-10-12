@@ -62,7 +62,7 @@ bodyweight lifts uses 2.5 kg. Both are editable in Settings.
 
 ## v2 phase 0: overall rank and volume
 - **Overall rank.** Overall was already the mean of the group scores on the continuous scale. In
-  the reported screenshot it was right: five groups (biceps, forearms, abs, quads, hamstrings,
+  the reported screenshot it was right: six groups (biceps, forearms, abs, quads, hamstrings,
   calves) were Silver, which averaged to 2.994 = Silver I. The real defect was at boundaries: a
   score exactly on a division threshold, or an average of identical scores that lost a floating-point
   ulp, could floor into the previous division. Tier and division floors now use a 1e-9 epsilon, and a
@@ -70,3 +70,36 @@ bodyweight lifts uses 2.5 kg. Both are editable in Settings.
   overall X Y.
 - **Volume.** One pure formatter (`lib/core/domain/format.dart`) is used everywhere: whole kg with
   thousands separators below 10,000 kg ("6,763 kg"), then tonnes with one decimal ("15.6 t").
+
+## v2 phase 1: League-style ladder
+- **Tiers:** Iron, Bronze, Silver, Gold, Platinum, Emerald and Diamond each have divisions IV → I.
+  Master, Grandmaster and Challenger are apex tiers with no divisions.
+- **One continuous scale:** 1 point per division, so Iron IV = 0 … Diamond I = 27, Master = 28,
+  Grandmaster = 32 and Challenger = 36 (uncapped). Exercises, groups and overall all use it, so
+  averaging and mapping back is exact.
+- **LP:** 0–100 within a division, linear between that division's thresholds. Apex tiers show LP above
+  the Master threshold, uncapped (100 LP per point). Challenger keeps the Grandmaster→Challenger slope.
+- **Thresholds** (e1RM ÷ bodyweight at which each tier starts) are derived from five anchor standards
+  per lift, stored in `assets/strength_standards.json` under `anchors`:
+  Iron 0 · Bronze = beginner · Silver = novice · Gold = ½(novice + intermediate) ·
+  Platinum = intermediate · Emerald = intermediate + ⅓(advanced − intermediate) ·
+  Diamond = intermediate + ⅔(advanced − intermediate) · **Master = advanced** ·
+  Grandmaster = ½(advanced + elite) · **Challenger = elite**.
+
+  | Lift | beginner | novice | intermediate | advanced | elite |
+  |---|---|---|---|---|---|
+  | Bench press | 0.50 | 0.75 | 1.00 | 1.50 | 2.00 |
+  | Back squat | 0.75 | 1.25 | 1.50 | 2.25 | 2.75 |
+  | Deadlift | 1.00 | 1.50 | 2.00 | 2.50 | 3.00 |
+  | Overhead press | 0.35 | 0.55 | 0.75 | 1.00 | 1.25 |
+  | Barbell row | 0.50 | 0.75 | 1.00 | 1.50 | 1.75 |
+  | Pull-up (BW + added) | 1.00 | 1.15 | 1.35 | 1.60 | 1.85 |
+  | Dips (BW + added) | 1.00 | 1.20 | 1.50 | 1.80 | 2.10 |
+
+  For example, bench press now reads: Platinum at 1.0×BW, Master at 1.5×BW, Challenger at 2.0×BW.
+- **Migration:** ranks are never stored. They're computed from logged sets whenever shown, so all
+  existing history re-ranks on the new ladder automatically. The only persisted rank-dependent state is
+  achievements (`bestExerciseTier`, by tier index). Silver, Gold and Platinum keep their indices.
+  `migrateRankLadder` runs once at startup (setting `rank_ladder_version` = 2): it keeps everything
+  already earned and unlocks rank achievements the new ladder now qualifies for. Two new ones were
+  added: Diamond and Master.

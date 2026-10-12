@@ -29,6 +29,7 @@ class _SpotterAppState extends ConsumerState<SpotterApp> {
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await ref.read(notificationServiceProvider).init();
       _refreshHealth();
+      await ref.read(rankLadderMigrationProvider.future);
     });
   }
 

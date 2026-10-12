@@ -21,15 +21,18 @@ abstract final class AppColors {
   static const unranked = Color(0xFF3A4255);
 }
 
-/// One colour per rank tier, Iron → Champion.
+/// One colour per rank tier, Iron → Challenger.
 const List<Color> tierColors = [
-  Color(0xFF8A8F98), // Iron
-  Color(0xFFCD7F4A), // Bronze
-  Color(0xFFC8D2DC), // Silver
-  Color(0xFFFFC93C), // Gold
-  Color(0xFF4FE3C1), // Platinum
-  Color(0xFF6FA8FF), // Diamond
-  Color(0xFFFF5DA2), // Champion
+  Color(0xFF8B8580), // Iron: cold grey-brown
+  Color(0xFFC07A4B), // Bronze
+  Color(0xFFB9C6D3), // Silver
+  Color(0xFFF2C14E), // Gold
+  Color(0xFF3FD5C0), // Platinum: teal
+  Color(0xFF2EC27E), // Emerald
+  Color(0xFF7FA7FF), // Diamond: ice blue
+  Color(0xFFB57BFF), // Master: violet
+  Color(0xFFFF5A6E), // Grandmaster: crimson
+  Color(0xFFFFE27A), // Challenger: radiant gold
 ];
 
 ThemeData buildAppTheme() {

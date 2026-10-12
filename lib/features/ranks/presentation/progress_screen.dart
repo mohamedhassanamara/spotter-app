@@ -40,12 +40,7 @@ class ProgressScreen extends StatelessWidget {
 }
 
 /// Label of the division after [s], or null at the very top.
-String? nextDivisionLabel(RankScore s) {
-  final t = s.tier.index, d = s.divisionIndex;
-  if (d < 2) return '${s.tier.label} ${const ['III', 'II', 'I'][d + 1]}';
-  if (t + 1 < Tier.values.length) return '${Tier.values[t + 1].label} III';
-  return null;
-}
+String? nextDivisionLabel(RankScore s) => s.nextLabel;
 
 class _BodyweightCard extends ConsumerWidget {
   const _BodyweightCard();
@@ -187,7 +182,7 @@ class _OverallCard extends StatelessWidget {
             Text(
               next == null
                   ? 'Top of the ladder · $rankedGroups/12 groups ranked'
-                  : '${(s.divisionProgress * 100).round()}% to $next · $rankedGroups/12 groups ranked',
+                  : '${s.lp} LP · next: $next · $rankedGroups/12 groups ranked',
               style: const TextStyle(color: AppColors.textSecondary),
             ),
           ],
@@ -285,7 +280,7 @@ class _GroupSheet extends StatelessWidget {
         ProgressBar(value: g.score.divisionProgress, color: tierColor(g.score.tier)),
         const SizedBox(height: 8),
         Text(
-          next == null ? 'Maxed out.' : '${(g.score.divisionProgress * 100).round()}% to $next',
+          next == null ? 'Maxed out.' : '${g.score.lp} LP · next: $next',
           style: const TextStyle(color: AppColors.textSecondary),
         ),
         if (topNext != null && topNextLabel != null) ...[

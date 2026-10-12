@@ -19,6 +19,7 @@ import 'features/gamification/domain/streaks.dart';
 import 'features/gamification/domain/xp.dart';
 import 'features/library/data/exercise_repository.dart';
 import 'features/library/domain/exercise_info.dart';
+import 'features/ranks/data/ladder_migration.dart';
 import 'features/ranks/data/ranks_repository.dart';
 import 'features/ranks/domain/ranks.dart';
 import 'features/readiness/data/readiness_repository.dart';
@@ -301,3 +302,14 @@ class HealthSyncNotifier extends Notifier<HealthSyncState> {
     }
   }
 }
+
+/// Runs once at startup: moves rank-dependent state onto the current ladder.
+final rankLadderMigrationProvider = FutureProvider<List<String>>((ref) async {
+  final stats = await ref.read(achievementStatsProvider.future);
+  return migrateRankLadder(
+    db: ref.read(databaseProvider),
+    stats: stats,
+    defs: await GamificationRepository.loadAchievementDefs(),
+    now: ref.read(clockProvider)(),
+  );
+});

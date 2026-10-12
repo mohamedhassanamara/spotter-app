@@ -1,44 +1,109 @@
 import '../../../core/domain/muscle_group.dart';
 
+/// League-style ladder: 7 divisional tiers (IV → I) and 3 apex tiers without divisions.
 enum Tier {
   iron('Iron'),
   bronze('Bronze'),
   silver('Silver'),
   gold('Gold'),
   platinum('Platinum'),
+  emerald('Emerald'),
   diamond('Diamond'),
-  champion('Champion');
+  master('Master'),
+  grandmaster('Grandmaster'),
+  challenger('Challenger');
 
   const Tier(this.label);
   final String label;
+
+  bool get isApex => index >= Tier.master.index;
+
+  static const int divisionalTiers = 7;
+  static const int divisionsPerTier = 4;
 }
 
-/// A rank position as a continuous score in [0, 7): integer part = tier, fraction = progress in tier.
+/// A position on the ladder as a continuous number of **points**: one point per division.
+///
+/// - Divisional tiers: tier i spans points [4i, 4i + 4); division IV = 4i, …, I = 4i + 3.
+/// - Master starts at 28, Grandmaster at 32, Challenger at 36 (uncapped).
+///
+/// Groups and the overall rank average points directly, so the mean of identical ranks maps back
+/// to exactly that rank.
 class RankScore {
-  RankScore(double value) : value = value.clamp(0.0, Tier.values.length - 1e-6);
+  RankScore(double value) : value = value < 0 ? 0 : value;
+
+  /// Builds the score for a given tier, division (4 = IV … 1 = I) and LP (0–100) — mainly for tests.
+  factory RankScore.of(Tier tier, {int division = 4, double lp = 0}) {
+    if (tier.isApex) return RankScore(masterPoints + (tier.index - Tier.master.index) * 4 + lp / 100);
+    return RankScore(tier.index * 4.0 + (4 - division) + lp / 100);
+  }
 
   final double value;
 
-  // Floors use a small epsilon so a score sitting on a boundary (or an average of identical
-  // scores that lost an ulp) never drops into the previous division.
+  static const double masterPoints = 28;
+  static const double grandmasterPoints = 32;
+  static const double challengerPoints = 36;
+
+  // Floors use a small epsilon so a score on a boundary (or an average of identical scores that
+  // lost an ulp) never drops into the previous division.
   static const double _eps = 1e-9;
 
-  int get _tierIndex => (value + _eps).floor().clamp(0, Tier.values.length - 1);
+  int get _point => (value + _eps).floor();
 
-  Tier get tier => Tier.values[_tierIndex];
+  Tier get tier {
+    if (value + _eps >= challengerPoints) return Tier.challenger;
+    if (value + _eps >= grandmasterPoints) return Tier.grandmaster;
+    if (value + _eps >= masterPoints) return Tier.master;
+    return Tier.values[(_point ~/ 4).clamp(0, Tier.divisionalTiers - 1)];
+  }
 
-  /// Progress within the tier, 0..1.
-  double get tierProgress => (value - _tierIndex).clamp(0.0, 1.0);
+  bool get isApex => tier.isApex;
 
-  /// 0 = III (lowest), 1 = II, 2 = I (highest).
-  int get divisionIndex => (tierProgress * 3 + _eps).floor().clamp(0, 2);
+  /// 0 = IV (lowest) … 3 = I (highest); −1 for apex tiers.
+  int get divisionIndex => isApex ? -1 : _point % 4;
 
-  String get divisionLabel => const ['III', 'II', 'I'][divisionIndex];
+  /// "IV".."I", empty for apex tiers.
+  String get divisionLabel => isApex ? '' : const ['IV', 'III', 'II', 'I'][divisionIndex];
 
-  String get label => '${tier.label} $divisionLabel';
+  String get label => isApex ? tier.label : '${tier.label} $divisionLabel';
 
-  /// Progress within the current division, 0..1.
-  double get divisionProgress => ((tierProgress * 3) - divisionIndex).clamp(0.0, 1.0);
+  /// League points: 0–100 within a division; for apex tiers, LP above the Master threshold (uncapped).
+  int get lp {
+    if (isApex) return ((value - masterPoints) * 100 + _eps).floor();
+    return (((value - _point) * 100) + _eps).floor().clamp(0, 99);
+  }
+
+  /// 0..1 progress to the next division (apex: to the next apex tier; Challenger: per 100 LP).
+  double get divisionProgress {
+    switch (tier) {
+      case Tier.master:
+        return ((value - masterPoints) / 4).clamp(0.0, 1.0);
+      case Tier.grandmaster:
+        return ((value - grandmasterPoints) / 4).clamp(0.0, 1.0);
+      case Tier.challenger:
+        return ((value - challengerPoints) % 1).clamp(0.0, 1.0);
+      default:
+        return (value - _point).clamp(0.0, 1.0);
+    }
+  }
+
+  /// Label of the next step up, or null at Challenger.
+  String? get nextLabel {
+    switch (tier) {
+      case Tier.challenger:
+        return null;
+      case Tier.grandmaster:
+        return Tier.challenger.label;
+      case Tier.master:
+        return Tier.grandmaster.label;
+      default:
+        if (divisionIndex < 3) return '${tier.label} ${const ['IV', 'III', 'II', 'I'][divisionIndex + 1]}';
+        return tier == Tier.diamond ? Tier.master.label : '${Tier.values[tier.index + 1].label} IV';
+    }
+  }
+
+  /// "Gold II · 42 LP", "Master · 135 LP".
+  String get labelWithLp => '$label · $lp LP';
 
   @override
   String toString() => label;
@@ -60,7 +125,7 @@ class StrengthStandard {
   final String name;
   final List<String> exerciseIds;
 
-  /// 7 ascending values: the bodyweight multiple at which each tier (Iron..Champion) starts.
+  /// 10 ascending values: the bodyweight multiple at which each tier (Iron..Challenger) starts.
   final List<double> thresholds;
   final MuscleTargets targets;
 
@@ -69,9 +134,6 @@ class StrengthStandard {
 
   /// Thresholds are per dumbbell.
   final bool perHand;
-
-  /// Champion has no upper threshold; progress runs to 125 % of its entry value.
-  static const double championSpan = 0.25;
 
   factory StrengthStandard.fromJson(Map<String, dynamic> j) {
     Set<MuscleGroup> groups(Object? raw) => {
@@ -97,27 +159,58 @@ class StrengthStandard {
     );
   }
 
-  double _upper(int tierIndex) => tierIndex + 1 < thresholds.length
-      ? thresholds[tierIndex + 1]
-      : thresholds[tierIndex] * (1 + championSpan);
+  double get _master => thresholds[Tier.master.index];
+  double get _grandmaster => thresholds[Tier.grandmaster.index];
+  double get _challenger => thresholds[Tier.challenger.index];
 
+  /// Linear in ratio within every division; apex tiers are linear between their entry ratios and
+  /// Challenger continues with the Grandmaster slope (uncapped).
   RankScore scoreForRatio(double ratio) {
+    if (ratio >= _challenger) {
+      return RankScore(RankScore.challengerPoints + (ratio - _challenger) / (_challenger - _grandmaster) * 4);
+    }
+    if (ratio >= _grandmaster) {
+      return RankScore(RankScore.grandmasterPoints + (ratio - _grandmaster) / (_challenger - _grandmaster) * 4);
+    }
+    if (ratio >= _master) {
+      return RankScore(RankScore.masterPoints + (ratio - _master) / (_grandmaster - _master) * 4);
+    }
     var i = 0;
-    while (i + 1 < thresholds.length && ratio >= thresholds[i + 1]) {
+    while (i + 1 < Tier.divisionalTiers && ratio >= thresholds[i + 1]) {
       i++;
     }
-    final lo = thresholds[i], hi = _upper(i);
-    final f = ((ratio - lo) / (hi - lo)).clamp(0.0, 0.999999);
-    return RankScore(i + f);
+    final lo = thresholds[i], hi = thresholds[i + 1];
+    final f = ((ratio - lo) / (hi - lo)).clamp(0.0, 1.0);
+    return RankScore(i * 4 + f * 4);
   }
 
-  /// e1RM (kg) needed for the next division, or null at the very top.
+  /// Bodyweight multiple at which a point value is reached (inverse of [scoreForRatio]).
+  double ratioForPoints(double points) {
+    if (points >= RankScore.grandmasterPoints) {
+      return _grandmaster + (points - RankScore.grandmasterPoints) / 4 * (_challenger - _grandmaster);
+    }
+    if (points >= RankScore.masterPoints) {
+      return _master + (points - RankScore.masterPoints) / 4 * (_grandmaster - _master);
+    }
+    final i = (points ~/ 4).clamp(0, Tier.divisionalTiers - 1);
+    final f = (points - i * 4) / 4;
+    return thresholds[i] + f * (thresholds[i + 1] - thresholds[i]);
+  }
+
+  /// e1RM (kg) needed for the next division (or next apex tier), or null at Challenger.
   double? nextThresholdKg(RankScore current, double bodyweight) {
-    final t = current.tier.index, d = current.divisionIndex;
-    if (t == Tier.values.length - 1 && d == 2) return null;
-    final lo = thresholds[t], hi = _upper(t);
-    final ratio = d < 2 ? lo + (hi - lo) * (d + 1) / 3 : hi;
-    return ratio * bodyweight;
+    final double target;
+    switch (current.tier) {
+      case Tier.challenger:
+        return null;
+      case Tier.grandmaster:
+        target = RankScore.challengerPoints;
+      case Tier.master:
+        target = RankScore.grandmasterPoints;
+      default:
+        target = (current.value + 1e-9).floorToDouble() + 1;
+    }
+    return ratioForPoints(target) * bodyweight;
   }
 }
 

@@ -9,7 +9,7 @@ const bench = StrengthStandard(
   id: 'bench',
   name: 'Bench press',
   exerciseIds: ['Bench'],
-  thresholds: [0, 0.5, 0.75, 1.0, 1.5, 2.0, 2.3],
+  thresholds: [0, 0.5, 0.75, 0.875, 1.0, 1.25, 1.4, 1.5, 1.75, 2.0],
   targets: MuscleTargets(primary: {MuscleGroup.chest}, secondary: {MuscleGroup.shoulders, MuscleGroup.triceps}),
 );
 
@@ -17,63 +17,86 @@ const dips = StrengthStandard(
   id: 'dips',
   name: 'Dips',
   exerciseIds: ['Dips'],
-  thresholds: [0, 1.0, 1.2, 1.5, 1.8, 2.1, 2.415],
+  thresholds: [0, 1.0, 1.1, 1.2, 1.3, 1.5, 1.7, 1.8, 2.0, 2.2],
   bodyweightLoaded: true,
   targets: MuscleTargets(primary: {MuscleGroup.triceps, MuscleGroup.chest}, secondary: {MuscleGroup.shoulders}),
 );
 
 void main() {
-  group('tiers and divisions', () {
-    test('ratio 1.25 is halfway through Gold → Gold II', () {
-      final s = bench.scoreForRatio(1.25);
+  group('ladder: tiers, divisions and LP', () {
+    test('5/8 of the way through Gold → Gold II, 50 LP', () {
+      final s = bench.scoreForRatio(0.953125); // Gold spans 0.875–1.0
       expect(s.tier, Tier.gold);
-      expect(s.tierProgress, closeTo(0.5, 1e-9));
+      expect(s.value, closeTo(14.5, 1e-9));
       expect(s.label, 'Gold II');
+      expect(s.lp, 50);
       expect(s.divisionProgress, closeTo(0.5, 1e-9));
     });
 
-    test('exactly on a threshold is the bottom of that tier', () {
-      expect(bench.scoreForRatio(0.5).label, 'Bronze III');
-      expect(bench.scoreForRatio(1.0).label, 'Gold III');
+    test('exactly on a threshold is division IV, 0 LP', () {
+      expect(bench.scoreForRatio(0.5).labelWithLp, 'Bronze IV · 0 LP');
+      expect(bench.scoreForRatio(1.0).label, 'Platinum IV');
+      expect(bench.scoreForRatio(1.25).label, 'Emerald IV');
     });
 
     test('Iron progress is linear from zero', () {
-      final s = bench.scoreForRatio(0.2); // 0.4 through Iron
-      expect(s.label, 'Iron II');
-      expect(s.value, closeTo(0.4, 1e-9));
+      final s = bench.scoreForRatio(0.2); // 0.4 through Iron → 1.6 points
+      expect(s.label, 'Iron III');
+      expect(s.lp, 60);
     });
 
-    test('Champion runs to 125% of its entry and caps at Champion I', () {
-      expect(bench.scoreForRatio(2.3).label, 'Champion III');
-      expect(bench.scoreForRatio(5).label, 'Champion I');
-      expect(bench.scoreForRatio(5).value, lessThan(7));
+    test('apex tiers have no divisions and LP above Master, uncapped', () {
+      expect(bench.scoreForRatio(1.5).labelWithLp, 'Master · 0 LP');
+      expect(bench.scoreForRatio(1.625).labelWithLp, 'Master · 200 LP');
+      expect(bench.scoreForRatio(1.75).labelWithLp, 'Grandmaster · 400 LP');
+      expect(bench.scoreForRatio(2.0).labelWithLp, 'Challenger · 800 LP');
+      expect(bench.scoreForRatio(2.5).labelWithLp, 'Challenger · 1600 LP');
+      expect(bench.scoreForRatio(2.5).divisionLabel, '');
+    });
+
+    test('next labels walk up the ladder', () {
+      expect(RankScore.of(Tier.gold, division: 4).nextLabel, 'Gold III');
+      expect(RankScore.of(Tier.gold, division: 1).nextLabel, 'Platinum IV');
+      expect(RankScore.of(Tier.diamond, division: 1).nextLabel, 'Master');
+      expect(RankScore.of(Tier.master).nextLabel, 'Grandmaster');
+      expect(RankScore.of(Tier.challenger).nextLabel, isNull);
     });
 
     test('next threshold in kg', () {
-      // Gold II at bw 80: next division (Gold I) starts at 1.0 + 0.5 × 2/3 = 1.3333 → 106.67 kg.
-      final s = bench.scoreForRatio(1.25);
-      expect(bench.nextThresholdKg(s, 80), closeTo(106.667, 1e-3));
-      // Gold I → Platinum entry 1.5 × 80 = 120.
-      expect(bench.nextThresholdKg(bench.scoreForRatio(1.4), 80), closeTo(120, 1e-9));
-      expect(bench.nextThresholdKg(bench.scoreForRatio(5), 80), isNull);
+      // Gold II at 14.5 points → Gold I starts at 15 points = 0.875 + 0.75 × 0.125 = 0.96875 → 77.5 kg at 80 kg.
+      expect(bench.nextThresholdKg(bench.scoreForRatio(0.953125), 80), closeTo(77.5, 1e-9));
+      // Diamond I → Master entry 1.5 × 80 = 120.
+      expect(bench.nextThresholdKg(bench.scoreForRatio(1.49), 80), closeTo(120, 1e-9));
+      // Master → Grandmaster entry 1.75 × 80 = 140.
+      expect(bench.nextThresholdKg(bench.scoreForRatio(1.6), 80), closeTo(140, 1e-9));
+      expect(bench.nextThresholdKg(bench.scoreForRatio(3), 80), isNull);
+    });
+
+    test('ratioForPoints inverts scoreForRatio', () {
+      for (final p in [0.5, 3.0, 14.5, 27.9, 28.0, 30.0, 33.0, 37.5]) {
+        expect(bench.scoreForRatio(bench.ratioForPoints(p)).value, closeTo(p, 1e-9));
+      }
     });
   });
 
   group('aggregation', () {
     const calc = RankCalculator([bench, dips]);
 
-    test('muscle-group rank is the weighted average (primary 1.0, secondary 0.3)', () {
-      // bw 80. Bench e1RM 100 → ratio 1.25 → 3.5. Dips e1RM 120 (bw incl.) → 1.5 → Gold III = 3.0.
-      final r = calc.compute(bestE1rmByExercise: {'Bench': 100, 'Dips': 120}, bodyweight: 80);
+    test('muscle-group rank is the weighted average of points (primary 1.0, secondary 0.3)', () {
+      // bw 80. Bench 106 kg → 1.325 → halfway through Emerald = 22 points (Emerald II).
+      // Dips 120 kg incl. bodyweight → 1.5 → Emerald IV = 20 points.
+      final r = calc.compute(bestE1rmByExercise: {'Bench': 106, 'Dips': 120}, bodyweight: 80);
       expect(r.exercises.length, 2);
-      expect(r.groups[MuscleGroup.chest]!.score.value, closeTo(3.25, 1e-9)); // (3.5 + 3.0) / 2
-      // Triceps: dips primary (1.0 × 3.0) + bench secondary (0.3 × 3.5) → 4.05 / 1.3 = 3.1154.
-      expect(r.groups[MuscleGroup.triceps]!.score.value, closeTo(3.1154, 1e-4));
-      // Shoulders: both secondary → plain average 3.25.
-      expect(r.groups[MuscleGroup.shoulders]!.score.value, closeTo(3.25, 1e-9));
-      // Overall: mean of the three groups with data.
-      expect(r.overall!.value, closeTo((3.25 + 3.1154 + 3.25) / 3, 1e-4));
-      expect(r.overall!.label, 'Gold III'); // 3.205 → 20% into Gold
+      expect(r.groups[MuscleGroup.chest]!.score.value, closeTo(21, 1e-9)); // (22 + 20) / 2
+      expect(r.groups[MuscleGroup.chest]!.score.label, 'Emerald III');
+      // Triceps: dips primary (1.0 × 20) + bench secondary (0.3 × 22) → 26.6 / 1.3 = 20.4615.
+      expect(r.groups[MuscleGroup.triceps]!.score.value, closeTo(20.4615, 1e-4));
+      expect(r.groups[MuscleGroup.triceps]!.score.labelWithLp, 'Emerald IV · 46 LP');
+      // Shoulders: both secondary → plain average 21.
+      expect(r.groups[MuscleGroup.shoulders]!.score.value, closeTo(21, 1e-9));
+      // Overall: mean of the three groups' points = 20.8205 → Emerald IV, 82 LP.
+      expect(r.overall!.value, closeTo((21 + 20.4615 + 21) / 3, 1e-4));
+      expect(r.overall!.labelWithLp, 'Emerald IV · 82 LP');
     });
 
     test('unranked groups get hints, ranked ones do not', () {
@@ -88,7 +111,7 @@ void main() {
         id: 'row',
         name: 'Row',
         exerciseIds: ['A', 'B'],
-        thresholds: [0, 0.5, 0.75, 1.0, 1.5, 1.75, 2.0125],
+        thresholds: [0, 0.5, 0.75, 0.875, 1.0, 1.25, 1.4, 1.5, 1.75, 2.0],
         targets: MuscleTargets(primary: {MuscleGroup.back}, secondary: {}),
       );
       final r = const RankCalculator([multi]).compute(bestE1rmByExercise: {'A': 60, 'B': 80}, bodyweight: 80);

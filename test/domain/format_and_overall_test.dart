@@ -29,31 +29,43 @@ void main() {
   });
 
   group('overall rank', () {
-    const thresholds = [0.0, 0.5, 0.75, 1.0, 1.5, 2.0, 2.3];
-    final calc = RankCalculator(perGroupStandards(thresholds));
+    const thresholds = [0.0, 0.5, 0.75, 0.875, 1.0, 1.25, 1.4, 1.5, 1.75, 2.0];
+    final standards = perGroupStandards(thresholds);
+    final calc = RankCalculator(standards);
 
-    test('all groups at the same division → overall is exactly that division', () {
+    test('all groups at the same tier/division → overall is exactly that tier/division', () {
       const bw = 80.0;
-      // Every tier and division, including exact boundaries (worst case for float error).
-      for (var t = 0; t < thresholds.length; t++) {
-        final lo = thresholds[t];
-        final hi = t + 1 < thresholds.length ? thresholds[t + 1] : thresholds[t] * 1.25;
-        for (var d = 0; d < 3; d++) {
-          for (final f in [0.0, 0.5]) {
-            final ratio = (lo + (hi - lo) * (d + f) / 3).clamp(0.01, double.infinity);
-            final best = {for (final g in MuscleGroup.values) g.name: ratio * bw};
-            final r = calc.compute(bestE1rmByExercise: best, bodyweight: bw);
-            final groupLabel = r.groups.values.first.score.label;
-            expect(r.groups.values.every((g) => g.score.label == groupLabel), isTrue);
-            expect(r.overall!.label, groupLabel, reason: 'ratio $ratio');
+      final points = <double>[
+        for (var p = 0; p < 28; p++) ...[p.toDouble(), p + 0.5], // every division, on and inside boundaries
+        28, 29.5, 32, 33.25, 36, 41, // apex
+      ];
+      for (final p in points) {
+        final ratio = standards.first.ratioForPoints(p).clamp(0.001, double.infinity);
+        final best = {for (final g in MuscleGroup.values) g.name: ratio * bw};
+        final r = calc.compute(bestE1rmByExercise: best, bodyweight: bw);
+        final groupLabel = r.groups.values.first.score.label;
+        expect(r.groups.length, 12);
+        expect(r.groups.values.every((g) => g.score.label == groupLabel), isTrue);
+        expect(r.overall!.label, groupLabel, reason: 'points $p');
+        expect(r.overall!.lp, r.groups.values.first.score.lp, reason: 'points $p');
+      }
+    });
+
+    test('every tier and division is reachable with the expected label', () {
+      for (final t in Tier.values) {
+        if (t.isApex) {
+          expect(RankScore.of(t).label, t.label);
+        } else {
+          for (var d = 4; d >= 1; d--) {
+            expect(RankScore.of(t, division: d).label, '${t.label} ${const ['', 'I', 'II', 'III', 'IV'][d]}');
           }
         }
       }
     });
 
     test('mixed groups average on the continuous scale', () {
-      final s = averageScore([RankScore(3.2), RankScore(2.8)]);
-      expect(s.value, closeTo(3.0, 1e-12));
+      final s = averageScore([RankScore(13.2), RankScore(12.8)]);
+      expect(s.value, closeTo(13.0, 1e-12));
       expect(s.label, 'Gold III');
     });
   });
