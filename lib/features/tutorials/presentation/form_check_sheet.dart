@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app_providers.dart';
+import '../../../core/domain/muscles.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../router.dart';
 import '../../program/presentation/program_video.dart';
@@ -30,7 +31,7 @@ Future<void> showFormCheckSheet(BuildContext context, String exerciseId) {
                   constraints: const BoxConstraints(maxWidth: 300),
                   child: video != null
                       ? ProgramVideoPlayer(video: video)
-                      : ExerciseDemo(exerciseId: exerciseId, fallbackImages: info?.imageUrls ?? const [], compact: true),
+                      : ExerciseDemo(exerciseId: exerciseId, targets: info?.targets ?? MuscleTargets.empty, compact: true),
                 ),
               ),
               if (info != null && info.instructions.isNotEmpty) ...[

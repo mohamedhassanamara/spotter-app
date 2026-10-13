@@ -328,3 +328,68 @@ class _ThumbPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant _ThumbPainter old) => old.view != view || old.muscle != muscle || old.color != color;
 }
+
+/// Generated exercise thumbnail when there's no 3D GIF: our body silhouette (the side where the
+/// exercise works most), cropped around its muscles, prime movers lit in the accent color and helpers
+/// dimmer. Never a photo.
+class ExerciseMuscleThumb extends ConsumerWidget {
+  const ExerciseMuscleThumb({super.key, required this.targets, this.size = 56});
+  final MuscleTargets targets;
+  final double size;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final map = ref.watch(bodyMapProvider).value;
+    return Container(
+      width: size,
+      height: size,
+      color: AppColors.surfaceHigh,
+      child: map == null ? null : CustomPaint(painter: _ExerciseThumbPainter(map, targets)),
+    );
+  }
+}
+
+class _ExerciseThumbPainter extends CustomPainter {
+  _ExerciseThumbPainter(this.map, this.targets);
+  final BodyMap map;
+  final MuscleTargets targets;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    double weightOn(BodyView v) => targets.weights.entries.where((e) => v.muscles.contains(e.key) && map.viewFor(e.key) == v).fold(0.0, (a, e) => a + e.value);
+    final view = weightOn(map.back) > weightOn(map.front) ? map.back : map.front;
+    Rect? target;
+    for (final e in targets.weights.entries) {
+      if (e.value < MuscleTargets.primaryThreshold) continue;
+      final b = view.shapeBoundsOf(e.key);
+      if (b != null) target = target == null ? b : target.expandToInclude(b);
+    }
+    target ??= view.bounds;
+    final side = math.max(view.bounds.height / 2.6, math.max(target.width, target.height) * 1.35);
+    final win = Rect.fromCenter(center: target.center, width: side, height: side);
+    final s = size.width / side;
+    canvas.save();
+    canvas.clipRect(Offset.zero & size);
+    canvas.translate(-win.left * s, -win.top * s);
+    canvas.scale(s);
+    for (final p in view.silhouette) {
+      canvas.drawPath(p.path, Paint()..color = const Color(0xFF2E3542));
+    }
+    final gap = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.6 / s
+      ..color = AppColors.surfaceHigh;
+    for (final m in view.shapes) {
+      final w = targets.weightFor(m.muscle);
+      final c = w >= MuscleTargets.primaryThreshold
+          ? AppColors.accent
+          : (w > 0 ? AppColors.accent.withValues(alpha: 0.45) : const Color(0xFF3A4252));
+      canvas.drawPath(m.path, Paint()..color = c);
+      canvas.drawPath(m.path, gap);
+    }
+    canvas.restore();
+  }
+
+  @override
+  bool shouldRepaint(covariant _ExerciseThumbPainter old) => old.targets != targets;
+}

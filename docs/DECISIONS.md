@@ -1175,3 +1175,19 @@ hypertrophy program trained close to failure. They are not validated against any
   the highlighted thumbnail, badge, division and LP). The Ranks tab region cards use the same title.
 - **Legend**: one compact wrap with only the tiers present on your body, plus Unranked.
 - Test: `body_map_readable_flow_test` (width, legend, callout before sheet, regions list → sheet).
+
+## Real-device fixes, Fix 3: thumbnails in the 3D style only
+
+- `ExerciseThumb` (logger, routine editor, library, history session detail): the still first frame
+  of the exercise's ExerciseDB GIF, else a **generated thumbnail**: our body-map silhouette of the side
+  where the exercise works most, cropped around its muscles, prime movers (≥ 0.5) lit in the accent
+  color and helpers at half strength (`ExerciseMuscleThumb`). While the GIF frame decodes, the
+  generated one shows. Photos (free-exercise-db, wger) are never a thumbnail.
+- The exercise page and the in-workout (i) sheet use the same rule for the demo: GIF, else the
+  generated figure at full size, never a photo carousel. Real photos appear only in a **Photos**
+  section near the bottom of the exercise page (horizontal strip).
+- Test: `thumbnails_flow_test` checks no `Image` (network photo) under any `ExerciseThumb` in the
+  library, routine editor, logger and history; a GIF exercise shows the still; a photo-only exercise
+  shows the generated figure and keeps its photos in the Photos section.
+- Known limit: the GIF comes from the existing V1 name matcher, so a few matches are approximate
+  (e.g. "Foam Roller Adductors" shows a stretch). Settings → Debug → Media matching can fix one.

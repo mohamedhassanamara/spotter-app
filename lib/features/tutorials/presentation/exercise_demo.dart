@@ -1,10 +1,11 @@
-import 'dart:async';
 import 'dart:ui' as ui;
 
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../../core/domain/muscles.dart';
+import '../../ranks/presentation/anatomy_graph.dart' show ExerciseMuscleThumb;
 
 import '../../../app_providers.dart';
 import '../../../core/db/database.dart';
@@ -48,10 +49,12 @@ final gifFramesProvider = FutureProvider.family<GifFrames, String>((ref, url) as
 /// The 3D demonstration for an exercise: the matched ExerciseDB animation, looping, with
 /// play/pause and 0.5× speed. Falls back to the library's photos when nothing matched.
 class ExerciseDemo extends ConsumerWidget {
-  const ExerciseDemo({super.key, required this.exerciseId, this.fallbackImages = const [], this.compact = false});
+  const ExerciseDemo({super.key, required this.exerciseId, this.targets = MuscleTargets.empty, this.compact = false});
 
   final String exerciseId;
-  final List<String> fallbackImages;
+
+  /// Without a 3D GIF, the demo shows the body with these muscles lit (never a photo).
+  final MuscleTargets targets;
   final bool compact;
 
   @override
@@ -70,8 +73,8 @@ class ExerciseDemo extends ConsumerWidget {
         child: match.isLoading
             ? const _Skeleton()
             : url == null
-                ? _Fallback(images: fallbackImages)
-                : _GifPlayer(url: url, compact: compact, fallbackImages: fallbackImages),
+                ? _Generated(targets: targets)
+                : _GifPlayer(url: url, compact: compact, targets: targets),
       ),
     );
     return Column(
@@ -95,10 +98,10 @@ class ExerciseDemo extends ConsumerWidget {
 }
 
 class _GifPlayer extends ConsumerStatefulWidget {
-  const _GifPlayer({required this.url, required this.compact, required this.fallbackImages});
+  const _GifPlayer({required this.url, required this.compact, required this.targets});
   final String url;
   final bool compact;
-  final List<String> fallbackImages;
+  final MuscleTargets targets;
 
   @override
   ConsumerState<_GifPlayer> createState() => _GifPlayerState();
@@ -146,7 +149,7 @@ class _GifPlayerState extends ConsumerState<_GifPlayer> with SingleTickerProvide
     return gif.when(
       loading: () => const _Skeleton(),
       // Offline or a dead GIF: show the library photos instead.
-      error: (e, _) => _Fallback(images: widget.fallbackImages),
+      error: (e, _) => _Generated(targets: widget.targets),
       data: (g) => Stack(
         fit: StackFit.expand,
         children: [
@@ -209,69 +212,15 @@ class _Pill extends StatelessWidget {
 }
 
 /// No ExerciseDB match: alternate the library's two photos.
-class _Fallback extends StatefulWidget {
-  const _Fallback({required this.images});
-  final List<String> images;
+/// The generated muscle figure, full size (no GIF for this exercise).
+class _Generated extends StatelessWidget {
+  const _Generated({required this.targets});
+  final MuscleTargets targets;
 
   @override
-  State<_Fallback> createState() => _FallbackState();
-}
-
-class _FallbackState extends State<_Fallback> {
-  Timer? _t;
-  int _i = 0;
-
-  @override
-  void initState() {
-    super.initState();
-    if (widget.images.length > 1) {
-      _t = Timer.periodic(const Duration(milliseconds: 1100), (_) => setState(() => _i = (_i + 1) % widget.images.length));
-    }
-  }
-
-  @override
-  void dispose() {
-    _t?.cancel();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if (widget.images.isEmpty) {
-      return const Center(
-        child: Padding(
-          padding: EdgeInsets.all(20),
-          child: Text('No 3D demo for this exercise yet.', textAlign: TextAlign.center, style: TextStyle(color: Colors.black54)),
-        ),
+  Widget build(BuildContext context) => LayoutBuilder(
+        builder: (context, c) => ExerciseMuscleThumb(key: const ValueKey('demo-generated'), targets: targets, size: c.maxWidth),
       );
-    }
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        AnimatedSwitcher(
-          duration: const Duration(milliseconds: 250),
-          child: CachedNetworkImage(
-            key: ValueKey(_i),
-            imageUrl: widget.images[_i],
-            fit: BoxFit.contain,
-            placeholder: (_, _) => const _Skeleton(),
-            errorWidget: (_, _, _) => const Icon(Icons.image_not_supported_outlined, color: Colors.black38),
-          ),
-        ),
-        const Positioned(
-          left: 8,
-          bottom: 8,
-          child: DecoratedBox(
-            decoration: BoxDecoration(color: Colors.black54, borderRadius: BorderRadius.all(Radius.circular(8))),
-            child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              child: Text('Photos · no 3D demo matched', style: TextStyle(color: Colors.white, fontSize: 11)),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
 }
 
 /// Shimmering placeholder.

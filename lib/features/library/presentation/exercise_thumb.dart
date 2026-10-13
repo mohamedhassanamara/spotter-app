@@ -1,13 +1,12 @@
 import 'dart:io' show Platform;
 import 'dart:ui' as ui;
 
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/theme/app_theme.dart';
 import '../../tutorials/data/media_repository.dart';
 import '../../tutorials/presentation/exercise_demo.dart';
+import '../../ranks/presentation/anatomy_graph.dart' show ExerciseMuscleThumb;
 import '../domain/exercise_info.dart';
 
 /// First frame of a GIF as a still image (thumbnails never animate). Cached per URL for the session.
@@ -33,9 +32,9 @@ IconData equipmentIcon(String? equipment) => switch (equipment?.toLowerCase()) {
       _ => Icons.sports_gymnastics_rounded,
     };
 
-/// Square, static exercise thumbnail, as in Liftoff's lists:
-/// free-exercise-db photo → wger image → first frame of the ExerciseDB V1 GIF → a clean placeholder with
-/// the equipment icon. Never a YouTube thumbnail, never an animated GIF.
+/// Square, static exercise thumbnail in the 3D-render style only: a still frame of the ExerciseDB GIF,
+/// else a generated thumbnail (body silhouette with the exercise's main muscles lit). Never a photo of
+/// a real person (photos live in the exercise page's Photos section), never a YouTube image, never animated.
 class ExerciseThumb extends ConsumerWidget {
   const ExerciseThumb({super.key, required this.exercise, this.size = 56, this.radius = 12});
   final ExerciseInfo exercise;
@@ -44,38 +43,16 @@ class ExerciseThumb extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final placeholder = Container(
-      key: ValueKey('thumb-placeholder-${exercise.id}'),
-      width: size,
-      height: size,
-      color: AppColors.surfaceHigh,
-      child: Icon(equipmentIcon(exercise.equipment), color: AppColors.textTertiary, size: size * 0.45),
-    );
-    Widget still(Widget child) => Container(width: size, height: size, color: Colors.white, child: child);
-    final urls = exercise.imageUrls;
-    Widget body;
-    if (urls.isNotEmpty) {
-      body = still(_inTests
-          ? Image.network(urls.first, fit: BoxFit.cover, cacheWidth: (size * 3).round(), errorBuilder: (_, _, _) => placeholder)
-          : CachedNetworkImage(
-              imageUrl: urls.first,
-              fit: BoxFit.cover,
-              memCacheWidth: (size * 3).round(),
-              placeholder: (_, _) => placeholder,
-              errorWidget: (_, _, _) => placeholder,
-            ));
-    } else {
-      final gif = ref.watch(mediaMatchProvider(exercise.id)).value?.gifUrl;
-      if (gif == null || _inTests) {
-        body = placeholder;
-      } else {
-        body = ref.watch(gifFirstFrameProvider(gif)).when(
+    final generated = ExerciseMuscleThumb(key: ValueKey('thumb-generated-${exercise.id}'), targets: exercise.targets, size: size);
+    Widget still(Widget child) => Container(key: ValueKey('thumb-gif-${exercise.id}'), width: size, height: size, color: Colors.white, child: child);
+    final gif = ref.watch(mediaMatchProvider(exercise.id)).value?.gifUrl;
+    final Widget body = gif == null || _inTests
+        ? generated
+        : ref.watch(gifFirstFrameProvider(gif)).when(
               data: (img) => still(RawImage(image: img, fit: BoxFit.cover)),
-              loading: () => placeholder,
-              error: (_, _) => placeholder,
+              loading: () => generated,
+              error: (_, _) => generated,
             );
-      }
-    }
     return ClipRRect(borderRadius: BorderRadius.circular(radius), child: SizedBox(width: size, height: size, child: body));
   }
 }

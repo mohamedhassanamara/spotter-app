@@ -154,7 +154,7 @@ class _DetailViewState extends ConsumerState<_DetailView> {
           ),
           const SizedBox(height: 16),
           switch (tab) {
-            _MediaTab.demo => ExerciseDemo(exerciseId: info.id, fallbackImages: info.imageUrls),
+            _MediaTab.demo => ExerciseDemo(exerciseId: info.id, targets: info.targets),
             _MediaTab.video => ProgramVideoPlayer(video: video!),
             _MediaTab.steps => _Steps(info: info),
           },
@@ -169,6 +169,26 @@ class _DetailViewState extends ConsumerState<_DetailView> {
             ),
           const SectionHeader('Muscles'),
           _MuscleBlock(info: info),
+          // Photos of real people only here, never as a thumbnail or the main demo.
+          if (info.imageUrls.isNotEmpty) ...[
+            const SectionHeader('Photos'),
+            SizedBox(
+              key: const ValueKey('photos-section'),
+              height: 180,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: info.imageUrls.length,
+                separatorBuilder: (_, _) => const SizedBox(width: 8),
+                itemBuilder: (_, i) => ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Container(
+                    color: Colors.white,
+                    child: Image.network(info.imageUrls[i], height: 180, fit: BoxFit.cover, errorBuilder: (_, _, _) => const SizedBox(width: 1)),
+                  ),
+                ),
+              ),
+            ),
+          ],
           _HistorySection(info: info),
         ],
       ),

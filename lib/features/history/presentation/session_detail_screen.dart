@@ -11,6 +11,7 @@ import '../../../core/widgets/common.dart';
 import '../../../router.dart';
 import '../../coach/domain/guardrail.dart';
 import '../../coach/domain/suggestion_engine.dart';
+import '../../library/presentation/exercise_thumb.dart';
 import '../../readiness/domain/readiness.dart';
 
 /// One finished session, reloaded whenever history changes.
@@ -119,13 +120,14 @@ class SessionDetailScreen extends ConsumerWidget {
   }
 }
 
-class _ExerciseBlock extends StatelessWidget {
+class _ExerciseBlock extends ConsumerWidget {
   const _ExerciseBlock({required this.exercise});
   final HistExercise exercise;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final e = exercise;
+    final info = ref.watch(catalogProvider).value?[e.exerciseId];
     var workingIndex = 0;
     return AppCard(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 14),
@@ -135,6 +137,7 @@ class _ExerciseBlock extends StatelessWidget {
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 8),
             child: Row(children: [
+              if (info != null) ...[ExerciseThumb(exercise: info, size: 40, radius: 10), const SizedBox(width: 12)],
               Expanded(child: Text(e.name, style: Theme.of(context).textTheme.titleMedium)),
               const Icon(Icons.show_chart_rounded, color: AppColors.textSecondary),
             ]),
