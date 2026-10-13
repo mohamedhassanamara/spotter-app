@@ -8,6 +8,8 @@ import '../../coach/domain/suggestion_engine.dart';
 import '../domain/body_regions.dart';
 import '../domain/ranks.dart';
 import 'anatomy_graph.dart';
+import '../../recovery/domain/recovery.dart';
+import '../../recovery/domain/recovery_config.dart';
 import 'rank_badge.dart';
 
 Future<void> showMuscleSheet(
@@ -16,6 +18,7 @@ Future<void> showMuscleSheet(
   required BodyGraphMode mode,
   required RankSummary summary,
   required GroupVolume? volume,
+  MuscleRecovery? recovery,
 }) {
   return showModalBottomSheet<void>(
     context: context,
@@ -28,9 +31,11 @@ Future<void> showMuscleSheet(
       builder: (context, scroll) => ListView(
         controller: scroll,
         padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
-        children: mode == BodyGraphMode.volume
-            ? _volumeContent(context, group, volume)
-            : _rankContent(context, group, summary),
+        children: switch (mode) {
+          BodyGraphMode.volume => _volumeContent(context, group, volume),
+          BodyGraphMode.recovery => recoveryContent(context, group, recovery),
+          BodyGraphMode.ranks => _rankContent(context, group, summary),
+        },
       ),
     ),
   );
@@ -168,5 +173,64 @@ List<Widget> _volumeContent(BuildContext context, Muscle group, GroupVolume? v) 
     ),
     const SizedBox(height: 8),
     const Text('Counts working sets where this muscle does at least half the work (contribution ≥ 0.5).', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+  ];
+}
+
+/// "in 1 d 4 h" / "in 5 h" / "now".
+String formatHoursToReady(double h) {
+  if (h <= 0) return 'now';
+  final total = h.ceil();
+  if (total < 24) return 'in $total h';
+  final d = total ~/ 24, rest = total % 24;
+  return rest == 0 ? 'in $d d' : 'in $d d $rest h';
+}
+
+List<Widget> recoveryContent(BuildContext context, Muscle muscle, MuscleRecovery? r) {
+  final band = r?.band;
+  final color = recoveryColor(band);
+  final pct = r?.pct ?? 100;
+  return [
+    Row(children: [
+      MuscleThumbnail(muscle: muscle, color: color, size: 64),
+      const SizedBox(width: 16),
+      Expanded(
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(muscle.region.label.toUpperCase(), style: AppType.label.copyWith(color: AppColors.textSecondary)),
+          Text(muscle.label, style: Theme.of(context).textTheme.headlineSmall),
+          Text(band?.label ?? 'Ready', key: const ValueKey('recovery-band'), style: TextStyle(color: color, fontWeight: FontWeight.w900, fontSize: 20)),
+        ]),
+      ),
+      Text('${pct.round()}%', key: const ValueKey('recovery-pct'), style: AppType.displayL.copyWith(color: color)),
+    ]),
+    const SizedBox(height: 12),
+    ProgressBar(value: pct / 100, color: color),
+    const SizedBox(height: 16),
+    Row(children: [
+      Expanded(
+        child: StatTile(
+          label: 'Ready',
+          value: r == null || r.hoursToReady <= 0 ? 'now' : formatHoursToReady(r.hoursToReady),
+          color: color,
+        ),
+      ),
+      Expanded(
+        child: StatTile(
+          label: 'Last trained',
+          value: r?.lastHitAt == null ? '—' : DateFormat('EEE d MMM').format(r!.lastHitAt!),
+        ),
+      ),
+    ]),
+    if (r?.lastSession != null) ...[
+      const SizedBox(height: 8),
+      Text('Last session that hit it: ${r!.lastSession} · ${DateFormat('EEE d MMM, HH:mm').format(r.lastHitAt!)}',
+          key: const ValueKey('recovery-last-session'), style: const TextStyle(color: AppColors.textSecondary)),
+    ],
+    const SizedBox(height: 16),
+    Text(
+      'A heuristic: each working set adds fatigue (contribution × effort; drops count half) that fades with a '
+      '${RecoveryConfig.halfLifeH(muscle).round()} h half-life for this muscle, slower on Yellow and Red readiness days. '
+      'It never changes your suggestions.',
+      style: const TextStyle(color: AppColors.textSecondary, fontSize: 12, height: 1.35),
+    ),
   ];
 }

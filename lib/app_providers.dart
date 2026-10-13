@@ -11,6 +11,7 @@ import 'core/health/health_data_source.dart';
 import 'core/health/healthkit_data_source.dart';
 import 'core/notifications/notification_service.dart';
 import 'core/providers.dart';
+import 'features/recovery/domain/recovery.dart';
 import 'features/coach/data/coach_context.dart';
 import 'features/gamification/data/gamification_repository.dart';
 import 'features/gamification/domain/achievements.dart';
@@ -360,6 +361,15 @@ final groupVolumeProvider = Provider<Map<Muscle, GroupVolume>>((ref) {
   if (history == null) return const {};
   final counts = const TrainingLoad().counts(ref.watch(clockProvider)(), groupSetEntries(history));
   return {for (final e in counts.entries) e.key: GroupVolume(recentSets: e.value.$1, weeklyAverage: e.value.$2)};
+});
+
+/// Muscle recovery now (display only; suggestions never read it). Today's readiness band scales the
+/// recovery speed; while readiness is calibrating it counts as Green.
+final recoveryProvider = Provider<RecoveryState?>((ref) {
+  final history = ref.watch(historyProvider).value;
+  if (history == null) return null;
+  final r = ref.watch(todayReadinessProvider);
+  return computeRecovery(history, now: ref.watch(clockProvider)(), readinessBand: r == null || r.calibrating ? null : r.band.name);
 });
 
 // ---------------------------------------------------------------------------

@@ -31,9 +31,9 @@ String _csv() {
       '${d(5)},$dur,,EZ Bar Curl,0,88.2,8,0,0,,6-8\n';
 }
 
-/// Taps the centre of [m] on the body graph currently shown.
-Future<void> tapMuscle(AppHarness h, BodyView view, Muscle m) async {
-  final rect = h.tester.getRect(find.byType(AnatomyGraph));
+/// Taps the centre of [m] on the front or back body (both are on screen side by side).
+Future<void> tapMuscle(AppHarness h, BodyView view, Muscle m, {required bool back}) async {
+  final rect = h.tester.getRect(find.byKey(ValueKey(back ? 'body-back' : 'body-front')));
   final b = view.bounds;
   final s = rect.width / b.width < rect.height / b.height ? rect.width / b.width : rect.height / b.height;
   final dx = rect.left + (rect.width - b.width * s) / 2;
@@ -100,13 +100,13 @@ void main() {
     final map = await tester.runAsync(BodyMap.load);
     await h.tap(tab('Body'));
     await h.waitFor(find.byType(AnatomyGraph), scroll: false);
-    await tapMuscle(h, map!.front, Muscle.upperChest);
+    expect(find.byKey(const ValueKey('body-rank-header')), findsOneWidget);
+    expect(find.textContaining('BODY RANK'), findsOneWidget);
+    await tapMuscle(h, map!.front, Muscle.upperChest, back: false);
     await h.waitFor(find.text('CONTRIBUTING EXERCISES'), reason: 'sheet from the body graph');
     expect(find.text('Upper Chest'), findsWidgets);
     await closeSheet(h);
-    await h.tap(find.byTooltip('Show back'));
-    await h.settle(15);
-    await tapMuscle(h, map.back, Muscle.lats);
+    await tapMuscle(h, map.back, Muscle.lats, back: true);
     await h.waitFor(find.text('Lats'), reason: 'lats sheet from the back view');
     await closeSheet(h);
 

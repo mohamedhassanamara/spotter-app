@@ -18,6 +18,7 @@ import '../data/rank_exclusions.dart';
 import '../domain/ranks.dart';
 import '../domain/body_regions.dart';
 import 'anatomy_graph.dart';
+import '../../recovery/domain/recovery.dart';
 import 'muscle_sheet.dart';
 import 'rank_badge.dart';
 
@@ -37,7 +38,7 @@ class ProgressScreen extends StatelessWidget {
   factory ProgressScreen.fromQuery(Map<String, String> q) => ProgressScreen(
         initialTab: tabs.indexOf(q['tab'] ?? 'body').clamp(0, 3),
         back: q['back'] == '1',
-        mode: q['mode'] == 'volume' ? BodyGraphMode.volume : BodyGraphMode.ranks,
+        mode: BodyGraphMode.fromName(q['mode']),
         openGroup: q['group'] == null ? null : Muscle.fromKey(q['group']!),
       );
 
@@ -54,7 +55,7 @@ class ProgressScreen extends StatelessWidget {
             tabs: [Tab(text: 'Body'), Tab(text: 'Ranks'), Tab(text: 'Lifts'), Tab(text: 'History')],
           ),
         ),
-        body: TabBarView(children: [_BodyTab(back: back, mode: mode, openGroup: openGroup), const _RanksTab(), const _LiftsTab(), const _HistoryTab()]),
+        body: TabBarView(children: [_BodyTab(mode: mode, openGroup: openGroup), const _RanksTab(), const _LiftsTab(), const _HistoryTab()]),
       ),
     );
   }
@@ -104,8 +105,7 @@ Future<void> enterBodyweight(BuildContext context, WidgetRef ref) async {
 // ---------------------------------------------------------------------------
 
 class _BodyTab extends ConsumerStatefulWidget {
-  const _BodyTab({this.back = false, this.mode = BodyGraphMode.ranks, this.openGroup});
-  final bool back;
+  const _BodyTab({this.mode = BodyGraphMode.ranks, this.openGroup});
   final BodyGraphMode mode;
   final Muscle? openGroup;
 
@@ -114,14 +114,13 @@ class _BodyTab extends ConsumerStatefulWidget {
 }
 
 class _BodyTabState extends ConsumerState<_BodyTab> {
-  late bool _back = widget.back;
   late BodyGraphMode _mode = widget.mode;
   Muscle? _selected;
   bool _openedDeepLink = false;
 
   Future<void> _open(Muscle g, RankSummary summary, Map<Muscle, GroupVolume> volume) async {
     setState(() => _selected = g);
-    await showMuscleSheet(context, group: g, mode: _mode, summary: summary, volume: volume[g]);
+    await showMuscleSheet(context, group: g, mode: _mode, summary: summary, volume: volume[g], recovery: ref.read(recoveryProvider)?.of(g));
     if (mounted) setState(() => _selected = null);
   }
 
@@ -130,6 +129,7 @@ class _BodyTabState extends ConsumerState<_BodyTab> {
     final ranks = ref.watch(ranksProvider);
     final bw = ref.watch(latestBodyWeightProvider);
     final volume = ref.watch(groupVolumeProvider);
+    final recovery = ref.watch(recoveryProvider);
     return AsyncBody(
       value: ranks,
       builder: (summary) {
@@ -142,72 +142,96 @@ class _BodyTabState extends ConsumerState<_BodyTab> {
           });
         }
         return ListView(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
           children: [
             if (bw.hasValue && bw.value == null) ...[const _BodyweightCard(), const SizedBox(height: 12)],
-            if (_mode == BodyGraphMode.ranks) _OverallCard(score: summary.overall, rankedRegions: summary.rankedRegions),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: SegmentedButton<BodyGraphMode>(
-                    showSelectedIcon: false,
-                    segments: const [
-                      ButtonSegment(value: BodyGraphMode.ranks, label: Text('Ranks'), icon: Icon(Icons.shield_rounded)),
-                      ButtonSegment(value: BodyGraphMode.volume, label: Text('Volume'), icon: Icon(Icons.local_fire_department_rounded)),
-                    ],
-                    selected: {_mode},
-                    onSelectionChanged: (v) => setState(() => _mode = v.first),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                IconButton.filledTonal(
-                  tooltip: _back ? 'Show front' : 'Show back',
-                  iconSize: 26,
-                  style: IconButton.styleFrom(minimumSize: const Size(52, 52)),
-                  onPressed: () => setState(() {
-                    _back = !_back;
-                    _selected = null;
-                  }),
-                  icon: const Icon(Icons.threesixty_rounded),
-                ),
+            _BodyRankHeader(score: summary.overall),
+            const SizedBox(height: 12),
+            SegmentedButton<BodyGraphMode>(
+              showSelectedIcon: false,
+              segments: [
+                for (final m in BodyGraphMode.values)
+                  ButtonSegment(value: m, label: Text(m.label, key: ValueKey('mode-${m.name}'))),
               ],
+              selected: {_mode},
+              onSelectionChanged: (v) => setState(() {
+                _mode = v.first;
+                _selected = null;
+              }),
             ),
-            const SizedBox(height: 4),
-            Center(
-              child: Text(_back ? 'BACK' : 'FRONT',
-                  style: const TextStyle(color: AppColors.textSecondary, fontWeight: FontWeight.w800, letterSpacing: 2, fontSize: 12)),
+            const SizedBox(height: 14),
+            AnatomyGraph(
+              mode: _mode,
+              scores: scores,
+              volume: volume,
+              recovery: recovery,
+              selected: _selected,
+              onTap: (g) => _open(g, summary, volume),
             ),
-            const SizedBox(height: 8),
-            Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxHeight: 520),
-                child: AnatomyGraph(
-                  back: _back,
-                  mode: _mode,
-                  scores: scores,
-                  volume: volume,
-                  selected: _selected,
-                  onTap: (g) => _open(g, summary, volume),
-                ),
-              ),
-            ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 14),
+            switch (_mode) {
+              BodyGraphMode.ranks => const _TierLegend(),
+              BodyGraphMode.volume => const _VolumeLegend(),
+              BodyGraphMode.recovery => const _RecoveryLegend(),
+            },
+            const SizedBox(height: 10),
             Center(
               child: Text(
-                _mode == BodyGraphMode.ranks
-                    ? 'Tap a muscle to see its rank · grey = unranked'
-                    : 'Working sets, last 7 days vs. your 4-week weekly average',
-                style: const TextStyle(color: AppColors.textSecondary),
+                switch (_mode) {
+                  BodyGraphMode.ranks => 'Tap a muscle for its rank · grey = unranked',
+                  BodyGraphMode.volume => 'Working sets, last 7 days vs. your 4-week weekly average',
+                  BodyGraphMode.recovery => 'Estimated from your recent sets and effort · tap a muscle',
+                },
+                textAlign: TextAlign.center,
+                style: AppType.bodyS.copyWith(fontSize: 12, color: AppColors.textTertiary),
               ),
             ),
-            const SizedBox(height: 16),
-            if (_mode == BodyGraphMode.ranks) const _TierLegend() else const _VolumeLegend(),
           ],
         );
       },
     );
   }
+}
+
+/// "BODY RANK · Silver II" with the overall badge.
+class _BodyRankHeader extends StatelessWidget {
+  const _BodyRankHeader({required this.score});
+  final RankScore? score;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = score;
+    final color = s == null ? AppColors.textSecondary : tierColor(s.tier);
+    return Row(
+      key: const ValueKey('body-rank-header'),
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        RankBadge(score: s, size: BadgeSize.small, width: 40, animate: false),
+        const SizedBox(width: 10),
+        Text('BODY RANK · ', style: AppType.label.copyWith(fontSize: 14, color: AppColors.textSecondary)),
+        Text(s?.label ?? 'Unranked', style: AppType.title.copyWith(color: color)),
+      ],
+    );
+  }
+}
+
+class _RecoveryLegend extends StatelessWidget {
+  const _RecoveryLegend();
+
+  @override
+  Widget build(BuildContext context) => Wrap(
+        spacing: 16,
+        runSpacing: 8,
+        alignment: WrapAlignment.center,
+        children: [
+          for (final (b, range) in [(RecoveryBand.ready, '≥ 90%'), (RecoveryBand.recovering, '60–89%'), (RecoveryBand.fatigued, '< 60%')])
+            Row(mainAxisSize: MainAxisSize.min, children: [
+              Container(width: 14, height: 14, decoration: BoxDecoration(color: recoveryColor(b), borderRadius: BorderRadius.circular(4))),
+              const SizedBox(width: 6),
+              Text('${b.label} $range', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+            ]),
+        ],
+      );
 }
 
 class _VolumeLegend extends StatelessWidget {

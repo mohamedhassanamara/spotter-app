@@ -9,10 +9,20 @@ import '../../../core/theme/app_theme.dart';
 import '../data/body_map.dart';
 import '../domain/body_regions.dart';
 import '../domain/ranks.dart';
+import '../../recovery/domain/recovery.dart';
 
 final bodyMapProvider = FutureProvider<BodyMap>((ref) => BodyMap.load());
 
-enum BodyGraphMode { ranks, volume }
+enum BodyGraphMode {
+  ranks('Rank'),
+  recovery('Recovery'),
+  volume('Volume');
+
+  const BodyGraphMode(this.label);
+  final String label;
+
+  static BodyGraphMode fromName(String? n) => values.firstWhere((m) => m.name == n, orElse: () => ranks);
+}
 
 /// Colour of a volume heatmap bucket.
 Color volumeColor(VolumeLevel level) => switch (level) {
@@ -33,98 +43,70 @@ String volumeLabel(VolumeLevel level) => switch (level) {
       VolumeLevel.new_ => 'New this week',
     };
 
-/// Anatomical front/back muscle map. Regions are coloured by tier (ranks mode) or by
-/// last-7-days volume vs. the 4-week average (volume mode). Flips front ↔ back with a 3D card turn.
-class AnatomyGraph extends ConsumerStatefulWidget {
+Color recoveryColor(RecoveryBand? band) => switch (band) {
+      RecoveryBand.ready => AppColors.green,
+      RecoveryBand.recovering => AppColors.yellow,
+      RecoveryBand.fatigued => AppColors.red,
+      null => AppColors.unranked,
+    };
+
+/// Front and back side by side (no flipping): flat muscle shapes filled by tier (Rank), recovery band
+/// (Recovery) or last-7-days volume (Volume), thin dark outlines between regions. The selected muscle
+/// gets an outline glow.
+class AnatomyGraph extends ConsumerWidget {
   const AnatomyGraph({
     super.key,
-    required this.back,
     required this.mode,
     required this.scores,
     required this.volume,
+    this.recovery,
     required this.onTap,
     this.selected,
   });
 
-  final bool back;
   final BodyGraphMode mode;
   final Map<Muscle, RankScore?> scores;
   final Map<Muscle, GroupVolume> volume;
+  final RecoveryState? recovery;
   final Muscle? selected;
   final ValueChanged<Muscle> onTap;
 
-  @override
-  ConsumerState<AnatomyGraph> createState() => _AnatomyGraphState();
-}
-
-class _AnatomyGraphState extends ConsumerState<AnatomyGraph> with SingleTickerProviderStateMixin {
-  late final AnimationController _flip = AnimationController(
-    vsync: this,
-    duration: const Duration(milliseconds: 520),
-    value: widget.back ? 1 : 0,
-  );
+  Color colorFor(Muscle m) => switch (mode) {
+        BodyGraphMode.ranks => scores[m] == null ? AppColors.unranked : tierColors[scores[m]!.tier.index],
+        BodyGraphMode.volume => volumeColor(volumeLevel(volume[m])),
+        BodyGraphMode.recovery => recoveryColor(recovery?.of(m).band),
+      };
 
   @override
-  void didUpdateWidget(covariant AnatomyGraph old) {
-    super.didUpdateWidget(old);
-    if (old.back != widget.back) {
-      widget.back ? _flip.forward() : _flip.reverse();
-    }
-  }
-
-  @override
-  void dispose() {
-    _flip.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final map = ref.watch(bodyMapProvider);
     return map.when(
-      loading: () => const AspectRatio(aspectRatio: 0.5, child: SizedBox()),
+      loading: () => const AspectRatio(aspectRatio: 1, child: SizedBox()),
       error: (e, _) => Text('Body map failed to load: $e'),
-      data: (m) => AnimatedBuilder(
-        animation: _flip,
-        builder: (context, _) {
-          final t = Curves.easeInOutCubic.transform(_flip.value);
-          final angle = t * math.pi;
-          final showBack = angle > math.pi / 2;
-          final view = showBack ? m.back : m.front;
-          return Transform(
-            alignment: Alignment.center,
-            transform: Matrix4.identity()
-              ..setEntry(3, 2, 0.0012)
-              ..rotateY(showBack ? angle - math.pi : angle),
-            child: _ViewCanvas(
-              view: view,
-              mode: widget.mode,
-              scores: widget.scores,
-              volume: widget.volume,
-              selected: widget.selected,
-              onTap: widget.onTap,
-            ),
-          );
-        },
-      ),
+      data: (m) {
+        final label = AppType.label.copyWith(fontSize: 11, color: AppColors.textTertiary, letterSpacing: 2);
+        Widget side(BodyView v, String key, String title) => Expanded(
+              child: Column(children: [
+                _ViewCanvas(key: ValueKey(key), view: v, color: colorFor, selected: selected, onTap: onTap),
+                const SizedBox(height: 6),
+                Text(title, style: label),
+              ]),
+            );
+        return Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          side(m.front, 'body-front', 'FRONT'),
+          const SizedBox(width: 12),
+          side(m.back, 'body-back', 'BACK'),
+        ]);
+      },
     );
   }
 }
 
 class _ViewCanvas extends StatelessWidget {
-  const _ViewCanvas({
-    required this.view,
-    required this.mode,
-    required this.scores,
-    required this.volume,
-    required this.selected,
-    required this.onTap,
-  });
+  const _ViewCanvas({super.key, required this.view, required this.color, required this.selected, required this.onTap});
 
   final BodyView view;
-  final BodyGraphMode mode;
-  final Map<Muscle, RankScore?> scores;
-  final Map<Muscle, GroupVolume> volume;
+  final Color Function(Muscle) color;
   final Muscle? selected;
   final ValueChanged<Muscle> onTap;
 
@@ -135,7 +117,7 @@ class _ViewCanvas extends StatelessWidget {
       aspectRatio: b.width / b.height,
       child: LayoutBuilder(
         builder: (context, c) {
-          final painter = _AnatomyPainter(view: view, mode: mode, scores: scores, volume: volume, selected: selected);
+          final painter = _AnatomyPainter(view: view, color: color, selected: selected);
           return GestureDetector(
             onTapUp: (d) {
               final g = painter.muscleAt(d.localPosition, c.biggest);
@@ -153,20 +135,20 @@ class _ViewCanvas extends StatelessWidget {
 }
 
 class _AnatomyPainter extends CustomPainter {
-  _AnatomyPainter({required this.view, required this.mode, required this.scores, required this.volume, required this.selected});
+  _AnatomyPainter({required this.view, required this.color, required this.selected});
 
   final BodyView view;
-  final BodyGraphMode mode;
-  final Map<Muscle, RankScore?> scores;
-  final Map<Muscle, GroupVolume> volume;
+  final Color Function(Muscle) color;
   final Muscle? selected;
 
-  static const _structure = Color(0xFF232A3A);
-  static const _neutral = Color(0xFF30384A);
+  static const _structure = Color(0xFF1C2230);
+  static const _neutral = Color(0xFF2A3142);
+
+  double _scale(Size size) => math.min(size.width / view.bounds.width, size.height / view.bounds.height);
 
   Matrix4 _transform(Size size) {
     final b = view.bounds;
-    final s = math.min(size.width / b.width, size.height / b.height);
+    final s = _scale(size);
     final dx = (size.width - b.width * s) / 2 - b.left * s;
     final dy = (size.height - b.height * s) / 2 - b.top * s;
     return Matrix4.identity()
@@ -180,9 +162,10 @@ class _AnatomyPainter extends CustomPainter {
     for (final r in view.parts.reversed) {
       if (r.muscle != null && r.path.contains(local)) return r.muscle;
     }
-    // Forgiving taps: nearest muscle region within a small radius.
+    // Forgiving taps: the nearest muscle within ~14 screen px.
+    final radius = 14 / _scale(size);
     Muscle? best;
-    var bestD = 28.0;
+    var bestD = radius;
     for (final r in view.parts) {
       if (r.muscle == null) continue;
       final d = (r.path.getBounds().center - local).distance;
@@ -194,86 +177,68 @@ class _AnatomyPainter extends CustomPainter {
     return best;
   }
 
-  Color _colorFor(Muscle g) {
-    if (mode == BodyGraphMode.volume) return volumeColor(volumeLevel(volume[g]));
-    final s = scores[g];
-    return s == null ? AppColors.unranked : tierColors[s.tier.index];
-  }
-
-  bool _glows(Muscle g) {
-    if (mode == BodyGraphMode.volume) return false;
-    final s = scores[g];
-    return s != null && s.tier.index >= Tier.platinum.index;
-  }
-
   @override
   void paint(Canvas canvas, Size size) {
+    final s = _scale(size);
     canvas.save();
     canvas.transform(_transform(size).storage);
-
-    // Glow layer first, so it sits behind every region.
+    // Flat fills with a thin dark outline (constant on screen whatever the size).
+    final outline = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.2 / s
+      ..strokeJoin = StrokeJoin.round
+      ..color = AppColors.background;
     for (final r in view.parts) {
       final g = r.muscle;
-      if (g == null || !_glows(g)) continue;
-      final color = _colorFor(g);
-      final tierBoost = (scores[g]!.tier.index - Tier.platinum.index) * 2.0;
-      canvas.drawPath(
-        r.path,
-        Paint()
-          ..color = color.withValues(alpha: 0.55)
-          ..maskFilter = MaskFilter.blur(BlurStyle.normal, 10 + tierBoost),
-      );
-    }
-
-    for (final r in view.parts) {
-      final bounds = r.path.getBounds();
-      switch (r.role) {
-        case RegionRole.structure:
-          canvas.drawPath(r.path, Paint()..color = _structure);
-        case RegionRole.neutral:
-          canvas.drawPath(r.path, Paint()..color = _neutral);
-        case RegionRole.muscle:
-          final g = r.muscle;
-          if (g == null) {
-            canvas.drawPath(r.path, Paint()..color = _neutral);
-            break;
-          }
-          final base = _colorFor(g);
-          final ranked = mode == BodyGraphMode.volume || scores[g] != null;
-          final hsl = HSLColor.fromColor(base);
-          final light = hsl.withLightness((hsl.lightness + 0.14).clamp(0.0, 1.0)).toColor();
-          final dark = hsl.withLightness((hsl.lightness - 0.16).clamp(0.0, 1.0)).toColor();
-          final alpha = ranked ? 1.0 : 0.55;
-          canvas.drawPath(
-            r.path,
-            Paint()
-              ..shader = RadialGradient(
-                center: const Alignment(-0.2, -0.3),
-                radius: 0.9,
-                colors: [light.withValues(alpha: alpha), base.withValues(alpha: alpha), dark.withValues(alpha: alpha)],
-                stops: const [0, 0.55, 1],
-              ).createShader(bounds),
-          );
-          if (g == selected) {
-            canvas.drawPath(r.path, Paint()..color = Colors.white.withValues(alpha: 0.25));
-          }
+      final fill = switch (r.role) {
+        RegionRole.structure => _structure,
+        RegionRole.neutral => _neutral,
+        RegionRole.muscle => g == null ? _neutral : color(g),
+      };
+      canvas.drawPath(r.path, Paint()..color = fill);
+      // A subtle top highlight keeps the flat shapes from looking like stickers.
+      if (g != null) {
+        final bounds = r.path.getBounds();
+        canvas.drawPath(
+          r.path,
+          Paint()
+            ..shader = LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [Colors.white.withValues(alpha: 0.10), Colors.white.withValues(alpha: 0)],
+              stops: const [0, 0.6],
+            ).createShader(bounds),
+        );
       }
-      canvas.drawPath(
-        r.path,
-        Paint()
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = r.muscle != null && r.muscle == selected ? 5 : 1.4
-          ..color = r.muscle != null && r.muscle == selected ? Colors.white : AppColors.background.withValues(alpha: 0.8),
-      );
+      canvas.drawPath(r.path, outline);
+    }
+    // Selected muscle: outline glow on top.
+    if (selected != null) {
+      for (final r in view.parts.where((p) => p.muscle == selected)) {
+        canvas.drawPath(
+          r.path,
+          Paint()
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = 6 / s
+            ..color = Colors.white.withValues(alpha: 0.55)
+            ..maskFilter = MaskFilter.blur(BlurStyle.normal, 4 / s),
+        );
+        canvas.drawPath(
+          r.path,
+          Paint()
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = 2.2 / s
+            ..strokeJoin = StrokeJoin.round
+            ..color = Colors.white,
+        );
+      }
     }
     canvas.restore();
   }
 
   @override
-  bool shouldRepaint(covariant _AnatomyPainter old) =>
-      old.view != view || old.mode != mode || old.scores != scores || old.volume != volume || old.selected != selected;
+  bool shouldRepaint(covariant _AnatomyPainter old) => true;
 }
-
 
 /// Small body silhouette (the view that shows [muscle]) with that muscle highlighted in [color],
 /// cropped around the torso or legs so the muscle is visible at thumbnail size.

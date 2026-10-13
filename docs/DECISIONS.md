@@ -1059,3 +1059,24 @@ Audit of v2.1 section 7 (failure-based effort logging) against the code:
   and recovery fatigue ignore the flag. Partials past failure don't make the full-rep performance
   any stronger, and counting them would inflate e1RM.
 - Holds (seconds) and warm-ups don't offer the flag.
+
+## Finish plan, Phase E: body map, simplified
+
+- **Front and back side by side** (`AnatomyGraph`, keys `body-front` / `body-back`); the 3D flip and the
+  front/back button are gone. Same anatomical paths (react-native-body-highlighter, MIT) and the same
+  20-muscle split.
+- **Flat styling**: one fill per muscle (tier color in Rank mode, unranked = neutral grey at full opacity),
+  a thin dark outline (1.2 screen px, constant at any size), and a faint top highlight. The radial
+  gradients and the Platinum+ glow are gone.
+- **Selection**: outline glow (blurred white stroke + 2.2 px white outline) while its sheet is open.
+- **Header**: overall badge + "BODY RANK · Silver II" (`body-rank-header`). The big Overall card stays
+  on the Ranks tab.
+- **Mode switch**: Rank / Recovery / Volume over the same map, with a legend for each mode (tiers + Unranked;
+  Ready / Recovering / Fatigued with their % ranges; volume buckets). The deep link `?mode=` takes
+  `ranks | recovery | volume`; `?back=1` is accepted and ignored now that both sides always show.
+- **Sheet** on tap: Rank → badge, division, LP bar, kg e1RM gap to the next division, contributing
+  exercises (as before). Recovery → % (big), band, time until Ready, last session that hit it.
+  Volume → as before.
+- Tap targets: hit-test on the path, then the nearest muscle within ~14 screen px.
+- The Recovery mode reads `recoveryProvider` (Phase F model); it's committed with this phase so the
+  switch is never empty.
