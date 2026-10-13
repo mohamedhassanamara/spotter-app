@@ -184,6 +184,9 @@ void main() {
       expect(r.exercises.map((e) => e.exerciseId), ['Bench']);
       expect(r.muscles[Muscle.triceps]!.contributions.single.rank.exerciseId, 'Bench');
       expect(r.unrankedHints[Muscle.lats], isEmpty);
+      // Still scored so its row can show with the switch off; it feeds nothing.
+      expect(r.hidden.map((x) => x.exerciseId), ['Dips']);
+      expect(run().hidden, isEmpty);
     });
 
     test('no bodyweight → nothing ranked', () {

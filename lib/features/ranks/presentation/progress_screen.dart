@@ -14,13 +14,13 @@ import '../../../core/widgets/common.dart';
 import '../../../router.dart';
 import '../../gamification/domain/streaks.dart';
 import '../../readiness/domain/readiness.dart';
-import '../data/rank_exclusions.dart';
 import '../domain/ranks.dart';
 import '../domain/body_regions.dart';
 import 'anatomy_graph.dart';
 import '../../recovery/domain/recovery.dart';
 import 'muscle_sheet.dart';
 import 'rank_badge.dart';
+import 'rank_toggle.dart';
 
 /// Progress tab. Deep-linkable: `/progress?tab=ranks`, `/progress?back=1&mode=volume&group=chest`.
 class ProgressScreen extends StatelessWidget {
@@ -370,20 +370,21 @@ class _RanksTab extends ConsumerWidget {
             ],
             if (hidden.isNotEmpty) ...[
               SectionLabel('Hidden from ranks (${hidden.length})'),
-              AppCard(
-                padding: const EdgeInsets.symmetric(vertical: 4),
-                child: Column(children: [
-                  for (final id in hidden)
-                    ListTile(
+              for (final r in summary.hidden) ...[
+                _LiftRankCard(rank: r, counted: false),
+                const SizedBox(height: 10),
+              ],
+              // Hidden exercises with nothing logged in the last 90 days.
+              for (final id in hidden)
+                if (!summary.hidden.any((r) => r.exerciseId == id))
+                  AppCard(
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    child: ListTile(
                       title: Text(catalog[id]?.name ?? id),
-                      subtitle: const Text('Records kept · not ranked'),
-                      trailing: TextButton(
-                        onPressed: () => RankExclusions(ref.read(databaseProvider)).set(id, excluded: false),
-                        child: const Text('Rank it'),
-                      ),
+                      subtitle: const Text('Records kept · not counted'),
+                      trailing: RankToggle(exerciseId: id),
                     ),
-                ]),
-              ),
+                  ),
             ],
           ],
         );
@@ -493,16 +494,20 @@ class _MuscleRow extends StatelessWidget {
 }
 
 class _LiftRankCard extends StatelessWidget {
-  const _LiftRankCard({required this.rank});
+  const _LiftRankCard({required this.rank, this.counted = true});
   final ExerciseRank rank;
+  final bool counted;
 
   @override
   Widget build(BuildContext context) {
     final next = rank.nextThresholdKg;
     final nextLabel = nextDivisionLabel(rank.score);
     final color = tierColor(rank.score.tier);
-    return GameCard(
-      padding: const EdgeInsets.fromLTRB(12, 14, 16, 14),
+    return Opacity(
+      key: ValueKey('lift-rank-${rank.exerciseId}'),
+      opacity: counted ? 1 : 0.55,
+      child: GameCard(
+      padding: const EdgeInsets.fromLTRB(12, 14, 8, 14),
       onTap: () => context.push(Routes.exercise(rank.exerciseId)),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -534,8 +539,10 @@ class _LiftRankCard extends StatelessWidget {
               ],
             ),
           ),
+          RankToggle(exerciseId: rank.exerciseId),
         ],
       ),
+    ),
     );
   }
 }

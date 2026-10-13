@@ -1137,3 +1137,18 @@ hypertrophy program trained close to failure. They are not validated against any
   technique tags from pending working sets; clears `programWeek` on the live session. History is
   untouched (`session_exercises.program_week` stays as a historical column, no longer written).
   Test: `test/data/canonical_week_migration_test.dart`.
+
+## Real-device fixes, Fix 1: "Counts toward rank" where you need it
+
+- One switch widget (`RankToggle`, key `rank-toggle-<exerciseId>`) on every exercise row of the muscle
+  sheet and of the Ranks tab, next to the existing exercise-page switch. All three read and write the
+  same setting (`rank_excluded_exercises`), so they can't drift apart, and `ranksProvider` watches it,
+  so muscle, region and overall ranks recompute on the next frame.
+- The muscle sheet is now live (it watches `ranksProvider`), so a toggle redraws it in place: the row
+  dims to "Not counted", the muscle's badge/LP/next-step update, and the sheet stays open.
+- Switched-off exercises are still scored (`RankSummary.hidden`) but never feed a muscle. That's how
+  their rows can stay visible with the switch off, so you can turn them back on from the same place.
+  The Ranks tab lists them under "Hidden from ranks (n)" as dimmed cards with the switch; the old
+  "Rank it" button is replaced by the switch.
+- Tests: `ranks_test` (hidden exercises are scored but feed nothing), `rank_toggle_flow_test` (sheet →
+  Ranks tab → exercise page round trip), `ranks_flow_test` updated.

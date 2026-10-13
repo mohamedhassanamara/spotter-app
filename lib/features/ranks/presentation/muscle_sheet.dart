@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+
+import '../../../app_providers.dart';
 
 import '../../../core/domain/muscles.dart';
 import '../../../core/theme/app_theme.dart';
@@ -11,6 +14,7 @@ import 'anatomy_graph.dart';
 import '../../recovery/domain/recovery.dart';
 import '../../recovery/domain/recovery_config.dart';
 import 'rank_badge.dart';
+import 'rank_toggle.dart';
 
 Future<void> showMuscleSheet(
   BuildContext context, {
@@ -28,18 +32,41 @@ Future<void> showMuscleSheet(
       expand: false,
       initialChildSize: 0.6,
       maxChildSize: 0.92,
-      builder: (context, scroll) => ListView(
-        controller: scroll,
-        padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
-        children: switch (mode) {
-          BodyGraphMode.volume => _volumeContent(context, group, volume),
-          BodyGraphMode.recovery => recoveryContent(context, group, recovery),
-          BodyGraphMode.ranks => _rankContent(context, group, summary),
-        },
+      // Live: toggling "Counts toward rank" on a row recomputes and redraws the sheet at once.
+      builder: (context, scroll) => Consumer(
+        builder: (context, ref, _) => ListView(
+          controller: scroll,
+          padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+          children: switch (mode) {
+            BodyGraphMode.volume => _volumeContent(context, group, volume),
+            BodyGraphMode.recovery => recoveryContent(context, group, recovery),
+            BodyGraphMode.ranks => _rankContent(context, group, ref.watch(ranksProvider).value ?? summary),
+          },
+        ),
       ),
     ),
   );
 }
+
+/// One exercise feeding (or switched off from) a muscle, with its "Counts toward rank" switch.
+Widget _exerciseRow(ExerciseRank r, double weight, {required bool counted}) => Opacity(
+      key: ValueKey('muscle-exercise-${r.exerciseId}'),
+      opacity: counted ? 1 : 0.55,
+      child: ListTile(
+        contentPadding: EdgeInsets.zero,
+        leading: RankBadge(score: r.score, size: BadgeSize.small, width: 36, animate: false),
+        title: Text(r.name, style: const TextStyle(fontWeight: FontWeight.w700)),
+        subtitle: Text(counted
+            ? '${r.score.labelWithLp} · ${r.strength} · ×${weight.toStringAsFixed(weight == weight.roundToDouble() ? 0 : 1)} · ${liftLine(r)}'
+            : 'Not counted · ${r.score.label} · ${liftLine(r)}'),
+        trailing: RankToggle(exerciseId: r.exerciseId),
+      ),
+    );
+
+List<Widget> _hiddenRows(RankSummary summary, Muscle muscle) => [
+      for (final r in summary.hidden)
+        if (r.targets.weightFor(muscle) > 0) _exerciseRow(r, r.targets.weightFor(muscle), counted: false),
+    ];
 
 List<Widget> _rankContent(BuildContext context, Muscle muscle, RankSummary summary) {
   final g = summary.muscles[muscle];
@@ -63,6 +90,11 @@ List<Widget> _rankContent(BuildContext context, Muscle muscle, RankSummary summa
       const SizedBox(height: 8),
       for (final h in hints)
         ListTile(contentPadding: EdgeInsets.zero, leading: const Icon(Icons.add_circle_outline_rounded), title: Text(h.name)),
+      if (_hiddenRows(summary, muscle).isNotEmpty) ...[
+        const SizedBox(height: 12),
+        const Text('NOT COUNTED', style: TextStyle(color: AppColors.textSecondary, fontWeight: FontWeight.w800, letterSpacing: 1.2, fontSize: 12)),
+        ..._hiddenRows(summary, muscle),
+      ],
     ];
   }
   final color = tierColors[g.score.tier.index];
@@ -117,15 +149,8 @@ List<Widget> _rankContent(BuildContext context, Muscle muscle, RankSummary summa
     ],
     const SizedBox(height: 16),
     const Text('CONTRIBUTING EXERCISES', style: TextStyle(color: AppColors.textSecondary, fontWeight: FontWeight.w800, letterSpacing: 1.2, fontSize: 12)),
-    for (final c in g.contributions)
-      ListTile(
-        contentPadding: EdgeInsets.zero,
-        leading: RankBadge(score: c.rank.score, size: BadgeSize.small, width: 36, animate: false),
-        title: Text(c.rank.name, style: const TextStyle(fontWeight: FontWeight.w700)),
-        subtitle: Text('${c.rank.score.labelWithLp} · ${c.rank.strength} · ${liftLine(c.rank)}'),
-        trailing: Text('×${c.weight.toStringAsFixed(c.weight == c.weight.roundToDouble() ? 0 : 1)}',
-            style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
-      ),
+    for (final c in g.contributions) _exerciseRow(c.rank, c.weight, counted: true),
+    ..._hiddenRows(summary, muscle),
     const SizedBox(height: 8),
     const Text(
       'A muscle\'s rank is the weighted average of its exercises\' best strength scores in the last 90 days '

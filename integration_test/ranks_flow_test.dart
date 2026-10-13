@@ -119,7 +119,9 @@ void main() {
     await tester.pageBack();
     await h.settle();
     await h.waitFor(find.text('HIDDEN FROM RANKS (1)'));
-    await h.tap(find.text('Rank it'));
+    // Switch it back on from its (dimmed) row in the hidden section.
+    final row = find.ancestor(of: find.text('Machine Chest Fly'), matching: find.byWidgetPredicate((w) => '${w.key}'.contains('lift-rank-'))).first;
+    await h.tap(find.descendant(of: row, matching: find.byType(Switch)));
     await h.settle();
     expect(find.textContaining('HIDDEN FROM RANKS'), findsNothing);
 

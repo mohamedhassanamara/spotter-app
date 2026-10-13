@@ -424,6 +424,7 @@ class RankSummary {
     required this.regions,
     required this.overall,
     required this.unrankedHints,
+    this.hidden = const [],
   });
 
   final List<ExerciseRank> exercises;
@@ -431,6 +432,10 @@ class RankSummary {
   final Map<BodyRegion, RegionRank> regions;
   final RankScore? overall;
   final Map<Muscle, List<RankHint>> unrankedHints;
+
+  /// Exercises switched off with "Counts toward rank": scored as usual so their rows can still show
+  /// (switch off), but they never feed a muscle, region or overall rank.
+  final List<ExerciseRank> hidden;
 
   static const empty = RankSummary(exercises: [], muscles: {}, regions: {}, overall: null, unrankedHints: {});
 
@@ -474,7 +479,6 @@ class RankCalculator {
   }) {
     final best = <String, ExerciseRank>{};
     for (final x in sets) {
-      if (excluded.contains(x.exerciseId)) continue;
       final s = _byExercise[x.exerciseId];
       final score = scoreSet(exerciseId: x.exerciseId, set: x, bodyweight: x.bodyweight);
       if (s == null || score == null) continue;
@@ -494,7 +498,8 @@ class RankCalculator {
         nextThresholdKg: s.nextThresholdKg(score, currentBodyweight > 0 ? currentBodyweight : x.bodyweight),
       );
     }
-    final ranks = best.values.toList();
+    final ranks = [for (final r in best.values) if (!excluded.contains(r.exerciseId)) r];
+    final hidden = [for (final r in best.values) if (excluded.contains(r.exerciseId)) r];
 
     final muscles = <Muscle, MuscleRank>{};
     final hints = <Muscle, List<RankHint>>{};
@@ -533,6 +538,7 @@ class RankCalculator {
       regions: regions,
       overall: rankedRegions.isEmpty ? null : averageScore(rankedRegions),
       unrankedHints: hints,
+      hidden: hidden,
     );
   }
 }
