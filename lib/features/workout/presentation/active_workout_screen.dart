@@ -18,6 +18,7 @@ import '../../library/domain/load_kinds.dart';
 import '../../library/domain/name_resolver.dart';
 import '../../program/data/program_repository.dart';
 import '../../tutorials/presentation/form_check_sheet.dart';
+import '../data/routine_sync.dart';
 import '../data/session_repository.dart';
 import 'exercise_block.dart';
 import 'keypad.dart';
@@ -445,6 +446,10 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
           ),
         );
         if (picked != null) await repo.superset(ex, picked);
+      case 'targets':
+        await _targetReps(ex, catalog);
+      case 'reorder':
+        await _reorderSheet(session, catalog);
       case 'notes':
         final notes = await promptText(context, title: 'Exercise notes', initial: ex.row.notes, maxLines: 3);
         if (notes != null) await repo.setExerciseNotes(ex.row.id, notes);
@@ -463,6 +468,129 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
         final ok = await confirm(context, title: 'Remove exercise?', message: 'Its sets in this workout will be deleted.', action: 'Remove', destructive: true);
         if (ok) await repo.removeExercise(ex.row.id);
     }
+  }
+
+  /// Target reps for this exercise's working sets, this workout only (offered to the routine at Finish).
+  Future<void> _targetReps(ActiveExercise ex, Map<String, ExerciseInfo> catalog) async {
+    var min = ex.row.repMin, max = ex.row.repMax;
+    final ok = await showModalBottomSheet<bool>(
+      context: context,
+      useSafeArea: true,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setState) => SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+            child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+              Text('Target reps · ${ex.row.displayName ?? catalog[ex.row.exerciseId]?.name ?? ''}', style: AppType.title),
+              const SizedBox(height: 16),
+              Row(children: [
+                Expanded(
+                  child: StepperField(
+                    key: const ValueKey('target-min'),
+                    label: 'Min reps',
+                    value: '$min',
+                    onMinus: () => setState(() => min = (min - 1).clamp(1, max)),
+                    onPlus: () => setState(() => min = (min + 1).clamp(1, max)),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: StepperField(
+                    key: const ValueKey('target-max'),
+                    label: 'Max reps',
+                    value: '$max',
+                    onMinus: () => setState(() => max = (max - 1).clamp(min, 50)),
+                    onPlus: () => setState(() => max = (max + 1).clamp(min, 50)),
+                  ),
+                ),
+              ]),
+              const SizedBox(height: 20),
+              FilledButton(key: const ValueKey('target-save'), onPressed: () => Navigator.of(ctx).pop(true), child: const Text('Save')),
+            ]),
+          ),
+        ),
+      ),
+    );
+    if (ok == true) await ref.read(sessionRepositoryProvider).setTargetReps(ex, RepRange(min, max));
+  }
+
+  /// Drag to reorder every exercise of the workout at once.
+  Future<void> _reorderSheet(ActiveSession session, Map<String, ExerciseInfo> catalog) async {
+    final order = [...session.exercises];
+    final done = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setState) => SafeArea(
+          child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+            const Padding(padding: EdgeInsets.fromLTRB(20, 0, 20, 8), child: Text('Reorder exercises', style: AppType.title)),
+            Flexible(
+              child: ReorderableListView(
+                shrinkWrap: true,
+                onReorderItem: (from, to) => setState(() => order.insert(to, order.removeAt(from))),
+                children: [
+                  for (final (i, e) in order.indexed)
+                    ListTile(
+                      key: ValueKey('reorder-${e.row.id}'),
+                      title: Text(e.row.displayName ?? catalog[e.row.exerciseId]?.name ?? e.row.exerciseId),
+                      trailing: ReorderableDragStartListener(index: i, child: const Icon(Icons.drag_handle_rounded)),
+                    ),
+                ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
+              child: FilledButton(key: const ValueKey('reorder-done'), onPressed: () => Navigator.of(ctx).pop(true), child: const Text('Done')),
+            ),
+          ]),
+        ),
+      ),
+    );
+    if (done == true) await ref.read(sessionRepositoryProvider).reorderExercises([for (final e in order) e.row.id]);
+  }
+
+  /// If the workout started from a routine and was changed, offers to carry the changes over.
+  Future<bool> _offerRoutineUpdate(ActiveSession session, Map<String, ExerciseInfo> catalog) async {
+    final routineId = session.session.routineId;
+    if (routineId == null) return true;
+    final db = ref.read(databaseProvider);
+    final rows = await routineRows(db, routineId);
+    if (rows.isEmpty && session.exercises.isEmpty) return true;
+    // The routine was deleted since the workout started.
+    if (!await routineExists(db, routineId)) return true;
+    // Started before schema v8 (no links): nothing reliable to compare.
+    if (rows.isNotEmpty && session.exercises.every((e) => e.row.routineExerciseId == null)) return true;
+    final diff = diffSessionAgainstRoutine(session: session.exercises, routine: rows, catalog: catalog);
+    if (diff.isEmpty || !mounted) return true;
+    final choice = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Update routine?'),
+        content: SingleChildScrollView(
+          child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+            const Text('This workout differs from the routine:'),
+            const SizedBox(height: 8),
+            for (final l in diff.lines) Text('• $l', style: AppType.bodyS),
+          ]),
+        ),
+        actions: [
+          TextButton(key: const ValueKey('keep-routine'), onPressed: () => Navigator.of(ctx).pop(false), child: const Text('Keep routine as is')),
+          FilledButton(key: const ValueKey('update-routine'), onPressed: () => Navigator.of(ctx).pop(true), child: const Text('Update routine')),
+        ],
+      ),
+    );
+    if (choice == null) return false; // dismissed: stay in the workout
+    if (choice) {
+      await updateRoutineFromSession(
+        db: db,
+        routineId: routineId,
+        session: session.exercises,
+        catalog: catalog,
+        program: await ref.read(programProvider.future),
+      );
+    }
+    return true;
   }
 
   /// Program substitutions first (resolved to library exercises), then a library search.
@@ -593,6 +721,7 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
           title: 'Finish workout?', message: '$pending set${pending == 1 ? '' : 's'} not completed will be dropped.', action: 'Finish');
       if (!ok) return;
     }
+    if (!await _offerRoutineUpdate(current, catalog) || !mounted) return;
     setState(() => _finishing = true);
     try {
       await ref.read(restTimerProvider).stop();

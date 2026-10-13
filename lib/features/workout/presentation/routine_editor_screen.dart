@@ -130,6 +130,7 @@ class RoutineEditorScreen extends ConsumerWidget {
   }
 
   Future<void> _editTargets(BuildContext context, WidgetRef ref, RoutineExercise e) async {
+    if (decodeSlots(e.programSlots).isNotEmpty) return _editProgramRow(context, ref, e);
     var min = e.repMin, max = e.repMax, sets = e.targetSets, rest = e.restSeconds, rir = e.targetRir;
     final saved = await showModalBottomSheet<bool>(
       context: context,
@@ -209,6 +210,98 @@ class RoutineEditorScreen extends ConsumerWidget {
   }
 }
 
+enum _ProgramEdit { save, reset }
+
+/// Program rows: rep range, set count and rest override the program; "Reset to program" clears them.
+Future<void> _editProgramRow(BuildContext context, WidgetRef ref, RoutineExercise e) async {
+  final program = await ref.read(programProvider.future);
+  if (!context.mounted) return;
+  final slot = program.slot(decodeSlots(e.programSlots).first);
+  final base = slot?.repRange ?? RepRange(e.repMin, e.repMax);
+  var min = e.overrideRepMin ?? base.min, max = e.overrideRepMax ?? base.max, sets = e.targetSets, rest = e.restSeconds;
+  final action = await showModalBottomSheet<_ProgramEdit>(
+    context: context,
+    isScrollControlled: true,
+    useSafeArea: true,
+    builder: (ctx) => StatefulBuilder(
+      builder: (ctx, setState) => SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(e.displayName ?? ref.read(catalogProvider).value?[e.exerciseId]?.name ?? e.exerciseId, style: Theme.of(ctx).textTheme.titleLarge),
+            const SizedBox(height: 4),
+            Text('Program: ${slot?.workingSets ?? '–'} × $base reps · rest ${slot?.rest?.text ?? 'none'}',
+                style: const TextStyle(color: AppColors.textSecondary)),
+            const SizedBox(height: 16),
+            Row(children: [
+              Expanded(
+                child: StepperField(
+                  key: const ValueKey('override-min'),
+                  label: 'Min reps',
+                  value: '$min',
+                  onMinus: () => setState(() => min = (min - 1).clamp(1, max)),
+                  onPlus: () => setState(() => min = (min + 1).clamp(1, max)),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: StepperField(
+                  key: const ValueKey('override-max'),
+                  label: 'Max reps',
+                  value: '$max',
+                  onMinus: () => setState(() => max = (max - 1).clamp(min, 50)),
+                  onPlus: () => setState(() => max = (max + 1).clamp(min, 50)),
+                ),
+              ),
+            ]),
+            const SizedBox(height: 16),
+            Row(children: [
+              Expanded(
+                child: StepperField(
+                  key: const ValueKey('override-sets'),
+                  label: 'Working sets',
+                  value: '$sets',
+                  onMinus: () => setState(() => sets = (sets - 1).clamp(1, 10)),
+                  onPlus: () => setState(() => sets = (sets + 1).clamp(1, 10)),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: StepperField(
+                  label: 'Rest',
+                  value: formatClock(Duration(seconds: rest)),
+                  onMinus: () => setState(() => rest = (rest - 15).clamp(0, 900)),
+                  onPlus: () => setState(() => rest = (rest + 15).clamp(0, 900)),
+                ),
+              ),
+            ]),
+            const SizedBox(height: 20),
+            FilledButton(key: const ValueKey('override-save'), onPressed: () => Navigator.of(ctx).pop(_ProgramEdit.save), child: const Text('Save')),
+            const SizedBox(height: 8),
+            OutlinedButton.icon(
+              key: const ValueKey('reset-to-program'),
+              onPressed: () => Navigator.of(ctx).pop(_ProgramEdit.reset),
+              icon: const Icon(Icons.restart_alt_rounded),
+              label: const Text('Reset to program'),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+  final repo = ref.read(routineRepositoryProvider);
+  switch (action) {
+    case _ProgramEdit.save:
+      final range = RepRange(min, max);
+      final keepOverride = e.overrideRepMin != null || range != base;
+      await repo.setProgramOverrides(e.id, range: keepOverride ? range : null, targetSets: sets, restSeconds: rest);
+    case _ProgramEdit.reset:
+      await repo.resetToProgram(e, program);
+    case null:
+  }
+}
+
 /// Prescription from the program for a routine row: per-slot sets × reps, warm-ups, rest, and where
 /// the exercise sits in the program (its own exercise, a listed substitution, your swap).
 class _ProgramRowInfo extends ConsumerWidget {
@@ -220,7 +313,11 @@ class _ProgramRowInfo extends ConsumerWidget {
     final program = ref.watch(programProvider).value;
     final week = ref.watch(programWeekProvider).value ?? standardProgramWeek;
     if (program == null) return const SizedBox.shrink();
-    final pres = prescribeSets(program: program, slotIds: decodeSlots(row.programSlots), sets: row.targetSets, week: week);
+    final override = row.overrideRepMin != null && row.overrideRepMax != null ? RepRange(row.overrideRepMin!, row.overrideRepMax!) : null;
+    final pres = [
+      for (final p in prescribeSets(program: program, slotIds: decodeSlots(row.programSlots), sets: row.targetSets, week: week))
+        override == null ? p : p.withRange(override),
+    ];
     final parts = <String>[];
     for (final p in pres) {
       final label = '${p.repRange.min == p.repRange.max ? p.repRange.min : p.repRange}';
@@ -249,7 +346,8 @@ class _ProgramRowInfo extends ConsumerWidget {
         '${techniques.isEmpty ? '' : ' · ${techniques.map((t) => program.techniques[t]?.name ?? t).join(', ')}'}',
         style: AppType.bodyS.copyWith(fontSize: 12, color: AppColors.accent),
       ),
-      Text(relation, style: AppType.bodyS.copyWith(fontSize: 12, color: AppColors.textTertiary)),
+      Text(override == null ? relation : '$relation · your rep range $override',
+          style: AppType.bodyS.copyWith(fontSize: 12, color: AppColors.textTertiary)),
     ]);
   }
 }

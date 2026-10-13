@@ -980,3 +980,31 @@ patched. Screenshots are in `docs/screenshots/vF/`: at rest, mid-edit with the k
     - my swaps (Pendulum Squat, Straight Arm Pulldown, Decline Crunch) get none, because the PDF
       doesn't list them;
     - any other library exercise matching a program name at ≥ 0.85 gets that name's video.
+
+## Finish plan, Phase B: section 5, editing routines mid-workout
+
+- **Session ↔ routine link (schema v8).** `session_exercises.routine_exercise_id` records which routine row each
+  exercise came from; `targets_edited` marks a mid-workout target-reps change. A replacement keeps the link,
+  so "Replace" is recognised as a replacement of that row and not as a remove plus an add.
+- **What counts as a difference** at Finish: added exercises, removed routine rows, replaced exercises,
+  a different order, a different number of working sets (warm-ups and drop sets don't count; the number is
+  the planned working sets in the session, completed or not, so adding or deleting a set changes it) and edited target reps.
+  Changing kg/reps/effort is logging, not a routine change, so it never triggers the prompt.
+- **Update routine** rewrites the routine rows to match the session: order, set counts, exercise ids, new rows
+  for added exercises (marked `extra` when they carry program slots), deletes removed rows. An edited target
+  range on a program row becomes that row's rep-range override. A replacement on a program row becomes a
+  `substitution` when the program lists it for that slot, otherwise a `swap`.
+  **Keep routine as is** changes nothing. Dismissing the dialog (tapping outside) cancels Finish and returns to the workout.
+- **Program rows in the routine editor** edit the rep range (stored as an override, applied to every
+  prescribed working set; drop sets keep the program's reps), working sets and rest. **Reset to program** restores the slots'
+  working-set total and the first slot's rest and range, and clears the override. Free (non-program) rows keep the
+  old editor (range, sets, RIR, rest).
+- **Mid-workout menu**: Replace (program substitutions first, then library search), Target reps, Superset,
+  Notes, How to, Move up/down, Reorder exercises (drag sheet), Remove. Sets are added with ADD SET and
+  deleted from the set-label sheet (unchanged from the logging rebuild).
+- A session with no linked exercises against a non-empty routine (a workout left running across the v8 upgrade)
+  is not compared: without links everything would look removed and re-added. Neither is a session whose routine
+  has since been deleted.
+- **Empty workouts** start from Train → "Start empty workout"; finishing one never shows the routine prompt.
+- Tests: `test/data/routine_sync_test.dart` (diff + apply), `integration_test/routine_edit_flow_test.dart`
+  (two flows). `train_flow_test` now accepts the prompt with "Keep routine as is" when its edits trigger it.

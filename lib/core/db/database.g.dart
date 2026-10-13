@@ -1471,6 +1471,39 @@ class $RoutineExercisesTable extends RoutineExercises
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _overrideRepMinMeta = const VerificationMeta(
+    'overrideRepMin',
+  );
+  @override
+  late final GeneratedColumn<int> overrideRepMin = GeneratedColumn<int>(
+    'override_rep_min',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _overrideRepMaxMeta = const VerificationMeta(
+    'overrideRepMax',
+  );
+  @override
+  late final GeneratedColumn<int> overrideRepMax = GeneratedColumn<int>(
+    'override_rep_max',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _supersetGroupMeta = const VerificationMeta(
+    'supersetGroup',
+  );
+  @override
+  late final GeneratedColumn<int> supersetGroup = GeneratedColumn<int>(
+    'superset_group',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -1486,6 +1519,9 @@ class $RoutineExercisesTable extends RoutineExercises
     programRelation,
     programExercise,
     displayName,
+    overrideRepMin,
+    overrideRepMax,
+    supersetGroup,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -1603,6 +1639,33 @@ class $RoutineExercisesTable extends RoutineExercises
         ),
       );
     }
+    if (data.containsKey('override_rep_min')) {
+      context.handle(
+        _overrideRepMinMeta,
+        overrideRepMin.isAcceptableOrUnknown(
+          data['override_rep_min']!,
+          _overrideRepMinMeta,
+        ),
+      );
+    }
+    if (data.containsKey('override_rep_max')) {
+      context.handle(
+        _overrideRepMaxMeta,
+        overrideRepMax.isAcceptableOrUnknown(
+          data['override_rep_max']!,
+          _overrideRepMaxMeta,
+        ),
+      );
+    }
+    if (data.containsKey('superset_group')) {
+      context.handle(
+        _supersetGroupMeta,
+        supersetGroup.isAcceptableOrUnknown(
+          data['superset_group']!,
+          _supersetGroupMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -1664,6 +1727,18 @@ class $RoutineExercisesTable extends RoutineExercises
         DriftSqlType.string,
         data['${effectivePrefix}display_name'],
       ),
+      overrideRepMin: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}override_rep_min'],
+      ),
+      overrideRepMax: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}override_rep_max'],
+      ),
+      supersetGroup: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}superset_group'],
+      ),
     );
   }
 
@@ -1695,6 +1770,14 @@ class RoutineExercise extends DataClass implements Insertable<RoutineExercise> {
 
   /// v3: the owner's name for the exercise (e.g. "Chest Press" for Leverage_Chest_Press).
   final String? displayName;
+
+  /// v8: rep range set in the routine editor (or "Update routine"), overriding the program's per-set
+  /// ranges for this routine. Null = follow the program.
+  final int? overrideRepMin;
+  final int? overrideRepMax;
+
+  /// v8: superset group within the routine (A1/A2…).
+  final int? supersetGroup;
   const RoutineExercise({
     required this.id,
     required this.routineId,
@@ -1709,6 +1792,9 @@ class RoutineExercise extends DataClass implements Insertable<RoutineExercise> {
     this.programRelation,
     this.programExercise,
     this.displayName,
+    this.overrideRepMin,
+    this.overrideRepMax,
+    this.supersetGroup,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -1733,6 +1819,15 @@ class RoutineExercise extends DataClass implements Insertable<RoutineExercise> {
     }
     if (!nullToAbsent || displayName != null) {
       map['display_name'] = Variable<String>(displayName);
+    }
+    if (!nullToAbsent || overrideRepMin != null) {
+      map['override_rep_min'] = Variable<int>(overrideRepMin);
+    }
+    if (!nullToAbsent || overrideRepMax != null) {
+      map['override_rep_max'] = Variable<int>(overrideRepMax);
+    }
+    if (!nullToAbsent || supersetGroup != null) {
+      map['superset_group'] = Variable<int>(supersetGroup);
     }
     return map;
   }
@@ -1760,6 +1855,15 @@ class RoutineExercise extends DataClass implements Insertable<RoutineExercise> {
       displayName: displayName == null && nullToAbsent
           ? const Value.absent()
           : Value(displayName),
+      overrideRepMin: overrideRepMin == null && nullToAbsent
+          ? const Value.absent()
+          : Value(overrideRepMin),
+      overrideRepMax: overrideRepMax == null && nullToAbsent
+          ? const Value.absent()
+          : Value(overrideRepMax),
+      supersetGroup: supersetGroup == null && nullToAbsent
+          ? const Value.absent()
+          : Value(supersetGroup),
     );
   }
 
@@ -1782,6 +1886,9 @@ class RoutineExercise extends DataClass implements Insertable<RoutineExercise> {
       programRelation: serializer.fromJson<String?>(json['programRelation']),
       programExercise: serializer.fromJson<String?>(json['programExercise']),
       displayName: serializer.fromJson<String?>(json['displayName']),
+      overrideRepMin: serializer.fromJson<int?>(json['overrideRepMin']),
+      overrideRepMax: serializer.fromJson<int?>(json['overrideRepMax']),
+      supersetGroup: serializer.fromJson<int?>(json['supersetGroup']),
     );
   }
   @override
@@ -1801,6 +1908,9 @@ class RoutineExercise extends DataClass implements Insertable<RoutineExercise> {
       'programRelation': serializer.toJson<String?>(programRelation),
       'programExercise': serializer.toJson<String?>(programExercise),
       'displayName': serializer.toJson<String?>(displayName),
+      'overrideRepMin': serializer.toJson<int?>(overrideRepMin),
+      'overrideRepMax': serializer.toJson<int?>(overrideRepMax),
+      'supersetGroup': serializer.toJson<int?>(supersetGroup),
     };
   }
 
@@ -1818,6 +1928,9 @@ class RoutineExercise extends DataClass implements Insertable<RoutineExercise> {
     Value<String?> programRelation = const Value.absent(),
     Value<String?> programExercise = const Value.absent(),
     Value<String?> displayName = const Value.absent(),
+    Value<int?> overrideRepMin = const Value.absent(),
+    Value<int?> overrideRepMax = const Value.absent(),
+    Value<int?> supersetGroup = const Value.absent(),
   }) => RoutineExercise(
     id: id ?? this.id,
     routineId: routineId ?? this.routineId,
@@ -1836,6 +1949,15 @@ class RoutineExercise extends DataClass implements Insertable<RoutineExercise> {
         ? programExercise.value
         : this.programExercise,
     displayName: displayName.present ? displayName.value : this.displayName,
+    overrideRepMin: overrideRepMin.present
+        ? overrideRepMin.value
+        : this.overrideRepMin,
+    overrideRepMax: overrideRepMax.present
+        ? overrideRepMax.value
+        : this.overrideRepMax,
+    supersetGroup: supersetGroup.present
+        ? supersetGroup.value
+        : this.supersetGroup,
   );
   RoutineExercise copyWithCompanion(RoutineExercisesCompanion data) {
     return RoutineExercise(
@@ -1866,6 +1988,15 @@ class RoutineExercise extends DataClass implements Insertable<RoutineExercise> {
       displayName: data.displayName.present
           ? data.displayName.value
           : this.displayName,
+      overrideRepMin: data.overrideRepMin.present
+          ? data.overrideRepMin.value
+          : this.overrideRepMin,
+      overrideRepMax: data.overrideRepMax.present
+          ? data.overrideRepMax.value
+          : this.overrideRepMax,
+      supersetGroup: data.supersetGroup.present
+          ? data.supersetGroup.value
+          : this.supersetGroup,
     );
   }
 
@@ -1884,7 +2015,10 @@ class RoutineExercise extends DataClass implements Insertable<RoutineExercise> {
           ..write('programSlots: $programSlots, ')
           ..write('programRelation: $programRelation, ')
           ..write('programExercise: $programExercise, ')
-          ..write('displayName: $displayName')
+          ..write('displayName: $displayName, ')
+          ..write('overrideRepMin: $overrideRepMin, ')
+          ..write('overrideRepMax: $overrideRepMax, ')
+          ..write('supersetGroup: $supersetGroup')
           ..write(')'))
         .toString();
   }
@@ -1904,6 +2038,9 @@ class RoutineExercise extends DataClass implements Insertable<RoutineExercise> {
     programRelation,
     programExercise,
     displayName,
+    overrideRepMin,
+    overrideRepMax,
+    supersetGroup,
   );
   @override
   bool operator ==(Object other) =>
@@ -1921,7 +2058,10 @@ class RoutineExercise extends DataClass implements Insertable<RoutineExercise> {
           other.programSlots == this.programSlots &&
           other.programRelation == this.programRelation &&
           other.programExercise == this.programExercise &&
-          other.displayName == this.displayName);
+          other.displayName == this.displayName &&
+          other.overrideRepMin == this.overrideRepMin &&
+          other.overrideRepMax == this.overrideRepMax &&
+          other.supersetGroup == this.supersetGroup);
 }
 
 class RoutineExercisesCompanion extends UpdateCompanion<RoutineExercise> {
@@ -1938,6 +2078,9 @@ class RoutineExercisesCompanion extends UpdateCompanion<RoutineExercise> {
   final Value<String?> programRelation;
   final Value<String?> programExercise;
   final Value<String?> displayName;
+  final Value<int?> overrideRepMin;
+  final Value<int?> overrideRepMax;
+  final Value<int?> supersetGroup;
   const RoutineExercisesCompanion({
     this.id = const Value.absent(),
     this.routineId = const Value.absent(),
@@ -1952,6 +2095,9 @@ class RoutineExercisesCompanion extends UpdateCompanion<RoutineExercise> {
     this.programRelation = const Value.absent(),
     this.programExercise = const Value.absent(),
     this.displayName = const Value.absent(),
+    this.overrideRepMin = const Value.absent(),
+    this.overrideRepMax = const Value.absent(),
+    this.supersetGroup = const Value.absent(),
   });
   RoutineExercisesCompanion.insert({
     this.id = const Value.absent(),
@@ -1967,6 +2113,9 @@ class RoutineExercisesCompanion extends UpdateCompanion<RoutineExercise> {
     this.programRelation = const Value.absent(),
     this.programExercise = const Value.absent(),
     this.displayName = const Value.absent(),
+    this.overrideRepMin = const Value.absent(),
+    this.overrideRepMax = const Value.absent(),
+    this.supersetGroup = const Value.absent(),
   }) : routineId = Value(routineId),
        exerciseId = Value(exerciseId),
        position = Value(position),
@@ -1988,6 +2137,9 @@ class RoutineExercisesCompanion extends UpdateCompanion<RoutineExercise> {
     Expression<String>? programRelation,
     Expression<String>? programExercise,
     Expression<String>? displayName,
+    Expression<int>? overrideRepMin,
+    Expression<int>? overrideRepMax,
+    Expression<int>? supersetGroup,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -2003,6 +2155,9 @@ class RoutineExercisesCompanion extends UpdateCompanion<RoutineExercise> {
       if (programRelation != null) 'program_relation': programRelation,
       if (programExercise != null) 'program_exercise': programExercise,
       if (displayName != null) 'display_name': displayName,
+      if (overrideRepMin != null) 'override_rep_min': overrideRepMin,
+      if (overrideRepMax != null) 'override_rep_max': overrideRepMax,
+      if (supersetGroup != null) 'superset_group': supersetGroup,
     });
   }
 
@@ -2020,6 +2175,9 @@ class RoutineExercisesCompanion extends UpdateCompanion<RoutineExercise> {
     Value<String?>? programRelation,
     Value<String?>? programExercise,
     Value<String?>? displayName,
+    Value<int?>? overrideRepMin,
+    Value<int?>? overrideRepMax,
+    Value<int?>? supersetGroup,
   }) {
     return RoutineExercisesCompanion(
       id: id ?? this.id,
@@ -2035,6 +2193,9 @@ class RoutineExercisesCompanion extends UpdateCompanion<RoutineExercise> {
       programRelation: programRelation ?? this.programRelation,
       programExercise: programExercise ?? this.programExercise,
       displayName: displayName ?? this.displayName,
+      overrideRepMin: overrideRepMin ?? this.overrideRepMin,
+      overrideRepMax: overrideRepMax ?? this.overrideRepMax,
+      supersetGroup: supersetGroup ?? this.supersetGroup,
     );
   }
 
@@ -2080,6 +2241,15 @@ class RoutineExercisesCompanion extends UpdateCompanion<RoutineExercise> {
     if (displayName.present) {
       map['display_name'] = Variable<String>(displayName.value);
     }
+    if (overrideRepMin.present) {
+      map['override_rep_min'] = Variable<int>(overrideRepMin.value);
+    }
+    if (overrideRepMax.present) {
+      map['override_rep_max'] = Variable<int>(overrideRepMax.value);
+    }
+    if (supersetGroup.present) {
+      map['superset_group'] = Variable<int>(supersetGroup.value);
+    }
     return map;
   }
 
@@ -2098,7 +2268,10 @@ class RoutineExercisesCompanion extends UpdateCompanion<RoutineExercise> {
           ..write('programSlots: $programSlots, ')
           ..write('programRelation: $programRelation, ')
           ..write('programExercise: $programExercise, ')
-          ..write('displayName: $displayName')
+          ..write('displayName: $displayName, ')
+          ..write('overrideRepMin: $overrideRepMin, ')
+          ..write('overrideRepMax: $overrideRepMax, ')
+          ..write('supersetGroup: $supersetGroup')
           ..write(')'))
         .toString();
   }
@@ -3096,6 +3269,32 @@ class $SessionExercisesTable extends SessionExercises
     type: DriftSqlType.int,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _routineExerciseIdMeta = const VerificationMeta(
+    'routineExerciseId',
+  );
+  @override
+  late final GeneratedColumn<int> routineExerciseId = GeneratedColumn<int>(
+    'routine_exercise_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _targetsEditedMeta = const VerificationMeta(
+    'targetsEdited',
+  );
+  @override
+  late final GeneratedColumn<bool> targetsEdited = GeneratedColumn<bool>(
+    'targets_edited',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("targets_edited" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -3118,6 +3317,8 @@ class $SessionExercisesTable extends SessionExercises
     displayName,
     restEnabled,
     supersetGroup,
+    routineExerciseId,
+    targetsEdited,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -3295,6 +3496,24 @@ class $SessionExercisesTable extends SessionExercises
         ),
       );
     }
+    if (data.containsKey('routine_exercise_id')) {
+      context.handle(
+        _routineExerciseIdMeta,
+        routineExerciseId.isAcceptableOrUnknown(
+          data['routine_exercise_id']!,
+          _routineExerciseIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('targets_edited')) {
+      context.handle(
+        _targetsEditedMeta,
+        targetsEdited.isAcceptableOrUnknown(
+          data['targets_edited']!,
+          _targetsEditedMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -3384,6 +3603,14 @@ class $SessionExercisesTable extends SessionExercises
         DriftSqlType.int,
         data['${effectivePrefix}superset_group'],
       ),
+      routineExerciseId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}routine_exercise_id'],
+      ),
+      targetsEdited: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}targets_edited'],
+      )!,
     );
   }
 
@@ -3422,6 +3649,12 @@ class SessionExercise extends DataClass implements Insertable<SessionExercise> {
 
   /// v5: exercises sharing a group number form a superset (A1/A2…).
   final int? supersetGroup;
+
+  /// v8: the routine row this came from (null when added mid-workout), for "Update routine".
+  final int? routineExerciseId;
+
+  /// v8: target reps were changed mid-workout ([repMin]–[repMax] then holds the new range).
+  final bool targetsEdited;
   const SessionExercise({
     required this.id,
     required this.sessionId,
@@ -3443,6 +3676,8 @@ class SessionExercise extends DataClass implements Insertable<SessionExercise> {
     this.displayName,
     required this.restEnabled,
     this.supersetGroup,
+    this.routineExerciseId,
+    required this.targetsEdited,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -3483,6 +3718,10 @@ class SessionExercise extends DataClass implements Insertable<SessionExercise> {
     if (!nullToAbsent || supersetGroup != null) {
       map['superset_group'] = Variable<int>(supersetGroup);
     }
+    if (!nullToAbsent || routineExerciseId != null) {
+      map['routine_exercise_id'] = Variable<int>(routineExerciseId);
+    }
+    map['targets_edited'] = Variable<bool>(targetsEdited);
     return map;
   }
 
@@ -3524,6 +3763,10 @@ class SessionExercise extends DataClass implements Insertable<SessionExercise> {
       supersetGroup: supersetGroup == null && nullToAbsent
           ? const Value.absent()
           : Value(supersetGroup),
+      routineExerciseId: routineExerciseId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(routineExerciseId),
+      targetsEdited: Value(targetsEdited),
     );
   }
 
@@ -3553,6 +3796,8 @@ class SessionExercise extends DataClass implements Insertable<SessionExercise> {
       displayName: serializer.fromJson<String?>(json['displayName']),
       restEnabled: serializer.fromJson<bool>(json['restEnabled']),
       supersetGroup: serializer.fromJson<int?>(json['supersetGroup']),
+      routineExerciseId: serializer.fromJson<int?>(json['routineExerciseId']),
+      targetsEdited: serializer.fromJson<bool>(json['targetsEdited']),
     );
   }
   @override
@@ -3579,6 +3824,8 @@ class SessionExercise extends DataClass implements Insertable<SessionExercise> {
       'displayName': serializer.toJson<String?>(displayName),
       'restEnabled': serializer.toJson<bool>(restEnabled),
       'supersetGroup': serializer.toJson<int?>(supersetGroup),
+      'routineExerciseId': serializer.toJson<int?>(routineExerciseId),
+      'targetsEdited': serializer.toJson<bool>(targetsEdited),
     };
   }
 
@@ -3603,6 +3850,8 @@ class SessionExercise extends DataClass implements Insertable<SessionExercise> {
     Value<String?> displayName = const Value.absent(),
     bool? restEnabled,
     Value<int?> supersetGroup = const Value.absent(),
+    Value<int?> routineExerciseId = const Value.absent(),
+    bool? targetsEdited,
   }) => SessionExercise(
     id: id ?? this.id,
     sessionId: sessionId ?? this.sessionId,
@@ -3634,6 +3883,10 @@ class SessionExercise extends DataClass implements Insertable<SessionExercise> {
     supersetGroup: supersetGroup.present
         ? supersetGroup.value
         : this.supersetGroup,
+    routineExerciseId: routineExerciseId.present
+        ? routineExerciseId.value
+        : this.routineExerciseId,
+    targetsEdited: targetsEdited ?? this.targetsEdited,
   );
   SessionExercise copyWithCompanion(SessionExercisesCompanion data) {
     return SessionExercise(
@@ -3683,6 +3936,12 @@ class SessionExercise extends DataClass implements Insertable<SessionExercise> {
       supersetGroup: data.supersetGroup.present
           ? data.supersetGroup.value
           : this.supersetGroup,
+      routineExerciseId: data.routineExerciseId.present
+          ? data.routineExerciseId.value
+          : this.routineExerciseId,
+      targetsEdited: data.targetsEdited.present
+          ? data.targetsEdited.value
+          : this.targetsEdited,
     );
   }
 
@@ -3708,13 +3967,15 @@ class SessionExercise extends DataClass implements Insertable<SessionExercise> {
           ..write('programWeek: $programWeek, ')
           ..write('displayName: $displayName, ')
           ..write('restEnabled: $restEnabled, ')
-          ..write('supersetGroup: $supersetGroup')
+          ..write('supersetGroup: $supersetGroup, ')
+          ..write('routineExerciseId: $routineExerciseId, ')
+          ..write('targetsEdited: $targetsEdited')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(
+  int get hashCode => Object.hashAll([
     id,
     sessionId,
     exerciseId,
@@ -3735,7 +3996,9 @@ class SessionExercise extends DataClass implements Insertable<SessionExercise> {
     displayName,
     restEnabled,
     supersetGroup,
-  );
+    routineExerciseId,
+    targetsEdited,
+  ]);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -3759,7 +4022,9 @@ class SessionExercise extends DataClass implements Insertable<SessionExercise> {
           other.programWeek == this.programWeek &&
           other.displayName == this.displayName &&
           other.restEnabled == this.restEnabled &&
-          other.supersetGroup == this.supersetGroup);
+          other.supersetGroup == this.supersetGroup &&
+          other.routineExerciseId == this.routineExerciseId &&
+          other.targetsEdited == this.targetsEdited);
 }
 
 class SessionExercisesCompanion extends UpdateCompanion<SessionExercise> {
@@ -3783,6 +4048,8 @@ class SessionExercisesCompanion extends UpdateCompanion<SessionExercise> {
   final Value<String?> displayName;
   final Value<bool> restEnabled;
   final Value<int?> supersetGroup;
+  final Value<int?> routineExerciseId;
+  final Value<bool> targetsEdited;
   const SessionExercisesCompanion({
     this.id = const Value.absent(),
     this.sessionId = const Value.absent(),
@@ -3804,6 +4071,8 @@ class SessionExercisesCompanion extends UpdateCompanion<SessionExercise> {
     this.displayName = const Value.absent(),
     this.restEnabled = const Value.absent(),
     this.supersetGroup = const Value.absent(),
+    this.routineExerciseId = const Value.absent(),
+    this.targetsEdited = const Value.absent(),
   });
   SessionExercisesCompanion.insert({
     this.id = const Value.absent(),
@@ -3826,6 +4095,8 @@ class SessionExercisesCompanion extends UpdateCompanion<SessionExercise> {
     this.displayName = const Value.absent(),
     this.restEnabled = const Value.absent(),
     this.supersetGroup = const Value.absent(),
+    this.routineExerciseId = const Value.absent(),
+    this.targetsEdited = const Value.absent(),
   }) : sessionId = Value(sessionId),
        exerciseId = Value(exerciseId),
        position = Value(position),
@@ -3854,6 +4125,8 @@ class SessionExercisesCompanion extends UpdateCompanion<SessionExercise> {
     Expression<String>? displayName,
     Expression<bool>? restEnabled,
     Expression<int>? supersetGroup,
+    Expression<int>? routineExerciseId,
+    Expression<bool>? targetsEdited,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -3876,6 +4149,8 @@ class SessionExercisesCompanion extends UpdateCompanion<SessionExercise> {
       if (displayName != null) 'display_name': displayName,
       if (restEnabled != null) 'rest_enabled': restEnabled,
       if (supersetGroup != null) 'superset_group': supersetGroup,
+      if (routineExerciseId != null) 'routine_exercise_id': routineExerciseId,
+      if (targetsEdited != null) 'targets_edited': targetsEdited,
     });
   }
 
@@ -3900,6 +4175,8 @@ class SessionExercisesCompanion extends UpdateCompanion<SessionExercise> {
     Value<String?>? displayName,
     Value<bool>? restEnabled,
     Value<int?>? supersetGroup,
+    Value<int?>? routineExerciseId,
+    Value<bool>? targetsEdited,
   }) {
     return SessionExercisesCompanion(
       id: id ?? this.id,
@@ -3922,6 +4199,8 @@ class SessionExercisesCompanion extends UpdateCompanion<SessionExercise> {
       displayName: displayName ?? this.displayName,
       restEnabled: restEnabled ?? this.restEnabled,
       supersetGroup: supersetGroup ?? this.supersetGroup,
+      routineExerciseId: routineExerciseId ?? this.routineExerciseId,
+      targetsEdited: targetsEdited ?? this.targetsEdited,
     );
   }
 
@@ -3988,6 +4267,12 @@ class SessionExercisesCompanion extends UpdateCompanion<SessionExercise> {
     if (supersetGroup.present) {
       map['superset_group'] = Variable<int>(supersetGroup.value);
     }
+    if (routineExerciseId.present) {
+      map['routine_exercise_id'] = Variable<int>(routineExerciseId.value);
+    }
+    if (targetsEdited.present) {
+      map['targets_edited'] = Variable<bool>(targetsEdited.value);
+    }
     return map;
   }
 
@@ -4013,7 +4298,9 @@ class SessionExercisesCompanion extends UpdateCompanion<SessionExercise> {
           ..write('programWeek: $programWeek, ')
           ..write('displayName: $displayName, ')
           ..write('restEnabled: $restEnabled, ')
-          ..write('supersetGroup: $supersetGroup')
+          ..write('supersetGroup: $supersetGroup, ')
+          ..write('routineExerciseId: $routineExerciseId, ')
+          ..write('targetsEdited: $targetsEdited')
           ..write(')'))
         .toString();
   }
@@ -10008,6 +10295,9 @@ typedef $$RoutineExercisesTableCreateCompanionBuilder =
       Value<String?> programRelation,
       Value<String?> programExercise,
       Value<String?> displayName,
+      Value<int?> overrideRepMin,
+      Value<int?> overrideRepMax,
+      Value<int?> supersetGroup,
     });
 typedef $$RoutineExercisesTableUpdateCompanionBuilder =
     RoutineExercisesCompanion Function({
@@ -10024,6 +10314,9 @@ typedef $$RoutineExercisesTableUpdateCompanionBuilder =
       Value<String?> programRelation,
       Value<String?> programExercise,
       Value<String?> displayName,
+      Value<int?> overrideRepMin,
+      Value<int?> overrideRepMax,
+      Value<int?> supersetGroup,
     });
 
 final class $$RoutineExercisesTableReferences
@@ -10131,6 +10424,21 @@ class $$RoutineExercisesTableFilterComposer
 
   ColumnFilters<String> get displayName => $composableBuilder(
     column: $table.displayName,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get overrideRepMin => $composableBuilder(
+    column: $table.overrideRepMin,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get overrideRepMax => $composableBuilder(
+    column: $table.overrideRepMax,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get supersetGroup => $composableBuilder(
+    column: $table.supersetGroup,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -10245,6 +10553,21 @@ class $$RoutineExercisesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get overrideRepMin => $composableBuilder(
+    column: $table.overrideRepMin,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get overrideRepMax => $composableBuilder(
+    column: $table.overrideRepMax,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get supersetGroup => $composableBuilder(
+    column: $table.supersetGroup,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   $$RoutinesTableOrderingComposer get routineId {
     final $$RoutinesTableOrderingComposer composer = $composerBuilder(
       composer: this,
@@ -10346,6 +10669,21 @@ class $$RoutineExercisesTableAnnotationComposer
     builder: (column) => column,
   );
 
+  GeneratedColumn<int> get overrideRepMin => $composableBuilder(
+    column: $table.overrideRepMin,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get overrideRepMax => $composableBuilder(
+    column: $table.overrideRepMax,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get supersetGroup => $composableBuilder(
+    column: $table.supersetGroup,
+    builder: (column) => column,
+  );
+
   $$RoutinesTableAnnotationComposer get routineId {
     final $$RoutinesTableAnnotationComposer composer = $composerBuilder(
       composer: this,
@@ -10436,6 +10774,9 @@ class $$RoutineExercisesTableTableManager
                 Value<String?> programRelation = const Value.absent(),
                 Value<String?> programExercise = const Value.absent(),
                 Value<String?> displayName = const Value.absent(),
+                Value<int?> overrideRepMin = const Value.absent(),
+                Value<int?> overrideRepMax = const Value.absent(),
+                Value<int?> supersetGroup = const Value.absent(),
               }) => RoutineExercisesCompanion(
                 id: id,
                 routineId: routineId,
@@ -10450,6 +10791,9 @@ class $$RoutineExercisesTableTableManager
                 programRelation: programRelation,
                 programExercise: programExercise,
                 displayName: displayName,
+                overrideRepMin: overrideRepMin,
+                overrideRepMax: overrideRepMax,
+                supersetGroup: supersetGroup,
               ),
           createCompanionCallback:
               ({
@@ -10466,6 +10810,9 @@ class $$RoutineExercisesTableTableManager
                 Value<String?> programRelation = const Value.absent(),
                 Value<String?> programExercise = const Value.absent(),
                 Value<String?> displayName = const Value.absent(),
+                Value<int?> overrideRepMin = const Value.absent(),
+                Value<int?> overrideRepMax = const Value.absent(),
+                Value<int?> supersetGroup = const Value.absent(),
               }) => RoutineExercisesCompanion.insert(
                 id: id,
                 routineId: routineId,
@@ -10480,6 +10827,9 @@ class $$RoutineExercisesTableTableManager
                 programRelation: programRelation,
                 programExercise: programExercise,
                 displayName: displayName,
+                overrideRepMin: overrideRepMin,
+                overrideRepMax: overrideRepMax,
+                supersetGroup: supersetGroup,
               ),
           withReferenceMapper: (p0) => p0
               .map(
@@ -11045,6 +11395,8 @@ typedef $$SessionExercisesTableCreateCompanionBuilder =
       Value<String?> displayName,
       Value<bool> restEnabled,
       Value<int?> supersetGroup,
+      Value<int?> routineExerciseId,
+      Value<bool> targetsEdited,
     });
 typedef $$SessionExercisesTableUpdateCompanionBuilder =
     SessionExercisesCompanion Function({
@@ -11068,6 +11420,8 @@ typedef $$SessionExercisesTableUpdateCompanionBuilder =
       Value<String?> displayName,
       Value<bool> restEnabled,
       Value<int?> supersetGroup,
+      Value<int?> routineExerciseId,
+      Value<bool> targetsEdited,
     });
 
 final class $$SessionExercisesTableReferences
@@ -11228,6 +11582,16 @@ class $$SessionExercisesTableFilterComposer
 
   ColumnFilters<int> get supersetGroup => $composableBuilder(
     column: $table.supersetGroup,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get routineExerciseId => $composableBuilder(
+    column: $table.routineExerciseId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get targetsEdited => $composableBuilder(
+    column: $table.targetsEdited,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -11402,6 +11766,16 @@ class $$SessionExercisesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get routineExerciseId => $composableBuilder(
+    column: $table.routineExerciseId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get targetsEdited => $composableBuilder(
+    column: $table.targetsEdited,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   $$SessionsTableOrderingComposer get sessionId {
     final $$SessionsTableOrderingComposer composer = $composerBuilder(
       composer: this,
@@ -11536,6 +11910,16 @@ class $$SessionExercisesTableAnnotationComposer
     builder: (column) => column,
   );
 
+  GeneratedColumn<int> get routineExerciseId => $composableBuilder(
+    column: $table.routineExerciseId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get targetsEdited => $composableBuilder(
+    column: $table.targetsEdited,
+    builder: (column) => column,
+  );
+
   $$SessionsTableAnnotationComposer get sessionId {
     final $$SessionsTableAnnotationComposer composer = $composerBuilder(
       composer: this,
@@ -11662,6 +12046,8 @@ class $$SessionExercisesTableTableManager
                 Value<String?> displayName = const Value.absent(),
                 Value<bool> restEnabled = const Value.absent(),
                 Value<int?> supersetGroup = const Value.absent(),
+                Value<int?> routineExerciseId = const Value.absent(),
+                Value<bool> targetsEdited = const Value.absent(),
               }) => SessionExercisesCompanion(
                 id: id,
                 sessionId: sessionId,
@@ -11683,6 +12069,8 @@ class $$SessionExercisesTableTableManager
                 displayName: displayName,
                 restEnabled: restEnabled,
                 supersetGroup: supersetGroup,
+                routineExerciseId: routineExerciseId,
+                targetsEdited: targetsEdited,
               ),
           createCompanionCallback:
               ({
@@ -11706,6 +12094,8 @@ class $$SessionExercisesTableTableManager
                 Value<String?> displayName = const Value.absent(),
                 Value<bool> restEnabled = const Value.absent(),
                 Value<int?> supersetGroup = const Value.absent(),
+                Value<int?> routineExerciseId = const Value.absent(),
+                Value<bool> targetsEdited = const Value.absent(),
               }) => SessionExercisesCompanion.insert(
                 id: id,
                 sessionId: sessionId,
@@ -11727,6 +12117,8 @@ class $$SessionExercisesTableTableManager
                 displayName: displayName,
                 restEnabled: restEnabled,
                 supersetGroup: supersetGroup,
+                routineExerciseId: routineExerciseId,
+                targetsEdited: targetsEdited,
               ),
           withReferenceMapper: (p0) => p0
               .map(

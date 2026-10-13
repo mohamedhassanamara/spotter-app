@@ -163,6 +163,9 @@ class SessionRepository {
             programWeek: programWeek,
             warmupOverride: warmupOverride,
             displayName: re.displayName,
+            routineExerciseId: re.id,
+            overrideRange: re.overrideRepMin != null && re.overrideRepMax != null ? RepRange(re.overrideRepMin!, re.overrideRepMax!) : null,
+            supersetGroup: re.supersetGroup,
           );
         }
       }
@@ -207,9 +210,52 @@ class SessionRepository {
     int programWeek = 2,
     int? warmupOverride,
     String? displayName,
+    int? routineExerciseId,
+    RepRange? overrideRange,
+    int? supersetGroup,
+  }) async {
+    final exId = await _insertExerciseRow(
+      sessionId: sessionId,
+      info: info,
+      position: position,
+      range: overrideRange ?? range,
+      targetSets: targetSets,
+      restSeconds: restSeconds,
+      targetRir: targetRir,
+      coach: coach,
+      program: program,
+      programSlots: programSlots,
+      programWeek: programWeek,
+      warmupOverride: warmupOverride,
+      displayName: displayName,
+      overrideRange: overrideRange,
+    );
+    await (_db.update(_db.sessionExercises)..where((t) => t.id.equals(exId))).write(SessionExercisesCompanion(
+      routineExerciseId: Value(routineExerciseId),
+      supersetGroup: Value(supersetGroup),
+    ));
+    return exId;
+  }
+
+  Future<int> _insertExerciseRow({
+    required int sessionId,
+    required ExerciseInfo info,
+    required int position,
+    required RepRange range,
+    required int targetSets,
+    required int restSeconds,
+    required int targetRir,
+    required CoachContext coach,
+    Program? program,
+    List<String> programSlots = const [],
+    int programWeek = 2,
+    int? warmupOverride,
+    String? displayName,
+    RepRange? overrideRange,
   }) async {
     if (program != null && programSlots.isNotEmpty) {
       return _insertProgramExercise(
+        overrideRange: overrideRange,
         sessionId: sessionId,
         info: info,
         position: position,
@@ -269,8 +315,13 @@ class SessionRepository {
     required int week,
     int? warmupOverride,
     String? displayName,
+    RepRange? overrideRange,
   }) async {
-    final prescriptions = prescribeSets(program: program, slotIds: slotIds, sets: targetSets, week: week);
+    // A routine-level rep range (routine editor / "Update routine") replaces every slot's range.
+    final prescriptions = [
+      for (final p in prescribeSets(program: program, slotIds: slotIds, sets: targetSets, week: week))
+        overrideRange == null ? p : p.withRange(overrideRange),
+    ];
     // Group consecutive sets by slot, keeping order.
     final groups = <List<SetPrescription>>[];
     for (final p in prescriptions) {
@@ -305,8 +356,8 @@ class SessionRepository {
           sessionId: sessionId,
           exerciseId: info.id,
           position: position,
-          repMin: firstSlot.repRange.min,
-          repMax: firstSlot.repRange.max,
+          repMin: overrideRange?.min ?? firstSlot.repRange.min,
+          repMax: overrideRange?.max ?? firstSlot.repRange.max,
           targetSets: targetSets,
           restSeconds: restSeconds,
           targetRir: Value(groups.first.first.targetRir ?? 0),
@@ -389,9 +440,24 @@ class SessionRepository {
         programSlots: decodeSlots(row.programSlots),
         programWeek: row.programWeek ?? standardProgramWeek,
         displayName: info.name,
+        routineExerciseId: row.routineExerciseId,
+        overrideRange: row.targetsEdited ? RepRange(row.repMin, row.repMax) : null,
+        supersetGroup: row.supersetGroup,
       );
     });
   }
+
+  /// Mid-workout "Target reps": one range for every working set (drops and warm-ups keep theirs).
+  Future<void> setTargetReps(ActiveExercise ex, RepRange range) => _db.transaction(() async {
+        await (_db.update(_db.sessionExercises)..where((t) => t.id.equals(ex.row.id))).write(SessionExercisesCompanion(
+          repMin: Value(range.min),
+          repMax: Value(range.max),
+          targetsEdited: const Value(true),
+        ));
+        final ids = [for (final s in ex.sets) if (!s.isWarmup && s.setType != 'drop') s.id];
+        await (_db.update(_db.workoutSets)..where((t) => t.id.isIn(ids)))
+            .write(WorkoutSetsCompanion(targetRepMin: Value(range.min), targetRepMax: Value(range.max)));
+      });
 
   Future<void> removeExercise(int sessionExerciseId) => _db.transaction(() async {
         await (_db.delete(_db.workoutSets)..where((t) => t.sessionExerciseId.equals(sessionExerciseId))).go();

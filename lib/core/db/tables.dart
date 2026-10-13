@@ -64,6 +64,14 @@ class RoutineExercises extends Table {
 
   /// v3: the owner's name for the exercise (e.g. "Chest Press" for Leverage_Chest_Press).
   TextColumn get displayName => text().nullable()();
+
+  /// v8: rep range set in the routine editor (or "Update routine"), overriding the program's per-set
+  /// ranges for this routine. Null = follow the program.
+  IntColumn get overrideRepMin => integer().nullable()();
+  IntColumn get overrideRepMax => integer().nullable()();
+
+  /// v8: superset group within the routine (A1/A2…).
+  IntColumn get supersetGroup => integer().nullable()();
 }
 
 class Sessions extends Table {
@@ -116,6 +124,12 @@ class SessionExercises extends Table {
 
   /// v5: exercises sharing a group number form a superset (A1/A2…).
   IntColumn get supersetGroup => integer().nullable()();
+
+  /// v8: the routine row this came from (null when added mid-workout), for "Update routine".
+  IntColumn get routineExerciseId => integer().nullable()();
+
+  /// v8: target reps were changed mid-workout ([repMin]–[repMax] then holds the new range).
+  BoolColumn get targetsEdited => boolean().withDefault(const Constant(false))();
 }
 
 class WorkoutSets extends Table {

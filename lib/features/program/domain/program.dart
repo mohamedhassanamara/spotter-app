@@ -267,6 +267,15 @@ class SetPrescription {
   final String? technique;
   final int? restSeconds;
   final bool rir0AttemptFailure;
+
+  SetPrescription withRange(RepRange r) => SetPrescription(
+        slotId: slotId,
+        repRange: r,
+        targetRir: targetRir,
+        technique: technique,
+        restSeconds: restSeconds,
+        rir0AttemptFailure: rir0AttemptFailure,
+      );
 }
 
 /// Expands a routine row (owner's set count spread over one or more program slots) into

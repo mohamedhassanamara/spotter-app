@@ -52,6 +52,9 @@ Future<void> _finish(AppHarness h) async {
   if (find.text('Finish workout?').evaluate().isNotEmpty) {
     await h.tap(find.descendant(of: find.byType(AlertDialog), matching: find.text('Finish')));
   }
+  await h.settle(6);
+  // Edited sessions offer to update the routine (covered by routine_edit_flow_test).
+  if (find.text('Update routine?').evaluate().isNotEmpty) await h.tap(find.byKey(const ValueKey('keep-routine')));
   await h.waitFor(find.text('WORKOUT COMPLETE'), timeout: const Duration(seconds: 30), reason: 'summary');
 }
 
