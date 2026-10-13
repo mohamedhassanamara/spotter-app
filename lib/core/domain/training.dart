@@ -45,6 +45,7 @@ class LoggedSet {
     this.isDrop = false,
     this.isMyo = false,
     this.isHold = false,
+    this.partials = false,
     this.targetMin,
     this.targetMax,
   });
@@ -65,6 +66,9 @@ class LoggedSet {
 
   /// A weighted static hold; [reps] holds the seconds, so it adds no volume.
   final bool isHold;
+
+  /// "+ partials" (section 7): partial reps after the last full rep. Informational; reps are full reps.
+  final bool partials;
 
   /// Drop, myo or hold: a technique follow-up, never a working set for e1RM, ranks, PRs or progression.
   bool get isFollowUp => isDrop || isMyo || isHold;

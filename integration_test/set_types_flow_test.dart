@@ -128,6 +128,19 @@ void main() {
     expect([sets2[j + 1].kind, sets2[j + 2].kind], [SetKind.drop, SetKind.drop]);
     expect(sets2[j + 1].weight, lessThan(first2.weight == 0 ? 1 : first2.weight));
 
+    debugPrint('STEP + partials from the SET menu, then off with a long-press on the effort');
+    final w3 = sets2.lastWhere((s) => s.isWorkingSet);
+    await h.tap(find.byKey(ValueKey('set-label-${w3.id}')));
+    await h.tap(find.byKey(const ValueKey('toggle-partials')));
+    expect((await tester.runAsync(() => _sets(h, second.id)))!.firstWhere((s) => s.id == w3.id).partials, isTrue);
+    await Scrollable.ensureVisible(find.byKey(ValueKey('set-${w3.id}')).evaluate().first, alignment: 0.5);
+    await h.settle(4);
+    expect(find.descendant(of: find.byKey(ValueKey('effort-label-${w3.id}')), matching: find.textContaining('+P'), matchRoot: true), findsOneWidget,
+        reason: 'effort shows +P');
+    await h.shot('partials');
+    await h.longPress(find.byKey(ValueKey('effort-${w3.id}')));
+    expect((await tester.runAsync(() => _sets(h, second.id)))!.firstWhere((s) => s.id == w3.id).partials, isFalse);
+
     await h.expectNoLoggedErrors();
     await h.dispose();
   });

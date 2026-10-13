@@ -671,6 +671,10 @@ class SessionRepository {
         updates: {_db.workoutSets},
       );
 
+  /// Section 7: "+ partials" on a set (toggle).
+  Future<void> setPartials(int setId, bool on) =>
+      (_db.update(_db.workoutSets)..where((t) => t.id.equals(setId))).write(WorkoutSetsCompanion(partials: Value(on)));
+
   Future<void> setRest(int sessionExerciseId, {bool? enabled, int? seconds}) =>
       (_db.update(_db.sessionExercises)..where((t) => t.id.equals(sessionExerciseId))).write(SessionExercisesCompanion(
         restEnabled: enabled == null ? const Value.absent() : Value(enabled),

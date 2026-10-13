@@ -1038,3 +1038,24 @@ patched. Screenshots are in `docs/screenshots/vF/`: at rest, mid-edit with the k
 - The program itself has no supersets in this version (every slot's `superset` is null), so none are created
   automatically.
 - Tests: `test/data/set_types_test.dart` (8), `integration_test/set_types_flow_test.dart` (2 flows).
+
+## Finish plan, Phase D: section 7 check
+
+Audit of v2.1 section 7 (failure-based effort logging) against the code:
+
+| Requirement | Status | Where / test |
+|---|---|---|
+| One-tap effort selector F / 1 left / 2 left / 3+ left | already in (logger rebuild) | `Effort`, EFFORT column cycles on tap; `train_flow_test` "cycle effort" |
+| Maps to RPE 10 / 9 / 8 / 7 | already in | `guardrail_test` "effort selector…" |
+| Default from the program's prescription | already in | `Effort.fromRir(targetRir)`; same test |
+| **"+ partials" flag** | **added now** | schema v9 `workout_sets.partials`; SET menu switch "+ partials" or long-press the effort chip; shows `F+P`; history "+ partials"; JSON export `partials`; `set_types_flow_test`, `guardrail_test` "+ partials is a flag only…", `migration_test` v8 → v9 |
+| Top of range at the prescribed effort (failure counts) → +1 increment | already in | `suggestion_engine_test` "failure prescribed: top of the range at failure → +1 increment" |
+| Within range → same load, beat the reps | already in | "within the range → same weight, +1 rep…", "a set to failure inside the range is not a failed set…" |
+| Below the bottom → −5 % | already in | "a set below the bottom of the range → −5% rounded down" |
+| Ego = load above suggestion + reps below range; failure in range never ego | already in | `guardrail_test` "ego = …", "failure inside the range is never ego" |
+| Discipline = load within ±5 % and reps in range | already in | `guardrail_test` "discipline needs…" |
+
+- **Partials are informational.** The reps field stays full reps, so e1RM, records, volume, progression
+  and recovery fatigue ignore the flag. Partials past failure don't make the full-rep performance
+  any stronger, and counting them would inflate e1RM.
+- Holds (seconds) and warm-ups don't offer the flag.

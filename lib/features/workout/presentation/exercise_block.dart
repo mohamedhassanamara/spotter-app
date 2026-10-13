@@ -451,6 +451,15 @@ class _ExerciseBlockState extends ConsumerState<ExerciseBlock> {
               onTap: () => Navigator.of(ctx).pop('follow:hold'),
             ),
           ],
+          if (!s.isWarmup && s.kind != SetKind.hold)
+            SwitchListTile(
+              key: const ValueKey('toggle-partials'),
+              secondary: const Text('+P', style: TextStyle(fontWeight: FontWeight.w800)),
+              title: const Text('+ partials'),
+              subtitle: const Text('Partial reps after the last full rep (reps stay full reps)'),
+              value: s.partials,
+              onChanged: (v) => Navigator.of(ctx).pop(v ? 'partials:on' : 'partials:off'),
+            ),
           if (techniques.isNotEmpty && s.isWorkingSet) ...[
             const Divider(),
             const ListTile(dense: true, title: Text('PROGRAM TECHNIQUE ON THIS SET', style: TextStyle(fontSize: 12, color: AppColors.textTertiary))),
@@ -474,6 +483,7 @@ class _ExerciseBlockState extends ConsumerState<ExerciseBlock> {
     final repo = ref.read(sessionRepositoryProvider);
     if (picked == 'delete') return repo.deleteSet(s);
     if (picked.startsWith('follow:')) return _addFollowUp(s, SetKind.fromId(picked.substring(7)));
+    if (picked.startsWith('partials:')) return repo.setPartials(s.id, picked == 'partials:on');
     await repo.setSetKind(s, kind: picked);
     if (picked.startsWith('technique:')) {
       // The technique's follow-ups (two 25 % drops, a myo cycle, a 30 s hold) appear under the set.
@@ -784,6 +794,8 @@ class _SetRow extends ConsumerWidget {
                       key: ValueKey('effort-${s.id}'),
                       borderRadius: BorderRadius.circular(8),
                       onTap: s.completed ? null : () => repo.updateSet(s.id, rpe: () => effort.next.rpe),
+                      // Long-press: "+ partials" (also in the SET menu).
+                      onLongPress: () => repo.setPartials(s.id, !s.partials),
                       child: Container(
                         width: 36,
                         height: 28,
@@ -792,8 +804,11 @@ class _SetRow extends ConsumerWidget {
                           color: effort == Effort.failure ? AppColors.danger.withValues(alpha: 0.16) : AppColors.surfaceTop,
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        child: Text(effort.label,
+                        child: Text(s.partials ? '${effort.label}+P' : effort.label,
+                            key: ValueKey('effort-label-${s.id}'),
+                            maxLines: 1,
                             style: AppType.bodyS.copyWith(
+                                fontSize: s.partials ? 11 : null,
                                 fontFamily: AppType.display,
                                 fontWeight: FontWeight.w800,
                                 color: effort == Effort.failure ? AppColors.danger : AppColors.textPrimary)),

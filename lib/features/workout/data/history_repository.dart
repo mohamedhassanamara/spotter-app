@@ -20,6 +20,7 @@ LoggedSet loggedSetFromRow(WorkoutSet s, {int? repMin, int? repMax}) => LoggedSe
       isDrop: s.setType == 'drop',
       isMyo: s.setType == 'myo',
       isHold: s.setType == 'hold',
+      partials: s.partials,
       targetMin: s.targetRepMin ?? repMin,
       targetMax: s.targetRepMax ?? repMax,
     );

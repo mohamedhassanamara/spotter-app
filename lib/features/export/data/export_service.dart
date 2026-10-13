@@ -42,6 +42,7 @@ class ExportService {
       'override_reason': s.overrideReason,
       'e1rm_kg': e1rm == null || e1rm == 0 ? null : double.parse(e1rm.toStringAsFixed(2)),
       'set_type': s.setType ?? (s.isWarmup ? 'warmup' : 'working'),
+      'partials': s.partials,
       'is_ego_set': s.isOverride && s.targetRepMin != null && s.reps < s.targetRepMin!,
     };
   }

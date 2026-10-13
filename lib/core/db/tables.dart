@@ -156,8 +156,12 @@ class WorkoutSets extends Table {
   TextColumn get technique => text().nullable()();
 
   /// v5: null = a normal set (warm-up or working per [isWarmup]); 'drop' = a drop set under the set
-  /// before it. Drop sets count for volume, never for e1RM, ranks or PRs.
+  /// before it. Drop sets count for volume, never for e1RM, ranks or PRs. v8 adds 'myo' and 'hold'.
   TextColumn get setType => text().nullable()();
+
+  /// v9: section 7's "+ partials": partial reps after the last full rep. Informational only (the
+  /// full reps are what count).
+  BoolColumn get partials => boolean().withDefault(const Constant(false))();
 }
 
 /// One row per calendar day: raw Health metrics and the readiness computed from them.

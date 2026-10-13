@@ -187,7 +187,7 @@ class _SetRow extends StatelessWidget {
         Expanded(
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text(
-              '${formatKg(s.weight)} kg × ${s.reps}${s.rpe == null ? '' : ' @ RPE ${formatRpe(s.rpe!)}'}',
+              '${formatKg(s.weight)} kg × ${s.reps}${s.partials ? ' + partials' : ''}${s.rpe == null ? '' : ' @ RPE ${formatRpe(s.rpe!)}'}',
               style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
             ),
             if (s.isOverride)

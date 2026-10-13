@@ -34,7 +34,7 @@ class AppDatabase extends _$AppDatabase {
   factory AppDatabase.open() => AppDatabase(driftDatabase(name: 'spotter'));
 
   @override
-  int get schemaVersion => 8;
+  int get schemaVersion => 9;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -92,6 +92,9 @@ class AppDatabase extends _$AppDatabase {
             await m.addColumn(routineExercises, routineExercises.supersetGroup);
             await m.addColumn(sessionExercises, sessionExercises.routineExerciseId);
             await m.addColumn(sessionExercises, sessionExercises.targetsEdited);
+          }
+          if (from < 9) {
+            await m.addColumn(workoutSets, workoutSets.partials);
           }
         },
         beforeOpen: (details) async {

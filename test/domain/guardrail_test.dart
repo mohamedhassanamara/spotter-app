@@ -156,6 +156,14 @@ void main() {
       expect(drop.isValidForRecords, isFalse);
     });
 
+    test('+ partials is a flag only: e1RM, records and volume use the full reps', () {
+      const plain = LoggedSet(weight: 60, reps: 8, rpe: 10);
+      const partial = LoggedSet(weight: 60, reps: 8, rpe: 10, partials: true);
+      expect(partial.e1rm(), plain.e1rm());
+      expect(partial.isValidForRecords, isTrue);
+      expect(partial.tonnage, plain.tonnage);
+    });
+
     test('effort selector: F / 1 / 2 / 3+ ↔ RPE 10 / 9 / 8 / 7, default from the prescribed RIR', () {
       expect(Effort.values.map((e) => e.rpe), [10, 9, 8, 7]);
       expect(Effort.fromRir(0), Effort.failure);
