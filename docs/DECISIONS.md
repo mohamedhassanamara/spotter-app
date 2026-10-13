@@ -1080,3 +1080,38 @@ Audit of v2.1 section 7 (failure-based effort logging) against the code:
 - Tap targets: hit-test on the path, then the nearest muscle within ~14 screen px.
 - The Recovery mode reads `recoveryProvider` (Phase F model); it's committed with this phase so the
   switch is never empty.
+
+## Finish plan, Phase F: muscle recovery (a heuristic, not a measurement)
+
+All constants live in `lib/features/recovery/domain/recovery_config.dart`; the model is
+`lib/features/recovery/domain/recovery.dart`. These numbers are chosen to *look plausible* for a
+hypertrophy program trained close to failure. They are not validated against any physiology data.
+
+- **Fatigue per set** = muscle contribution weight (the same weights ranks use) × effort factor:
+  Failure 1.0, 1 left 0.85, 2 left 0.7, 3+ left 0.5. Drop sets 0.5 each; myo cycles and static holds are
+  treated the same (0.5). Sets without effort (Liftoff imports) count as Failure, matching how the
+  import treats them. Warm-ups add nothing. "+ partials" adds nothing (Phase D).
+- **Decay**: exponential, half-life 48 h for quads, hamstrings, glutes, lats, upper back, upper and
+  lower chest; 30 h for everything else (delts, arms, calves, abs, obliques, forearms, traps, and also
+  adductors, abductors and lower back, which the brief didn't list).
+- **Readiness** scales recovery speed: Green ×1, Yellow ×0.85, Red ×0.7 (calibrating or no Health data
+  = Green). *Today's* band is applied to the whole elapsed time. A per-day replay would need
+  readiness history for every past day, which isn't always there, so this simpler version is a known approximation.
+- **Recovery %** = 100 × (1 − fatigue / 12), clamped. 12 ≈ a high-volume, to-failure session for one
+  muscle (6 hard sets right after training → 50 %, Fatigued). **Bands**: Ready ≥ 90 %, Recovering
+  60–89 %, Fatigued < 60 %. "Time until Ready" solves the decay for fatigue = 1.2.
+- Only sets from the last 14 days are used; finished sessions only (the workout in progress isn't counted),
+  so the heads-up reflects how you walked in.
+- **Seeded from history**: imported Liftoff sessions count like any other, so it's correct on day one.
+- **Display only.** Suggestions never read recovery; readiness already adjusts load.
+- **UI**: body map Recovery mode (Phase E) with a sheet showing %, band, time until Ready and the last
+  session that hit the muscle. Home "MUSCLE RECOVERY" card lists Ready (only muscles trained in the last two
+  weeks, since all 20 fresh muscles would be noise), Recovering and Fatigued, with both chest heads shown as
+  "chest", and opens the Recovery map. When a workout started from a routine has Fatigued primary
+  muscles (contribution ≥ 0.5), the logger shows one dismissable line ("Heads-up: chest still fatigued"),
+  which never blocks anything.
+- Tests: `test/domain/recovery_test.dart` (decay, readiness scaling, bands, state from history, heads-up),
+  `integration_test/body_map_flow_test.dart` (Home card → Recovery mode tap → Rank/Volume → heads-up).
+- **Known consequence of the constants:** with a 48 h half-life and Ready at ≥ 90 %, a hard session
+  (≈ 9 failure sets for a muscle) reads Ready only after ~5–6 days; the "Ready" line is strict. If that
+  feels too slow on the phone, the knobs are `fullFatigue` (12) and `readyAt` (90) in the config file.

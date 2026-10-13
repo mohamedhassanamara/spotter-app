@@ -118,6 +118,13 @@ class _BodyTabState extends ConsumerState<_BodyTab> {
   Muscle? _selected;
   bool _openedDeepLink = false;
 
+  @override
+  void didUpdateWidget(covariant _BodyTab old) {
+    super.didUpdateWidget(old);
+    // A deep link (Home recovery card) into an already-open Progress tab switches the mode.
+    if (old.mode != widget.mode) _mode = widget.mode;
+  }
+
   Future<void> _open(Muscle g, RankSummary summary, Map<Muscle, GroupVolume> volume) async {
     setState(() => _selected = g);
     await showMuscleSheet(context, group: g, mode: _mode, summary: summary, volume: volume[g], recovery: ref.read(recoveryProvider)?.of(g));

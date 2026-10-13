@@ -12,6 +12,7 @@ import '../../coach/domain/suggestion_engine.dart';
 import '../../ranks/presentation/progress_screen.dart' show enterBodyweight;
 import '../../ranks/presentation/rank_badge.dart';
 import '../../readiness/presentation/readiness_card.dart';
+import '../../recovery/presentation/recovery_card.dart';
 import '../../workout/presentation/workout_actions.dart';
 
 class HomeScreen extends ConsumerWidget {
@@ -46,6 +47,8 @@ class HomeScreen extends ConsumerWidget {
             const _HeroCard(),
             const SizedBox(height: 12),
             const ReadinessCard(),
+            const SizedBox(height: 12),
+            const RecoveryCard(),
             if (bodyweight.hasValue && bodyweight.value == null) ...[
               const SizedBox(height: 12),
               GameCard(

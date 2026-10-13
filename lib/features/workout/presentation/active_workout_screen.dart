@@ -18,6 +18,8 @@ import '../../library/domain/load_kinds.dart';
 import '../../library/domain/name_resolver.dart';
 import '../../program/data/program_repository.dart';
 import '../../tutorials/presentation/form_check_sheet.dart';
+import '../../recovery/domain/recovery.dart';
+import '../../recovery/presentation/recovery_card.dart' show muscleNames;
 import '../data/routine_sync.dart';
 import '../data/session_repository.dart';
 import '../domain/set_kinds.dart';
@@ -38,6 +40,7 @@ class ActiveWorkoutScreen extends ConsumerStatefulWidget {
 
 class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
   bool _finishing = false;
+  bool _headsUpDismissed = false;
   bool _hideWarmups = false;
   KeypadTarget? _target;
   KeypadBuffer? _buffer;
@@ -148,6 +151,12 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
             child: ListView(
               padding: const EdgeInsets.fromLTRB(10, 4, 10, 32),
               children: [
+                if (session.session.routineId != null && !_headsUpDismissed)
+                  _FatigueHeadsUp(
+                    session: session,
+                    catalog: catalog,
+                    onDismiss: () => setState(() => _headsUpDismissed = true),
+                  ),
                 _notesField(),
                 for (final e in session.exercises)
                   ExerciseBlock(
@@ -776,6 +785,50 @@ class MiniWorkoutBar extends ConsumerWidget {
           ]),
         ),
       ),
+    );
+  }
+}
+
+/// One line, informational only: primary muscles of this routine that are still Fatigued.
+class _FatigueHeadsUp extends ConsumerWidget {
+  const _FatigueHeadsUp({required this.session, required this.catalog, required this.onDismiss});
+  final ActiveSession session;
+  final Map<String, ExerciseInfo> catalog;
+  final VoidCallback onDismiss;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final r = ref.watch(recoveryProvider);
+    if (r == null) return const SizedBox.shrink();
+    final fatigued = fatiguedPrimaries(r, [for (final e in session.exercises) ?catalog[e.row.exerciseId]?.targets]);
+    if (fatigued.isEmpty) return const SizedBox.shrink();
+    return Container(
+      key: const ValueKey('fatigue-heads-up'),
+      margin: const EdgeInsets.only(bottom: 6),
+      padding: const EdgeInsets.fromLTRB(12, 4, 4, 4),
+      decoration: BoxDecoration(
+        color: AppColors.red.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: AppColors.red.withValues(alpha: 0.35)),
+      ),
+      child: Row(children: [
+        const Icon(Icons.healing_rounded, size: 18, color: AppColors.red),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            'Heads-up: ${muscleNames(fatigued)} still fatigued',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: AppType.bodyS.copyWith(fontSize: 13),
+          ),
+        ),
+        IconButton(
+          tooltip: 'Dismiss',
+          visualDensity: VisualDensity.compact,
+          onPressed: onDismiss,
+          icon: const Icon(Icons.close_rounded, size: 18, color: AppColors.textSecondary),
+        ),
+      ]),
     );
   }
 }

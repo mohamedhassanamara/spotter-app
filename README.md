@@ -101,6 +101,15 @@ back body map, hiding an exercise from ranks, old rank badges revoked silently),
 carried-over Liftoff streak on Home, edited in Settings, shown in days on Profile). A flow fails if anything is
 written to the in-app error log.
 
+Later flows: `library_media_flow_test` (merged library, thumbnails, Jeff's video on program
+exercises), `routine_edit_flow_test` (mid-workout replace/remove/add/reorder/sets/target reps →
+Update routine or Keep routine as is; routine editor overrides and Reset to program; empty
+workout), `set_types_flow_test` (several drop sets, myo cycles, static hold, program technique
+follow-ups, + partials; supersets from the routine editor with alternating sets and rest after the
+round) and `body_map_flow_test` (Home recovery card → body map Recovery mode tap, Rank and Volume
+modes, the fatigue heads-up). `body_map_flow_test` writes the screenshots in
+`docs/screenshots/final/` when given `--dart-define=SHOTS_DIR=$PWD/docs/screenshots/final`.
+
 ### Reporting bugs from the phone
 
 Settings → long-press the version label → **Error log** → **Copy all**, then paste it into a message.
@@ -147,6 +156,15 @@ The streak is counted in days, like Liftoff. Every day counts, rest days include
 week's session goal is still reachable. A week that ends below its goal breaks the streak, and smart
 rest days lower the goal. Your Liftoff streak (177 days on the import date) carries over as an offset
 that you can edit in Settings → Streak.
+
+## Muscle recovery
+
+Display only: suggestions never use it. Each working set adds fatigue to its muscles (contribution ×
+effort: F 1.0 / 1 left 0.85 / 2 left 0.7 / 3+ 0.5; drops 0.5) that halves every 48 h for large muscles
+and 30 h for small ones, slower on Yellow (×0.85) and Red (×0.7) readiness days. Ready ≥ 90 %,
+Recovering 60–89 %, Fatigued < 60 %. Shown as the Home card, the body map's Recovery mode and a
+one-line heads-up when a routine's main muscles are still fatigued. Every constant is in
+`lib/features/recovery/domain/recovery_config.dart`. It's a heuristic (see DECISIONS.md).
 
 ## Ranks
 
