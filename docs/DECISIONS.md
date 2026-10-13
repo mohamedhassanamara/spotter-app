@@ -1115,3 +1115,25 @@ hypertrophy program trained close to failure. They are not validated against any
 - **Known consequence of the constants:** with a 48 h half-life and Ready at ≥ 90 %, a hard session
   (≈ 9 failure sets for a muscle) reads Ready only after ~5–6 days; the "Ready" line is strict. If that
   feels too slow on the phone, the knobs are `fullFatigue` (12) and `readyAt` (90) in the config file.
+
+## Real-device fixes, Fix 0: one fixed weekly template
+
+- **Canonical week = week 5 of the PDF.** `tool/program/canonical_week.py` builds
+  `assets/programs/min_max_canonical.json` (sets, rep ranges, week-5 RIR per set, warm-ups, rest,
+  supersets, substitutions, notes, videos; no `weeks`, no techniques). The 12-week extraction moved to
+  `docs/program/min_max_phase2_12weeks.json` for reference and is no longer bundled. Week 5 vs the
+  former week 2 differs in one place: Hack Squat RIR 1/2 → 0/2.
+- **No week tracking:** `standardProgramWeek`, `programWeekProvider`, `programWeekFor`, the start-Monday
+  setter and per-week RIR are gone; `prescribeSets` takes no week. Nothing in the UI shows "Week N"
+  (an integration test scans Home, all five loggers and Settings). Settings → Program now says
+  "One fixed weekly template".
+- **Techniques are manual only:** prescriptions carry no technique, so starting a routine never
+  creates drop sets, myo-reps or holds. The SET menu still offers them all (including the program
+  technique entries, which create their follow-ups when *you* pick them).
+- **Conversion** (`ProgramRepository.ensureCanonicalWeek`, at startup, once, keyed by
+  `program_canonical_week`): deletes the old program-start setting; sets program routine rows' default
+  RIR to the canonical first-slot RIR; in a workout in progress, deletes *pending* drop/myo/hold sets
+  that the program created (they carry a technique id; ones you added by hand don't) and strips
+  technique tags from pending working sets; clears `programWeek` on the live session. History is
+  untouched (`session_exercises.program_week` stays as a historical column, no longer written).
+  Test: `test/data/canonical_week_migration_test.dart`.

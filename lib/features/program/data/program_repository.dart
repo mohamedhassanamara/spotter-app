@@ -4,13 +4,13 @@ import 'package:drift/drift.dart';
 import 'package:flutter/services.dart' show rootBundle;
 
 import '../../../core/db/database.dart';
-import '../../../core/domain/dates.dart';
 import '../../../core/domain/training.dart';
 import '../../../core/settings/app_settings.dart';
 import '../../library/data/exercise_repository.dart';
 import '../../library/domain/exercise_info.dart';
 import '../domain/program.dart';
 
+/// Legacy: the Monday of program week 1. Week tracking is gone; [ProgramRepository.ensureCanonicalWeek] deletes it.
 const String programStartKey = 'program_start_monday';
 const String routinesInstalledKey = 'program_routines_installed';
 
@@ -21,20 +21,52 @@ class ProgramRepository {
   static Program? _cache;
 
   static Future<Program> load() async =>
-      _cache ??= Program.fromJson(jsonDecode(await rootBundle.loadString('assets/programs/min_max_phase2.json')) as Map<String, dynamic>);
+      _cache ??= Program.fromJson(jsonDecode(await rootBundle.loadString('assets/programs/min_max_canonical.json')) as Map<String, dynamic>);
 
   static Future<Map<String, dynamic>> loadMyRoutines() async =>
       jsonDecode(await rootBundle.loadString('assets/programs/my_routines.json')) as Map<String, dynamic>;
 
-  /// Monday of program week 1, or null if not set.
-  Future<DateTime?> startMonday() async {
-    final raw = await _db.getSetting(programStartKey);
-    return raw == null ? null : parseDayKey(raw);
-  }
+  /// Settings key recording that the canonical-week conversion ran (value: the canonical week).
+  static const canonicalWeekKey = 'program_canonical_week';
 
-  /// Sets the current program week by back-computing week 1's Monday.
-  Future<void> setCurrentWeek(int week, {required DateTime now}) =>
-      _db.putSetting(programStartKey, dayKey(startMondayForWeek(week: week, now: now)));
+  /// Startup step: converts state from the 12-week era to the one fixed week, once.
+  /// - the program-start setting (week tracking) is deleted;
+  /// - routine rows that follow the program take the canonical RIR of their first slot;
+  /// - in a workout in progress, sets the program created automatically are cleaned up: pending drop,
+  ///   myo and hold sets that carry a program technique are deleted, and pending working sets lose
+  ///   their technique tag. Completed sets and everything in history are untouched.
+  static Future<bool> ensureCanonicalWeek(AppDatabase db, {Program? program}) async {
+    final p = program ?? await load();
+    final week = '${p.canonicalWeek}';
+    if (await db.getSetting(canonicalWeekKey) == week) return false;
+    await db.transaction(() async {
+      await db.deleteSetting(programStartKey);
+      for (final r in await (db.select(db.routineExercises)..where((t) => t.programSlots.isNotNull())).get()) {
+        final slot = p.slot(decodeSlots(r.programSlots).firstOrNull ?? '');
+        final rir = slot?.rir.firstOrNull;
+        if (rir != null && rir != r.targetRir) {
+          await (db.update(db.routineExercises)..where((t) => t.id.equals(r.id))).write(RoutineExercisesCompanion(targetRir: Value(rir)));
+        }
+      }
+      final active = await (db.select(db.sessions)..where((t) => t.status.equals('active'))).get();
+      for (final session in active) {
+        final exIds = [
+          for (final e in await (db.select(db.sessionExercises)..where((t) => t.sessionId.equals(session.id))).get()) e.id,
+        ];
+        if (exIds.isEmpty) continue;
+        await (db.delete(db.workoutSets)
+              ..where((t) =>
+                  t.sessionExerciseId.isIn(exIds) & t.completed.equals(false) & t.technique.isNotNull() & t.setType.isIn(['drop', 'myo', 'hold'])))
+            .go();
+        await (db.update(db.workoutSets)
+              ..where((t) => t.sessionExerciseId.isIn(exIds) & t.completed.equals(false) & t.technique.isNotNull() & t.setType.isNull()))
+            .write(const WorkoutSetsCompanion(technique: Value(null)));
+        await (db.update(db.sessionExercises)..where((t) => t.id.isIn(exIds))).write(const SessionExercisesCompanion(programWeek: Value(null)));
+      }
+      await db.putSetting(canonicalWeekKey, week);
+    });
+    return true;
+  }
 
   /// Startup step (before the UI exists, so Train never shows stale routines): installs the owner's
   /// routines on first launch, and reinstalls them when `my_routines.json` gets a newer version.
@@ -86,7 +118,6 @@ class ProgramRepository {
             skipped.add(e['name'] as String);
             continue;
           }
-          final week1 = first.week(2); // a normal training week for the default RIR shown in the editor
           await _db.into(_db.routineExercises).insert(RoutineExercisesCompanion.insert(
                 routineId: routineId,
                 exerciseId: id,
@@ -95,7 +126,7 @@ class ProgramRepository {
                 repMax: first.repRange.max,
                 targetSets: (e['sets'] as num).toInt(),
                 restSeconds: first.rest?.maxSeconds ?? 0,
-                targetRir: Value(week1.rir.firstOrNull ?? settings.defaultRir),
+                targetRir: Value(first.rir.firstOrNull ?? settings.defaultRir),
                 programSlots: Value(jsonEncode(slots)),
                 programRelation: Value(e['relation'] as String?),
                 programExercise: Value(e['program_exercise'] as String?),

@@ -133,7 +133,6 @@ class SessionRepository {
     required Map<String, ExerciseInfo> catalog,
     RoutineWithExercises? routine,
     Program? program,
-    int programWeek = 2,
     int? warmupOverride,
   }) {
     return _db.transaction(() async {
@@ -164,7 +163,6 @@ class SessionRepository {
             coach: coach,
             program: program,
             programSlots: decodeSlots(re.programSlots),
-            programWeek: programWeek,
             warmupOverride: warmupOverride,
             displayName: re.displayName,
             routineExerciseId: re.id,
@@ -216,7 +214,6 @@ class SessionRepository {
     required CoachContext coach,
     Program? program,
     List<String> programSlots = const [],
-    int programWeek = 2,
     int? warmupOverride,
     String? displayName,
     int? routineExerciseId,
@@ -234,7 +231,6 @@ class SessionRepository {
       coach: coach,
       program: program,
       programSlots: programSlots,
-      programWeek: programWeek,
       warmupOverride: warmupOverride,
       displayName: displayName,
       overrideRange: overrideRange,
@@ -257,7 +253,6 @@ class SessionRepository {
     required CoachContext coach,
     Program? program,
     List<String> programSlots = const [],
-    int programWeek = 2,
     int? warmupOverride,
     String? displayName,
     RepRange? overrideRange,
@@ -273,7 +268,6 @@ class SessionRepository {
         coach: coach,
         program: program,
         slotIds: programSlots,
-        week: programWeek,
         warmupOverride: warmupOverride,
         displayName: displayName,
       );
@@ -309,7 +303,7 @@ class SessionRepository {
     return exId;
   }
 
-  /// A routine row that follows a program: per-set prescriptions for the week (rep range, RIR,
+  /// A routine row that follows a program: per-set prescriptions from the canonical week (rep range, RIR,
   /// last-set technique), one suggestion per program slot (e.g. 2×4-6 heavy, then 1×20 back-off),
   /// and the program's warm-up pyramid from today's working weight.
   Future<int> _insertProgramExercise({
@@ -321,14 +315,13 @@ class SessionRepository {
     required CoachContext coach,
     required Program program,
     required List<String> slotIds,
-    required int week,
     int? warmupOverride,
     String? displayName,
     RepRange? overrideRange,
   }) async {
     // A routine-level rep range (routine editor / "Update routine") replaces every slot's range.
     final prescriptions = [
-      for (final p in prescribeSets(program: program, slotIds: slotIds, sets: targetSets, week: week))
+      for (final p in prescribeSets(program: program, slotIds: slotIds, sets: targetSets))
         overrideRange == null ? p : p.withRange(overrideRange),
     ];
     // Group consecutive sets by slot, keeping order.
@@ -376,7 +369,6 @@ class SessionRepository {
           suggestedSets: Value(main.sets),
           suggestionJson: Value(StoredSuggestion.encode(combined)),
           programSlots: Value(jsonEncode(slotIds)),
-          programWeek: Value(week),
           displayName: Value(displayName),
         ));
     var pos = 0;
@@ -416,26 +408,7 @@ class SessionRepository {
               targetRepMin: Value(p.repRange.min),
               targetRepMax: Value(p.repRange.max),
               targetRir: Value(p.targetRir),
-              technique: Value(p.technique),
             ));
-        // Section 6: the technique's follow-ups are ready under the set (drops pre-filled 25 % lighter each).
-        var from = s.weight;
-        for (final k in followUpsFor(p.technique)) {
-          if (k == SetKind.drop) from = dropWeight(from, pct: programDropPct, increment: coach.increments.of(info.equipmentKind));
-          await _db.into(_db.workoutSets).insert(WorkoutSetsCompanion.insert(
-                sessionExerciseId: exId,
-                position: pos++,
-                setType: Value(k.setType),
-                weight: Value(k == SetKind.drop ? from : s.weight),
-                reps: Value(switch (k) {
-                  SetKind.myo => myoRepsPerCycle,
-                  SetKind.hold => holdSeconds,
-                  _ => s.reps,
-                }),
-                targetRir: const Value(0),
-                technique: Value(p.technique),
-              ));
-        }
       }
     }
     return exId;
@@ -465,7 +438,6 @@ class SessionRepository {
         coach: coach,
         program: program,
         programSlots: decodeSlots(row.programSlots),
-        programWeek: row.programWeek ?? standardProgramWeek,
         displayName: info.name,
         routineExerciseId: row.routineExerciseId,
         overrideRange: row.targetsEdited ? RepRange(row.repMin, row.repMax) : null,

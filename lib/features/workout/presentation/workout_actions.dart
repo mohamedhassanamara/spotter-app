@@ -19,8 +19,7 @@ Future<void> startWorkout(BuildContext context, WidgetRef ref, {RoutineWithExerc
   final coach = await ref.read(coachContextBuilderProvider)();
   final name = routine?.routine.name ?? '${DateFormat('EEEE').format(coach.now)} workout';
   final program = await ref.read(programProvider.future);
-  final week = await ref.read(programWeekProvider.future);
-  await sessions.start(name: name, coach: coach, catalog: catalog, routine: routine, program: program, programWeek: week);
+  await sessions.start(name: name, coach: coach, catalog: catalog, routine: routine, program: program);
   if (context.mounted) context.push(Routes.workout);
 }
 

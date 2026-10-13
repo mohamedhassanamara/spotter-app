@@ -6,16 +6,14 @@ import 'package:spotter/core/domain/training.dart';
 import 'package:spotter/features/program/domain/program.dart';
 
 void main() {
-  final program = Program.fromJson(jsonDecode(File('assets/programs/min_max_phase2.json').readAsStringSync()) as Map<String, dynamic>);
+  final program = Program.fromJson(jsonDecode(File('assets/programs/min_max_canonical.json').readAsStringSync()) as Map<String, dynamic>);
   final routines = (jsonDecode(File('assets/programs/my_routines.json').readAsStringSync()) as Map<String, dynamic>)['routines']
       as List<dynamic>;
 
-  test('structure: 12 weeks, 5 training days, rest days after Lower and Arms, 37 slots', () {
-    expect(program.weekCount, 12);
+  test('structure: one canonical week, 5 training days, rest days after Lower and Arms, 37 slots', () {
     expect(program.days.map((d) => d.name), ['Upper', 'Lower', 'Push', 'Pull', 'Arms']);
     expect(program.weekLayout, ['Upper', 'Lower', 'Rest', 'Push', 'Pull', 'Arms', 'Rest']);
     expect(program.days.expand((d) => d.slots).length, 37);
-    expect(program.introWeeks, {1, 7});
   });
 
   test('slot details as printed (Lower: Hack Squat)', () {
@@ -27,35 +25,27 @@ void main() {
     expect(s.rest!.maxSeconds, 240);
     expect(s.substitutions, ['Smith Machine Squat', 'Leg Press']);
     expect(s.rir0AttemptFailure, isFalse, reason: 'RIR 0 safety rule');
-    expect(s.week(1).rir, [2, 3]);
-    expect(s.week(5).rir, [0, 2]);
-    expect(s.week(8).rir, [1, 2]);
+    expect(s.rir, [0, 2], reason: 'week 5 is canonical');
   });
 
-  test('techniques only in block 2 (weeks 8-12), on the last working set', () {
-    final legCurl = program.slot('lower_01')!;
-    expect(legCurl.week(7).technique, isNull);
-    expect(legCurl.week(8).technique, 'drop_sets_2x25');
-    final sets = prescribeSets(program: program, slotIds: ['lower_01'], sets: 3, week: 8);
-    expect(sets.map((s) => s.technique), [null, null, 'drop_sets_2x25']);
+  test('techniques stay defined (for the manual SET menu) but no prescription carries one', () {
+    final sets = prescribeSets(program: program, slotIds: ['lower_01'], sets: 3);
     expect(sets.map((s) => s.targetRir), [0, 0, 0]);
     expect(program.techniques['drop_sets_2x25']!.dropPct, 25);
     expect(program.techniques['lengthened_partials'], isNotNull);
   });
 
   test('a routine row spanning two slots: Chest Press 2×4-6 then 1×20', () {
-    final sets = prescribeSets(program: program, slotIds: ['upper_01', 'upper_02'], sets: 3, week: 2);
+    final sets = prescribeSets(program: program, slotIds: ['upper_01', 'upper_02'], sets: 3);
     expect(sets.map((s) => s.repRange), [const RepRange(4, 6), const RepRange(4, 6), const RepRange(20, 20)]);
     expect(sets.map((s) => s.targetRir), [0, 0, 0]);
-    final intro = prescribeSets(program: program, slotIds: ['upper_01', 'upper_02'], sets: 3, week: 1);
-    expect(intro.map((s) => s.targetRir), [1, 2, 1]);
   });
 
   test('more sets than the program gives repeat the last set; fewer take the first', () {
-    final more = prescribeSets(program: program, slotIds: ['push_04'], sets: 3, week: 2);
+    final more = prescribeSets(program: program, slotIds: ['push_04'], sets: 3);
     expect(more.length, 3);
     expect(more.every((s) => s.repRange == const RepRange(20, 20)), isTrue);
-    expect(prescribeSets(program: program, slotIds: ['lower_01'], sets: 1, week: 2).length, 1);
+    expect(prescribeSets(program: program, slotIds: ['lower_01'], sets: 1).length, 1);
   });
 
   test('warm-up pyramids from the program (planned working weight 100 kg, 2.5 kg plates)', () {
@@ -81,13 +71,25 @@ void main() {
     expect(warmupCountFor(press, firstOfDay: false, compound: false), 2);
   });
 
-  test('planned rest days and 5 sessions a week; standard week = full effort, no techniques', () {
+  test('planned rest days and 5 sessions a week; one RIR per working set in every slot', () {
     expect(program.plannedRestWeekdays, {DateTime.wednesday, DateTime.sunday});
     expect(program.sessionsPerWeek, 5);
-    expect(program.introWeeks.contains(standardProgramWeek), isFalse);
     for (final d in program.days) {
       for (final s in d.slots) {
-        expect(s.week(standardProgramWeek).technique, isNull, reason: s.id);
+        expect(s.rir.length, s.workingSets, reason: s.id);
+      }
+    }
+  });
+
+  test('the canonical file is week 5 of the 12-week extraction, with no weeks or techniques', () {
+    final full = jsonDecode(File('docs/program/min_max_phase2_12weeks.json').readAsStringSync()) as Map<String, dynamic>;
+    final canon = jsonDecode(File('assets/programs/min_max_canonical.json').readAsStringSync()) as Map<String, dynamic>;
+    expect((canon['program'] as Map)['canonical_week'], 5);
+    for (final (i, d) in (full['days'] as List).indexed) {
+      for (final (k, s) in ((d as Map)['slots'] as List).indexed) {
+        final c = (((canon['days'] as List)[i] as Map)['slots'] as List)[k] as Map;
+        expect(c['rir'], (((s as Map)['weeks'] as Map)['5'] as Map)['rir'], reason: s['slot_id'] as String);
+        expect(c.containsKey('weeks'), isFalse);
       }
     }
   });
@@ -99,15 +101,6 @@ void main() {
     ];
     expect(names, isNot(contains('Face Pull')));
     expect(names.length, 29);
-  });
-
-  test('program week loops after week 12', () {
-    final start = DateTime(2026, 9, 7); // Monday
-    expect(programWeekFor(startMonday: start, now: DateTime(2026, 9, 7), weekCount: 12), 1);
-    expect(programWeekFor(startMonday: start, now: DateTime(2026, 9, 13, 20), weekCount: 12), 1);
-    expect(programWeekFor(startMonday: start, now: DateTime(2026, 9, 14), weekCount: 12), 2);
-    expect(programWeekFor(startMonday: start, now: DateTime(2026, 11, 30), weekCount: 12), 1);
-    expect(startMondayForWeek(week: 6, now: DateTime(2026, 10, 14)), DateTime(2026, 9, 7));
   });
 
   test('my routines: every slot exists, set counts match the program except the flagged extra', () {

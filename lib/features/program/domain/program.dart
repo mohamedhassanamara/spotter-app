@@ -1,16 +1,15 @@
 import 'dart:math' as math;
 
-import '../../../core/domain/dates.dart';
 import '../../../core/domain/equipment.dart';
 import '../../../core/domain/training.dart';
 import '../../tutorials/domain/youtube.dart';
 
 /// Pure model of a training program extracted from its source (see docs/program/SCHEMA.md).
 
-/// The owner runs the program's exercises and methods without following the 12-week plan, so every
-/// session uses a standard hard week: full Block 1 effort targets, no intro/deload easing and no
-/// automatic Block 2 techniques (techniques are added by hand). Week 2 is that week.
-const int standardProgramWeek = 2;
+/// The owner runs one fixed weekly template, not the 12-week plan: the app reads only the canonical
+/// week (week 5 of the PDF, built by tool/program/canonical_week.py into
+/// assets/programs/min_max_canonical.json). No intro/deload easing, no week tracking, and the program
+/// never creates drop sets, myo-reps or holds; those are added by hand in the logger.
 
 /// Warm-up sets for a slot: the higher count for the day's first exercise and for compounds,
 /// the lower count for isolation work (the owner trains to failure and wants to get to work sets fast).
@@ -51,14 +50,6 @@ class WarmupStep {
   final IntRange reps;
 }
 
-class SlotWeek {
-  const SlotWeek({required this.rir, required this.technique});
-
-  /// Target RIR per working set; null = no target ("-").
-  final List<int?> rir;
-  final String? technique;
-}
-
 class ProgramSlot {
   const ProgramSlot({
     required this.id,
@@ -74,7 +65,7 @@ class ProgramSlot {
     required this.substitutions,
     required this.notes,
     required this.rir0AttemptFailure,
-    required this.weeks,
+    required this.rir,
     this.videos = const {},
   });
 
@@ -100,9 +91,8 @@ class ProgramSlot {
 
   /// False for exercises where RIR 0 means "no rep left, but don't attempt and fail it".
   final bool rir0AttemptFailure;
-  final Map<int, SlotWeek> weeks;
-
-  SlotWeek week(int w) => weeks[w] ?? weeks[1]!;
+  /// Target RIR per working set in the canonical week (0 = to failure; null = no target, "-").
+  final List<int?> rir;
 }
 
 MapEntry<String, YouTubeRef>? _ref(String name, String url) {
@@ -121,19 +111,20 @@ class Program {
   Program({
     required this.id,
     required this.name,
-    required this.weekCount,
+    required this.canonicalWeek,
     required this.weekLayout,
     required this.days,
     required this.techniques,
     required this.warmupByCount,
     required this.progressionRule,
     required this.progressionFallback,
-    required this.introWeeks,
   }) : _slots = {for (final d in days) for (final s in d.slots) s.id: s};
 
   final String id;
   final String name;
-  final int weekCount;
+
+  /// Week of the PDF the fixed template was taken from (5).
+  final int canonicalWeek;
   final List<String> weekLayout;
   final List<ProgramDay> days;
   final Map<String, TechniqueDef> techniques;
@@ -141,8 +132,6 @@ class Program {
   final String progressionRule;
   final String progressionFallback;
 
-  /// Intro and deload weeks (lower effort).
-  final Set<int> introWeeks;
   final Map<String, ProgramSlot> _slots;
 
   ProgramSlot? slot(String id) => _slots[id];
@@ -179,11 +168,6 @@ class Program {
           WarmupStep((s['pct'] as num).toInt(), IntRange.fromJson(s['reps'] as Map<String, dynamic>)),
       ];
     });
-    final intro = <int>{};
-    for (final b in (method['blocks'] as List<dynamic>).cast<Map<String, dynamic>>()) {
-      if (b['intro_week'] != null) intro.add((b['intro_week'] as num).toInt());
-      if (b['deload_week'] != null) intro.add((b['deload_week'] as num).toInt());
-    }
     final days = <ProgramDay>[];
     for (final d in (j['days'] as List<dynamic>).cast<Map<String, dynamic>>()) {
       final dayId = d['id'] as String;
@@ -220,13 +204,7 @@ class Program {
                 ]),
                 notes: s['notes'] as String? ?? '',
                 rir0AttemptFailure: s['rir0_attempt_failure'] as bool? ?? true,
-                weeks: {
-                  for (final e in (s['weeks'] as Map<String, dynamic>).entries)
-                    int.parse(e.key): SlotWeek(
-                      rir: [for (final r in ((e.value as Map<String, dynamic>)['rir'] as List<dynamic>)) (r as num?)?.toInt()],
-                      technique: (e.value as Map<String, dynamic>)['technique'] as String?,
-                    ),
-                },
+                rir: [for (final r in (s['rir'] as List<dynamic>)) (r as num?)?.toInt()],
               );
             }(),
         ],
@@ -236,14 +214,13 @@ class Program {
     return Program(
       id: p['id'] as String,
       name: p['name'] as String,
-      weekCount: (p['weeks'] as num).toInt(),
+      canonicalWeek: (p['canonical_week'] as num?)?.toInt() ?? 5,
       weekLayout: (p['week_layout'] as List<dynamic>).cast<String>(),
       days: days,
       techniques: tech,
       warmupByCount: warm,
       progressionRule: prog['rule'] as String,
       progressionFallback: prog['fallback'] as String,
-      introWeeks: intro,
     );
   }
 }
@@ -254,7 +231,6 @@ class SetPrescription {
     required this.slotId,
     required this.repRange,
     required this.targetRir,
-    required this.technique,
     required this.restSeconds,
     required this.rir0AttemptFailure,
   });
@@ -263,8 +239,6 @@ class SetPrescription {
   final RepRange repRange;
   final int? targetRir;
 
-  /// Last-set intensity technique, only on the final working set of its slot.
-  final String? technique;
   final int? restSeconds;
   final bool rir0AttemptFailure;
 
@@ -272,28 +246,25 @@ class SetPrescription {
         slotId: slotId,
         repRange: r,
         targetRir: targetRir,
-        technique: technique,
         restSeconds: restSeconds,
         rir0AttemptFailure: rir0AttemptFailure,
       );
 }
 
 /// Expands a routine row (owner's set count spread over one or more program slots) into
-/// per-set prescriptions for [week]. Sets fill the first slot's working sets, then the next.
+/// per-set prescriptions (canonical week). Sets fill the first slot's working sets, then the next.
 /// If the owner has more sets than the slots provide, extra sets repeat the last slot's last set
 /// (no technique); fewer sets just take the first ones.
-List<SetPrescription> prescribeSets({required Program program, required List<String> slotIds, required int sets, required int week}) {
+List<SetPrescription> prescribeSets({required Program program, required List<String> slotIds, required int sets}) {
   final out = <SetPrescription>[];
   final slots = [for (final id in slotIds) ?program.slot(id)];
   if (slots.isEmpty) return out;
   for (final s in slots) {
-    final w = s.week(week);
     for (var i = 0; i < s.workingSets && out.length < sets; i++) {
       out.add(SetPrescription(
         slotId: s.id,
         repRange: s.repRange,
-        targetRir: i < w.rir.length ? w.rir[i] : null,
-        technique: i == s.workingSets - 1 ? w.technique : null,
+        targetRir: i < s.rir.length ? s.rir[i] : null,
         restSeconds: s.rest?.maxSeconds,
         rir0AttemptFailure: s.rir0AttemptFailure,
       ));
@@ -305,7 +276,6 @@ List<SetPrescription> prescribeSets({required Program program, required List<Str
       slotId: last.slotId,
       repRange: last.repRange,
       targetRir: last.targetRir,
-      technique: null,
       restSeconds: last.restSeconds,
       rir0AttemptFailure: last.rir0AttemptFailure,
     ));
@@ -338,13 +308,3 @@ List<WarmupSet> warmupSets({required Program program, required int count, requir
   ];
 }
 
-/// Program week (1-based) for [now] given the Monday the program was started, looping after the
-/// last week as the program says ("after Week 12, loop back to Week 1").
-int programWeekFor({required DateTime startMonday, required DateTime now, required int weekCount}) {
-  final days = dateOnly(now).difference(weekStart(startMonday)).inDays;
-  if (days < 0) return 1;
-  return (days ~/ 7) % weekCount + 1;
-}
-
-/// The Monday a program must have started for [now] to fall in [week].
-DateTime startMondayForWeek({required int week, required DateTime now}) => addDays(weekStart(now), -7 * (week - 1));

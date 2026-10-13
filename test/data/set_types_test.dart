@@ -28,7 +28,7 @@ void main() {
     increments: Increments.defaults,
     now: now,
   );
-  final program = Program.fromJson(jsonDecode(File('assets/programs/min_max_phase2.json').readAsStringSync()) as Map<String, dynamic>);
+  final program = Program.fromJson(jsonDecode(File('assets/programs/min_max_canonical.json').readAsStringSync()) as Map<String, dynamic>);
 
   group('drop weight', () {
     test('25 % off, rounded to the increment', () {
@@ -137,7 +137,7 @@ void main() {
       expect(ex.sets.last.weight, parent.weight);
     });
 
-    test('program techniques pre-create their follow-ups (week 8: two 25 % drops on Leg Curl)', () async {
+    test('the program never creates drop sets, myo-reps or holds (Leg Curl: only working sets)', () async {
       final routines = RoutineRepository(db);
       final rid = await routines.create('Lower', now: now);
       final slot = program.slot('lower_01')!;
@@ -152,14 +152,10 @@ void main() {
             programSlots: const Value('["lower_01"]'),
           ));
       final r = await routines.watchRoutine(rid).first;
-      await sessions.start(name: 'Lower', coach: coach, catalog: catalog, routine: r, program: program, programWeek: 8);
+      await sessions.start(name: 'Lower', coach: coach, catalog: catalog, routine: r, program: program);
       final ex = (await active()).exercises.single;
-      final kinds = ex.sets.where((x) => !x.isWarmup).map((x) => x.kind).toList();
-      expect(kinds, [...List.filled(slot.workingSets, SetKind.working), SetKind.drop, SetKind.drop]);
-      final last = ex.sets.lastWhere((x) => x.isWorkingSet);
-      final drops = ex.sets.where((x) => x.kind == SetKind.drop).toList();
-      expect(drops.first.weight, lessThan(last.weight == 0 ? 1 : last.weight));
-      expect(drops.every((d) => d.technique == dropTechnique), isTrue);
+      expect(ex.sets.where((x) => !x.isWarmup).map((x) => x.kind), List.filled(slot.workingSets, SetKind.working));
+      expect(ex.sets.every((x) => x.technique == null), isTrue);
     });
 
     test('superset: sets alternate A1, A2 by round; rest only when the round is done', () async {

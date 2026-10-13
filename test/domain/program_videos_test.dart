@@ -32,7 +32,7 @@ Map<String, ExerciseInfo> catalog() {
 }
 
 void main() {
-  final program = Program.fromJson(jsonDecode(File('assets/programs/min_max_phase2.json').readAsStringSync()) as Map<String, dynamic>);
+  final program = Program.fromJson(jsonDecode(File('assets/programs/min_max_canonical.json').readAsStringSync()) as Map<String, dynamic>);
   final routines = jsonDecode(File('assets/programs/my_routines.json').readAsStringSync()) as Map<String, dynamic>;
   final rows = [
     for (final r in (routines['routines'] as List<dynamic>).cast<Map<String, dynamic>>())

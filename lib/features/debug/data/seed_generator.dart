@@ -18,7 +18,6 @@ import '../../readiness/domain/readiness.dart';
 import '../../workout/data/finish_service.dart';
 import '../../workout/data/history_repository.dart';
 import '../../program/data/program_repository.dart';
-import '../../program/domain/program.dart';
 import '../../workout/data/routine_repository.dart';
 import '../../workout/data/session_repository.dart';
 
@@ -166,7 +165,6 @@ class SeedGenerator {
       if (band == ReadinessBand.red && rng.nextBool()) continue; // smart rest
       final weekIndex = day.difference(firstMonday).inDays ~/ 7;
       final routine = routineByName[dayName]!;
-      const programWeek = standardProgramWeek;
 
       final start = DateTime(day.year, day.month, day.day, 18).add(Duration(minutes: rng.nextInt(50) - 20));
       final history = await historyRepo.load(catalog);
@@ -194,7 +192,6 @@ class SeedGenerator {
         catalog: catalog,
         routine: routine,
         program: program,
-        programWeek: programWeek,
       );
       final active = (await sessionRepo.watchActive().first)!;
 

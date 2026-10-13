@@ -380,9 +380,6 @@ final programRepositoryProvider = Provider((ref) => ProgramRepository(ref.watch(
 
 final programProvider = FutureProvider<Program>((ref) => ProgramRepository.load());
 
-/// Program week whose prescriptions sessions use. The owner doesn't follow the 12-week plan, so this
-/// is always the standard hard week (see [standardProgramWeek]).
-final programWeekProvider = FutureProvider<int>((ref) async => standardProgramWeek);
 
 
 /// Weekdays the program schedules as rest (Wednesday and Sunday for Min-Max Phase 2): planned rest

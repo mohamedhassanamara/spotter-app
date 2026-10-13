@@ -338,11 +338,10 @@ class _ProgramRowInfo extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final program = ref.watch(programProvider).value;
-    final week = ref.watch(programWeekProvider).value ?? standardProgramWeek;
     if (program == null) return const SizedBox.shrink();
     final override = row.overrideRepMin != null && row.overrideRepMax != null ? RepRange(row.overrideRepMin!, row.overrideRepMax!) : null;
     final pres = [
-      for (final p in prescribeSets(program: program, slotIds: decodeSlots(row.programSlots), sets: row.targetSets, week: week))
+      for (final p in prescribeSets(program: program, slotIds: decodeSlots(row.programSlots), sets: row.targetSets))
         override == null ? p : p.withRange(override),
     ];
     final parts = <String>[];
@@ -362,15 +361,13 @@ class _ProgramRowInfo extends ConsumerWidget {
       'extra' => 'not in the program (uses ${first?.exercise} prescription)',
       _ => row.programExercise == null ? 'program' : 'program: ${row.programExercise}',
     };
-    final techniques = pres.map((p) => p.technique).whereType<String>().toSet();
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Text(
         '${parts.join(' + ')} reps · warm-up ${first?.warmupSets} · rest ${first?.rest?.text ?? 'none (superset)'}',
         style: const TextStyle(color: AppColors.textSecondary),
       ),
       Text(
-        'Effort ${pres.map((p) => p.targetRir == null ? '–' : (p.targetRir == 0 ? 'F' : 'RIR ${p.targetRir}')).join(' / ')}'
-        '${techniques.isEmpty ? '' : ' · ${techniques.map((t) => program.techniques[t]?.name ?? t).join(', ')}'}',
+        'Effort ${pres.map((p) => p.targetRir == null ? '–' : (p.targetRir == 0 ? 'F' : 'RIR ${p.targetRir}')).join(' / ')}',
         style: AppType.bodyS.copyWith(fontSize: 12, color: AppColors.accent),
       ),
       Text(override == null ? relation : '$relation · your rep range $override',

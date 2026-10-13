@@ -1,4 +1,4 @@
-"""Adds Jeff Nippard's demo videos to assets/programs/min_max_phase2.json.
+"""Adds Jeff Nippard's demo videos to docs/program/min_max_phase2_12weeks.json.
 
     python3 tool/program/extract_videos.py "/path/to/The Min-Max Program Phase 2 5x.pdf"
 
@@ -18,7 +18,7 @@ from urllib.parse import parse_qs, urlparse
 import pdfplumber
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
-PROGRAM = ROOT / "assets/programs/min_max_phase2.json"
+PROGRAM = ROOT / "docs/program/min_max_phase2_12weeks.json"
 
 
 def norm(s):

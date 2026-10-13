@@ -1,4 +1,4 @@
-"""Builds assets/programs/min_max_phase2.json from your own copy of
+"""Builds docs/program/min_max_phase2_12weeks.json from your own copy of
 "The Min-Max Program Phase 2 5x" PDF (never committed; see .gitignore `private/`).
 
 Usage (needs `pip install pdfplumber`):
@@ -234,8 +234,8 @@ def main():
         'method': METHOD,
         'days': build(pdf_path),
     }
-    json.dump(out, open('assets/programs/min_max_phase2.json', 'w'), indent=2, ensure_ascii=False)
-    print('wrote assets/programs/min_max_phase2.json',
+    json.dump(out, open('docs/program/min_max_phase2_12weeks.json', 'w'), indent=2, ensure_ascii=False)
+    print('wrote docs/program/min_max_phase2_12weeks.json',
           sum(len(d['slots']) for d in out['days']), 'slots')
 
 

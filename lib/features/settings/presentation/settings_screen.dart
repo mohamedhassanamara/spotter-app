@@ -353,7 +353,7 @@ class _ProgramTiles extends ConsumerWidget {
       ListTile(
         leading: const Icon(Icons.calendar_view_week_rounded),
         title: Text(program?.name ?? 'Program'),
-        subtitle: const Text('Standard hard-week targets every session (no week plan). '
+        subtitle: const Text('One fixed weekly template: the same sets, reps and effort every session. '
             'Planned rest: Wednesday and Sunday.'),
       ),
       ListTile(

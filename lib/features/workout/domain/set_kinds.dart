@@ -66,8 +66,8 @@ double dropWeight(double from, {required int pct, required double increment}) {
   return r < 0 ? 0 : double.parse(r.toStringAsFixed(2));
 }
 
-/// Program technique ids (assets/programs/min_max_phase2.json) and what each pre-creates under the
-/// last working set: two drops at 25 %, one myo-rep cycle (more can be added), one 30 s hold.
+/// Program technique ids (the program's method section) and what each creates under the
+/// set when chosen by hand from the SET menu: two drops at 25 %, one myo-rep cycle, one 30 s hold. The
 const String dropTechnique = 'drop_sets_2x25';
 const String myoTechnique = 'myo_reps';
 const String holdTechnique = 'weighted_static_hold_30s';
