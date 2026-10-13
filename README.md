@@ -117,6 +117,9 @@ correction tool), `form_reset_snackbar_flow_test` (3 s auto-dismiss, swipe, once
 `swipe_delete_flow_test` (swipe left → Delete, full swipe, Undo, swipe right completes, set-menu fallback,
 warm-up / drop / myo / hold rows).
 
+Ranks and the Pull swap: `rank_toggle_flow_test` (routine exercises count by default, imported-only ones are off, a
+completed set switches an exercise on, a manual off stays off, adding to a routine switches it on).
+
 ### Reporting bugs from the phone
 
 Settings → long-press the version label → **Error log** → **Copy all**, then paste it into a message.

@@ -125,6 +125,28 @@ class ProgramRepository {
     return fixed;
   }
 
+  static const singleArmReverseFlyKey = 'pull_single_arm_reverse_fly';
+  static const singleArmReverseFlyId = 'liftoff_one_arm_machine_reverse_fly';
+
+  /// Startup step, once: the Pull routine's Machine Reverse Fly becomes Machine Single-Arm Reverse Fly
+  /// (the program's 1-Arm Reverse Pec Deck), same position, same program slots (1×20 + 1×10). Your own
+  /// edits to the row (set count, rest, target reps) are left alone; only the exercise changes.
+  static Future<bool> ensureSingleArmReverseFly(AppDatabase db) async {
+    if (await db.getSetting(singleArmReverseFlyKey) != null) return false;
+    if (await (db.select(db.exercises)..where((t) => t.id.equals(singleArmReverseFlyId))).getSingleOrNull() == null) return false;
+    await db.transaction(() async {
+      final rows = await (db.select(db.routineExercises)..where((t) => t.exerciseId.equals('Reverse_Machine_Flyes'))).get();
+      for (final r in rows) {
+        await (db.update(db.routineExercises)..where((t) => t.id.equals(r.id))).write(const RoutineExercisesCompanion(
+          exerciseId: Value(singleArmReverseFlyId),
+          displayName: Value('Machine Single-Arm Reverse Fly'),
+        ));
+      }
+      await db.putSetting(singleArmReverseFlyKey, DateTime.now().toIso8601String());
+    });
+    return true;
+  }
+
   static const supersetsKey = 'program_supersets_applied';
 
   /// Startup step, once: builds the program's supersets (S1/S2/S3 on Arms) into existing routines

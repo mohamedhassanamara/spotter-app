@@ -7,7 +7,7 @@ import '../../../core/db/database.dart';
 import '../domain/exercise_info.dart';
 
 /// Bump when assets/exercises.json is refreshed so existing installs re-import it.
-const int exerciseDatasetVersion = 4; // v2: + extra_exercises.json; v3: + Assisted Dip (Machine); v4: + library_sources.json (wger, ExerciseDB V1)
+const int exerciseDatasetVersion = 5; // v5: + Machine Single-Arm Reverse Fly (the id the Liftoff import already uses); v2: + extra_exercises.json; v3: + Assisted Dip (Machine); v4: + library_sources.json (wger, ExerciseDB V1)
 
 class ExerciseRepository {
   ExerciseRepository(this._db);

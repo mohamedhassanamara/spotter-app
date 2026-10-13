@@ -234,8 +234,8 @@
           "program_exercise": "Chest-Supported Machine Row"
         },
         {
-          "name": "Machine Reverse Fly",
-          "exercise_id": "Reverse_Machine_Flyes",
+          "name": "Machine Single-Arm Reverse Fly",
+          "exercise_id": "liftoff_one_arm_machine_reverse_fly",
           "sets": 2,
           "program_slots": [
             "pull_06",

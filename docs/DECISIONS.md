@@ -1449,3 +1449,37 @@ Delete shows an Undo snackbar for 3 s (`restoreSet` re-inserts the row with its 
 Only horizontal drags are claimed, so the page keeps scrolling vertically. The set-menu Delete stays.
 - **Swipe right to complete did not exist** in the code (only the ✓ button). Since you expected it, I added
   it: a right swipe of at least 56 px completes the set and springs back; it never un-completes one.
+
+## Ranks: only my routines count by default; Pull swap
+
+**Rule.** An exercise counts toward ranks when, in this order: you switched it on/off by hand (manual always
+wins); else it is in one of your current routines; else you completed a working set of it in an in-app
+workout (automatic); else it is off. Derived from stored state (`rank_manual` id → on/off, `rank_auto_on` ids,
+the routines), not copied, so "adding to a routine switches it on" and "removing it switches it off again"
+need no hook. `RankExclusions.load()` still returns the set of exercises that don't count (now the library
+minus the ones that do), so ranks, the muscle sheet, the Ranks tab and the exercise page share one source.
+- **Auto-enable** happens in `completeSet` for a real working set only: not a warm-up, drop / myo / hold,
+  or a set with 0 reps. Un-ticking it later leaves the exercise on. Imported history never triggers it.
+- **Manual off beats everything**, also adding to a routine and a completed set. Judgement call: switching a
+  routine exercise off and later re-adding it to a routine does not turn it back on; flip the switch.
+- **Migration (once, `rank_policy_v2`).** Exercises you had hidden that are in a routine become manual-off
+  (they were deliberate); exercises with a completed working set in an in-app session are switched on
+  (automatic), because that is what the new rule would have done. Everything else follows the routine rule.
+- **Silent.** Ranks are derived, never stored, so nothing animates or notifies. The ladder migration is
+  bumped to v5, which re-checks rank achievements against the new ranks and revokes unsupported ones
+  silently, like the v4 change.
+- Liftoff's "exclude from ranks" list in the import is gone (everything not in a routine is off anyway).
+
+**Pull: Machine Single-Arm Reverse Fly.** Replaces Machine Reverse Fly in the same position (my_routines.json
+for new installs; a one-time in-place step for existing ones that keeps your set count and other edits).
+It is the program's 1-Arm Reverse Pec Deck: slots pull_06 + pull_07 (1×20, 1×10, both to failure, 0–1
+warm-ups, rest 1–2 min); the video comes from the program slot as before.
+- **History:** the exercise reuses the id the Liftoff import already made from "One Arm Machine Reverse
+  Fly" (`liftoff_one_arm_machine_reverse_fly`, renamed in the library), so that history and its rank
+  standard (one-arm reverse pec deck) follow it. It is thin (one session, 25 kg × 20 on 10 Oct). The 19-session
+  "One Arm Cable Reverse Fly" was not used: different equipment and stack. The two-arm Machine Reverse Fly (42
+  sessions) keeps its history and is now off for ranks unless you do it again.
+- Tests: `rank_policy_test` (default, auto-enable, warm-up / drop / empty set, import, manual off, manual on,
+  adding to a routine, migration), `single_arm_reverse_fly_test` (fresh install, in-place migration, program
+  prescription, video), `rank_toggle_flow_test` (real taps). `docs/RANK_POLICY.md` has the before / after
+  ranks and the first suggestions.
