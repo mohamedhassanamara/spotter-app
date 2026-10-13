@@ -77,4 +77,42 @@ void main() {
     expect(await ProgramRepository.ensureCanonicalWeek(db, program: program), isFalse, reason: 'runs once');
     await db.close();
   });
+
+  test('the program supersets (S1/S2/S3 on Arms) are built into existing routines once, rest rule applied', () async {
+    final db = AppDatabase(NativeDatabase.memory());
+    await ExerciseRepository(db).ensureSeeded(
+      jsonOverride: File('assets/exercises.json').readAsStringSync(),
+      extraJsonOverride: File('assets/extra_exercises.json').readAsStringSync(),
+      sourcesJsonOverride: File('assets/library_sources.json').readAsStringSync(),
+    );
+    final rid = await db.into(db.routines).insert(RoutinesCompanion.insert(name: 'Arms', createdAt: now));
+    Future<int> row(int pos, String slot, String ex, {int rest = 90, int sets = 2}) => db.into(db.routineExercises).insert(RoutineExercisesCompanion.insert(
+          routineId: rid,
+          exerciseId: ex,
+          position: pos,
+          repMin: 6,
+          repMax: 8,
+          targetSets: sets,
+          restSeconds: rest,
+          programSlots: Value('["$slot"]'),
+        ));
+    final curl = await row(0, 'arms_01', 'EZ-Bar_Curl');
+    final ext = await row(1, 'arms_02', 'Cable_Rope_Overhead_Triceps_Extension', sets: 3);
+    final hammer = await row(2, 'arms_03', 'Hammer_Curls');
+    final push = await row(3, 'arms_04', 'Triceps_Pushdown');
+    final lat = await row(4, 'arms_07', 'Side_Lateral_Raise');
+
+    expect(await ProgramRepository.ensureProgramSupersets(db, program: program), isTrue);
+    final rows = {for (final r in await db.select(db.routineExercises).get()) r.id: r};
+    expect(rows[curl]!.supersetGroup, curl);
+    expect(rows[ext]!.supersetGroup, curl);
+    expect(rows[hammer]!.supersetGroup, hammer);
+    expect(rows[push]!.supersetGroup, hammer);
+    expect(rows[lat]!.supersetGroup, isNull);
+    expect(rows[curl]!.restSeconds, 0, reason: 'no rest on the first of a pair');
+    expect(rows[ext]!.restSeconds, 60, reason: '30-60 s after the second');
+    expect(rows[ext]!.targetSets, 3, reason: 'my set counts are left alone');
+    expect(await ProgramRepository.ensureProgramSupersets(db, program: program), isFalse);
+    await db.close();
+  });
 }

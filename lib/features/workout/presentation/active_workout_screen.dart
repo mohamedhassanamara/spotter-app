@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -173,6 +175,7 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
                       hideWarmups: _hideWarmups,
                       onToggleWarmups: () => setState(() => _hideWarmups = !_hideWarmups),
                       supersetLabel: labels[e.row.id]?.label,
+                      supersetRestNote: _supersetRestNote(session, e, labels),
                       supersetColor: labels[e.row.id]?.color,
                       onMenu: (a) => _exerciseMenu(session, e, catalog, a),
                     ),
@@ -238,6 +241,17 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
     final session = ref.read(activeSessionProvider).value;
     if (session == null || _notes.text == session.session.notes) return;
     await ref.read(sessionRepositoryProvider).setSessionNotes(session.session.id, _notes.text);
+  }
+
+  /// "No rest → A2" for the first of a pair, "Rest 1:00 after the round" on the last.
+  String? _supersetRestNote(ActiveSession session, ActiveExercise e, Map<int, ({String label, Color color})> labels) {
+    final g = e.row.supersetGroup;
+    if (g == null || labels[e.row.id] == null) return null;
+    final members = session.exercises.where((x) => x.row.supersetGroup == g).toList();
+    final i = members.indexWhere((x) => x.row.id == e.row.id);
+    if (i < members.length - 1) return 'No rest → ${labels[members[i + 1].row.id]?.label ?? 'next'}';
+    final longest = members.map((x) => x.row.restSeconds).reduce(math.max);
+    return 'Rest ${formatClock(Duration(seconds: longest))} after the round ✎';
   }
 
   double _increment(ExerciseInfo? info) => ref.read(currentSettingsProvider).increments.of(info?.equipmentKind ?? EquipmentKind.other);

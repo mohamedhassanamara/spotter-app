@@ -31,6 +31,7 @@ class BlockContext {
     required this.hideWarmups,
     required this.onToggleWarmups,
     required this.supersetLabel,
+    this.supersetRestNote,
     required this.supersetColor,
     required this.onMenu,
   });
@@ -46,6 +47,10 @@ class BlockContext {
 
   /// "A1" etc. when in a superset.
   final String? supersetLabel;
+
+  /// In a superset, the program's rest rule instead of a per-exercise timer: "No rest → A2" on the
+  /// first of a pair, "Rest 1:00 after the round" on the last.
+  final String? supersetRestNote;
   final Color? supersetColor;
   final Future<void> Function(String action) onMenu;
 }
@@ -217,7 +222,7 @@ class _ExerciseBlockState extends ConsumerState<ExerciseBlock> {
           margin: const EdgeInsets.only(right: 6),
           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
           decoration: BoxDecoration(color: ctx.supersetColor!.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(6)),
-          child: Text(ctx.supersetLabel!, style: AppType.label.copyWith(color: ctx.supersetColor, letterSpacing: 0.5)),
+          child: Text(ctx.supersetLabel!, key: ValueKey('superset-label-${ex.row.id}'), style: AppType.label.copyWith(color: ctx.supersetColor, letterSpacing: 0.5)),
         ),
       Expanded(
         child: InkWell(
@@ -262,7 +267,8 @@ class _ExerciseBlockState extends ConsumerState<ExerciseBlock> {
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 6),
           child: Text(
-            'Rest Timer ${formatClock(Duration(seconds: ex.row.restSeconds))} ✎',
+            ctx.supersetRestNote ?? 'Rest Timer ${formatClock(Duration(seconds: ex.row.restSeconds))} ✎',
+            key: ValueKey('rest-text-${ex.row.id}'),
             style: AppType.bodyS.copyWith(color: on ? AppColors.textPrimary : AppColors.textTertiary),
           ),
         ),
@@ -336,9 +342,12 @@ class _ExerciseBlockState extends ConsumerState<ExerciseBlock> {
     final program = ref.watch(programProvider).value;
     final techName = technique == null ? null : (program?.techniques[technique]?.name ?? technique);
     final calibration = sug?.rampUp == true;
-    final line = calibration
-        ? 'Calibration: ramp up each set, stop 2 reps short'
-        : [...parts, if (effort.isNotEmpty) effort, if (techName != null) 'last set: $techName'].join(' · ');
+    final trimmed = sug?.setsTrimmed ?? 0;
+    final line = [
+      calibration ? 'Calibration: ramp up each set, stop 2 reps short' : [...parts, if (effort.isNotEmpty) effort, if (techName != null) 'last set: $techName'].join(' · '),
+      // Readiness took sets away today: say so, so the routine never looks wrong.
+      if (trimmed > 0) '$trimmed set${trimmed == 1 ? '' : 's'} skipped today (readiness ${sug?.band?.name ?? ''})',
+    ].join(' · ');
     return InkWell(
       key: ValueKey('prescription-${ex.row.id}'),
       onTap: () => setState(() => _infoOpen = !_infoOpen),

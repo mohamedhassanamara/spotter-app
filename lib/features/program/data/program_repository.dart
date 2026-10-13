@@ -68,6 +68,37 @@ class ProgramRepository {
     return true;
   }
 
+  static const supersetsKey = 'program_supersets_applied';
+
+  /// Startup step, once: builds the program's supersets (S1/S2/S3 on Arms) into existing routines
+  /// without reinstalling them. Rows are grouped by their first slot's label, in routine order, and
+  /// take the program's rest rule (no rest on the first of a pair, the listed rest after the second).
+  /// Other fields (your set counts, swaps, overrides) are left alone.
+  static Future<bool> ensureProgramSupersets(AppDatabase db, {Program? program}) async {
+    if (await db.getSetting(supersetsKey) == '1') return false;
+    final p = program ?? await load();
+    await db.transaction(() async {
+      for (final routine in await db.select(db.routines).get()) {
+        final rows = await (db.select(db.routineExercises)
+              ..where((t) => t.routineId.equals(routine.id))
+              ..orderBy([(t) => OrderingTerm.asc(t.position)]))
+            .get();
+        final groups = <String, int>{};
+        for (final r in rows) {
+          final slot = p.slot(decodeSlots(r.programSlots).firstOrNull ?? '');
+          final label = slot?.superset;
+          if (slot == null || label == null) continue;
+          await (db.update(db.routineExercises)..where((t) => t.id.equals(r.id))).write(RoutineExercisesCompanion(
+            supersetGroup: Value(groups[label] ??= r.id),
+            restSeconds: Value(slot.rest?.maxSeconds ?? 0),
+          ));
+        }
+      }
+      await db.putSetting(supersetsKey, '1');
+    });
+    return true;
+  }
+
   /// Startup step (before the UI exists, so Train never shows stale routines): installs the owner's
   /// routines on first launch, and reinstalls them when `my_routines.json` gets a newer version.
   static Future<bool> ensureMyRoutinesInstalled(AppDatabase db, {DateTime? now, Map<String, dynamic>? definition, Program? program}) async {
@@ -110,6 +141,7 @@ class ProgramRepository {
               programDay: Value(r['day'] as String),
             ));
         var pos = 0;
+        final supersets = <String, int>{};
         for (final e in (r['exercises'] as List<dynamic>).cast<Map<String, dynamic>>()) {
           final id = e['exercise_id'] as String;
           final slots = (e['program_slots'] as List<dynamic>).cast<String>();
@@ -118,7 +150,7 @@ class ProgramRepository {
             skipped.add(e['name'] as String);
             continue;
           }
-          await _db.into(_db.routineExercises).insert(RoutineExercisesCompanion.insert(
+          final rowId = await _db.into(_db.routineExercises).insert(RoutineExercisesCompanion.insert(
                 routineId: routineId,
                 exerciseId: id,
                 position: pos++,
@@ -132,6 +164,12 @@ class ProgramRepository {
                 programExercise: Value(e['program_exercise'] as String?),
                 displayName: Value(e['name'] as String?),
               ));
+          // The program's S1/S2/S3 labels: rows sharing a label in a day are one superset.
+          final label = first.superset;
+          if (label != null) {
+            await (_db.update(_db.routineExercises)..where((t) => t.id.equals(rowId)))
+                .write(RoutineExercisesCompanion(supersetGroup: Value(supersets[label] ??= rowId)));
+          }
         }
       }
       await _db.putSetting(routinesInstalledKey, '${definition['schema_version'] ?? 1}');

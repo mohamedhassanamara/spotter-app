@@ -47,7 +47,8 @@ Future<List<RoutineExercise>> routineRows(AppDatabase db, int routineId) => (db.
 Future<bool> routineExists(AppDatabase db, int routineId) async =>
     await (db.select(db.routines)..where((t) => t.id.equals(routineId))).getSingleOrNull() != null;
 
-int _workingSets(ActiveExercise e) => e.sets.where((s) => !s.isWarmup && s.setType != 'drop').length;
+/// Working sets, counting any that readiness took away today (those aren't a routine change).
+int _workingSets(ActiveExercise e) => e.sets.where((s) => !s.isWarmup && s.setType == null).length + (e.suggestion?.setsTrimmed ?? 0);
 
 /// Compares the session with its routine: exercises added, removed, replaced, reordered; working-set
 /// counts; target reps edited mid-workout.

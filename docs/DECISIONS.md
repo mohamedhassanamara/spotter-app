@@ -1204,3 +1204,34 @@ hypertrophy program trained close to failure. They are not validated against any
   non-program one; the (i) sheet's button). `library_media_flow_test` updated for the tabless page.
 - The screenshot in docs/screenshots/fixes/ shows the Jeff card's player area empty: YouTube is an
   iOS platform view, which the test's layer capture can't render. On the phone it shows the video.
+
+## Real-device fixes, Fix 5: program fidelity
+
+- **Incline DB Y Raise "2 sets".** The program and the routine both say 3 × 10–12 (RIR 0/0/0), and
+  the logger renders 3 on a normal day (fidelity table). The 2 came from **readiness**: on a Red day
+  the engine removed a set without saying so in the logger. Worse, Phase B's "Update routine"
+  counted that missing set as your change and could write 2 into the routine. Now the number of
+  sets readiness removed is stored with the suggestion (`setsTrimmed`), the prescription line says
+  "1 set skipped today (readiness red)", and routine sync adds skipped sets back before comparing, so
+  they're never a routine change. Fix 6 reworks what readiness does to isolations.
+- **Supersets.** I was wrong in the last report: the extraction did capture S1/S2/S3 on Arms, but
+  the routines never used them. Now:
+  - `installMyRoutines` groups rows by their first slot's label (S1: EZ Bar Curl + Cable Overhead
+    Triceps Extension, S2: Preacher Hammer Curl + Triceps Pushdown, S3: Cable Wrist Curl + Cable
+    Reverse Wrist Curl), for fresh installs and "Reinstall my routines";
+  - `ensureProgramSupersets` (startup, once) builds the same groups into your *existing* routines
+    without reinstalling them (your set counts, swaps and overrides stay), and applies the rest rule:
+    0 s on the first of a pair, 60 s (top of 30–60 s) on the second;
+  - the logger shows the rule instead of a per-exercise timer: "No rest → A2" on the first,
+    "Rest 1:00 after the round" on the second (it already rests only after the round, using the
+    longest rest).
+  The canonical week has supersets only on Arms (checked for every day).
+- **Fidelity test** (`integration_test/program_fidelity_test.dart`): starts all five routines with
+  seeded history (so nothing is in calibration) at neutral readiness and reads the *rendered* logger
+  (set rows and their labels, the effort chip of each working set, warm-up rows, the prescription
+  line, the rest line, the superset label), then compares with the canonical week + my_routines.json.
+  It writes `docs/program/FIDELITY.md` when run with `--dart-define=REPORT_DIR=$PWD/docs/program`.
+  Result: 29/29 rows match. All set counts equal the program's; the documented deviations are the
+  swaps (Straight Arm Pulldown, Pendulum Squat, Decline Crunch) and the listed substitutions.
+- Rules the table relies on: rest = top of the program's range; warm-ups = top of the range for the
+  day's first exercise and compounds, bottom otherwise; effort chip = F for RIR 0, else the RIR.
