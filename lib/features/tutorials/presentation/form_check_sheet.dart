@@ -6,6 +6,7 @@ import '../../../app_providers.dart';
 import '../../../core/domain/muscles.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../router.dart';
+import '../../program/domain/program_videos.dart';
 import '../../program/presentation/program_video.dart';
 import 'exercise_demo.dart';
 
@@ -26,14 +27,14 @@ Future<void> showFormCheckSheet(BuildContext context, String exerciseId) {
             children: [
               Text(info?.name ?? exerciseId, style: Theme.of(ctx).textTheme.titleLarge),
               const SizedBox(height: 12),
+              // The 3D GIF loops first; Jeff's demo is one tap away for program exercises.
               Center(
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 300),
-                  child: video != null
-                      ? ProgramVideoPlayer(video: video)
-                      : ExerciseDemo(exerciseId: exerciseId, targets: info?.targets ?? MuscleTargets.empty, compact: true),
+                  child: ExerciseDemo(exerciseId: exerciseId, targets: info?.targets ?? MuscleTargets.empty, compact: true),
                 ),
               ),
+              if (video != null) _JeffDemoButton(video: video),
               if (info != null && info.instructions.isNotEmpty) ...[
                 const SizedBox(height: 14),
                 for (final step in info.instructions.take(3))
@@ -60,4 +61,30 @@ Future<void> showFormCheckSheet(BuildContext context, String exerciseId) {
       },
     ),
   );
+}
+
+/// "Watch Jeff's demo": reveals the embedded video under the GIF.
+class _JeffDemoButton extends StatefulWidget {
+  const _JeffDemoButton({required this.video});
+  final ProgramVideo video;
+
+  @override
+  State<_JeffDemoButton> createState() => _JeffDemoButtonState();
+}
+
+class _JeffDemoButtonState extends State<_JeffDemoButton> {
+  bool _open = false;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.only(top: 12),
+        child: _open
+            ? ProgramVideoPlayer(video: widget.video)
+            : FilledButton.tonalIcon(
+                key: const ValueKey('watch-jeff'),
+                onPressed: () => setState(() => _open = true),
+                icon: const Icon(Icons.smart_display_rounded),
+                label: const Text("Watch Jeff's demo"),
+              ),
+      );
 }

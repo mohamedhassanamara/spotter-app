@@ -42,8 +42,6 @@ class ExerciseDetailScreen extends ConsumerWidget {
   }
 }
 
-enum _MediaTab { demo, video, steps }
-
 class _DetailView extends ConsumerStatefulWidget {
   const _DetailView({required this.info});
   final ExerciseInfo info;
@@ -53,7 +51,6 @@ class _DetailView extends ConsumerStatefulWidget {
 }
 
 class _DetailViewState extends ConsumerState<_DetailView> {
-  _MediaTab? _tab;
 
   ExerciseInfo get info => widget.info;
 
@@ -79,10 +76,8 @@ class _DetailViewState extends ConsumerState<_DetailView> {
 
   @override
   Widget build(BuildContext context) {
-    // In my Min-Max program: Jeff Nippard's demo from the PDF. Otherwise the V1 GIF or photos.
+    // The 3D GIF loops on top for every exercise; program exercises add Jeff Nippard's demo below.
     final video = ref.watch(programVideosProvider).value?[info.id];
-    final media = video != null ? _MediaTab.video : _MediaTab.demo;
-    final tab = _tab == _MediaTab.steps ? _MediaTab.steps : media;
     final freeze = ref.watch(activeFreezesProvider)[info.id];
     final now = ref.watch(clockProvider)();
     return Scaffold(
@@ -141,23 +136,25 @@ class _DetailViewState extends ConsumerState<_DetailView> {
             ),
           ],
           const SizedBox(height: 16),
-          SegmentedButton<_MediaTab>(
-            showSelectedIcon: false,
-            segments: [
-              video != null
-                  ? const ButtonSegment(value: _MediaTab.video, label: Text('Video'), icon: Icon(Icons.smart_display_rounded))
-                  : const ButtonSegment(value: _MediaTab.demo, label: Text('Demo'), icon: Icon(Icons.view_in_ar_rounded)),
-              const ButtonSegment(value: _MediaTab.steps, label: Text('Steps'), icon: Icon(Icons.format_list_numbered_rounded)),
-            ],
-            selected: {tab},
-            onSelectionChanged: (v) => setState(() => _tab = v.first),
-          ),
-          const SizedBox(height: 16),
-          switch (tab) {
-            _MediaTab.demo => ExerciseDemo(exerciseId: info.id, targets: info.targets),
-            _MediaTab.video => ProgramVideoPlayer(video: video!),
-            _MediaTab.steps => _Steps(info: info),
-          },
+          KeyedSubtree(key: const ValueKey('exercise-hero'), child: ExerciseDemo(exerciseId: info.id, targets: info.targets)),
+          if (video != null) ...[
+            const SizedBox(height: 16),
+            AppCard(
+              key: const ValueKey('jeff-video-card'),
+              padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                const Row(children: [
+                  Icon(Icons.smart_display_rounded, color: AppColors.danger),
+                  SizedBox(width: 8),
+                  Text('Jeff Nippard demo', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
+                ]),
+                const SizedBox(height: 10),
+                ProgramVideoPlayer(video: video),
+              ]),
+            ),
+          ],
+          const SectionHeader('Steps'),
+          _Steps(info: info),
           if (info.credits.isNotEmpty || info.source == 'fedb' || info.source == null)
             Padding(
               padding: const EdgeInsets.only(top: 8),

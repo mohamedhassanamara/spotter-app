@@ -1191,3 +1191,16 @@ hypertrophy program trained close to failure. They are not validated against any
   shows the generated figure and keeps its photos in the Photos section.
 - Known limit: the GIF comes from the existing V1 name matcher, so a few matches are approximate
   (e.g. "Foam Roller Adductors" shows a stretch). Settings → Debug → Media matching can fix one.
+
+## Real-device fixes, Fix 4: GIF and Jeff's video together
+
+- **Exercise page**: no more Video/Demo/Steps tabs. Top to bottom: the 3D GIF loop (`exercise-hero`;
+  the generated figure when there's no GIF), then for program exercises a **"Jeff Nippard demo"** card
+  with the embedded video (autoplay off), then Steps, Muscles, Photos, history. Both, never either/or.
+- **In-workout (i) sheet**: the GIF loops first; program exercises get a **"Watch Jeff's demo"**
+  button that reveals the video in the sheet. The video doesn't load until you ask, which keeps the sheet
+  light mid-set.
+- Test: `exercise_media_flow_test` (GIF above the Jeff card on a program exercise; no card on a
+  non-program one; the (i) sheet's button). `library_media_flow_test` updated for the tabless page.
+- The screenshot in docs/screenshots/fixes/ shows the Jeff card's player area empty: YouTube is an
+  iOS platform view, which the test's layer capture can't render. On the phone it shows the video.

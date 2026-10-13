@@ -26,7 +26,6 @@ void main() {
     await h.tap(find.text('Leverage Chest Press').last);
     await h.waitFor(find.byKey(const ValueKey('program-video')), reason: 'embedded program video', scroll: false);
     expect(find.textContaining('Jeff Nippard · Machine Chest Press'), findsOneWidget);
-    expect(find.text('Demo'), findsNothing);
     await tester.pageBack();
     await h.settle();
 
@@ -34,7 +33,7 @@ void main() {
     await tester.enterText(find.byType(TextField).first, 'Kettlebell Swing');
     await h.settle(6);
     await h.tap(find.text('2 Handed Kettlebell Swing'));
-    await h.waitFor(find.text('Demo'), reason: 'no program video: GIF/photo demo', scroll: false);
+    await h.waitFor(find.byKey(const ValueKey('exercise-hero')), reason: 'no program video: GIF or generated demo', scroll: false);
     await h.waitFor(find.byKey(const ValueKey('exercise-credit')));
     expect(find.textContaining('wger.de'), findsOneWidget);
     expect(find.byKey(const ValueKey('program-video')), findsNothing);
