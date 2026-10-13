@@ -123,6 +123,45 @@ class HistoryRepository {
     return (jsonDecode(raw) as Map<String, dynamic>)['technique'] == true;
   }
 
+  /// Setting written the first time a build with the keypad-save fix starts: sessions that began before
+  /// it may hold suggestion values where numbers were typed (see [suspectSetIds]).
+  static const savedValuesFixedAtKey = 'saved_values_fixed_at';
+
+  static Future<void> markSavedValuesFixed(AppDatabase db, DateTime now) async {
+    if (await db.getSetting(savedValuesFixedAtKey) == null) await db.putSetting(savedValuesFixedAtKey, now.toIso8601String());
+  }
+
+  Future<DateTime?> savedValuesFixedAt() async {
+    final raw = await _db.getSetting(savedValuesFixedAtKey);
+    return raw == null ? null : DateTime.tryParse(raw);
+  }
+
+  /// Completed working sets of [sessionId] whose saved numbers are exactly the suggestion, which is what a
+  /// typed edit that was lost at ✓ looks like (an untouched ✓ looks the same, so these are candidates
+  /// to eyeball, not proof).
+  Future<Set<int>> suspectSetIds(int sessionId) async {
+    final rows = await _db.customSelect(
+      'SELECT ws.id AS id FROM workout_sets ws JOIN session_exercises se ON se.id = ws.session_exercise_id '
+      'WHERE se.session_id = ? AND ws.completed = 1 AND ws.is_warmup = 0 AND ws.set_type IS NULL '
+      'AND ws.suggested_weight IS NOT NULL AND ws.suggested_reps IS NOT NULL '
+      'AND ABS(ws.weight - ws.suggested_weight) < 0.001 AND ws.reps = ws.suggested_reps',
+      variables: [Variable.withInt(sessionId)],
+    ).get();
+    return {for (final r in rows) r.read<int>('id')};
+  }
+
+  /// Corrects a saved set (the history screen's tap-to-edit). Touches the session row so the history
+  /// providers reload.
+  Future<void> correctSet(int setId, {required double weight, required int reps}) => _db.transaction(() async {
+        await (_db.update(_db.workoutSets)..where((t) => t.id.equals(setId))).write(WorkoutSetsCompanion(weight: Value(weight), reps: Value(reps)));
+        await _db.customUpdate(
+          'UPDATE sessions SET notes = notes WHERE id = (SELECT se.session_id FROM workout_sets ws '
+          'JOIN session_exercises se ON se.id = ws.session_exercise_id WHERE ws.id = ?)',
+          variables: [Variable.withInt(setId)],
+          updates: {_db.sessions},
+        );
+      });
+
   Future<void> deleteSession(int id) => _db.transaction(() async {
         final exIds = (await (_db.select(_db.sessionExercises)..where((t) => t.sessionId.equals(id))).get()).map((e) => e.id);
         await (_db.delete(_db.workoutSets)..where((t) => t.sessionExerciseId.isIn(exIds))).go();

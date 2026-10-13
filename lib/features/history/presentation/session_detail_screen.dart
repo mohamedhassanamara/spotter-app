@@ -21,6 +21,17 @@ final sessionDetailProvider = FutureProvider.family<HistSession?, int>((ref, id)
   return ref.watch(historyRepositoryProvider).loadSession(id, catalog);
 });
 
+/// Sets of a session whose saved numbers equal the suggestion, for sessions logged before the keypad-save
+/// fix (empty for newer ones and for imports).
+final suspectSetsProvider = FutureProvider.family<Set<int>, int>((ref, id) async {
+  final s = await ref.watch(sessionDetailProvider(id).future);
+  if (s == null || s.imported) return const {};
+  final repo = ref.watch(historyRepositoryProvider);
+  final fixedAt = await repo.savedValuesFixedAt();
+  if (fixedAt == null || !s.startedAt.isBefore(fixedAt)) return const {};
+  return repo.suspectSetIds(id);
+});
+
 String suggestionKindLabel(SuggestionKind k) => switch (k) {
       SuggestionKind.calibration => 'Calibration',
       SuggestionKind.seeded => 'Seeded from calibration',
@@ -53,6 +64,7 @@ class SessionDetailScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final session = ref.watch(sessionDetailProvider(sessionId));
+    final suspects = ref.watch(suspectSetsProvider(sessionId)).value ?? const <int>{};
     return Scaffold(
       appBar: AppBar(
         title: const Text('Session'),
@@ -101,6 +113,25 @@ class SessionDetailScreen extends ConsumerWidget {
                   ]),
                 ]),
               ),
+              if (suspects.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                AppCard(
+                  key: const ValueKey('suspect-sets-card'),
+                  borderColor: AppColors.warning,
+                  child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    const Icon(Icons.fact_check_outlined, color: AppColors.warning),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        '${suspects.length} set${suspects.length == 1 ? '' : 's'} below ${suspects.length == 1 ? 'is' : 'are'} exactly the suggestion. '
+                        'Until a fix in this version, numbers typed on the keypad were sometimes replaced by the suggestion when you '
+                        'tapped ✓. If you typed something else for ${suspects.length == 1 ? 'it' : 'any of them'}, tap the set to correct it.',
+                        style: const TextStyle(height: 1.35),
+                      ),
+                    ),
+                  ]),
+                ),
+              ],
               if (s.notes.trim().isNotEmpty) ...[
                 const SectionHeader('Notes'),
                 Text(s.notes, style: const TextStyle(fontSize: 15, height: 1.4)),
@@ -109,7 +140,7 @@ class SessionDetailScreen extends ConsumerWidget {
               if (s.exercises.isEmpty)
                 const Text('No sets were logged.', style: TextStyle(color: AppColors.textSecondary)),
               for (final e in s.exercises) ...[
-                _ExerciseBlock(exercise: e),
+                _ExerciseBlock(exercise: e, suspects: suspects),
                 const SizedBox(height: 12),
               ],
             ],
@@ -121,8 +152,9 @@ class SessionDetailScreen extends ConsumerWidget {
 }
 
 class _ExerciseBlock extends ConsumerWidget {
-  const _ExerciseBlock({required this.exercise});
+  const _ExerciseBlock({required this.exercise, this.suspects = const {}});
   final HistExercise exercise;
+  final Set<int> suspects;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -150,7 +182,7 @@ class _ExerciseBlock extends ConsumerWidget {
         ),
         const SizedBox(height: 10),
         for (final hs in e.sets)
-          _SetRow(set: hs, index: hs.set.isWarmup ? null : ++workingIndex),
+          _SetRow(set: hs, index: hs.set.isWarmup ? null : ++workingIndex, suspect: suspects.contains(hs.id)),
         if (e.notes.trim().isNotEmpty)
           Padding(
             padding: const EdgeInsets.only(top: 8),
@@ -161,16 +193,32 @@ class _ExerciseBlock extends ConsumerWidget {
   }
 }
 
-class _SetRow extends StatelessWidget {
-  const _SetRow({required this.set, required this.index});
+class _SetRow extends ConsumerWidget {
+  const _SetRow({required this.set, required this.index, this.suspect = false});
   final HistSet set;
   final int? index;
 
+  /// The saved numbers are exactly the suggestion (see [suspectSetsProvider]).
+  final bool suspect;
+
+  Future<void> _correct(BuildContext context, WidgetRef ref) async {
+    final result = await showDialog<(double, int)>(
+      context: context,
+      builder: (_) => _CorrectSetDialog(weight: set.set.weight, reps: set.set.reps),
+    );
+    if (result == null) return;
+    await ref.read(historyRepositoryProvider).correctSet(set.id, weight: result.$1, reps: result.$2);
+    ref.invalidate(historyProvider);
+  }
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final s = set.set;
     final reason = OverrideReason.fromName(set.overrideReason);
-    return Padding(
+    return InkWell(
+      key: ValueKey('hist-set-${set.id}'),
+      onTap: s.completed ? () => _correct(context, ref) : null,
+      child: Padding(
       padding: const EdgeInsets.symmetric(vertical: 5),
       child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Container(
@@ -193,6 +241,11 @@ class _SetRow extends StatelessWidget {
               '${formatKg(s.weight)} kg × ${s.reps}${s.partials ? ' + partials' : ''}${s.rpe == null ? '' : ' @ RPE ${formatRpe(s.rpe!)}'}',
               style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
             ),
+            if (suspect)
+              const Padding(
+                padding: EdgeInsets.only(top: 2),
+                child: Text('= the suggestion · tap to correct', style: TextStyle(color: AppColors.warning, fontSize: 13, fontWeight: FontWeight.w600)),
+              ),
             if (s.isOverride)
               Padding(
                 padding: const EdgeInsets.only(top: 2),
@@ -216,6 +269,57 @@ class _SetRow extends StatelessWidget {
             style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
           ),
       ]),
-    );
+    ));
   }
+}
+
+/// KG and REPS of a saved set. Owns its controllers so they outlive the closing animation.
+class _CorrectSetDialog extends StatefulWidget {
+  const _CorrectSetDialog({required this.weight, required this.reps});
+  final double weight;
+  final int reps;
+
+  @override
+  State<_CorrectSetDialog> createState() => _CorrectSetDialogState();
+}
+
+class _CorrectSetDialogState extends State<_CorrectSetDialog> {
+  late final _kg = TextEditingController(text: formatKg(widget.weight));
+  late final _reps = TextEditingController(text: '${widget.reps}');
+
+  @override
+  void dispose() {
+    _kg.dispose();
+    _reps.dispose();
+    super.dispose();
+  }
+
+  void _save() {
+    final w = double.tryParse(_kg.text.replaceAll(',', '.')), r = int.tryParse(_reps.text);
+    if (w == null || r == null || r < 0) return;
+    Navigator.of(context).pop((w, r));
+  }
+
+  @override
+  Widget build(BuildContext context) => AlertDialog(
+        title: const Text('Correct this set'),
+        content: Column(mainAxisSize: MainAxisSize.min, children: [
+          TextField(
+            key: const ValueKey('correct-kg'),
+            controller: _kg,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
+            decoration: const InputDecoration(labelText: 'KG'),
+          ),
+          TextField(
+            key: const ValueKey('correct-reps'),
+            controller: _reps,
+            keyboardType: TextInputType.number,
+            decoration: const InputDecoration(labelText: 'REPS'),
+          ),
+        ]),
+        actions: [
+          TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Cancel')),
+          FilledButton(key: const ValueKey('correct-save'), onPressed: _save, child: const Text('Save')),
+        ],
+      );
 }
