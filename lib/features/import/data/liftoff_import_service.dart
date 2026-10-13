@@ -11,7 +11,6 @@ import '../../gamification/domain/achievements.dart';
 import '../../gamification/domain/streaks.dart';
 import '../../library/domain/exercise_info.dart';
 import '../../library/domain/load_kinds.dart';
-import '../../ranks/data/rank_exclusions.dart';
 import '../../workout/data/finish_service.dart';
 import '../domain/liftoff.dart';
 import '../domain/liftoff_mapping.dart';
@@ -206,8 +205,6 @@ class LiftoffImportService {
           }
         }
       }
-      final excluded = {for (final m in preview.mappings) if (m.excludeFromRanks) m.exerciseId!};
-      if (excluded.isNotEmpty) await RankExclusions(_db).addAll(excluded);
       if (sessions > 0 && await _db.getSetting(liftoffImportedAtKey) == null) {
         await _db.putSetting(liftoffImportedAtKey, now.toIso8601String());
         if (await _db.getSetting(StreakOffset.settingKey) == null) {

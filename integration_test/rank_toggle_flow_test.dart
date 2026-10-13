@@ -57,9 +57,16 @@ void main() {
     });
     await h.pumpApp();
     Future<Set<String>> hidden() async => (await tester.runAsync(() => RankExclusions(h.db!).load()))!;
+    Future<RankPolicy> policy() async => (await tester.runAsync(() => RankExclusions(h.db!).policy()))!;
+
+    debugPrint('STEP default: routine exercises count, the imported-only Lat Pulldown is off');
+    await h.goTab(Icons.insights_outlined);
+    await h.tap(_tab('Ranks'));
+    await h.waitFor(find.text('HIDDEN FROM RANKS (1)'), reason: 'Lat Pulldown is in no routine');
+    expect(await hidden(), contains('Wide-Grip_Lat_Pulldown'));
+    expect((await policy()).sourceOf('Wide-Grip_Lat_Pulldown'), RankSource.off);
 
     debugPrint('STEP muscle sheet: switch Machine Chest Fly off on its row');
-    await h.goTab(Icons.insights_outlined);
     await h.tap(_tab('Body'));
     await h.waitFor(find.byKey(const ValueKey('body-front')), scroll: false);
     final map = (await tester.runAsync(BodyMap.load))!;
@@ -70,34 +77,40 @@ void main() {
     await h.tap(flySwitch);
     await h.waitFor(find.textContaining('Not counted'), reason: 'row dims and says not counted, sheet stays open', scroll: false);
     expect(_switchValue(_switchOn('Machine Chest Fly', 'muscle-exercise-')), isFalse);
-    final flyId = (await hidden()).single;
+    final flyId = (await policy()).manual.entries.singleWhere((e) => !e.value).key;
+    expect((await policy()).sourceOf(flyId), RankSource.manualOff, reason: 'a routine exercise switched off by hand');
     await h.shot('muscle-sheet-toggle');
     await h.tester.tapAt(const Offset(20, 80));
     await h.settle();
 
-    debugPrint('STEP Ranks tab shows it hidden, switch off; switch it on there');
+    debugPrint('STEP Ranks tab shows it hidden, switch it on there (manual on)');
     await h.tap(_tab('Ranks'));
-    await h.waitFor(find.text('HIDDEN FROM RANKS (1)'));
+    await h.waitFor(find.text('HIDDEN FROM RANKS (2)'));
     final flyToggle = find.descendant(of: find.byKey(ValueKey('lift-rank-$flyId')), matching: find.byKey(ValueKey('rank-toggle-$flyId')));
     await h.waitFor(flyToggle, reason: 'hidden row with its switch');
     expect(_switchValue(flyToggle), isFalse);
     await h.tap(flyToggle);
     await h.settle();
+    await h.waitFor(find.text('HIDDEN FROM RANKS (1)'));
+    expect((await policy()).sourceOf(flyId), RankSource.manualOn);
+
+    debugPrint('STEP switch the imported Lat Pulldown on by hand: it stays on');
+    await h.tap(_switchOn('Lat Pulldown', 'lift-rank-'));
+    await h.settle();
     expect(find.textContaining('HIDDEN FROM RANKS'), findsNothing);
-    expect(await hidden(), isEmpty);
+    expect((await policy()).sourceOf('Wide-Grip_Lat_Pulldown'), RankSource.manualOn);
 
     debugPrint('STEP Ranks tab row → off; the exercise page agrees, and back on from there');
     await h.scrollToTop();
     await h.waitFor(find.text('Chest Press'));
     await h.tap(_switchOn('Chest Press', 'lift-rank-'));
     await h.settle();
-    expect((await hidden()).length, 1);
     await h.waitFor(find.text('HIDDEN FROM RANKS (1)'));
     await h.tap(find.text('Chest Press').last);
     await h.waitFor(find.byKey(const ValueKey('count-toward-ranks')), reason: 'exercise page switch');
     expect((find.byKey(const ValueKey('count-toward-ranks')).evaluate().first.widget as SwitchListTile).value, isFalse);
     await h.tap(find.byKey(const ValueKey('count-toward-ranks')));
-    expect(await hidden(), isEmpty);
+    expect(await hidden(), isNot(contains('Leverage_Chest_Press')));
     await h.scrollToTop();
     await tester.pageBack();
     await h.settle();

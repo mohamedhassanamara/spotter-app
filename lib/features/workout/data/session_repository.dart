@@ -12,6 +12,7 @@ import '../../library/domain/exercise_info.dart';
 import '../../readiness/domain/readiness.dart';
 import '../../program/data/program_repository.dart';
 import '../../program/domain/program.dart';
+import '../../ranks/data/rank_exclusions.dart';
 import '../domain/set_kinds.dart';
 import 'routine_repository.dart';
 
@@ -591,6 +592,11 @@ class SessionRepository {
       isOverride: Value(override),
       overrideReason: Value(override ? reason?.name : null),
     ));
+    // A real working set (not a warm-up, a drop / myo / hold, or an empty one) switches the exercise on for ranks.
+    if (!isWarmup && reps > 0 && set.setType == null) {
+      final ex = await (_db.select(_db.sessionExercises)..where((t) => t.id.equals(set.sessionExerciseId))).getSingleOrNull();
+      if (ex != null) await RankExclusions(_db).autoEnable(ex.exerciseId);
+    }
   }
 
   /// SET-cell menu: working, warm-up (W), drop (D), myo-rep cycle (M), static hold (H), or a program technique.

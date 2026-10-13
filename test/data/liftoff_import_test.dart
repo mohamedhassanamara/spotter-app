@@ -155,6 +155,6 @@ void main() {
     final press = rows.where((r) => r.exerciseId != 'One-Legged_Cable_Kickback').toList();
     expect(press.map((r) => r.exerciseId), ['Barbell_Shoulder_Press', 'Machine_Shoulder_Military_Press']);
     expect(press.map((r) => r.displayName), ['Barbell Shoulder Press', 'Machine Shoulder Press']);
-    expect(await RankExclusions(db).load(), {'One-Legged_Cable_Kickback'});
+    expect((await RankExclusions(db).load()).contains('One-Legged_Cable_Kickback'), isTrue, reason: 'imported-only exercises are off by default');
   });
 }

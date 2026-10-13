@@ -5,7 +5,8 @@ import '../../gamification/domain/achievements.dart';
 /// Current rank model. v1: 7 tiers × 3 divisions. v2: League-style 10-tier ladder.
 /// v3: per-exercise standards (machines and cables stricter, apex tiers above "elite").
 /// v4: allometric bodyweight scaling, accessories anchored to their base compound.
-const int rankLadderVersion = 4;
+/// v5: only exercises in your routines (or done in an in-app workout) count toward ranks.
+const int rankLadderVersion = 5;
 const String rankLadderVersionKey = 'rank_ladder_version';
 
 class LadderMigration {

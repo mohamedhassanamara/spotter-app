@@ -377,7 +377,12 @@ class _RanksTab extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final bw = ref.watch(latestBodyWeightProvider);
-    final hidden = ref.watch(rankExclusionsProvider).value ?? const <String>{};
+    // Off exercises you have logged (everything not in a routine is off by default, so the whole library isn't listed).
+    final logged = ref.watch(historyProvider).value?.exerciseIds ?? const <String>{};
+    final hidden = {
+      for (final id in ref.watch(rankExclusionsProvider).value ?? const <String>{})
+        if (logged.contains(id)) id,
+    };
     final catalog = ref.watch(catalogProvider).value ?? const {};
     return AsyncBody(
       value: ref.watch(ranksProvider),

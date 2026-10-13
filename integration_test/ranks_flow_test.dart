@@ -118,12 +118,12 @@ void main() {
     await h.scrollToTop();
     await tester.pageBack();
     await h.settle();
-    await h.waitFor(find.text('HIDDEN FROM RANKS (1)'));
+    await h.waitFor(find.text('HIDDEN FROM RANKS (2)'), reason: 'Lat Pulldown is off by default (in no routine), plus the fly');
     // Switch it back on from its (dimmed) row in the hidden section.
     final row = find.ancestor(of: find.text('Machine Chest Fly'), matching: find.byWidgetPredicate((w) => '${w.key}'.contains('lift-rank-'))).first;
     await h.tap(find.descendant(of: row, matching: find.byType(Switch)));
     await h.settle();
-    expect(find.textContaining('HIDDEN FROM RANKS'), findsNothing);
+    await h.waitFor(find.text('HIDDEN FROM RANKS (1)'), reason: 'only the imported-only Lat Pulldown stays off');
 
     await h.expectNoLoggedErrors();
     await h.dispose();
