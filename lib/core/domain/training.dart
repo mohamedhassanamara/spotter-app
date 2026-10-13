@@ -43,6 +43,8 @@ class LoggedSet {
     this.suggestedWeight,
     this.completed = true,
     this.isDrop = false,
+    this.isMyo = false,
+    this.isHold = false,
     this.targetMin,
     this.targetMax,
   });
@@ -57,6 +59,18 @@ class LoggedSet {
 
   /// A drop set: counts for volume, never for e1RM, ranks, PRs or progression.
   final bool isDrop;
+
+  /// A myo-rep cycle after the last set: counts for volume like a drop set.
+  final bool isMyo;
+
+  /// A weighted static hold; [reps] holds the seconds, so it adds no volume.
+  final bool isHold;
+
+  /// Drop, myo or hold: a technique follow-up, never a working set for e1RM, ranks, PRs or progression.
+  bool get isFollowUp => isDrop || isMyo || isHold;
+
+  /// weight × reps (0 for a static hold).
+  double get tonnage => isHold ? 0 : weight * reps;
 
   /// The prescribed rep range of this set, when known.
   final int? targetMin;
@@ -74,7 +88,7 @@ class LoggedSet {
   bool get isEgoSet => isOverride && belowRange;
 
   /// Valid for ranks and PRs: a completed working set that isn't a drop set or an ego set.
-  bool get isValidForRecords => isWorking && !isDrop && !isEgoSet;
+  bool get isValidForRecords => isWorking && !isFollowUp && !isEgoSet;
 
   /// e1RM including [bodyweight] for bodyweight-loaded lifts.
   double e1rm({double bodyweight = 0}) => estimateOneRm(weight + bodyweight, reps, rpe);
@@ -163,9 +177,9 @@ class ExerciseSessionLog {
   final bool techniqueDay;
 
   /// Working sets for progression and e1RM: completed, not warm-ups, not drop sets.
-  List<LoggedSet> get workingSets => sets.where((s) => s.isWorking && !s.isDrop).toList();
+  List<LoggedSet> get workingSets => sets.where((s) => s.isWorking && !s.isFollowUp).toList();
 
-  bool get hasWorkingSets => sets.any((s) => s.isWorking && !s.isDrop);
+  bool get hasWorkingSets => sets.any((s) => s.isWorking && !s.isFollowUp);
 
   /// Heaviest working weight of the session.
   /// Heaviest working weight (may be negative for assisted lifts); 0 without working sets.
@@ -191,6 +205,6 @@ class ExerciseSessionLog {
 
   bool get hasEgoOverrides => workingSets.any((s) => s.isEgoSet);
 
-  /// Drop sets included.
-  double get volume => sets.where((s) => s.isWorking).fold<double>(0, (v, s) => v + s.weight * s.reps);
+  /// Drop sets and myo cycles included; static holds add none.
+  double get volume => sets.where((s) => s.isWorking).fold<double>(0, (v, s) => v + s.tonnage);
 }

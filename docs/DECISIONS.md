@@ -1008,3 +1008,33 @@ patched. Screenshots are in `docs/screenshots/vF/`: at rest, mid-edit with the k
 - **Empty workouts** start from Train → "Start empty workout"; finishing one never shows the routine prompt.
 - Tests: `test/data/routine_sync_test.dart` (diff + apply), `integration_test/routine_edit_flow_test.dart`
   (two flows). `train_flow_test` now accepts the prompt with "Keep routine as is" when its edits trigger it.
+
+## Finish plan, Phase C: section 6, drop sets, myo-reps, static holds, supersets
+
+- **Set types** (`lib/features/workout/domain/set_kinds.dart`): working, warm-up (W), drop (D), myo-rep
+  cycle (M), weighted static hold (H). Drop / myo / hold are *follow-ups*: stored as `set_type` drop | myo | hold,
+  shown under their working set with a colored left rail, never numbered, never used for e1RM, ranks,
+  PRs, progression or the routine's set count. Drops and myo cycles count for volume. A hold stores
+  **seconds in `reps`** (cell shows "30s") and adds no volume. No schema change was needed.
+- **Drop sets**: as many per set as wanted (set menu → "Add drop set", then "ANOTHER DROP" under the last
+  completed drop). Each is pre-filled from the set above it: 25 % lighter for the program's
+  `drop_sets_2x25`, 20 % for a manual drop (both inside the requested 20–25 %), rounded to the
+  equipment increment from Settings, always at least one increment lighter, never below 0 kg (assisted
+  lifts add assistance instead). Changing the parent's KG re-derives drops that aren't done yet.
+- **Program technique pre-creation**: at session start, a prescribed set carrying a technique gets its
+  follow-ups right away: two 25 % drops, one myo cycle, or one 30 s hold. Choosing a technique on a
+  set from the set menu does the same, unless follow-ups are already there. Techniques only appear in weeks 8–12
+  (program block 2), so on the standard week the program creates none.
+- **Rest**: none before a drop or a hold; **5 s** before a myo cycle (the program's rest_s); the normal
+  rest after the last follow-up.
+- **Myo-reps**: one cycle (same load, 2 reps) is pre-created; "ANOTHER CYCLE" adds the next one. The UI
+  doesn't decide when to stop: the program says to stop when you miss 2 full reps.
+- **Supersets**: made in the routine editor (link button between consecutive rows; tapping a linked
+  link splits the group) or mid-workout (exercise menu → Superset with…). Colored bar + A1/A2 labels in both
+  places; groups of one aren't shown as supersets. In the workout the keypad's NEXT goes A1 set 1 →
+  A2 set 1 → A1 set 2…; rest starts when the round is done (every partner's set i and its follow-ups) and uses the longest
+  rest in the group. Routine groups are re-keyed to session exercise ids at start so they can't clash
+  with groups made mid-workout. "Update routine" writes the session's groups back.
+- The program itself has no supersets in this version (every slot's `superset` is null), so none are created
+  automatically.
+- Tests: `test/data/set_types_test.dart` (8), `integration_test/set_types_flow_test.dart` (2 flows).

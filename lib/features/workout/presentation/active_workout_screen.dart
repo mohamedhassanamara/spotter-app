@@ -20,11 +20,12 @@ import '../../program/data/program_repository.dart';
 import '../../tutorials/presentation/form_check_sheet.dart';
 import '../data/routine_sync.dart';
 import '../data/session_repository.dart';
+import '../domain/set_kinds.dart';
+import '../domain/superset_rounds.dart';
 import 'exercise_block.dart';
 import 'keypad.dart';
 import 'rest_timer.dart';
-
-const _supersetColors = [AppColors.accent, AppColors.xp, AppColors.warning, Color(0xFFFF7A45)];
+import 'superset_style.dart';
 
 /// The active workout, Liftoff-style: compact set rows, a custom keypad for KG/REPS, rest shown in the
 /// header (never full screen), and a minimize button that leaves a mini bar over the tabs.
@@ -106,11 +107,7 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
         WidgetsBinding.instance.addPostFrameCallback((_) => _closeKeypad(commit: false));
       }
     }
-    final groups = <int, List<ActiveExercise>>{};
-    for (final e in session.exercises) {
-      if (e.row.supersetGroup != null) (groups[e.row.supersetGroup!] ??= []).add(e);
-    }
-    final groupOrder = groups.keys.toList();
+    final labels = supersetLabels(session.exercises, id: (e) => e.row.id, group: (e) => e.row.supersetGroup);
 
     return Scaffold(
       appBar: AppBar(
@@ -166,10 +163,8 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
                       onComplete: (s) => _complete(session, e, s),
                       hideWarmups: _hideWarmups,
                       onToggleWarmups: () => setState(() => _hideWarmups = !_hideWarmups),
-                      supersetLabel: e.row.supersetGroup == null
-                          ? null
-                          : '${String.fromCharCode(65 + groupOrder.indexOf(e.row.supersetGroup!))}${groups[e.row.supersetGroup!]!.indexOf(e) + 1}',
-                      supersetColor: e.row.supersetGroup == null ? null : _supersetColors[groupOrder.indexOf(e.row.supersetGroup!) % _supersetColors.length],
+                      supersetLabel: labels[e.row.id]?.label,
+                      supersetColor: labels[e.row.id]?.color,
                       onMenu: (a) => _exerciseMenu(session, e, catalog, a),
                     ),
                   ),
@@ -276,6 +271,10 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
     final repo = ref.read(sessionRepositoryProvider);
     if (t.field == KeypadField.kg) {
       await repo.updateSet(t.setId, weight: v);
+      // Pending drop sets under this set follow its new load.
+      final session = ref.read(activeSessionProvider).value;
+      final ex = session?.exercises.where((e) => e.sets.any((x) => x.id == t.setId)).firstOrNull;
+      if (ex != null) await repo.refreshDrops(t.setId, increment: _increment(ref.read(catalogProvider).value?[ex.row.exerciseId]));
     } else {
       await repo.updateSet(t.setId, reps: v.round().clamp(0, 999));
     }
@@ -300,9 +299,8 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
     await _commit();
     if (t.field == KeypadField.kg) return _focus(KeypadTarget(t.setId, KeypadField.reps));
     final all = [
-      for (final e in session.exercises)
-        for (final s in e.sets)
-          if (!(_hideWarmups && s.isWarmup)) s,
+      for (final s in supersetOrder(session.exercises))
+        if (!(_hideWarmups && s.isWarmup)) s,
     ];
     final i = all.indexWhere((s) => s.id == t.setId);
     final next = all.skip(i + 1).where((s) => !s.completed).firstOrNull;
@@ -356,7 +354,7 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
     final fresh = (await ref.read(activeSessionProvider.future))?.exercises.expand((e) => e.sets).where((s) => s.id == tapped.id).firstOrNull;
     final s = fresh ?? tapped;
     if (s.completed) return repo.uncompleteSet(s.id);
-    final rpe = s.isWarmup ? null : (s.rpe ?? Effort.fromRir(s.targetRir ?? ex.row.targetRir).rpe);
+    final rpe = s.isWarmup || s.kind == SetKind.hold ? null : (s.rpe ?? Effort.fromRir(s.targetRir ?? ex.row.targetRir).rpe);
     OverrideReason? reason;
     if (repo.needsReason(s, weight: s.weight, reps: s.reps, exerciseRepMin: ex.row.repMin)) {
       if (!mounted) return;
@@ -377,21 +375,26 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
     await _startRest(session, ex, s);
   }
 
-  /// Rest after working sets: none between drops, none between superset partners until the round ends
-  /// (then the longest rest of the group).
+  /// Rest after working sets (section 6): none before a drop set or a hold, 5 s before a myo-rep cycle,
+  /// and in a superset none until the round is done (one set of each partner), then the longest rest of
+  /// the group.
   Future<void> _startRest(ActiveSession session, ActiveExercise ex, WorkoutSet s) async {
     if (s.isWarmup || !ex.row.restEnabled) return;
+    final timer = ref.read(restTimerProvider);
     final idx = ex.sets.indexWhere((x) => x.id == s.id);
     final nextSet = idx >= 0 && idx + 1 < ex.sets.length ? ex.sets[idx + 1] : null;
-    if (nextSet?.setType == 'drop') return;
+    if (nextSet != null && nextSet.isFollowUp) {
+      if (nextSet.kind == SetKind.myo) await timer.start(myoRestSeconds);
+      return;
+    }
     var seconds = ex.row.restSeconds;
     final group = ex.row.supersetGroup;
     if (group != null) {
       final members = session.exercises.where((e) => e.row.supersetGroup == group).toList();
-      if (members.last.row.id != ex.row.id) return;
+      if (!supersetRoundDone(members, ex.row.id, s.id)) return;
       seconds = members.map((e) => e.row.restSeconds).reduce((a, b) => a > b ? a : b);
     }
-    await ref.read(restTimerProvider).start(seconds);
+    await timer.start(seconds);
   }
 
   Future<OverrideReason?> _askReason(WorkoutSet s) => showModalBottomSheet<OverrideReason>(

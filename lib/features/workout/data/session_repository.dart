@@ -11,6 +11,7 @@ import '../../library/domain/exercise_info.dart';
 import '../../readiness/domain/readiness.dart';
 import '../../program/data/program_repository.dart';
 import '../../program/domain/program.dart';
+import '../domain/set_kinds.dart';
 import 'routine_repository.dart';
 
 /// Suggestion as stored with a session exercise.
@@ -146,10 +147,13 @@ class SessionRepository {
           ));
       if (routine != null) {
         var pos = 0;
+        // Routine superset groups become the session id of the group's first exercise (no clashes with
+        // groups made mid-workout, which use session exercise ids too).
+        final groups = <int, int>{};
         for (final re in routine.exercises) {
           final info = catalog[re.exerciseId];
           if (info == null) continue;
-          await _insertExercise(
+          final exId = await _insertExercise(
             sessionId: id,
             info: info,
             position: pos++,
@@ -167,6 +171,11 @@ class SessionRepository {
             overrideRange: re.overrideRepMin != null && re.overrideRepMax != null ? RepRange(re.overrideRepMin!, re.overrideRepMax!) : null,
             supersetGroup: re.supersetGroup,
           );
+          final g = re.supersetGroup;
+          if (g != null) {
+            await (_db.update(_db.sessionExercises)..where((t) => t.id.equals(exId)))
+                .write(SessionExercisesCompanion(supersetGroup: Value(groups[g] ??= exId)));
+          }
         }
       }
       return id;
@@ -409,6 +418,24 @@ class SessionRepository {
               targetRir: Value(p.targetRir),
               technique: Value(p.technique),
             ));
+        // Section 6: the technique's follow-ups are ready under the set (drops pre-filled 25 % lighter each).
+        var from = s.weight;
+        for (final k in followUpsFor(p.technique)) {
+          if (k == SetKind.drop) from = dropWeight(from, pct: programDropPct, increment: coach.increments.of(info.equipmentKind));
+          await _db.into(_db.workoutSets).insert(WorkoutSetsCompanion.insert(
+                sessionExerciseId: exId,
+                position: pos++,
+                setType: Value(k.setType),
+                weight: Value(k == SetKind.drop ? from : s.weight),
+                reps: Value(switch (k) {
+                  SetKind.myo => myoRepsPerCycle,
+                  SetKind.hold => holdSeconds,
+                  _ => s.reps,
+                }),
+                targetRir: const Value(0),
+                technique: Value(p.technique),
+              ));
+        }
       }
     }
     return exId;
@@ -454,7 +481,7 @@ class SessionRepository {
           repMax: Value(range.max),
           targetsEdited: const Value(true),
         ));
-        final ids = [for (final s in ex.sets) if (!s.isWarmup && s.setType != 'drop') s.id];
+        final ids = [for (final s in ex.sets) if (s.isWorkingSet) s.id];
         await (_db.update(_db.workoutSets)..where((t) => t.id.isIn(ids)))
             .write(WorkoutSetsCompanion(targetRepMin: Value(range.min), targetRepMax: Value(range.max)));
       });
@@ -483,12 +510,12 @@ class SessionRepository {
 
   /// Adds a set, copying the last set's load. Warm-ups carry no suggestion.
   Future<void> addSet(ActiveExercise ex, {bool warmup = false}) async {
-    final last = ex.sets.isEmpty ? null : ex.sets.last;
+    final last = ex.sets.where((s) => !s.isFollowUp).lastOrNull;
     final sug = ex.suggestion;
     final weight = warmup
         ? ((sug?.weight ?? last?.weight ?? 0) * 0.5)
         : (last?.weight ?? sug?.weight ?? 0);
-    final position = warmup ? -1 - ex.sets.where((s) => s.isWarmup).length : (last?.position ?? -1) + 1;
+    final position = warmup ? -1 - ex.sets.where((s) => s.isWarmup).length : (ex.sets.lastOrNull?.position ?? -1) + 1;
     await _db.into(_db.workoutSets).insert(WorkoutSetsCompanion.insert(
           sessionExerciseId: ex.row.id,
           position: position,
@@ -532,7 +559,7 @@ class SessionRepository {
 
   /// Would completing this set with [weight] count as an override (more than 5 % above the suggestion)?
   bool wouldOverride(WorkoutSet set, double weight, {bool? isWarmup}) =>
-      set.setType != 'drop' && _guardrail.isOverride(weight: weight, suggested: set.suggestedWeight, isWarmup: isWarmup ?? set.isWarmup);
+      !set.isFollowUp && _guardrail.isOverride(weight: weight, suggested: set.suggestedWeight, isWarmup: isWarmup ?? set.isWarmup);
 
   /// Section 7: a reason is asked for only when the set was too heavy, i.e. an override whose reps also
   /// fell below the bottom of its range. Failure inside the range is never flagged.
@@ -566,16 +593,83 @@ class SessionRepository {
     ));
   }
 
-  /// SET-cell menu: working, warm-up (W), drop set (D) under the set before it, or a program technique.
+  /// SET-cell menu: working, warm-up (W), drop (D), myo-rep cycle (M), static hold (H), or a program technique.
   Future<void> setSetKind(WorkoutSet set, {required String kind}) async {
+    final k = kind.startsWith('technique:') ? SetKind.working : SetKind.fromId(kind);
     final w = WorkoutSetsCompanion(
-      isWarmup: Value(kind == 'warmup'),
-      setType: Value(kind == 'drop' ? 'drop' : null),
-      technique: Value(kind.startsWith('technique:') ? kind.substring('technique:'.length) : (kind == 'working' ? null : set.technique)),
-      suggestedWeight: kind == 'warmup' || kind == 'drop' ? const Value(null) : const Value.absent(),
+      isWarmup: Value(k == SetKind.warmup),
+      setType: Value(k.setType),
+      technique: Value(kind.startsWith('technique:') ? kind.substring('technique:'.length) : (k == SetKind.working ? null : set.technique)),
+      suggestedWeight: k == SetKind.working ? const Value.absent() : const Value(null),
+      reps: k == SetKind.hold ? const Value(holdSeconds) : (k == SetKind.myo ? const Value(myoRepsPerCycle) : const Value.absent()),
+      targetRepMin: k.isFollowUp ? const Value(null) : const Value.absent(),
+      targetRepMax: k.isFollowUp ? const Value(null) : const Value.absent(),
     );
     await (_db.update(_db.workoutSets)..where((t) => t.id.equals(set.id))).write(w);
   }
+
+  /// Adds a follow-up under [parent] (after any already there): a drop set [dropPct] % lighter than the
+  /// set above it, rounded to [increment]; a myo-rep cycle (same load, 2 reps); a static hold (same load,
+  /// 30 s). Program drop sets carry their technique id so a later load change re-derives them at 25 %.
+  Future<int> addFollowUp(ActiveExercise ex, WorkoutSet parent, SetKind kind, {required double increment, int? dropPct, String? technique}) =>
+      _db.transaction(() async {
+        final sets = await _setsOf(ex.row.id);
+        final i = sets.indexWhere((s) => s.id == parent.id);
+        var anchor = parent;
+        for (final s in sets.skip(i + 1)) {
+          if (!s.isFollowUp) break;
+          anchor = s;
+        }
+        final pct = dropPct ?? (technique == dropTechnique ? programDropPct : defaultDropPct);
+        final from = kind == SetKind.drop && anchor.setType == 'drop' ? anchor.weight : parent.weight;
+        await _shiftAfter(ex.row.id, anchor.position, 1);
+        final id = await _db.into(_db.workoutSets).insert(WorkoutSetsCompanion.insert(
+              sessionExerciseId: ex.row.id,
+              position: anchor.position + 1,
+              setType: Value(kind.setType),
+              weight: Value(kind == SetKind.drop ? dropWeight(from, pct: pct, increment: increment) : parent.weight),
+              reps: Value(switch (kind) {
+                SetKind.myo => myoRepsPerCycle,
+                SetKind.hold => holdSeconds,
+                _ => parent.reps,
+              }),
+              targetRir: const Value(0),
+              technique: Value(technique),
+            ));
+        await _renumber(ex.row.id);
+        return id;
+      });
+
+  /// After the load of [parent] changes: its not-yet-done drop sets follow, each [pct] % under the one above.
+  Future<void> refreshDrops(int parentId, {required double increment}) => _db.transaction(() async {
+        final parent = await (_db.select(_db.workoutSets)..where((t) => t.id.equals(parentId))).getSingleOrNull();
+        if (parent == null || parent.isFollowUp) return;
+        final sets = await _setsOf(parent.sessionExerciseId);
+        var from = parent.weight;
+        for (final s in sets.skip(sets.indexWhere((x) => x.id == parent.id) + 1)) {
+          if (!s.isFollowUp) break;
+          if (s.setType != 'drop') continue;
+          if (!s.completed) {
+            final pct = s.technique == dropTechnique ? programDropPct : defaultDropPct;
+            final w = dropWeight(from, pct: pct, increment: increment);
+            await (_db.update(_db.workoutSets)..where((t) => t.id.equals(s.id))).write(WorkoutSetsCompanion(weight: Value(w)));
+            from = w;
+          } else {
+            from = s.weight;
+          }
+        }
+      });
+
+  Future<List<WorkoutSet>> _setsOf(int sessionExerciseId) => (_db.select(_db.workoutSets)
+        ..where((t) => t.sessionExerciseId.equals(sessionExerciseId))
+        ..orderBy([(t) => OrderingTerm.asc(t.position), (t) => OrderingTerm.asc(t.id)]))
+      .get();
+
+  Future<void> _shiftAfter(int sessionExerciseId, int position, int by) => _db.customUpdate(
+        'UPDATE workout_sets SET position = position + ? WHERE session_exercise_id = ? AND position > ?',
+        variables: [Variable.withInt(by), Variable.withInt(sessionExerciseId), Variable.withInt(position)],
+        updates: {_db.workoutSets},
+      );
 
   Future<void> setRest(int sessionExerciseId, {bool? enabled, int? seconds}) =>
       (_db.update(_db.sessionExercises)..where((t) => t.id.equals(sessionExerciseId))).write(SessionExercisesCompanion(

@@ -17,6 +17,7 @@ abstract final class AppColors {
   static const textSecondary = Color(0xFF9AA6BC);
   static const textTertiary = Color(0xFF667189);
   static const xp = Color(0xFFB98CFF);
+  static const hold = Color(0xFF4FD8C4); // static-hold sets
 
   static const green = Color(0xFF3DDC84);
   static const yellow = Color(0xFFFFC145);

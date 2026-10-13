@@ -12,6 +12,7 @@ import '../../library/presentation/exercise_thumb.dart';
 import '../../program/data/program_repository.dart';
 import '../../program/domain/program.dart';
 import '../data/routine_repository.dart';
+import 'superset_style.dart';
 
 final _routineProvider = StreamProvider.family<RoutineWithExercises?, int>(
   (ref, id) => ref.watch(routineRepositoryProvider).watchRoutine(id),
@@ -32,6 +33,7 @@ class RoutineEditorScreen extends ConsumerWidget {
         if (r == null) {
           return Scaffold(appBar: AppBar(), body: const EmptyState(icon: Icons.delete_outline, title: 'Routine deleted', message: ''));
         }
+        final labels = supersetLabels(r.exercises, id: (e) => e.id, group: (e) => e.supersetGroup);
         return Scaffold(
           appBar: AppBar(
             title: InkWell(
@@ -82,7 +84,7 @@ class RoutineEditorScreen extends ConsumerWidget {
                     repo.reorder(ids);
                   },
                   children: [
-                    for (final e in r.exercises)
+                    for (final (i, e) in r.exercises.indexed)
                       Padding(
                         key: ValueKey(e.id),
                         padding: const EdgeInsets.only(bottom: 10),
@@ -91,6 +93,19 @@ class RoutineEditorScreen extends ConsumerWidget {
                           onTap: () => _editTargets(context, ref, e),
                           child: Row(
                             children: [
+                              if (labels[e.id] case final l?) ...[
+                                Container(
+                                  key: ValueKey('routine-superset-${e.id}'),
+                                  width: 4,
+                                  height: 52,
+                                  decoration: BoxDecoration(color: l.color, borderRadius: BorderRadius.circular(2)),
+                                ),
+                                const SizedBox(width: 6),
+                                SizedBox(
+                                  width: 24,
+                                  child: Text(l.label, style: AppType.label.copyWith(color: l.color, letterSpacing: 0)),
+                                ),
+                              ],
                               if (catalog[e.exerciseId] != null) ...[
                                 ExerciseThumb(exercise: catalog[e.exerciseId]!, size: 44, radius: 10),
                                 const SizedBox(width: 12),
@@ -112,6 +127,18 @@ class RoutineEditorScreen extends ConsumerWidget {
                                   ],
                                 ),
                               ),
+                              if (i + 1 < r.exercises.length)
+                                IconButton(
+                                  key: ValueKey('link-${e.id}'),
+                                  tooltip: 'Superset with next',
+                                  icon: Icon(
+                                    Icons.link_rounded,
+                                    color: e.supersetGroup != null && e.supersetGroup == r.exercises[i + 1].supersetGroup
+                                        ? labels[e.id]?.color ?? AppColors.accent
+                                        : AppColors.textTertiary,
+                                  ),
+                                  onPressed: () => repo.toggleSupersetWithNext(e, r.exercises[i + 1], r.exercises),
+                                ),
                               IconButton(
                                 tooltip: 'Remove',
                                 icon: const Icon(Icons.close_rounded),

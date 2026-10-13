@@ -18,6 +18,8 @@ LoggedSet loggedSetFromRow(WorkoutSet s, {int? repMin, int? repMax}) => LoggedSe
       suggestedWeight: s.suggestedWeight,
       completed: s.completed,
       isDrop: s.setType == 'drop',
+      isMyo: s.setType == 'myo',
+      isHold: s.setType == 'hold',
       targetMin: s.targetRepMin ?? repMin,
       targetMax: s.targetRepMax ?? repMax,
     );

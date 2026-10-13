@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../app_providers.dart';
 import '../../../core/db/database.dart';
+import '../../../core/domain/equipment.dart';
 import '../../../core/domain/training.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/common.dart';
@@ -15,6 +16,7 @@ import '../../program/data/program_repository.dart';
 import '../../ranks/presentation/rank_badge.dart';
 import '../../library/presentation/exercise_thumb.dart';
 import '../data/session_repository.dart';
+import '../domain/set_kinds.dart';
 import 'keypad.dart';
 
 /// What the block needs from the screen for the keypad and supersets.
@@ -49,22 +51,37 @@ class BlockContext {
 }
 
 /// Previous session's sets of an exercise, matched by kind and order (warm-up i ↔ warm-up i,
-/// working i ↔ working i, drop i ↔ drop i).
+/// working i ↔ working i, drop i ↔ drop i, myo i ↔ myo i, hold i ↔ hold i).
 class PrevSets {
-  PrevSets(List<LoggedSet> sets)
-      : warmups = [for (final s in sets) if (s.isWarmup) s],
-        working = [for (final s in sets) if (!s.isWarmup && !s.isDrop) s],
-        drops = [for (final s in sets) if (s.isDrop) s];
+  PrevSets(List<LoggedSet> sets) : byKind = _group(sets);
 
-  final List<LoggedSet> warmups;
-  final List<LoggedSet> working;
-  final List<LoggedSet> drops;
+  final Map<SetKind, List<LoggedSet>> byKind;
+
+  static SetKind _kindOf(LoggedSet s) => s.isWarmup
+      ? SetKind.warmup
+      : s.isDrop
+          ? SetKind.drop
+          : s.isMyo
+              ? SetKind.myo
+              : s.isHold
+                  ? SetKind.hold
+                  : SetKind.working;
+
+  static Map<SetKind, List<LoggedSet>> _group(List<LoggedSet> sets) {
+    final out = <SetKind, List<LoggedSet>>{};
+    for (final s in sets) {
+      (out[_kindOf(s)] ??= []).add(s);
+    }
+    return out;
+  }
+
+  List<LoggedSet> get working => byKind[SetKind.working] ?? const [];
 
   static final empty = PrevSets(const []);
 
   LoggedSet? forSet(WorkoutSet s, List<WorkoutSet> all) {
-    final list = s.isWarmup ? warmups : (s.setType == 'drop' ? drops : working);
-    final same = [for (final x in all) if (x.isWarmup == s.isWarmup && (x.setType == 'drop') == (s.setType == 'drop')) x];
+    final list = byKind[s.kind] ?? const [];
+    final same = [for (final x in all) if (x.kind == s.kind) x];
     final i = same.indexWhere((x) => x.id == s.id);
     return i >= 0 && i < list.length ? list[i] : null;
   }
@@ -112,11 +129,11 @@ class _ExerciseBlockState extends ConsumerState<ExerciseBlock> {
     final prev = prevLog == null ? PrevSets.empty : PrevSets(prevLog.loggedSets);
     final warmups = ex.sets.where((s) => s.isWarmup).length;
     final visible = [for (final s in ex.sets) if (!(ctx.hideWarmups && s.isWarmup)) s];
-    final firstRange = ex.sets.where((s) => !s.isWarmup && s.setType != 'drop').map(_rangeOf).firstOrNull;
+    final firstRange = ex.sets.where((s) => s.isWorkingSet).map(_rangeOf).firstOrNull;
     var number = 0;
     final numbers = <int, int>{};
     for (final s in ex.sets) {
-      if (!s.isWarmup && s.setType != 'drop') numbers[s.id] = ++number;
+      if (s.isWorkingSet) numbers[s.id] = ++number;
     }
 
     final body = Column(
@@ -132,18 +149,27 @@ class _ExerciseBlockState extends ConsumerState<ExerciseBlock> {
           const _TableHeader(),
           if (ctx.hideWarmups && warmups > 0)
             _MutedLine(text: '$warmups warm-up${warmups == 1 ? '' : 's'} hidden', onTap: ctx.onToggleWarmups),
-          for (final s in visible)
+          for (final (i, s) in visible.indexed) ...[
             _SetRow(
               key: ValueKey('set-${s.id}'),
               set: s,
+              above: i > 0 ? visible[i - 1] : null,
               number: numbers[s.id],
-              higherRep: firstRange != null && !s.isWarmup && s.setType != 'drop' && _rangeOf(s) != firstRange ? _rangeOf(s) : null,
+              higherRep: firstRange != null && s.isWorkingSet && _rangeOf(s) != firstRange ? _rangeOf(s) : null,
               prev: prev.forSet(s, ex.sets),
               exerciseRir: ex.row.targetRir,
               assisted: isAssisted(ex.row.exerciseId),
               ctx: ctx,
               onSetMenu: () => _setMenu(s),
             ),
+            // End of a drop / myo chain: one tap for another drop or cycle.
+            if ((s.kind == SetKind.drop || s.kind == SetKind.myo) && s.completed && (i + 1 == visible.length || visible[i + 1].kind != s.kind))
+              _MoreFollowUp(
+                buttonKey: ValueKey('more-${s.kind.id}-${s.id}'),
+                kind: s.kind,
+                onTap: () => _addFollowUp(s, s.kind),
+              ),
+          ],
           Row(children: [
             Expanded(
               child: TextButton.icon(
@@ -277,7 +303,7 @@ class _ExerciseBlockState extends ConsumerState<ExerciseBlock> {
   /// "2×4–6 · 1×20 · last set to failure", with ⓘ for the program notes and the coach's why.
   Widget _prescription() {
     final sug = ex.suggestion;
-    final working = [for (final s in ex.sets) if (!s.isWarmup && s.setType != 'drop') s];
+    final working = [for (final s in ex.sets) if (s.isWorkingSet) s];
     final parts = <String>[];
     RepRange? cur;
     var count = 0;
@@ -351,24 +377,91 @@ class _ExerciseBlockState extends ConsumerState<ExerciseBlock> {
     );
   }
 
+  double get _increment => ref.read(currentSettingsProvider).increments.of(widget.info?.equipmentKind ?? EquipmentKind.other);
+
+  /// The working set a follow-up hangs under ([s] itself when it's a working set).
+  WorkoutSet _parentOf(WorkoutSet s) {
+    final i = ex.sets.indexWhere((x) => x.id == s.id);
+    for (var j = i; j >= 0; j--) {
+      if (!ex.sets[j].isFollowUp) return ex.sets[j];
+    }
+    return s;
+  }
+
+  Future<void> _addFollowUp(WorkoutSet s, SetKind kind, {String? technique}) => ref.read(sessionRepositoryProvider).addFollowUp(
+        ex,
+        _parentOf(s),
+        kind,
+        increment: _increment,
+        technique: technique ?? (kind == SetKind.drop ? s.technique : null),
+      );
+
   Future<void> _setMenu(WorkoutSet s) async {
     final techniques = ref.read(programProvider).value?.techniques ?? const {};
+    final canFollow = !s.isWarmup;
     final picked = await showModalBottomSheet<String>(
       context: context,
       isScrollControlled: true,
       builder: (ctx) => SafeArea(
         child: ListView(shrinkWrap: true, children: [
+          const ListTile(dense: true, title: Text('SET TYPE', style: TextStyle(fontSize: 12, color: AppColors.textTertiary))),
           ListTile(key: const ValueKey('kind-working'), title: const Text('Working set'), onTap: () => Navigator.of(ctx).pop('working')),
-          ListTile(key: const ValueKey('kind-warmup'), leading: const Text('W'), title: const Text('Warm-up'), onTap: () => Navigator.of(ctx).pop('warmup')),
+          ListTile(key: const ValueKey('kind-warmup'), leading: const _KindLetter(SetKind.warmup), title: const Text('Warm-up'), onTap: () => Navigator.of(ctx).pop('warmup')),
           ListTile(
             key: const ValueKey('kind-drop'),
-            leading: const Text('D'),
+            leading: const _KindLetter(SetKind.drop),
             title: const Text('Drop set'),
-            subtitle: const Text('Under the set above; counts for volume, not e1RM or ranks'),
+            subtitle: const Text('Lighter, to failure, no rest. Volume only, not e1RM or ranks'),
             onTap: () => Navigator.of(ctx).pop('drop'),
           ),
-          for (final t in techniques.values)
-            ListTile(leading: Text(techniqueTag(t.id)), title: Text(t.name), onTap: () => Navigator.of(ctx).pop('technique:${t.id}')),
+          ListTile(
+            key: const ValueKey('kind-myo'),
+            leading: const _KindLetter(SetKind.myo),
+            title: const Text('Myo-rep cycle'),
+            subtitle: const Text('Same load: rest 5 s, 2 reps. Repeat until you miss'),
+            onTap: () => Navigator.of(ctx).pop('myo'),
+          ),
+          ListTile(
+            key: const ValueKey('kind-hold'),
+            leading: const _KindLetter(SetKind.hold),
+            title: const Text('Weighted static hold'),
+            subtitle: const Text('Hold the stretched position; REPS is seconds'),
+            onTap: () => Navigator.of(ctx).pop('hold'),
+          ),
+          if (canFollow) ...[
+            const Divider(),
+            const ListTile(dense: true, title: Text('ADD UNDER THIS SET', style: TextStyle(fontSize: 12, color: AppColors.textTertiary))),
+            ListTile(
+              key: const ValueKey('follow-drop'),
+              leading: const Icon(Icons.south_rounded, color: AppColors.xp),
+              title: const Text('Add drop set'),
+              subtitle: const Text('Pre-filled 20–25 % lighter'),
+              onTap: () => Navigator.of(ctx).pop('follow:drop'),
+            ),
+            ListTile(
+              key: const ValueKey('follow-myo'),
+              leading: const Icon(Icons.replay_rounded, color: AppColors.accent),
+              title: const Text('Add myo-rep cycle'),
+              onTap: () => Navigator.of(ctx).pop('follow:myo'),
+            ),
+            ListTile(
+              key: const ValueKey('follow-hold'),
+              leading: const Icon(Icons.pause_circle_outline_rounded, color: AppColors.hold),
+              title: const Text('Add 30 s static hold'),
+              onTap: () => Navigator.of(ctx).pop('follow:hold'),
+            ),
+          ],
+          if (techniques.isNotEmpty && s.isWorkingSet) ...[
+            const Divider(),
+            const ListTile(dense: true, title: Text('PROGRAM TECHNIQUE ON THIS SET', style: TextStyle(fontSize: 12, color: AppColors.textTertiary))),
+            for (final t in techniques.values)
+              ListTile(
+                key: ValueKey('technique-${t.id}'),
+                leading: Text(techniqueTag(t.id)),
+                title: Text(t.name),
+                onTap: () => Navigator.of(ctx).pop('technique:${t.id}'),
+              ),
+          ],
           ListTile(
             leading: const Icon(Icons.delete_outline_rounded, color: AppColors.danger),
             title: const Text('Delete set', style: TextStyle(color: AppColors.danger)),
@@ -380,8 +473,65 @@ class _ExerciseBlockState extends ConsumerState<ExerciseBlock> {
     if (picked == null) return;
     final repo = ref.read(sessionRepositoryProvider);
     if (picked == 'delete') return repo.deleteSet(s);
+    if (picked.startsWith('follow:')) return _addFollowUp(s, SetKind.fromId(picked.substring(7)));
     await repo.setSetKind(s, kind: picked);
+    if (picked.startsWith('technique:')) {
+      // The technique's follow-ups (two 25 % drops, a myo cycle, a 30 s hold) appear under the set.
+      final id = picked.substring('technique:'.length);
+      final i = ex.sets.indexWhere((x) => x.id == s.id);
+      final hasFollowUps = i + 1 < ex.sets.length && ex.sets[i + 1].isFollowUp;
+      if (!hasFollowUps) {
+        for (final k in followUpsFor(id)) {
+          await repo.addFollowUp(ex, s, k, increment: _increment, technique: id);
+        }
+      }
+    }
   }
+}
+
+/// The letter of a set type, in its color.
+class _KindLetter extends StatelessWidget {
+  const _KindLetter(this.kind);
+  final SetKind kind;
+
+  @override
+  Widget build(BuildContext context) => SizedBox(
+        width: 24,
+        child: Text(kind.letter,
+            textAlign: TextAlign.center,
+            style: AppType.body.copyWith(fontFamily: AppType.display, fontWeight: FontWeight.w800, color: kindColor(kind))),
+      );
+}
+
+Color kindColor(SetKind k) => switch (k) {
+      SetKind.warmup => AppColors.warning,
+      SetKind.drop => AppColors.xp,
+      SetKind.myo => AppColors.accent,
+      SetKind.hold => AppColors.hold,
+      SetKind.working => AppColors.textPrimary,
+    };
+
+/// "+ DROP" / "+ CYCLE" under the last completed drop or myo cycle.
+class _MoreFollowUp extends StatelessWidget {
+  const _MoreFollowUp({required this.buttonKey, required this.kind, required this.onTap});
+  final Key buttonKey;
+  final SetKind kind;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.only(left: 14),
+        child: Align(
+          alignment: Alignment.centerLeft,
+          child: TextButton.icon(
+            key: buttonKey,
+            style: TextButton.styleFrom(foregroundColor: kindColor(kind), visualDensity: VisualDensity.compact),
+            onPressed: onTap,
+            icon: const Icon(Icons.add_rounded, size: 16),
+            label: Text(kind == SetKind.drop ? 'ANOTHER DROP' : 'ANOTHER CYCLE', style: const TextStyle(fontSize: 12)),
+          ),
+        ),
+      );
 }
 
 class _TableHeader extends StatelessWidget {
@@ -473,6 +623,7 @@ class _SetRow extends ConsumerWidget {
   const _SetRow({
     super.key,
     required this.set,
+    this.above,
     required this.number,
     required this.higherRep,
     required this.prev,
@@ -483,6 +634,9 @@ class _SetRow extends ConsumerWidget {
   });
 
   final WorkoutSet set;
+
+  /// The row above (a drop shows its % under that).
+  final WorkoutSet? above;
   final int? number;
   final RepRange? higherRep;
   final LoggedSet? prev;
@@ -494,20 +648,27 @@ class _SetRow extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final s = set;
-    final drop = s.setType == 'drop';
+    final kind = s.kind;
+    final follow = kind.isFollowUp;
     final repo = ref.read(sessionRepositoryProvider);
-    final overridePct = !s.isWarmup && !drop && s.suggestedWeight != null && s.suggestedWeight! > 0 && repo.wouldOverride(s, s.weight)
+    final overridePct = !s.isWarmup && !follow && s.suggestedWeight != null && s.suggestedWeight! > 0 && repo.wouldOverride(s, s.weight)
         ? ((s.weight - s.suggestedWeight!) / s.suggestedWeight! * 100).round()
         : null;
-    final effort = s.isWarmup ? null : (Effort.fromRpe(s.rpe) ?? Effort.fromRir(s.targetRir ?? exerciseRir));
-    final label = s.isWarmup ? 'W' : (drop ? 'D' : '${number ?? ''}');
-    final sub = s.technique != null ? techniqueTag(s.technique!) : (higherRep != null ? '×$higherRep' : null);
+    final effort = s.isWarmup || kind == SetKind.hold ? null : (Effort.fromRpe(s.rpe) ?? Effort.fromRir(s.targetRir ?? exerciseRir));
+    final label = kind == SetKind.working ? '${number ?? ''}' : kind.letter;
+    final from = above?.weight;
+    final sub = switch (kind) {
+      SetKind.drop => from != null && from > 0 && s.weight < from ? '−${((from - s.weight) / from * 100).round()}%' : null,
+      SetKind.myo => '${myoRestSeconds}s',
+      SetKind.hold => 'HOLD',
+      _ => s.technique != null ? techniqueTag(s.technique!) : (higherRep != null ? '×$higherRep' : null),
+    };
     final bg = s.completed ? AppColors.primary.withValues(alpha: 0.14) : Colors.transparent;
 
     Widget cell(KeypadField f) {
       final t = KeypadTarget(s.id, f);
       final focused = ctx.focused == t;
-      final value = f == KeypadField.kg ? loadText(s.weight) : '${s.reps}';
+      final value = f == KeypadField.kg ? loadText(s.weight) : (kind == SetKind.hold ? '${s.reps}s' : '${s.reps}');
       final entered = s.completed ||
           ctx.edited.contains(t) ||
           (f == KeypadField.kg ? (s.suggestedWeight != null && s.weight != s.suggestedWeight) : (s.suggestedReps != null && s.reps != s.suggestedReps));
@@ -568,23 +729,31 @@ class _SetRow extends ConsumerWidget {
       opacity: s.isWarmup && !s.completed ? 0.6 : 1,
       child: Container(
         margin: const EdgeInsets.symmetric(vertical: 2),
-        padding: EdgeInsets.only(left: drop ? 14 : 0),
-        decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(8)),
+        padding: EdgeInsets.only(left: follow ? 10 : 0),
+        decoration: BoxDecoration(
+          color: bg,
+          borderRadius: BorderRadius.circular(8),
+          // Follow-ups hang under their set: a colored rail on the left.
+          border: follow ? Border(left: BorderSide(color: kindColor(kind), width: 3)) : null,
+        ),
         child: Row(children: [
           InkWell(
             key: ValueKey('set-label-${s.id}'),
             onTap: s.completed ? null : onSetMenu,
             child: SizedBox(
-              width: drop ? 26 : 40,
+              width: follow ? 30 : 40,
               height: 38,
               child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
                 Text(label,
                     style: AppType.body.copyWith(
                       fontFamily: AppType.display,
                       fontWeight: FontWeight.w800,
-                      color: s.isWarmup ? AppColors.warning : (drop ? AppColors.xp : AppColors.textPrimary),
+                      color: kindColor(kind),
                     )),
-                if (sub != null) Text(sub, style: AppType.label.copyWith(fontSize: 9, color: AppColors.xp, letterSpacing: 0)),
+                if (sub != null)
+                  Text(sub,
+                      maxLines: 1,
+                      style: AppType.label.copyWith(fontSize: 9, color: follow ? kindColor(kind) : AppColors.xp, letterSpacing: 0)),
               ]),
             ),
           ),

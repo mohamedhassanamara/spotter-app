@@ -106,6 +106,32 @@ class RoutineRepository {
     ));
   }
 
+  /// Routine editor link button: [next] joins [row]'s superset (a new one when [row] has none), or
+  /// leaves it when they're already together. A group left with one exercise dissolves.
+  Future<void> toggleSupersetWithNext(RoutineExercise row, RoutineExercise next, List<RoutineExercise> all) => _db.transaction(() async {
+        final together = row.supersetGroup != null && row.supersetGroup == next.supersetGroup;
+        Future<void> setGroup(int id, int? g) =>
+            (_db.update(_db.routineExercises)..where((t) => t.id.equals(id))).write(RoutineExercisesCompanion(supersetGroup: Value(g)));
+        if (together) {
+          // Split the group at this link: rows after it get their own group.
+          final members = all.where((r) => r.supersetGroup == row.supersetGroup).toList();
+          final after = members.skipWhile((r) => r.id != next.id).toList();
+          final before = members.takeWhile((r) => r.id != next.id).toList();
+          for (final r in after) {
+            await setGroup(r.id, after.length > 1 ? after.first.id : null);
+          }
+          if (before.length == 1) await setGroup(before.single.id, null);
+          return;
+        }
+        final g = row.supersetGroup ?? row.id;
+        await setGroup(row.id, g);
+        // Merge next's whole group in.
+        final nextMembers = next.supersetGroup == null ? [next] : all.where((r) => r.supersetGroup == next.supersetGroup).toList();
+        for (final r in nextMembers) {
+          await setGroup(r.id, g);
+        }
+      });
+
   Future<void> removeExercise(int id) => (_db.delete(_db.routineExercises)..where((t) => t.id.equals(id))).go();
 
   /// Persists a new order given the routine exercise ids in display order.
