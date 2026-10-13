@@ -115,4 +115,36 @@ void main() {
     expect(await ProgramRepository.ensureProgramSupersets(db, program: program), isFalse);
     await db.close();
   });
+
+  test('set counts a Red day saved into a routine are restored; my own changes are not', () async {
+    final db = AppDatabase(NativeDatabase.memory());
+    await ExerciseRepository(db).ensureSeeded(
+      jsonOverride: File('assets/exercises.json').readAsStringSync(),
+      extraJsonOverride: File('assets/extra_exercises.json').readAsStringSync(),
+      sourcesJsonOverride: File('assets/library_sources.json').readAsStringSync(),
+    );
+    final def = jsonDecode(File('assets/programs/my_routines.json').readAsStringSync()) as Map<String, dynamic>;
+    final rid = await db.into(db.routines).insert(RoutinesCompanion.insert(name: 'Upper', createdAt: now));
+    Future<int> row(String slot, String ex, int sets) => db.into(db.routineExercises).insert(RoutineExercisesCompanion.insert(
+          routineId: rid, exerciseId: ex, position: 0, repMin: 10, repMax: 12, targetSets: sets, restSeconds: 120, programSlots: Value('["$slot"]')));
+    final yRaise = await row('upper_07', 'sp_db_incline_y_raise', 2); // my routine says 3
+    final fly = await row('upper_05', 'Butterfly', 1); // my routine says 2, but no Red-day trace: my choice
+    final sid = await db.into(db.sessions).insert(SessionsCompanion.insert(name: 'Upper', startedAt: now, status: const Value('finished')));
+    final ex = await db.into(db.sessionExercises).insert(SessionExercisesCompanion.insert(
+          sessionId: sid, exerciseId: 'sp_db_incline_y_raise', position: 0, repMin: 10, repMax: 12, targetSets: 3, restSeconds: 120,
+          routineExerciseId: Value(yRaise),
+          suggestionJson: const Value('{"headline":"","why":[],"technique":true,"ramp":false,"band":"red"}')));
+    for (var i = 0; i < 2; i++) {
+      await db.into(db.workoutSets).insert(WorkoutSetsCompanion.insert(sessionExerciseId: ex, position: i, completed: const Value(true)));
+    }
+
+    final fixed = await ProgramRepository.ensureRoutineSetCounts(db, definition: def);
+    expect(fixed, ['Upper · sp_db_incline_y_raise: 2 → 3']);
+    final rows = {for (final r in await db.select(db.routineExercises).get()) r.id: r};
+    expect(rows[yRaise]!.targetSets, 3);
+    expect(rows[fly]!.targetSets, 1, reason: 'no Red-day evidence: left as I set it');
+    expect(await ProgramRepository.restoredSetCounts(db), fixed);
+    expect(await ProgramRepository.ensureRoutineSetCounts(db, definition: def), isEmpty, reason: 'runs once');
+    await db.close();
+  });
 }

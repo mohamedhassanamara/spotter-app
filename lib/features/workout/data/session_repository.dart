@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:math' as math;
 
 import 'package:drift/drift.dart';
 
@@ -28,7 +27,6 @@ class StoredSuggestion {
     required this.techniqueDay,
     required this.rampUp,
     required this.band,
-    this.setsTrimmed = 0,
     this.formResetHint,
   });
 
@@ -42,21 +40,16 @@ class StoredSuggestion {
   final bool rampUp;
   final ReadinessBand? band;
 
-  /// Working sets the plan had that readiness took away today (shown in the logger, and never
-  /// mistaken for a routine change at Finish).
-  final int setsTrimmed;
-
   /// The engine thinks the last session was a deliberate step down: the weight a form reset would
   /// restart from.
   final double? formResetHint;
 
-  static String encode(Suggestion s, {int setsTrimmed = 0}) => jsonEncode({
+  static String encode(Suggestion s) => jsonEncode({
         'headline': s.headline,
         'why': s.why,
         'technique': s.techniqueDay,
         'ramp': s.rampUp,
         'band': s.band.name,
-        if (setsTrimmed > 0) 'trimmed': setsTrimmed,
         if (s.formResetHint != null) 'reset': s.formResetHint,
       });
 
@@ -74,7 +67,6 @@ class StoredSuggestion {
       techniqueDay: j['technique'] as bool? ?? false,
       rampUp: j['ramp'] as bool? ?? false,
       band: ReadinessBand.fromName(j['band'] as String?),
-      setsTrimmed: (j['trimmed'] as num?)?.toInt() ?? 0,
       formResetHint: (j['reset'] as num?)?.toDouble(),
     );
   }
@@ -302,7 +294,7 @@ class SessionRepository {
           suggestedWeight: Value(s.weight),
           suggestedReps: Value(s.reps),
           suggestedSets: Value(s.sets),
-          suggestionJson: Value(StoredSuggestion.encode(s, setsTrimmed: math.max(0, targetSets - s.sets))),
+          suggestionJson: Value(StoredSuggestion.encode(s)),
         ));
     // Calibration sets ramp freely, so they carry no suggested weight (no override detection).
     final suggested = s.rampUp ? null : s.weight;
@@ -371,12 +363,6 @@ class SessionRepository {
       band: main.band,
       formResetHint: main.formResetHint,
     );
-    // Readiness may take sets away; keep the first ones of each slot and record how many went.
-    final takes = [
-      for (var g = 0; g < groups.length; g++)
-        suggestions[g].techniqueDay ? suggestions[g].sets.clamp(1, groups[g].length) : groups[g].length,
-    ];
-    final trimmed = [for (var g = 0; g < groups.length; g++) groups[g].length - takes[g]].fold(0, (a, b) => a + b);
     final exId = await _db.into(_db.sessionExercises).insert(SessionExercisesCompanion.insert(
           sessionId: sessionId,
           exerciseId: info.id,
@@ -390,7 +376,7 @@ class SessionRepository {
           suggestedWeight: Value(main.weight),
           suggestedReps: Value(main.reps),
           suggestedSets: Value(main.sets),
-          suggestionJson: Value(StoredSuggestion.encode(combined, setsTrimmed: trimmed)),
+          suggestionJson: Value(StoredSuggestion.encode(combined)),
           programSlots: Value(jsonEncode(slotIds)),
           displayName: Value(displayName),
         ));
@@ -418,8 +404,8 @@ class SessionRepository {
     }
     for (var g = 0; g < groups.length; g++) {
       final s = suggestions[g];
-      final take = takes[g];
-      for (var i = 0; i < take; i++) {
+      // Every prescribed set, always: coaching inputs change targets, never the routine's volume.
+      for (var i = 0; i < groups[g].length; i++) {
         final p = groups[g][i];
         await _db.into(_db.workoutSets).insert(WorkoutSetsCompanion.insert(
               sessionExerciseId: exId,

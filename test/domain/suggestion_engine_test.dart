@@ -210,12 +210,13 @@ void main() {
       expect(s.kind, SuggestionKind.addReps);
     });
 
-    test('Red, isolation: never below last session; one fewer set instead', () {
+    test('Red, isolation: repeat last session, every set', () {
       final s = run(topAtEight, score: 30);
       expect(s.weight, 80);
-      expect(s.sets, 2);
-      expect(s.techniqueDay, isTrue);
-      expect(s.headline, 'Technique day: 80 kg × 10, 2 sets, stop at 2 reps in reserve');
+      expect(s.reps, 10);
+      expect(s.sets, 3);
+      expect(s.techniqueDay, isFalse, reason: 'a repeat is a normal session for progression');
+      expect(s.headline, 'Repeat: 80 kg × 10, 3 sets, stop at 2 reps in reserve');
     });
 
     test('Red, compound: at most one step down', () {
@@ -231,7 +232,8 @@ void main() {
         compound: true,
       ));
       expect(s.weight, 77.5);
-      expect(s.sets, 2);
+      expect(s.sets, 3);
+      expect(s.headline, startsWith('Small deload: 77.5 kg'));
     });
 
     test('training-load penalty turns a neutral 60 into Yellow (50)', () {
@@ -269,10 +271,10 @@ void main() {
       expect(s.weight, -30);
     });
 
-    test('Red day: never below last session (isolation rule); one fewer set', () {
+    test('Red day (isolation input): repeat last session, every set', () {
       final s = assisted([log([(-25, 5, 9), (-25, 5, 9)])], score: 30);
       expect(s.weight, -25);
-      expect(s.sets, 2);
+      expect(s.sets, 3);
     });
 
     test('never more assistance than bodyweight', () {

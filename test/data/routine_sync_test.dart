@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:drift/drift.dart' show Value, driftRuntimeOptions;
+import 'package:drift/drift.dart' show driftRuntimeOptions;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:spotter/core/db/database.dart';
@@ -100,20 +100,6 @@ void main() {
     final again = diffSessionAgainstRoutine(session: s.exercises, routine: after, catalog: catalog);
     expect(again.added, isEmpty);
     expect(again.removed, isEmpty);
-  });
-
-  test('sets readiness skipped today are not a routine change', () async {
-    final s = await startFromRoutine();
-    final bench = s.exercises.first;
-    // As on a Red day: one working set fewer, recorded on the suggestion.
-    final lastWorking = bench.sets.lastWhere((x) => !x.isWarmup);
-    await sessions.deleteSet(lastWorking);
-    await (db.update(db.sessionExercises)..where((t) => t.id.equals(bench.row.id)))
-        .write(SessionExercisesCompanion(suggestionJson: Value(bench.row.suggestionJson!.replaceFirst('{', '{"trimmed":1,'))));
-    final now2 = (await sessions.watchActive().first)!;
-    final diff = diffSessionAgainstRoutine(session: now2.exercises, routine: await routineRows(db, routineId), catalog: catalog);
-    expect(diff.setCounts, isEmpty);
-    expect(now2.exercises.first.suggestion!.setsTrimmed, 1);
   });
 
   test('a replaced exercise keeps its routine row', () async {

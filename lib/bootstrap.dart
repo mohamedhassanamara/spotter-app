@@ -14,6 +14,7 @@ Future<void> bootstrapDatabase(AppDatabase db) async {
   await ProgramRepository.ensureMyRoutinesInstalled(db);
   await ProgramRepository.ensureCanonicalWeek(db);
   await ProgramRepository.ensureProgramSupersets(db);
+  await ProgramRepository.ensureRoutineSetCounts(db);
   // ExerciseDB V2 mappings survive a reinstall through the bundled asset.
   await EdbMappingRepository(db).seedFromAsset(await rootBundle.loadString(EdbMappingRepository.assetPath), now: DateTime.now());
 }

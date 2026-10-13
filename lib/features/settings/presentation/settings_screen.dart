@@ -338,6 +338,19 @@ class _ProgramTiles extends ConsumerWidget {
         subtitle: const Text('One fixed weekly template: the same sets, reps and effort every session. '
             'Planned rest: Wednesday and Sunday.'),
       ),
+      FutureBuilder<List<String>>(
+        future: ProgramRepository.restoredSetCounts(ref.read(databaseProvider)),
+        builder: (context, snap) {
+          final fixed = snap.data ?? const [];
+          if (fixed.isEmpty) return const SizedBox.shrink();
+          return ListTile(
+            key: const ValueKey('restored-set-counts'),
+            leading: const Icon(Icons.playlist_add_check_rounded),
+            title: const Text('Set counts restored'),
+            subtitle: Text('A Red day had saved fewer sets into these routines:\n${fixed.join('\n')}'),
+          );
+        },
+      ),
       ListTile(
         leading: const Icon(Icons.restart_alt_rounded),
         title: const Text('Reinstall my Min-Max routines'),

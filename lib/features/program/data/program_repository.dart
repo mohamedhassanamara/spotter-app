@@ -68,6 +68,63 @@ class ProgramRepository {
     return true;
   }
 
+  static const setCountsKey = 'routine_set_counts_restored';
+
+  /// What [ensureRoutineSetCounts] restored, e.g. ["Upper · Dumbbell Incline Y Raise: 2 → 3"].
+  static Future<List<String>> restoredSetCounts(AppDatabase db) async {
+    final raw = await db.getSetting(setCountsKey);
+    if (raw == null || raw.isEmpty || raw == '[]') return const [];
+    return (jsonDecode(raw) as List<dynamic>).cast<String>();
+  }
+
+  /// Startup step, once: an earlier Red day removed a working set, and "Update routine" could save
+  /// that lower count into the routine. Restores a program row to its count in `my_routines.json`
+  /// when the evidence says so: the row has fewer sets than defined, and a finished session linked
+  /// to it was a Red-day session (technique day) with exactly that many working sets. Your own set
+  /// changes (no Red-day trace) are left alone.
+  static Future<List<String>> ensureRoutineSetCounts(AppDatabase db, {Map<String, dynamic>? definition}) async {
+    if (await db.getSetting(setCountsKey) != null) return const [];
+    final def = definition ?? await loadMyRoutines();
+    final fixed = <String>[];
+    await db.transaction(() async {
+      for (final routine in await db.select(db.routines).get()) {
+        final defRoutine = (def['routines'] as List<dynamic>).cast<Map<String, dynamic>>().where((r) => r['name'] == routine.name).firstOrNull;
+        if (defRoutine == null) continue;
+        final rows = await (db.select(db.routineExercises)..where((t) => t.routineId.equals(routine.id))).get();
+        for (final row in rows) {
+          final slots = decodeSlots(row.programSlots);
+          if (slots.isEmpty) continue;
+          final defRow = (defRoutine['exercises'] as List<dynamic>)
+              .cast<Map<String, dynamic>>()
+              .where((e) => (e['program_slots'] as List<dynamic>).cast<String>().join(',') == slots.join(','))
+              .firstOrNull;
+          final want = (defRow?['sets'] as num?)?.toInt();
+          if (want == null || row.targetSets >= want) continue;
+          final linked = await (db.select(db.sessionExercises).join([
+            innerJoin(db.sessions, db.sessions.id.equalsExp(db.sessionExercises.sessionId)),
+          ])
+                ..where(db.sessionExercises.routineExerciseId.equals(row.id) & db.sessions.status.equals('finished')))
+              .get();
+          var redDay = false;
+          for (final l in linked) {
+            final e = l.readTable(db.sessionExercises);
+            final technique = e.suggestionJson != null && (jsonDecode(e.suggestionJson!) as Map<String, dynamic>)['technique'] == true;
+            if (!technique) continue;
+            final working = await (db.select(db.workoutSets)
+                  ..where((t) => t.sessionExerciseId.equals(e.id) & t.isWarmup.equals(false) & t.setType.isNull()))
+                .get();
+            if (working.length == row.targetSets) redDay = true;
+          }
+          if (!redDay) continue;
+          await (db.update(db.routineExercises)..where((t) => t.id.equals(row.id))).write(RoutineExercisesCompanion(targetSets: Value(want)));
+          fixed.add('${routine.name} · ${row.displayName ?? row.exerciseId}: ${row.targetSets} → $want');
+        }
+      }
+      await db.putSetting(setCountsKey, jsonEncode(fixed));
+    });
+    return fixed;
+  }
+
   static const supersetsKey = 'program_supersets_applied';
 
   /// Startup step, once: builds the program's supersets (S1/S2/S3 on Arms) into existing routines

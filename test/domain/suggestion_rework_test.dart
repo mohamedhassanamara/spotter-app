@@ -81,17 +81,19 @@ void main() {
     });
 
     for (final (name, r) in [('Green', green), ('Yellow', yellow), ('Red', red)]) {
-      test('after: 7.5 kg on a $name day, with the reason', () {
+      test('after: 7.5 kg on a $name day, all 3 sets, with the reason', () {
         final s = suggest(yRaise, readiness: r);
         expect(s.weight, 7.5);
-        expect(s.reps, 11);
+        expect(s.sets, 3, reason: 'the routine\'s sets, always');
         expect(dumbbells.contains(s.weight), isTrue);
         expect(s.why.first, startsWith('Base: last session (6/10)'));
         expect(s.why.any((w) => w.startsWith('Rule: within 10–12')), isTrue);
         expect(s.why.last, 'Weight: 7.5 kg exists in your gym.');
-        if (r == red) {
-          expect(s.sets, 2);
-          expect(s.why.any((w) => w.contains("never below last session's 7.5 kg")), isTrue);
+        if (r == green) {
+          expect(s.reps, 11, reason: 'beat last time\'s reps');
+        } else {
+          expect(s.reps, 12, reason: 'repeat last session: 7.5 kg × 12');
+          expect(s.why.any((w) => w.contains('repeat last session (7.5 kg × 12), all 3 sets')), isTrue);
         }
       });
     }
@@ -152,12 +154,13 @@ void main() {
   });
 
   group('no drop spirals', () {
-    test('Yellow / Red never cut an isolation below last session; Red takes a set instead', () {
+    test('Yellow / Red never cut an isolation below last session, and never take a set', () {
       final h = [log(now.subtract(const Duration(days: 7)), [(12.5, 11), (12.5, 10)])];
       expect(suggest(h, readiness: yellow).weight, 12.5);
       final r = suggest(h, readiness: red);
       expect(r.weight, 12.5);
-      expect(r.sets, 2);
+      expect(r.reps, 11);
+      expect(r.sets, 3);
     });
 
     test('Red on a compound: at most one step down', () {
@@ -236,17 +239,37 @@ void main() {
       expect(suggest(topReached).weight, 42.5);
       final s = suggest(topReached, fatigued: const ['Biceps']);
       expect(s.weight, 40);
-      expect(s.why.any((w) => w.startsWith('Recovery: Biceps still fatigued → hold')), isTrue);
+      expect(s.why.any((w) => w.startsWith('Recovery: biceps Fatigued → repeat last session (40 kg × 12)')), isTrue);
     });
 
     test('readiness and recovery together soften by one step at most', () {
       final s = suggest(topReached, readiness: yellow, fatigued: const ['Biceps']);
       expect(s.weight, 40);
-      expect(s.why.any((w) => w.contains('readiness already softened')), isTrue);
+      expect(s.why.any((w) => w.contains('Readiness Yellow (45) + biceps Fatigued → repeat last session')), isTrue);
       final grid = GymEquipment.defaults.gridFor(exerciseId: 'bb', kind: EquipmentKind.barbell);
       final c = suggest([log(now.subtract(const Duration(days: 7)), [(65, 5), (65, 5)])],
           range: const RepRange(4, 6), readiness: red, fatigued: const ['Chest'], grid: grid, compound: true, eq: EquipmentKind.barbell);
       expect(c.weight, grid.previous(65), reason: 'one step, not two');
+    });
+
+    test('Red + quads Fatigued on a compound → small deload, one step, same reps, all sets', () {
+      final grid = GymEquipment.defaults.gridFor(exerciseId: 'm', kind: EquipmentKind.machineCable);
+      final s = suggest([log(now.subtract(const Duration(days: 7)), [(40, 8), (40, 7)])],
+          range: const RepRange(6, 8), readiness: red, fatigued: const ['Quadriceps'], grid: grid, compound: true, eq: EquipmentKind.machineCable);
+      expect(s.weight, 35);
+      expect(s.reps, 8);
+      expect(s.sets, 3);
+      expect(s.why.any((w) => w.contains('Readiness Red (30) + quadriceps Fatigued → small deload: 35 kg × 8 (one step down')), isTrue);
+    });
+
+    test('never more than one step down in total, whatever the inputs', () {
+      final grid = GymEquipment.defaults.gridFor(exerciseId: 'm', kind: EquipmentKind.machineCable);
+      // A missed range (−5 %) + plateau-free + Red + Fatigued + deficit on a compound.
+      final s = suggest([log(now.subtract(const Duration(days: 7)), [(60, 4), (60, 3)])],
+          range: const RepRange(6, 8), readiness: red, fatigued: const ['Chest'], grid: grid, compound: true, eq: EquipmentKind.machineCable,
+          energy: const EnergyContext(avg7: 100, slopePerWeek: -0.5));
+      expect(s.weight, greaterThanOrEqualTo(grid.previous(60)!));
+      expect(s.sets, 3);
     });
 
     test('a clear deficit: falling short holds instead of dropping', () {
@@ -328,5 +351,47 @@ void main() {
       expect(a.values.last, 0);
       expect(a.previous(-25), -30);
     });
+  });
+
+  group('the routine\'s set count, always', () {
+    final barbell = GymEquipment.defaults.gridFor(exerciseId: 'bb', kind: EquipmentKind.barbell);
+    final cases = <String, List<ExerciseSessionLog>>{
+      'top of range': [log(now.subtract(const Duration(days: 7)), [(65, 8), (65, 8), (65, 8)])],
+      'within range': [log(now.subtract(const Duration(days: 7)), [(65, 7), (65, 6), (65, 6)])],
+      'below range': [log(now.subtract(const Duration(days: 7)), [(65, 5), (65, 4), (65, 4)])],
+      'no history': const [],
+    };
+    for (final (bandName, r) in [('Green', green), ('Yellow', yellow), ('Red', red)]) {
+      for (final recovery in ['Ready', 'Recovering', 'Fatigued']) {
+        for (final compound in [true, false]) {
+          test('$bandName × $recovery × ${compound ? 'compound' : 'isolation'}', () {
+            for (final c in cases.entries) {
+              for (final routineSets in [1, 2, 3, 4]) {
+                final s = const SuggestionEngine().suggest(SuggestionInput(
+                  range: const RepRange(6, 8),
+                  targetSets: routineSets,
+                  targetRir: 0,
+                  increment: 2.5,
+                  equipment: EquipmentKind.barbell,
+                  history: c.value,
+                  readiness: r,
+                  now: now,
+                  grid: barbell,
+                  compound: compound,
+                  // Only Fatigued prime movers reach the engine; Ready and Recovering change nothing.
+                  fatigued: recovery == 'Fatigued' ? const ['Chest'] : const [],
+                ));
+                expect(s.sets, routineSets, reason: '${c.key}, $routineSets sets');
+                if (c.value.isNotEmpty) {
+                  final last = c.value.last.topWeight;
+                  expect(s.weight, greaterThanOrEqualTo(barbell.previous(last)! - 0.01), reason: '${c.key}: one step down at most');
+                  if (!compound && c.key != 'below range') expect(s.weight, greaterThanOrEqualTo(last), reason: '${c.key}: isolation never below last');
+                }
+              }
+            }
+          });
+        }
+      }
+    }
   });
 }

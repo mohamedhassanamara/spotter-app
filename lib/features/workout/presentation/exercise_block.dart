@@ -355,12 +355,9 @@ class _ExerciseBlockState extends ConsumerState<ExerciseBlock> {
     final program = ref.watch(programProvider).value;
     final techName = technique == null ? null : (program?.techniques[technique]?.name ?? technique);
     final calibration = sug?.rampUp == true;
-    final trimmed = sug?.setsTrimmed ?? 0;
-    final line = [
-      calibration ? 'Calibration: ramp up each set, stop 2 reps short' : [...parts, if (effort.isNotEmpty) effort, if (techName != null) 'last set: $techName'].join(' · '),
-      // Readiness took sets away today: say so, so the routine never looks wrong.
-      if (trimmed > 0) '$trimmed set${trimmed == 1 ? '' : 's'} skipped today (readiness ${sug?.band?.name ?? ''})',
-    ].join(' · ');
+    final line = calibration
+        ? 'Calibration: ramp up each set, stop 2 reps short'
+        : [...parts, if (effort.isNotEmpty) effort, if (techName != null) 'last set: $techName'].join(' · ');
     return InkWell(
       key: ValueKey('prescription-${ex.row.id}'),
       onTap: () => setState(() => _infoOpen = !_infoOpen),

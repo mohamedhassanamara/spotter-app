@@ -1336,3 +1336,36 @@ form reset, nutrition line).
 
   It also taps all 20 muscles across both views (callout + the right sheet) and switches modes.
   Screenshots: `docs/screenshots/bodymap-revert/` (rank, recovery, volume).
+
+## Never remove sets: readiness and recovery adjust the target, not the volume
+
+- **The set count always equals the routine's.** No coaching input (readiness, recovery, nutrition,
+  anything else) changes it. The Red-day "one fewer set" logic, the logger's "1 set skipped today"
+  note and the routine-sync compensation for skipped sets are gone. The calibration path no longer drops a
+  set on Red either.
+- **When an adjustment is warranted** (Yellow or Red readiness, or a Fatigued prime mover), the coach
+  picks one of two:
+  1. **Repeat**: last session's top weight for its best reps at that weight (kept inside the range, up to
+     the extended target), no progression today. Yellow; Red on isolations; Fatigued on any band
+     except the deload case.
+  2. **Small deload**: one available weight step below last session, with the same rep target (kept
+     inside the range), all sets. Red on compounds (with or without Fatigued muscles). The session is
+     marked so it isn't used as a progression base.
+  If the progression rule already lowered the load today (a missed range), readiness adds nothing, so
+  the total is never more than one step down. Isolations never go below last session's working weight for
+  readiness or recovery.
+- **The why line names the choice:** "Readiness: Readiness Red (30) → repeat last session (7.5 kg × 12),
+  all 3 sets", "Readiness: Readiness Red (30) + quadriceps Fatigued → small deload: 35 kg × 8 (one step
+  down from 40 kg), all 3 sets", "Recovery: biceps Fatigued → repeat last session (40 kg × 12)…". The
+  headline starts with "Repeat:" / "Small deload:" instead of "Today:".
+- **Clean-up** (`ProgramRepository.ensureRoutineSetCounts`, startup, once): a program routine row is
+  restored to its `my_routines.json` set count when it has fewer sets *and* a finished session linked
+  to it was a Red day with exactly that many working sets (the old trim + "Update routine"). Rows you
+  reduced yourself (no such trace) are left alone. Anything restored is listed under Settings → Program
+  ("Set counts restored"). On the simulator data there was nothing to restore; the phone runs this on
+  first launch of this build.
+- Tests: `suggestion_rework_test` (Y Raise Red → 3 sets at 7.5 kg × 12; Red + Fatigued compound →
+  small deload one step; never more than one step in total; the set-count matrix of Green/Yellow/Red ×
+  Ready/Recovering/Fatigued × compound/isolation over four histories and 1–4 routine sets);
+  `suggestion_engine_test` updated; `canonical_week_migration_test` (restore with Red-day evidence,
+  leave my own change). `docs/SUGGESTIONS_BEFORE_AFTER.md` regenerated.

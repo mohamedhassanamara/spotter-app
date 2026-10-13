@@ -191,7 +191,7 @@ class SuggestionEngine {
     if (reset != null) all = [for (final l in all) if (!dateOnlyOf(l.date).isBefore(dateOnlyOf(reset.at))) l];
     if (all.isEmpty && reset == null) return _calibration(input, grid);
 
-    // Readiness is applied after progression, so a Red technique day (load cut for recovery,
+    // Readiness is applied after progression, so a small-deload day (load cut for recovery,
     // not performance) is not the progression base. Use the last normal session instead.
     final normal = all.where((l) => !l.techniqueDay).toList();
     final logs = normal.isEmpty ? all : normal;
@@ -328,9 +328,13 @@ class SuggestionEngine {
       }
     }
 
-    var sets = input.targetSets;
-    // A hold (readiness / recovery) keeps the reps you reached, inside the range.
-    final holdReps = logs.isEmpty ? range.min : math.min(range.max, math.max(range.min, logs.last.topSets.map((s) => s.reps).reduce(math.min)));
+    // The routine's set count is never changed by any coaching input.
+    final sets = input.targetSets;
+    // "Repeat" means last session's top weight for its best reps at that weight, kept inside the range
+    // (up to the extended target) so a short session never becomes today's goal.
+    final repeatReps = logs.isEmpty
+        ? range.min
+        : logs.last.topSets.map((s) => s.reps).reduce(math.max).clamp(range.min, range.max + extendMax).toInt();
 
     // Ego freeze overrides progression.
     final freeze = input.freeze;
@@ -343,63 +347,43 @@ class SuggestionEngine {
           '→ 5 % below ${formatKg(freeze.baseWeight)} kg.');
     }
 
-    // Readiness and recovery soften by one step at most, together.
+    // Readiness + recovery adjust the target, never the volume: "repeat" (last session's weight and
+    // reps, no progression) or a "small deload" (one available step down, same reps). One step at
+    // most in total; isolations never below last session.
     final r = input.readiness;
     final band = r.band;
-    var technique = false;
-    var softened = false;
+    var deloadDay = false;
+    var adjustment = '';
     if (r.loadPenaltyGroups.isNotEmpty) {
       why.add('Readiness: ${r.loadPenaltyGroups.join(', ')} volume over the last 7 days is above 1.5× your 4-week average '
           '→ readiness −${ReadinessCalculator.loadPenalty} for this exercise.');
     }
     final scoreText = r.calibrating ? 'calibrating, treated as Green' : '${r.adjustedScore}';
-    switch (band) {
-      case ReadinessBand.green:
-        why.add('Readiness: Green ($scoreText) → no change.');
-      case ReadinessBand.yellow:
-        if (weight > lastTop + 0.01) {
-          weight = lastTop;
-          reps = holdReps;
-          if (kind == SuggestionKind.increase) kind = SuggestionKind.addReps;
-          softened = true;
-          why.add('Readiness: Yellow ($scoreText) → no increase today, holding ${_loadText(weight)}.');
-        } else {
-          why.add('Readiness: Yellow ($scoreText) → no increase was planned; load and sets unchanged.');
-        }
-      case ReadinessBand.red:
-        technique = true;
-        softened = true;
-        sets = math.max(1, sets - 1);
-        if (weight > lastTop + 0.01) {
-          weight = lastTop;
-          reps = holdReps;
-          if (kind == SuggestionKind.increase) kind = SuggestionKind.addReps;
-        }
-        if (input.compound && weight >= lastTop - 0.01) {
-          final down = grid.previous(lastTop);
-          if (down != null && down >= _minLoad(input)) weight = down;
-          why.add('Readiness: Red ($scoreText) → compound: one step down (${_loadText(weight)}) and one fewer working set.');
-        } else {
-          why.add(weight < lastTop - 0.01
-              ? 'Readiness: Red ($scoreText) → isolation: no extra cut on top of today\'s ${_loadText(weight)}; one fewer working set instead.'
-              : 'Readiness: Red ($scoreText) → isolation: never below last session\'s ${_loadText(lastTop)}; one fewer working set instead.');
-        }
-    }
-    if (input.fatigued.isNotEmpty) {
-      final names = input.fatigued.join(', ');
-      if (softened) {
-        why.add('Recovery: $names still fatigued; readiness already softened today (one step at most in total).');
-      } else if (weight > lastTop + 0.01) {
-        weight = lastTop;
-        reps = holdReps;
-        if (kind == SuggestionKind.increase) kind = SuggestionKind.addReps;
-        why.add('Recovery: $names still fatigued → hold ${_loadText(weight)} instead of increasing.');
-      } else if (input.compound && weight >= lastTop - 0.01 && grid.previous(lastTop) != null) {
-        weight = grid.previous(lastTop)!;
-        why.add('Recovery: $names still fatigued → one step lighter (${_loadText(weight)}).');
-      } else {
-        why.add('Recovery: $names still fatigued; isolations keep last session\'s load.');
-      }
+    final fatigued = input.fatigued.isNotEmpty;
+    final cause = [
+      if (band != ReadinessBand.green) 'Readiness ${band.label} ($scoreText)',
+      if (fatigued) '${input.fatigued.map((m) => m.toLowerCase()).join(', ')} Fatigued',
+    ].join(' + ');
+    if (!fatigued && band == ReadinessBand.green) {
+      why.add('Readiness: Green ($scoreText) → no change.');
+    } else if (band == ReadinessBand.red && input.compound && weight >= lastTop - 0.01) {
+      // Small deload: one available step below last session, same rep target, every set.
+      final down = grid.previous(lastTop);
+      weight = down == null ? lastTop : math.max(down, _minLoad(input));
+      reps = repeatReps.clamp(range.min, range.max).toInt();
+      if (kind == SuggestionKind.increase) kind = SuggestionKind.addReps;
+      deloadDay = true;
+      adjustment = 'Small deload';
+      why.add('Readiness: $cause → small deload: ${_loadText(weight)} × $reps (one step down from ${_loadText(lastTop)}), all $sets sets.');
+    } else if (weight >= lastTop - 0.01) {
+      weight = lastTop;
+      reps = repeatReps;
+      if (kind == SuggestionKind.increase) kind = SuggestionKind.addReps;
+      adjustment = 'Repeat';
+      why.add('${band == ReadinessBand.green ? 'Recovery' : 'Readiness'}: $cause → repeat last session (${_loadText(weight)} × $reps), all $sets sets.');
+    } else {
+      why.add('${band == ReadinessBand.green ? 'Recovery' : 'Readiness'}: $cause → no extra change: the progression rule already '
+          'lowered today\'s load to ${_loadText(weight)}${input.compound ? '' : ' (isolations never go lower for readiness)'}.');
     }
 
     // Nutrition: modest, transparent, never a reason to add load.
@@ -437,9 +421,9 @@ class SuggestionEngine {
       reps: reps,
       sets: sets,
       rir: input.targetRir,
-      techniqueDay: technique,
+      techniqueDay: deloadDay,
       band: band,
-      headline: _headline(weight, reps, sets, input.targetRir, technique, input.equipment),
+      headline: _headline(weight, reps, sets, input.targetRir, adjustment, input.equipment),
       why: why,
       formResetHint: resetHint,
     );
@@ -450,17 +434,14 @@ class SuggestionEngine {
     final raw = input.assisted ? -input.bodyweight * 0.5 : startingWeight(input.equipment, input.increment);
     final start = input.assisted ? grid.snapDown(raw) : grid.snapUp(raw);
     final r = input.readiness;
-    var sets = input.targetSets;
-    var technique = false;
+    final sets = input.targetSets;
     final why = <String>[
       'Base: no history for this exercise → calibration session.',
       'Rule: start at ${_loadText(start)} and add weight each set while form stays clean. '
           'Stop every set at RPE ${formatRpe(calibrationStopRpe)} (2 reps left). Your best working set today seeds future suggestions.',
     ];
     if (r.band == ReadinessBand.red) {
-      sets = math.max(1, sets - 1);
-      technique = true;
-      why.add('Readiness: Red (${r.adjustedScore}) → one fewer set, keep it light.');
+      why.add('Readiness: Red (${r.adjustedScore}) → ramp up conservatively; all $sets sets.');
     }
     why.add('Weight: ${_loadText(start)} is the lightest you have for it.');
     final loadText = _loadText(start);
@@ -471,17 +452,17 @@ class SuggestionEngine {
       sets: sets,
       rir: 2,
       rampUp: true,
-      techniqueDay: technique,
       band: r.band,
       headline: 'Calibration: start at $loadText and ramp up, $sets sets, stop each set at RPE 8',
       why: why,
     );
   }
 
-  static String _headline(double w, int reps, int sets, int rir, bool technique, EquipmentKind eq) {
+  /// "Today: …", or "Repeat: …" / "Small deload: …" when readiness or recovery adjusted the target.
+  static String _headline(double w, int reps, int sets, int rir, String adjustment, EquipmentKind eq) {
     final load = (w == 0 && eq == EquipmentKind.bodyweight) ? 'Bodyweight' : (w < 0 ? '${formatKg(-w)} kg assistance' : '${formatKg(w)} kg');
     final core = '$load × $reps, $sets ${sets == 1 ? 'set' : 'sets'}, stop at $rir reps in reserve';
-    return technique ? 'Technique day: $core' : 'Today: $core';
+    return '${adjustment.isEmpty ? 'Today' : adjustment}: $core';
   }
 
   /// When no gym grid is given: every multiple of the increment (and every logged weight).
