@@ -1152,3 +1152,26 @@ hypertrophy program trained close to failure. They are not validated against any
   "Rank it" button is replaced by the switch.
 - Tests: `ranks_test` (hidden exercises are scored but feed nothing), `rank_toggle_flow_test` (sheet →
   Ranks tab → exercise page round trip), `ranks_flow_test` updated.
+
+## Real-device fixes, Fix 2: a body map you can read
+
+- **Palette**: ten saturated tier colors, one hue family each: Iron crimson, Bronze orange, Silver
+  sky blue, Gold yellow, Platinum teal, Emerald green, Diamond blue, Master violet, Grandmaster
+  magenta, Challenger lime. Silver is no longer grey, which was the cause of "everything looks the same".
+  `test/widget/tier_palette_test.dart` enforces: WCAG contrast ≥ 3:1 against the body fill for every
+  tier, saturation ≥ 0.6, hues ≥ 24° apart for any two tiers and ≥ 25° for neighbours, and the body fill
+  being a dark neutral (lightness < 0.2, saturation < 0.25). Badges and every other tier-colored UI
+  pick up the same palette.
+- **Body fill**: unranked muscles `#262C37`; the non-muscle silhouette (head, hands, feet, joints) a
+  darker `#161A22`, so muscles read as shapes even when unranked.
+- **Shapes**: `BodyView.shapes`. A muscle drawn as several fragments on one side (abs, quads, calves,
+  forearms…) becomes the convex hull of those fragments: one flat shape, no internal lines. Single-piece
+  muscles keep their exact outline. A 2.6 px background-colored stroke cuts the gap between muscles. The
+  figures run nearly edge to edge (4 px margins, 4 px between front and back). The original parts are
+  kept for the small thumbnails.
+- **Tap**: the muscle glows and a callout (badge, name, rank / recovery % / sets) appears above it on
+  the figure that was tapped; the sheet opens 650 ms later. Rows in the list open the sheet directly.
+- **Under the map** (Rank mode): the region list ("Chest · 2/2 ranked", collapsible, muscle rows with
+  the highlighted thumbnail, badge, division and LP). The Ranks tab region cards use the same title.
+- **Legend**: one compact wrap with only the tiers present on your body, plus Unranked.
+- Test: `body_map_readable_flow_test` (width, legend, callout before sheet, regions list → sheet).

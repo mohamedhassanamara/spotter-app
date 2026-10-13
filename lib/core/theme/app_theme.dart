@@ -23,7 +23,8 @@ abstract final class AppColors {
   static const yellow = Color(0xFFFFC145);
   static const red = Color(0xFFFF5D6C);
 
-  static const unranked = Color(0xFF3A4255);
+  /// Unranked muscles and the body fill: a dark neutral no tier color resembles.
+  static const unranked = Color(0xFF262C37);
 }
 
 /// Type scale. Oxanium for numbers, ranks and headers (its digits are equal-width, so numbers are
@@ -60,17 +61,20 @@ abstract final class Motion {
 }
 
 /// One colour per rank tier, Iron → Challenger.
+/// Ten saturated colors, each in its own hue family, so neighbouring tiers (and Silver vs the body)
+/// are easy to tell apart at a glance. Hues are ≥ 24° apart around the wheel; every color has ≥ 3:1
+/// contrast with [AppColors.unranked], the dark neutral body fill (test/widget/tier_palette_test.dart).
 const List<Color> tierColors = [
-  Color(0xFF8B8580), // Iron: cold grey-brown
-  Color(0xFFC07A4B), // Bronze
-  Color(0xFFB9C6D3), // Silver
-  Color(0xFFF2C14E), // Gold
-  Color(0xFF3FD5C0), // Platinum: teal
-  Color(0xFF2EC27E), // Emerald
-  Color(0xFF7FA7FF), // Diamond: ice blue
-  Color(0xFFB57BFF), // Master: violet
-  Color(0xFFFF5A6E), // Grandmaster: crimson
-  Color(0xFFFFE27A), // Challenger: radiant gold
+  Color(0xFFE8455A), // Iron: crimson red
+  Color(0xFFF06A23), // Bronze: orange
+  Color(0xFF3DB8F5), // Silver: sky blue
+  Color(0xFFF5D327), // Gold: yellow
+  Color(0xFF1FD1B2), // Platinum: teal
+  Color(0xFF2FD14A), // Emerald: green
+  Color(0xFF5B6CFF), // Diamond: blue
+  Color(0xFFA35CFF), // Master: violet
+  Color(0xFFF24FC1), // Grandmaster: magenta
+  Color(0xFFB8EE2A), // Challenger: lime
 ];
 
 ThemeData buildAppTheme() {
