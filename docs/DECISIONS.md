@@ -1412,3 +1412,40 @@ form reset, nutrition line).
   `aggregation_quests_test` (adapted achievements, quest sizing); `streak_flow_test` (the three Home
   states with screenshots in docs/screenshots/streak/, reset, carry-over + edit, reminder toggle,
   Profile, no weekly goal in Settings).
+
+## First real workout: four bugs
+
+**Bug 1, edited values lost on ✓.** Root cause: ✓ completed the set from the object the screen already held
+(the `activeSessionProvider` value, a drift stream) and that object is the last emitted one, so right after
+the keypad's in-progress value was written it was still the old row. The set was completed with the
+suggestion; touching a field again only worked because the stream had caught up by then.
+- Every path now commits first (`_commit()` returns the written set id) and then re-reads the row from the
+  database (`SessionRepository.workoutSet`): ✓, NEXT, Copy, PREV copy (clears the stale buffer first),
+  ± , collapse, minimize / app backgrounding (lifecycle observer), the exercise menu, set delete and Finish.
+- **Typed, then Finish**: a set whose value was typed but never ✓ is logged as done with what was typed
+  (it was clearly lifted). Judgement call; the other reading ("drop it") would lose the number.
+- Existing data: I can't open the phone's database from here. Instead a history session shows a
+  "suspect sets" card listing completed working sets whose saved weight and reps both equal the suggestion;
+  tapping a set opens a KG / REPS correction (`HistoryRepository.correctSet`). It is a heuristic: a set you
+  really did at the suggestion is listed too, correcting it is optional.
+- Latent bug found on the way: `gymEquipmentProvider` was never watched, so keypad ± / drops / form-reset
+  used default equipment. It is now watched by the logger and by each exercise block.
+
+**Bug 2, Form reset snackbar.** A `SnackBar` with an action is persistent by default; `persist: false`
+with a 3 s duration fixes it. Swipe dismisses, opening the keypad hides it, and it is offered once per
+exercise per workout (`form_reset_offers`, latest 300 kept).
+
+**Bug 3, weight steps.** Every exercise has a load type (single-sided plate, two-sided plate, stack /
+cable, barbell, dumbbell, kettlebell, bodyweight, assisted, other), chosen from its name and dataset
+equipment (`core/domain/load_types.dart`; table in `docs/LOAD_TYPES.md`). Setting: My gym equipment →
+Smallest plate (default 2.5 kg). One-sided = 1 × plate, two-sided and barbell = 2 × plate, stacks keep
+their 5 kg default, dumbbells their list. The exercise menu's Weight steps sets a load type and/or stack
+by hand and wins over the classification. A "machine" with no plate-loaded name is assumed to be a pin
+stack. Weights you already logged count as available.
+
+**Bug 4, swipe to delete.** `SwipeSetRow` wraps every set row. Left swipe reveals a red Delete (trash icon);
+past 60 % of the width, or a fast fling, it deletes at once; a short swipe leaves it open and tappable.
+Delete shows an Undo snackbar for 3 s (`restoreSet` re-inserts the row with its id, values and place).
+Only horizontal drags are claimed, so the page keeps scrolling vertically. The set-menu Delete stays.
+- **Swipe right to complete did not exist** in the code (only the ✓ button). Since you expected it, I added
+  it: a right swipe of at least 56 px completes the set and springs back; it never un-completes one.

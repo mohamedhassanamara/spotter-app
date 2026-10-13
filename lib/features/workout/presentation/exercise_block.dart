@@ -18,6 +18,7 @@ import '../../library/presentation/exercise_thumb.dart';
 import '../data/session_repository.dart';
 import '../domain/set_kinds.dart';
 import 'keypad.dart';
+import 'swipe_set_row.dart';
 
 /// What the block needs from the screen for the keypad and supersets.
 class BlockContext {
@@ -28,6 +29,8 @@ class BlockContext {
     required this.cellKey,
     required this.onFocus,
     required this.onComplete,
+    required this.onCommit,
+    required this.onCopyPrev,
     required this.hideWarmups,
     required this.onToggleWarmups,
     required this.supersetLabel,
@@ -42,6 +45,12 @@ class BlockContext {
   final GlobalKey Function(KeypadTarget) cellKey;
   final ValueChanged<KeypadTarget> onFocus;
   final Future<void> Function(WorkoutSet set) onComplete;
+
+  /// Writes whatever is typed on the keypad and closes it (before anything that hides or leaves a cell).
+  final Future<void> Function() onCommit;
+
+  /// PREV tap: replaces the set's KG and REPS with the previous session's, discarding anything typed.
+  final Future<void> Function(WorkoutSet set, LoggedSet prev) onCopyPrev;
   final bool hideWarmups;
   final VoidCallback onToggleWarmups;
 
@@ -126,6 +135,7 @@ class _ExerciseBlockState extends ConsumerState<ExerciseBlock> {
   @override
   Widget build(BuildContext context) {
     final name = ex.row.displayName ?? widget.info?.name ?? ex.row.exerciseId;
+    ref.watch(gymEquipmentProvider); // keeps the grid used by "Add drop" and the keypad live
     final history = ref.watch(historyProvider).value;
     final prevLog = history?.sessions.reversed
         .expand((s) => s.exercises)
@@ -243,7 +253,11 @@ class _ExerciseBlockState extends ConsumerState<ExerciseBlock> {
       IconButton(
         tooltip: _collapsed ? 'Expand' : 'Collapse',
         visualDensity: VisualDensity.compact,
-        onPressed: () => setState(() => _collapsed = !_collapsed),
+        onPressed: () async {
+          // A typed value must never go down with a hidden cell.
+          await ctx.onCommit();
+          if (mounted) setState(() => _collapsed = !_collapsed);
+        },
         icon: Icon(_collapsed ? Icons.expand_more_rounded : Icons.expand_less_rounded),
       ),
       PopupMenuButton<String>(
@@ -256,7 +270,7 @@ class _ExerciseBlockState extends ConsumerState<ExerciseBlock> {
           PopupMenuItem(value: 'superset', child: Text(ex.row.supersetGroup == null ? 'Superset with…' : 'Remove from superset')),
           const PopupMenuItem(value: 'targets', child: Text('Target reps')),
           const PopupMenuItem(value: 'form-reset', child: Text('Form reset…')),
-          if (widget.info?.equipmentKind == EquipmentKind.machineCable || isAssisted(ex.row.exerciseId))
+          if (widget.info?.equipmentKind != EquipmentKind.dumbbell && widget.info?.equipmentKind != EquipmentKind.bodyweight)
             const PopupMenuItem(value: 'weight-steps', child: Text('Weight steps…')),
           const PopupMenuItem(value: 'notes', child: Text('Notes')),
           const PopupMenuItem(value: 'howto', child: Text('How to')),
@@ -510,7 +524,7 @@ class _ExerciseBlockState extends ConsumerState<ExerciseBlock> {
     );
     if (picked == null) return;
     final repo = ref.read(sessionRepositoryProvider);
-    if (picked == 'delete') return repo.deleteSet(s);
+    if (picked == 'delete') return mounted ? deleteSetWithUndo(context, ref, ctx, s) : null;
     if (picked.startsWith('follow:')) return _addFollowUp(s, SetKind.fromId(picked.substring(7)));
     if (picked.startsWith('partials:')) return repo.setPartials(s.id, picked == 'partials:on');
     await repo.setSetKind(s, kind: picked);
@@ -764,7 +778,11 @@ class _SetRow extends ConsumerWidget {
       );
     }
 
-    return Opacity(
+    return SwipeSetRow(
+      id: s.id,
+      onDelete: () => deleteSetWithUndo(context, ref, ctx, s),
+      onSwipeRight: s.completed ? null : () => ctx.onComplete(s),
+      child: Opacity(
       opacity: s.isWarmup && !s.completed ? 0.6 : 1,
       child: Container(
         margin: const EdgeInsets.symmetric(vertical: 2),
@@ -862,14 +880,29 @@ class _SetRow extends ConsumerWidget {
           ),
         ]),
       ),
+    ),
     );
   }
 
-  Future<void> _copyPrev(WidgetRef ref) async {
-    final p = prev!;
-    await ref.read(sessionRepositoryProvider).updateSet(set.id, weight: p.weight, reps: p.reps);
-    ctx.edited
-      ..add(KeypadTarget(set.id, KeypadField.kg))
-      ..add(KeypadTarget(set.id, KeypadField.reps));
-  }
+  Future<void> _copyPrev(WidgetRef ref) => ctx.onCopyPrev(set, prev!);
+}
+
+/// Deletes a set (swipe or the set menu) and offers Undo for 3 s. A typed value is committed first, so
+/// Undo brings back exactly what was on screen.
+Future<void> deleteSetWithUndo(BuildContext context, WidgetRef ref, BlockContext ctx, WorkoutSet s) async {
+  final messenger = ScaffoldMessenger.of(context);
+  await ctx.onCommit();
+  final repo = ref.read(sessionRepositoryProvider);
+  final gone = await repo.workoutSet(s.id) ?? s;
+  await repo.deleteSet(gone);
+  messenger
+    ..hideCurrentSnackBar()
+    ..showSnackBar(SnackBar(
+      key: const ValueKey('set-deleted-snackbar'),
+      content: const Text('Set deleted'),
+      duration: const Duration(seconds: 3),
+      persist: false,
+      dismissDirection: DismissDirection.horizontal,
+      action: SnackBarAction(label: 'Undo', onPressed: () => repo.restoreSet(gone)),
+    ));
 }

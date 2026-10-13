@@ -110,6 +110,13 @@ round) and `body_map_flow_test` (Home recovery card → body map Recovery mode t
 modes, the fatigue heads-up). `body_map_flow_test` writes the screenshots in
 `docs/screenshots/final/` when given `--dart-define=SHOTS_DIR=$PWD/docs/screenshots/final`.
 
+First-workout bug-fix flows: `edit_save_flow_test` (typed KG / REPS are saved by ✓ with the keypad open, REPS
+only, KG → NEXT → REPS, ✓ on a different set, collapse, minimize, Finish, PREV copy, and the suspect-sets
+correction tool), `form_reset_snackbar_flow_test` (3 s auto-dismiss, swipe, once per exercise),
+`weight_steps_flow_test` (plate size setting, one- vs two-sided steps, per-exercise override) and
+`swipe_delete_flow_test` (swipe left → Delete, full swipe, Undo, swipe right completes, set-menu fallback,
+warm-up / drop / myo / hold rows).
+
 ### Reporting bugs from the phone
 
 Settings → long-press the version label → **Error log** → **Copy all**, then paste it into a message.

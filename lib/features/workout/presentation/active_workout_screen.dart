@@ -13,13 +13,14 @@ import '../../../core/domain/training.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/common.dart';
 import '../../../router.dart';
+import '../../coach/data/coach_context.dart' show loadTypeOf;
 import '../../coach/domain/guardrail.dart';
 import '../../coach/domain/suggestion_engine.dart';
 import '../../library/domain/exercise_info.dart';
 import '../../library/domain/load_kinds.dart';
 import '../../library/domain/name_resolver.dart';
 import '../../program/data/program_repository.dart';
-import '../../settings/presentation/gym_equipment_card.dart' show editStack;
+import '../../settings/presentation/gym_equipment_card.dart' show editLoad;
 import '../../tutorials/presentation/form_check_sheet.dart';
 import '../../recovery/domain/recovery.dart';
 import '../../recovery/presentation/recovery_card.dart' show muscleNames;
@@ -41,12 +42,10 @@ class ActiveWorkoutScreen extends ConsumerStatefulWidget {
   ConsumerState<ActiveWorkoutScreen> createState() => _ActiveWorkoutScreenState();
 }
 
-class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
+class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> with WidgetsBindingObserver {
   bool _finishing = false;
   bool _headsUpDismissed = false;
 
-  /// Exercises already offered a form reset this workout.
-  final _resetOffered = <int>{};
   bool _hideWarmups = false;
   KeypadTarget? _target;
   KeypadBuffer? _buffer;
@@ -61,6 +60,7 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _notesFocus.addListener(() {
       if (!_notesFocus.hasFocus) _saveNotes();
       setState(() {});
@@ -69,6 +69,7 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _notes.dispose();
     _notesFocus.dispose();
     super.dispose();
@@ -76,6 +77,10 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Keep the gym equipment and history live: the keypad's ±, drop sets and the form-reset offer read
+    // the derived grid with `ref.read`, which a provider nobody watches would leave paused on defaults.
+    ref.watch(gymEquipmentProvider);
+    ref.watch(historyProvider);
     final active = ref.watch(activeSessionProvider);
     final catalog = ref.watch(catalogProvider).value ?? const <String, ExerciseInfo>{};
     return active.when(
@@ -176,6 +181,8 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
                       cellKey: _keyFor,
                       onFocus: (t) => _focus(t),
                       onComplete: (s) => _complete(session, e, s),
+                      onCommit: () => _closeKeypad(),
+                      onCopyPrev: _copyPrev,
                       hideWarmups: _hideWarmups,
                       onToggleWarmups: () => setState(() => _hideWarmups = !_hideWarmups),
                       supersetLabel: labels[e.row.id]?.label,
@@ -277,6 +284,8 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
   }
 
   Future<void> _focus(KeypadTarget t) async {
+    // A snackbar would sit on top of the keypad's bottom row.
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
     FocusScope.of(context).unfocus();
     await _commit();
     final session = ref.read(activeSessionProvider).value;
@@ -292,12 +301,13 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
     });
   }
 
-  /// Writes what's typed into the focused cell (nothing when the buffer is empty).
-  Future<void> _commit() async {
+  /// Writes what's typed into the focused cell (nothing when the buffer is empty). Returns the id of
+  /// the set that was written, or null when there was nothing typed.
+  Future<int?> _commit() async {
     final t = _target, b = _buffer;
-    if (t == null || b == null || b.isEmpty) return;
+    if (t == null || b == null || b.isEmpty) return null;
     final v = b.value;
-    if (v == null) return;
+    if (v == null) return null;
     final repo = ref.read(sessionRepositoryProvider);
     if (t.field == KeypadField.kg) {
       await repo.updateSet(t.setId, weight: v);
@@ -313,6 +323,24 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
     }
     _edited.add(t);
     b.text = '';
+    return t.setId;
+  }
+
+  /// The app is leaving the foreground (home button, app switcher, lock, a call): save what's typed.
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state != AppLifecycleState.resumed) _commit();
+  }
+
+  /// PREV tap: the previous session's numbers replace the set's, and whatever was typed for it is
+  /// discarded (otherwise the stale typed value would overwrite the copy at ✓).
+  Future<void> _copyPrev(WorkoutSet s, LoggedSet prev) async {
+    if (_target?.setId == s.id) _buffer?.text = '';
+    await ref.read(sessionRepositoryProvider).updateSet(s.id, weight: prev.weight, reps: prev.reps);
+    _edited
+      ..add(KeypadTarget(s.id, KeypadField.kg))
+      ..add(KeypadTarget(s.id, KeypadField.reps));
+    if (mounted) setState(() {});
   }
 
   Future<void> _closeKeypad({bool commit = true}) async {
@@ -377,15 +405,16 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
   /// ✓: logs what's in the row (the suggestion when the cells weren't touched), with the effort shown.
   /// The reason sheet appears only for a set that was too heavy: load above the suggestion and reps
   /// below the bottom of the range (section 7).
-  Future<void> _complete(ActiveSession session, ActiveExercise ex, WorkoutSet tapped) async {
+  Future<void> _complete(ActiveSession session, ActiveExercise ex, WorkoutSet tapped, {bool quiet = false}) async {
     final repo = ref.read(sessionRepositoryProvider);
     if (_target?.setId == tapped.id) {
       await _closeKeypad();
     } else {
       await _commit();
     }
-    final fresh = (await ref.read(activeSessionProvider.future))?.exercises.expand((e) => e.sets).where((s) => s.id == tapped.id).firstOrNull;
-    final s = fresh ?? tapped;
+    // Read the set from the database: the session stream can still hold the numbers from before the
+    // commit above, and ✓ would log those instead of what was just typed.
+    final s = await repo.workoutSet(tapped.id) ?? tapped;
     if (s.completed) return repo.uncompleteSet(s.id);
     final rpe = s.isWarmup || s.kind == SetKind.hold ? null : (s.rpe ?? Effort.fromRir(s.targetRir ?? ex.row.targetRir).rpe);
     OverrideReason? reason;
@@ -405,14 +434,17 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
       now: ref.read(clockProvider)(),
       exerciseRepMin: ex.row.repMin,
     );
+    if (quiet) return;
     await _startRest(session, ex, s);
-    _maybeOfferFormReset(ex, s);
+    await _maybeOfferFormReset(ex, s);
   }
 
   /// A working set clearly lighter than your recent best (at least one available step) done at the
   /// top of its range looks like a deliberate step down: offer a form reset, once per exercise.
-  void _maybeOfferFormReset(ActiveExercise ex, WorkoutSet s) {
-    if (!s.isWorkingSet || _resetOffered.contains(ex.row.id) || !mounted) return;
+  Future<void> _maybeOfferFormReset(ActiveExercise ex, WorkoutSet s) async {
+    if (!s.isWorkingSet || !mounted) return;
+    final gym = ref.read(gymRepositoryProvider);
+    if ((await gym.formResetOffered()).contains(ex.row.id) || !mounted) return;
     final logs = ref.read(historyProvider).value?.logsFor(ex.row.exerciseId).where((l) => l.hasWorkingSets).toList() ?? const [];
     if (logs.isEmpty) return;
     final recentBest = logs.sublist(math.max(0, logs.length - 3)).map((l) => l.topWeight).reduce(math.max);
@@ -421,9 +453,17 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
     final top = s.targetRepMax ?? ex.row.repMax;
     if (step == null || s.weight > step + 0.01 || s.reps < top) return;
     if (reset != null && (reset.weight - s.weight).abs() < 0.01) return;
-    _resetOffered.add(ex.row.id);
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      duration: const Duration(seconds: 8),
+    await gym.markFormResetOffered(ex.row.id);
+    if (!mounted) return;
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(
+      key: const ValueKey('form-reset-snackbar'),
+      // Gone after 3 s on its own. Flutter keeps a snackbar that has an action on screen forever unless
+      // `persist` is false, which is why this one used to stay until dismissed.
+      duration: const Duration(seconds: 3),
+      persist: false,
+      dismissDirection: DismissDirection.horizontal,
       content: Text('${formatKg(s.weight)} kg × ${s.reps}, lighter than your recent ${formatKg(recentBest)} kg. Fixing form?'),
       action: SnackBarAction(label: 'Form reset', onPressed: () => _exerciseMenuById(ex.row.id, 'form-reset')),
     ));
@@ -485,6 +525,8 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
   // ---------------------------------------------------------------------------
 
   Future<void> _exerciseMenu(ActiveSession session, ActiveExercise ex, Map<String, ExerciseInfo> catalog, String action) async {
+    await _commit(); // a typed value is never lost to a menu action
+    if (!mounted) return;
     final repo = ref.read(sessionRepositoryProvider);
     switch (action) {
       case 'replace':
@@ -516,10 +558,25 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
       case 'form-reset':
         await _formReset(ex, catalog);
       case 'weight-steps':
-        final g = await ref.read(gymRepositoryProvider).load();
-        if (!mounted) return;
-        final spec = await editStack(context, title: 'Weight steps · ${catalog[ex.row.exerciseId]?.name ?? ''}', initial: g.stackFor(ex.row.exerciseId));
-        if (spec != null) await ref.read(gymRepositoryProvider).setStack(ex.row.exerciseId, spec);
+        final info = catalog[ex.row.exerciseId];
+        final gymRepo = ref.read(gymRepositoryProvider);
+        final g = await gymRepo.load();
+        if (!mounted || info == null) return;
+        final choice = await editLoad(
+          context,
+          title: 'Weight steps · ${ex.row.displayName ?? info.name}',
+          current: g.typeFor(info.id, loadTypeOf(info)),
+          stack: g.stackFor(info.id),
+          plate: g.smallestPlate,
+        );
+        if (choice == null) return;
+        if (choice.reset) {
+          await gymRepo.setStack(info.id, null);
+          await gymRepo.setLoadType(info.id, null);
+        } else {
+          await gymRepo.setLoadType(info.id, choice.type);
+          await gymRepo.setStack(info.id, choice.stack);
+        }
       case 'reorder':
         await _reorderSheet(session, catalog);
       case 'notes':
@@ -798,9 +855,21 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
   }
 
   Future<void> _finish(ActiveSession session, Map<String, ExerciseInfo> catalog) async {
-    await _closeKeypad();
+    // Whatever is typed is saved first. A set that was typed into but never ✓'d is a set that was done
+    // (you typed its numbers): it's logged as such rather than dropped with the untouched ones.
+    final typedSetId = await _commit();
+    await _closeKeypad(commit: false);
     await _saveNotes();
-    final current = await ref.read(activeSessionProvider.future) ?? session;
+    final repo = ref.read(sessionRepositoryProvider);
+    var current = await repo.loadActive() ?? session;
+    if (typedSetId != null) {
+      final ex = current.exercises.where((e) => e.sets.any((x) => x.id == typedSetId)).firstOrNull;
+      final typed = ex?.sets.where((x) => x.id == typedSetId).firstOrNull;
+      if (ex != null && typed != null && !typed.completed) {
+        await _complete(current, ex, typed, quiet: true);
+        current = await repo.loadActive() ?? current;
+      }
+    }
     if (!mounted) return;
     final done = current.completedWorkingSets;
     if (done == 0) {

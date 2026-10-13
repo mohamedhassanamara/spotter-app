@@ -131,6 +131,14 @@ class SessionRepository {
     });
   }
 
+  /// One set read straight from the database. The [watchActive] stream (and so `activeSessionProvider`)
+  /// can still hold the value from before a write that has just finished, so anything that has to act on
+  /// what was *just* saved (✓, Finish) must read here.
+  Future<WorkoutSet?> workoutSet(int id) => (_db.select(_db.workoutSets)..where((t) => t.id.equals(id))).getSingleOrNull();
+
+  /// The in-progress session read straight from the database (see [workoutSet]).
+  Future<ActiveSession?> loadActive() => watchActive().first;
+
   Future<Session?> activeSession() =>
       (_db.select(_db.sessions)..where((t) => t.status.equals('active'))..limit(1)).getSingleOrNull();
 
@@ -527,6 +535,17 @@ class SessionRepository {
 
   Future<void> deleteSet(WorkoutSet set) async {
     await (_db.delete(_db.workoutSets)..where((t) => t.id.equals(set.id))).go();
+    await _renumber(set.sessionExerciseId);
+  }
+
+  /// Undo of [deleteSet]: puts the row back with its id and values, at its old place in the list.
+  Future<void> restoreSet(WorkoutSet set) async {
+    await _db.customUpdate(
+      'UPDATE workout_sets SET position = position + 1 WHERE session_exercise_id = ? AND position >= ?',
+      variables: [Variable.withInt(set.sessionExerciseId), Variable.withInt(set.position)],
+      updates: {_db.workoutSets},
+    );
+    await _db.into(_db.workoutSets).insert(set, mode: InsertMode.insertOrReplace);
     await _renumber(set.sessionExerciseId);
   }
 

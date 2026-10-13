@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app_providers.dart';
 import '../../../core/domain/gym.dart';
+import '../../../core/domain/load_types.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/common.dart';
 import '../../coach/domain/suggestion_engine.dart' show formatKg;
@@ -40,11 +41,12 @@ class GymEquipmentCard extends ConsumerWidget {
         ),
         ListTile(
           key: const ValueKey('gym-plate'),
-          title: const Text('Smallest barbell plate (each side)'),
-          subtitle: Text('Barbell loads move in ${formatKg(g.barbellStep)} kg steps from the ${formatKg(g.barWeight)} kg bar'),
+          title: const Text('Smallest plate'),
+          subtitle: Text('One-sided plate machines (T-bar, pendulum) move in ${formatKg(g.smallestPlate)} kg steps; '
+              'two-sided machines and barbells in ${formatKg(g.barbellStep)} kg (a pair)'),
           trailing: Text('${formatKg(g.smallestPlate)} kg', style: value),
           onTap: () async {
-            final v = await promptNumber(context, title: 'Smallest plate, each side', initial: g.smallestPlate, suffix: 'kg');
+            final v = await promptNumber(context, title: 'Smallest plate', initial: g.smallestPlate, suffix: 'kg');
             if (v != null && v > 0 && v <= 25) await repo.save(g.copyWith(smallestPlate: v));
           },
         ),
@@ -58,21 +60,33 @@ class GymEquipmentCard extends ConsumerWidget {
             if (spec != null) await repo.save(g.copyWith(stack: spec));
           },
         ),
-        for (final e in g.perExercise.entries)
+        for (final id in {...g.typeOverrides.keys, ...g.perExercise.keys})
           ListTile(
-            key: ValueKey('gym-override-${e.key}'),
+            key: ValueKey('gym-override-$id'),
             dense: true,
             leading: const Icon(Icons.tune_rounded, size: 20),
-            title: Text(catalog[e.key]?.name ?? e.key),
-            subtitle: Text('Stack ${formatKg(e.value.start)} kg, then +${formatKg(e.value.step)} kg'),
+            title: Text(catalog[id]?.name ?? id),
+            subtitle: Text(_overrideText(g, id)),
             trailing: IconButton(
-              tooltip: 'Back to the default stack',
+              tooltip: 'Back to the default for this exercise',
               icon: const Icon(Icons.close_rounded),
-              onPressed: () => repo.setStack(e.key, null),
+              onPressed: () async {
+                await repo.setStack(id, null);
+                await repo.setLoadType(id, null);
+              },
             ),
           ),
       ]),
     );
+  }
+
+  static String _overrideText(GymEquipment g, String id) {
+    final type = g.typeOverrides[id];
+    final stack = g.perExercise[id];
+    return [
+      if (type != null) '${type.label}${g.stepFor(id, type) == null ? '' : ', ${formatKg(g.stepFor(id, type)!)} kg steps'}',
+      if (stack != null && (type == null || type == LoadType.stack)) 'Stack ${formatKg(stack.start)} kg, then +${formatKg(stack.step)} kg',
+    ].join(' · ');
   }
 
   static String _dumbbellText(List<double> d) {
@@ -85,7 +99,116 @@ class GymEquipmentCard extends ConsumerWidget {
   }
 }
 
-/// Two numbers: the stack's first plate and its step.
+/// What the logger's "Weight steps…" returns: how the exercise is loaded and, for a stack, its numbers.
+class LoadChoice {
+  const LoadChoice({required this.type, this.stack, this.reset = false});
+  final LoadType type;
+  final StackSpec? stack;
+
+  /// Go back to the classification and the gym's default stack.
+  final bool reset;
+}
+
+/// Weight steps for one exercise: stack / plate-loaded one side / plate-loaded both sides, and the stack's
+/// first plate and step.
+Future<LoadChoice?> editLoad(
+  BuildContext context, {
+  required String title,
+  required LoadType current,
+  required StackSpec stack,
+  required double plate,
+}) =>
+    showDialog<LoadChoice>(
+      context: context,
+      builder: (_) => _LoadDialog(title: title, current: current, stack: stack, plate: plate),
+    );
+
+class _LoadDialog extends StatefulWidget {
+  const _LoadDialog({required this.title, required this.current, required this.stack, required this.plate});
+  final String title;
+  final LoadType current;
+  final StackSpec stack;
+  final double plate;
+
+  @override
+  State<_LoadDialog> createState() => _LoadDialogState();
+}
+
+class _LoadDialogState extends State<_LoadDialog> {
+  late LoadType _type = LoadType.pickable.contains(widget.current) ? widget.current : LoadType.stack;
+  late final _start = TextEditingController(text: formatKg(widget.stack.start));
+  late final _step = TextEditingController(text: formatKg(widget.stack.step));
+
+  @override
+  void dispose() {
+    _start.dispose();
+    _step.dispose();
+    super.dispose();
+  }
+
+  void _save() {
+    StackSpec? spec;
+    if (_type == LoadType.stack) {
+      final a = double.tryParse(_start.text.replaceAll(',', '.')), b = double.tryParse(_step.text.replaceAll(',', '.'));
+      if (a == null || b == null || a < 0 || b <= 0) return;
+      spec = StackSpec(start: a, step: b);
+    }
+    Navigator.of(context).pop(LoadChoice(type: _type, stack: spec));
+  }
+
+  @override
+  Widget build(BuildContext context) => AlertDialog(
+        title: Text(widget.title),
+        content: SingleChildScrollView(
+          child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+            RadioGroup<LoadType>(
+              groupValue: _type,
+              onChanged: (v) => setState(() => _type = v ?? _type),
+              child: Column(children: [
+                for (final t in LoadType.pickable)
+                  RadioListTile<LoadType>(
+                    key: ValueKey('load-${t.name}'),
+                    contentPadding: EdgeInsets.zero,
+                    dense: true,
+                    value: t,
+                    title: Text(t.label),
+                    subtitle: Text(switch (t) {
+                      LoadType.plateOneSide => 'One loading horn: ${formatKg(widget.plate)} kg steps (one plate)',
+                      LoadType.plateBothSides => 'Plates on both sides: ${formatKg(widget.plate * 2)} kg steps (a pair)',
+                      _ => 'Pin machine or cable: you set the first plate and the step',
+                    }),
+                  ),
+              ]),
+            ),
+            if (_type == LoadType.stack) ...[
+              TextField(
+                key: const ValueKey('stack-start'),
+                controller: _start,
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                decoration: const InputDecoration(labelText: 'First plate (kg)'),
+              ),
+              TextField(
+                key: const ValueKey('stack-step'),
+                controller: _step,
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                decoration: const InputDecoration(labelText: 'Step (kg)'),
+              ),
+            ],
+          ]),
+        ),
+        actions: [
+          TextButton(
+            key: const ValueKey('load-reset'),
+            onPressed: () => Navigator.of(context).pop(LoadChoice(type: widget.current, reset: true)),
+            child: const Text('Use default'),
+          ),
+          TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Cancel')),
+          FilledButton(key: const ValueKey('stack-save'), onPressed: _save, child: const Text('Save')),
+        ],
+      );
+}
+
+/// Two numbers: the stack's first plate and its step (the gym-wide default stack in Settings).
 Future<StackSpec?> editStack(BuildContext context, {required String title, required StackSpec initial}) async {
   final start = TextEditingController(text: formatKg(initial.start));
   final step = TextEditingController(text: formatKg(initial.step));
@@ -95,13 +218,11 @@ Future<StackSpec?> editStack(BuildContext context, {required String title, requi
       title: Text(title),
       content: Column(mainAxisSize: MainAxisSize.min, children: [
         TextField(
-          key: const ValueKey('stack-start'),
           controller: start,
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
           decoration: const InputDecoration(labelText: 'First plate (kg)'),
         ),
         TextField(
-          key: const ValueKey('stack-step'),
           controller: step,
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
           decoration: const InputDecoration(labelText: 'Step (kg)'),
@@ -109,12 +230,11 @@ Future<StackSpec?> editStack(BuildContext context, {required String title, requi
       ]),
       actions: [
         TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: const Text('Cancel')),
-        FilledButton(key: const ValueKey('stack-save'), onPressed: () => Navigator.of(ctx).pop(true), child: const Text('Save')),
+        FilledButton(onPressed: () => Navigator.of(ctx).pop(true), child: const Text('Save')),
       ],
     ),
   );
-  if (ok != true) return null;
   final a = double.tryParse(start.text.replaceAll(',', '.')), b = double.tryParse(step.text.replaceAll(',', '.'));
-  if (a == null || b == null || a < 0 || b <= 0) return null;
+  if (ok != true || a == null || b == null || a < 0 || b <= 0) return null;
   return StackSpec(start: a, step: b);
 }

@@ -65,7 +65,7 @@ void main() {
     await h.tap(find.byKey(const ValueKey('gym-plate')));
     await tester.enterText(find.descendant(of: find.byType(AlertDialog), matching: find.byType(TextField)), '1.25');
     await h.tap(find.text('OK'));
-    await h.waitFor(find.textContaining('2.5 kg steps from the 20 kg bar'));
+    await h.waitFor(find.textContaining('two-sided machines and barbells in 2.5 kg (a pair)'));
     var gym = GymEquipment.decode(await tester.runAsync<String?>(() => db.getSetting(GymEquipment.key)));
     expect(gym.dumbbells.last, 40);
     expect(gym.smallestPlate, 1.25);
@@ -108,6 +108,7 @@ void main() {
     await h.scrollToTop();
     await h.tap(find.byKey(ValueKey('menu-${press.id}')));
     await h.tap(find.text('Weight steps…').last);
+    await h.tap(find.byKey(const ValueKey('load-stack')));
     await tester.enterText(find.byKey(const ValueKey('stack-start')), '2');
     await tester.enterText(find.byKey(const ValueKey('stack-step')), '7');
     await h.tap(find.byKey(const ValueKey('stack-save')));

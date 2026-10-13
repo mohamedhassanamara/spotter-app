@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import '../../../core/db/database.dart';
 import '../../../core/domain/gym.dart';
+import '../../../core/domain/load_types.dart';
 import '../domain/suggestion_engine.dart';
 
 /// Settings → My gym equipment, per-exercise stack overrides, and form resets.
@@ -10,6 +11,19 @@ class GymRepository {
   final AppDatabase _db;
 
   static const formResetsKey = 'form_resets';
+  static const formResetOffersKey = 'form_reset_offered';
+
+  /// Session exercises already offered a form reset (once per exercise per workout, even across an app
+  /// restart mid-workout). Ids are never reused, so old ones are harmless; the list keeps the latest 300.
+  Future<Set<int>> formResetOffered() async {
+    final raw = await _db.getSetting(formResetOffersKey);
+    return raw == null || raw.isEmpty ? <int>{} : {...(jsonDecode(raw) as List<dynamic>).cast<int>()};
+  }
+
+  Future<void> markFormResetOffered(int sessionExerciseId) async {
+    final all = [...await formResetOffered(), sessionExerciseId];
+    await _db.putSetting(formResetOffersKey, jsonEncode(all.length > 300 ? all.sublist(all.length - 300) : all));
+  }
 
   Stream<GymEquipment> watch() => _db.watchSettings().map((m) => GymEquipment.decode(m[GymEquipment.key]));
 
@@ -23,6 +37,28 @@ class GymRepository {
     final per = {...g.perExercise};
     spec == null ? per.remove(exerciseId) : per[exerciseId] = spec;
     await save(g.copyWith(perExercise: per));
+  }
+
+  /// Exercise menu → Weight steps: how this exercise is loaded. Null goes back to the classification.
+  Future<void> setLoadType(String exerciseId, LoadType? type) async {
+    final g = await load();
+    final over = {...g.typeOverrides};
+    type == null ? over.remove(exerciseId) : over[exerciseId] = type;
+    await save(g.copyWith(typeOverrides: over));
+  }
+
+  static const platesMigratedKey = 'smallest_plate_2_5';
+
+  /// Startup, once: the first version defaulted the smallest plate to 2.25 kg; this gym's is 2.5 kg.
+  /// A stored 2.25 (the old default) becomes 2.5, and the plate stays editable afterwards.
+  static Future<void> ensureSmallestPlate(AppDatabase db) async {
+    if (await db.getSetting(platesMigratedKey) != null) return;
+    final raw = await db.getSetting(GymEquipment.key);
+    if (raw != null) {
+      final g = GymEquipment.decode(raw);
+      if ((g.smallestPlate - 2.25).abs() < 1e-9) await db.putSetting(GymEquipment.key, g.copyWith(smallestPlate: GymEquipment.defaultSmallestPlate).encode());
+    }
+    await db.putSetting(platesMigratedKey, '1');
   }
 
   static Map<String, FormReset> decodeResets(String? raw) {

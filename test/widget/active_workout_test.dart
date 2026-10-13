@@ -125,8 +125,8 @@ void main() {
     });
     await settle(tester);
 
-    // KG cell → keypad → + (the next barbell load that exists: 2.25 kg plates each side) → hide:
-    // 24.5 kg, 22.5 % over 20.
+    // KG cell → keypad → + (the next barbell load that exists: 2.5 kg plates, so 5 kg steps) → hide:
+    // 25 kg, 25 % over 20.
     await tester.tap(find.byKey(ValueKey('cell-kg-${sets.first.id}')));
     await settle(tester);
     expect(find.byKey(const ValueKey('workout-keypad')), findsOneWidget);
@@ -135,7 +135,7 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('key-hide')));
     await settle(tester);
     expect(find.byKey(const ValueKey('workout-keypad')), findsNothing);
-    expect(find.text('+23%'), findsOneWidget);
+    expect(find.text('+25%'), findsOneWidget);
 
     // Reps inside the range: logged without any interruption, flagged as an override.
     await tester.tap(find.byTooltip('Complete set').first);

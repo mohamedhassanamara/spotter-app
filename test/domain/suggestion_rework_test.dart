@@ -323,11 +323,11 @@ void main() {
   });
 
   group('gym equipment', () {
-    test('defaults: dumbbells 2.5–50 by 2.5, barbell in 4.5 kg steps from 20, stacks 5 + 5', () {
+    test('defaults: dumbbells 2.5–50 by 2.5, barbell in 5 kg steps from 20 (2.5 kg plates), stacks 5 + 5', () {
       expect(dumbbells.values.first, 2.5);
       expect(dumbbells.values.last, 50);
       final bb = GymEquipment.defaults.gridFor(exerciseId: 'b', kind: EquipmentKind.barbell);
-      expect(bb.values.take(3), [20, 24.5, 29]);
+      expect(bb.values.take(3), [20, 25, 30]);
       final m = GymEquipment.defaults.gridFor(exerciseId: 'm', kind: EquipmentKind.machineCable);
       expect(m.values.take(3), [5, 10, 15]);
     });

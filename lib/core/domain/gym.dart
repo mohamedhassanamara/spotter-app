@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:math' as math;
 
 import 'equipment.dart';
+import 'load_types.dart';
 
 /// A machine's or cable's weight stack: the first plate and the step between plates.
 class StackSpec {
@@ -24,16 +25,18 @@ class StackSpec {
 class GymEquipment {
   const GymEquipment({
     this.dumbbells = defaultDumbbells,
-    this.smallestPlate = 2.25,
+    this.smallestPlate = defaultSmallestPlate,
     this.barWeight = 20,
     this.stack = const StackSpec(start: 5, step: 5),
     this.perExercise = const {},
+    this.typeOverrides = const {},
   });
 
   /// Dumbbell weights available (per hand), ascending.
   final List<double> dumbbells;
 
-  /// Smallest plate, one per side: a barbell moves in steps of 2 × this.
+  /// Smallest plate in your gym. A one-sided plate machine moves in steps of this, a two-sided one (and a
+  /// barbell) in steps of 2 × this (a pair).
   final double smallestPlate;
   final double barWeight;
 
@@ -43,21 +46,47 @@ class GymEquipment {
   /// Stack overrides by exercise id (exercise menu → Weight steps).
   final Map<String, StackSpec> perExercise;
 
+  /// Load type chosen by hand for an exercise (exercise menu → Weight steps); wins over the classification.
+  final Map<String, LoadType> typeOverrides;
+
+  static const double defaultSmallestPlate = 2.5;
+
   static const List<double> defaultDumbbells = [
     2.5, 5, 7.5, 10, 12.5, 15, 17.5, 20, 22.5, 25, 27.5, 30, 32.5, 35, 37.5, 40, 42.5, 45, 47.5, 50, //
   ];
 
   static const defaults = GymEquipment();
 
+  /// A pair of the smallest plates: the step of a barbell and of two-sided plate machines.
   double get barbellStep => smallestPlate * 2;
 
-  GymEquipment copyWith({List<double>? dumbbells, double? smallestPlate, StackSpec? stack, Map<String, StackSpec>? perExercise}) => GymEquipment(
+  GymEquipment copyWith({
+    List<double>? dumbbells,
+    double? smallestPlate,
+    StackSpec? stack,
+    Map<String, StackSpec>? perExercise,
+    Map<String, LoadType>? typeOverrides,
+  }) =>
+      GymEquipment(
         dumbbells: dumbbells ?? this.dumbbells,
         smallestPlate: smallestPlate ?? this.smallestPlate,
         barWeight: barWeight,
         stack: stack ?? this.stack,
         perExercise: perExercise ?? this.perExercise,
+        typeOverrides: typeOverrides ?? this.typeOverrides,
       );
+
+  /// The load type in effect for one exercise: your override, else [classified].
+  LoadType typeFor(String exerciseId, LoadType classified) => typeOverrides[exerciseId] ?? classified;
+
+  /// The step between loads for [type] (the stack's own step for stacks); null for lists (dumbbells…).
+  double? stepFor(String exerciseId, LoadType type) => switch (type) {
+        LoadType.plateOneSide => smallestPlate,
+        LoadType.plateBothSides || LoadType.barbell => barbellStep,
+        LoadType.stack || LoadType.assisted => stackFor(exerciseId).step,
+        LoadType.bodyweight || LoadType.other => 2.5,
+        LoadType.dumbbell || LoadType.kettlebell => null,
+      };
 
   StackSpec stackFor(String exerciseId) => perExercise[exerciseId] ?? stack;
 
@@ -65,10 +94,23 @@ class GymEquipment {
   /// in your gym even if the settings don't list them, e.g. a 72 kg stack position).
   WeightGrid gridFor({
     required String exerciseId,
-    required EquipmentKind kind,
+    EquipmentKind? kind,
+    LoadType? type,
     bool assisted = false,
     Iterable<double> logged = const [],
   }) {
+    final loadType = typeOverrides[exerciseId] ??
+        type ??
+        (assisted
+            ? LoadType.assisted
+            : switch (kind) {
+                EquipmentKind.barbell => LoadType.barbell,
+                EquipmentKind.dumbbell => LoadType.dumbbell,
+                EquipmentKind.kettlebell => LoadType.kettlebell,
+                EquipmentKind.bodyweight => LoadType.bodyweight,
+                EquipmentKind.machineCable => LoadType.stack,
+                _ => LoadType.other,
+              });
     final values = <double>{};
     void stepped(double start, double step, double top) {
       if (step <= 0) return;
@@ -77,31 +119,33 @@ class GymEquipment {
       }
     }
 
-    if (assisted) {
-      // Assistance is negative load: 0 and every stack position below it.
-      final s = stackFor(exerciseId);
-      values.add(0);
-      for (var w = s.start; w <= 150; w += s.step) {
-        values.add(_q(-w));
-      }
-    } else {
-      switch (kind) {
-        case EquipmentKind.dumbbell:
-          values.addAll(dumbbells);
-        case EquipmentKind.barbell:
-          stepped(barWeight, barbellStep, 400);
-        case EquipmentKind.machineCable:
-          final s = stackFor(exerciseId);
-          stepped(s.start, s.step, 300);
-        case EquipmentKind.kettlebell:
-          values.addAll(const [4, 6, 8, 10, 12, 14, 16, 20, 24, 28, 32, 36, 40, 48]);
-        case EquipmentKind.bodyweight:
-          values.add(0);
-          stepped(2.5, 2.5, 100); // added load: plates / a dumbbell between the legs
-        case EquipmentKind.other:
-          values.add(0);
-          stepped(2.5, 2.5, 300);
-      }
+    switch (loadType) {
+      case LoadType.assisted:
+        // Assistance is negative load: 0 and every stack position below it.
+        final st = stackFor(exerciseId);
+        values.add(0);
+        for (var w = st.start; w <= 150; w += st.step) {
+          values.add(_q(-w));
+        }
+      case LoadType.dumbbell:
+        values.addAll(dumbbells);
+      case LoadType.barbell:
+        stepped(barWeight, barbellStep, 400);
+      case LoadType.plateBothSides:
+        stepped(barbellStep, barbellStep, 600);
+      case LoadType.plateOneSide:
+        stepped(smallestPlate, smallestPlate, 400);
+      case LoadType.stack:
+        final st = stackFor(exerciseId);
+        stepped(st.start, st.step, 300);
+      case LoadType.kettlebell:
+        values.addAll(const [4, 6, 8, 10, 12, 14, 16, 20, 24, 28, 32, 36, 40, 48]);
+      case LoadType.bodyweight:
+        values.add(0);
+        stepped(2.5, 2.5, 100); // added load: plates / a dumbbell between the legs
+      case LoadType.other:
+        values.add(0);
+        stepped(2.5, 2.5, 300);
     }
     for (final w in logged) {
       values.add(_q(w));
@@ -121,6 +165,7 @@ class GymEquipment {
         'bar': barWeight,
         'stack': stack.toJson(),
         'per_exercise': {for (final e in perExercise.entries) e.key: e.value.toJson()},
+        'type_overrides': {for (final e in typeOverrides.entries) e.key: e.value.name},
       });
 
   static GymEquipment decode(String? raw) {
@@ -128,13 +173,21 @@ class GymEquipment {
     final j = jsonDecode(raw) as Map<String, dynamic>;
     return GymEquipment(
       dumbbells: [for (final d in (j['dumbbells'] as List<dynamic>? ?? defaultDumbbells)) (d as num).toDouble()]..sort(),
-      smallestPlate: (j['smallest_plate'] as num?)?.toDouble() ?? 2.25,
+      smallestPlate: (j['smallest_plate'] as num?)?.toDouble() ?? defaultSmallestPlate,
       barWeight: (j['bar'] as num?)?.toDouble() ?? 20,
       stack: j['stack'] == null ? const StackSpec(start: 5, step: 5) : StackSpec.fromJson(j['stack'] as Map<String, dynamic>),
       perExercise: {
         for (final e in ((j['per_exercise'] as Map<String, dynamic>?) ?? const {}).entries) e.key: StackSpec.fromJson(e.value as Map<String, dynamic>),
       },
+      typeOverrides: Map.fromEntries([
+        for (final e in ((j['type_overrides'] as Map<String, dynamic>?) ?? const {}).entries) ?_typeEntry(e),
+      ]),
     );
+  }
+
+  static MapEntry<String, LoadType>? _typeEntry(MapEntry<String, dynamic> e) {
+    final t = LoadType.fromName(e.value as String?);
+    return t == null ? null : MapEntry(e.key, t);
   }
 
   /// "2.5–50 kg (20)" for the settings row.

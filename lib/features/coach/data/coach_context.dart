@@ -1,6 +1,7 @@
 import '../../../core/db/database.dart';
 import '../../../core/domain/equipment.dart';
 import '../../../core/domain/gym.dart';
+import '../../../core/domain/load_types.dart';
 import '../../../core/domain/history.dart';
 import '../../../core/domain/muscles.dart';
 import '../../../core/domain/training.dart';
@@ -125,10 +126,14 @@ class CoachContext {
       ));
 }
 
+/// How [info] is loaded (before any override from the exercise menu).
+LoadType loadTypeOf(ExerciseInfo info) => classifyLoad(name: info.name, equipment: info.equipment, assisted: isAssisted(info.id));
+
 /// The loads that exist for [info]: the gym's grid plus every working weight you've logged on it.
 WeightGrid gridForExercise(GymEquipment gym, TrainingHistory history, ExerciseInfo info) => gym.gridFor(
       exerciseId: info.id,
       kind: info.equipmentKind,
+      type: loadTypeOf(info),
       assisted: isAssisted(info.id),
       logged: [for (final l in history.logsFor(info.id)) for (final s in l.sets) if (!s.isWarmup) snapNoise(s.weight)],
     );
