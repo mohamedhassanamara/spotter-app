@@ -159,7 +159,6 @@ class _BodyTabState extends ConsumerState<_BodyTab> {
             if (mounted) _open(deepLink, summary, volume, back: muscleOnBack(deepLink), callout: false);
           });
         }
-        Widget pad(Widget w) => Padding(padding: const EdgeInsets.symmetric(horizontal: 12), child: w);
         final r = recovery?.of(_selected ?? Muscle.biceps);
         final callout = _selected == null
             ? null
@@ -173,13 +172,12 @@ class _BodyTabState extends ConsumerState<_BodyTab> {
                 },
               );
         return ListView(
-          // The map runs nearly edge to edge; everything else keeps the usual margins.
-          padding: const EdgeInsets.fromLTRB(4, 12, 4, 32),
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
           children: [
-            if (bw.hasValue && bw.value == null) ...[pad(const _BodyweightCard()), const SizedBox(height: 12)],
+            if (bw.hasValue && bw.value == null) ...[const _BodyweightCard(), const SizedBox(height: 12)],
             _BodyRankHeader(score: summary.overall),
             const SizedBox(height: 12),
-            pad(SegmentedButton<BodyGraphMode>(
+            SegmentedButton<BodyGraphMode>(
               showSelectedIcon: false,
               segments: [
                 for (final m in BodyGraphMode.values)
@@ -190,8 +188,8 @@ class _BodyTabState extends ConsumerState<_BodyTab> {
                 _mode = v.first;
                 _selected = null;
               }),
-            )),
-            const SizedBox(height: 12),
+            ),
+            const SizedBox(height: 14),
             AnatomyGraph(
               mode: _mode,
               scores: scores,
@@ -202,12 +200,12 @@ class _BodyTabState extends ConsumerState<_BodyTab> {
               callout: callout,
               onTap: (g, back) => _open(g, summary, volume, back: back),
             ),
-            const SizedBox(height: 12),
-            pad(switch (_mode) {
-              BodyGraphMode.ranks => _TierLegend(present: {for (final sc in scores.values) ?sc?.tier}, unranked: scores.values.any((x) => x == null)),
+            const SizedBox(height: 14),
+            switch (_mode) {
+              BodyGraphMode.ranks => const _TierLegend(),
               BodyGraphMode.volume => const _VolumeLegend(),
               BodyGraphMode.recovery => const _RecoveryLegend(),
-            }),
+            },
             const SizedBox(height: 8),
             Center(
               child: Text(
@@ -224,11 +222,11 @@ class _BodyTabState extends ConsumerState<_BodyTab> {
             if (_mode == BodyGraphMode.ranks) ...[
               const SizedBox(height: 16),
               for (final region in BodyRegion.values) ...[
-                pad(_RegionCard(
+                _RegionCard(
                   region: summary.regions[region]!,
                   summary: summary,
                   onMuscle: (m) => _open(m, summary, volume, back: muscleOnBack(m), callout: false),
-                )),
+                ),
                 const SizedBox(height: 8),
               ],
             ],
@@ -346,30 +344,26 @@ class _OverallCard extends StatelessWidget {
 }
 
 class _TierLegend extends StatelessWidget {
-  /// Only the tiers on your body (plus Unranked); all tiers when [present] is null.
-  const _TierLegend({this.present, this.unranked = true});
-  final Set<Tier>? present;
-  final bool unranked;
+  const _TierLegend();
 
   @override
   Widget build(BuildContext context) {
     Widget chip(String label, Color c) => Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Container(width: 11, height: 11, decoration: BoxDecoration(color: c, borderRadius: BorderRadius.circular(3))),
-            const SizedBox(width: 4),
-            Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+            Container(width: 14, height: 14, decoration: BoxDecoration(color: c, borderRadius: BorderRadius.circular(4))),
+            const SizedBox(width: 6),
+            Text(label, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
           ],
         );
     return Wrap(
       key: const ValueKey('tier-legend'),
-      spacing: 10,
-      runSpacing: 6,
+      spacing: 14,
+      runSpacing: 10,
       alignment: WrapAlignment.center,
       children: [
-        for (final t in Tier.values)
-          if (present == null || present!.contains(t)) chip(t.label, tierColor(t)),
-        if (unranked) chip('Unranked', AppColors.unranked),
+        for (final t in Tier.values) chip(t.label, tierColor(t)),
+        chip('Unranked', AppColors.unranked),
       ],
     );
   }

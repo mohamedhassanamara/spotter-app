@@ -1302,3 +1302,37 @@ jumps extend first, Red isolations hold, the "Base:" prefix), `seed_and_export_t
 "no spiral" instead of "trend up", since the simulated lifter stops at the prescribed 2 in reserve),
 `migration_test` v9 → v10, `suggestion_rework_flow_test` (settings, weight steps, 7.5 kg + why chain,
 form reset, nutrition line).
+
+## Body map: back to Phase E (v3 painted map and Fix 2 flat map removed)
+
+- **Restored**: the Phase E map (`1bfd9e7`): front and back side by side with that figure style and
+  those shapes (`body_map.dart` is byte-identical to Phase E), the "BODY RANK · tier" header with the
+  badge, the Rank / Recovery / Volume switch with Phase E's colors, and the full tier legend.
+- **Kept from later work**: the original v2 tier palette (pre-Fix 2, so the v2 badges render as
+  designed; unranked is the original slate `#3A4255`), the "Counts toward rank" switches (Fix 1), the tap
+  callout before the sheet, and the collapsible region list under the map. The generated exercise
+  thumbnails (Fix 3) now draw from Phase E's parts instead of Fix 2's merged shapes.
+- **Removed entirely** (no flags): the v3 satin painter, game frame, showcase screen and render tool;
+  Fix 2's merged shapes (`simplifyMuscles` / `convexHull` / `BodyView.shapes`) and its flat painter.
+  `AppColors.bodyBase` is Phase E's silhouette color (`#1C2230`); the palette test checks every tier at
+  ≥ 3:1 against it, and that unranked is darker than every tier.
+- **"Every muscle unranked" in v3, investigated.** I couldn't reproduce it. With the real Liftoff
+  import in the simulator, v3 showed the ranks (Silver II overall, Gold delts/traps/calves, Bronze glutes/adductors,
+  Silver elsewhere), and so does the restored map. Each candidate was checked:
+  - ranks reaching the map: the app's computed `RankSummary` = the map's scores, 20/20 muscles ranked;
+  - tier → color: every ranked muscle → `tierColors[tier]`, never the unranked slate;
+  - palette revert: the restored constants are the v2 values;
+  - HealthKit: the nutrition types added in Fix 6 can't block weight reads (reads are per type);
+  - v3's picture cache: keyed by the full color set, so new ranks always re-record.
+  Most likely explanation: 17 of the 20 muscles are Silver (`#B9C6D3`, a pale silver-blue), and v3's
+  satin shading lightened it toward white-grey, which reads as "no color" next to the grey silhouette.
+  Without a screenshot from the phone this stays a hypothesis.
+  The new test guards the whole chain on real pixels, so a real regression would fail it.
+- Test: `integration_test/body_map_real_ranks_test.dart`. With
+  `--dart-define=LIFTOFF_CSV=<path>` it imports the real export (fixture otherwise) and asserts:
+  1. computed ranks = the map's scores;
+  2. each ranked muscle → its tier color;
+  3. the rendered pixel at the most interior point of each ranked muscle is that tier color, not slate.
+
+  It also taps all 20 muscles across both views (callout + the right sheet) and switches modes.
+  Screenshots: `docs/screenshots/bodymap-revert/` (rank, recovery, volume).

@@ -23,8 +23,11 @@ abstract final class AppColors {
   static const yellow = Color(0xFFFFC145);
   static const red = Color(0xFFFF5D6C);
 
-  /// Unranked muscles and the body fill: a dark neutral no tier color resembles.
-  static const unranked = Color(0xFF262C37);
+  /// Unranked muscles: a dark slate, clearly darker than any tier color.
+  static const unranked = Color(0xFF3A4255);
+
+  /// Non-muscle parts of the body map (head, hair, hands, feet, knees): the silhouette.
+  static const bodyBase = Color(0xFF1C2230);
 }
 
 /// Type scale. Oxanium for numbers, ranks and headers (its digits are equal-width, so numbers are
@@ -61,20 +64,20 @@ abstract final class Motion {
 }
 
 /// One colour per rank tier, Iron → Challenger.
-/// Ten saturated colors, each in its own hue family, so neighbouring tiers (and Silver vs the body)
-/// are easy to tell apart at a glance. Hues are ≥ 24° apart around the wheel; every color has ≥ 3:1
-/// contrast with [AppColors.unranked], the dark neutral body fill (test/widget/tier_palette_test.dart).
+/// The original v2 tier colors (the ones the badges were designed with), restored after the flat
+/// body-map experiment. Every tier keeps ≥ 3:1 contrast with [AppColors.bodyBase] and is lighter than
+/// [AppColors.unranked] (test/widget/tier_palette_test.dart).
 const List<Color> tierColors = [
-  Color(0xFFE8455A), // Iron: crimson red
-  Color(0xFFF06A23), // Bronze: orange
-  Color(0xFF3DB8F5), // Silver: sky blue
-  Color(0xFFF5D327), // Gold: yellow
-  Color(0xFF1FD1B2), // Platinum: teal
-  Color(0xFF2FD14A), // Emerald: green
-  Color(0xFF5B6CFF), // Diamond: blue
-  Color(0xFFA35CFF), // Master: violet
-  Color(0xFFF24FC1), // Grandmaster: magenta
-  Color(0xFFB8EE2A), // Challenger: lime
+  Color(0xFF8B8580), // Iron: grey
+  Color(0xFFC07A4B), // Bronze: copper
+  Color(0xFFB9C6D3), // Silver: light silver-blue
+  Color(0xFFF2C14E), // Gold
+  Color(0xFF3FD5C0), // Platinum: teal
+  Color(0xFF2EC27E), // Emerald: green
+  Color(0xFF7FA7FF), // Diamond: periwinkle blue
+  Color(0xFFB57BFF), // Master: purple
+  Color(0xFFFF5A6E), // Grandmaster: red
+  Color(0xFFFFE27A), // Challenger: pale gold
 ];
 
 ThemeData buildAppTheme() {

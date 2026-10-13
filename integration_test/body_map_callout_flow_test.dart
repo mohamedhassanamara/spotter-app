@@ -35,7 +35,7 @@ Future<void> _tapMuscle(AppHarness h, BodyView view, Muscle m, {required bool ba
   final rect = h.tester.getRect(find.byKey(ValueKey(back ? 'body-back' : 'body-front')));
   final b = view.bounds;
   final s = rect.width / b.width < rect.height / b.height ? rect.width / b.width : rect.height / b.height;
-  final c = view.shapes.firstWhere((p) => p.muscle == m).path.getBounds().center;
+  final c = view.parts.firstWhere((p) => p.muscle == m).path.getBounds().center;
   await h.tester.tapAt(Offset(rect.left + (rect.width - b.width * s) / 2 + (c.dx - b.left) * s, rect.top + (rect.height - b.height * s) / 2 + (c.dy - b.top) * s));
   await h.tester.pump(const Duration(milliseconds: 100));
 }
@@ -43,8 +43,8 @@ Future<void> _tapMuscle(AppHarness h, BodyView view, Muscle m, {required bool ba
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
-  testWidgets('Fix 2: readable body map. Callout on tap then sheet, legend only for tiers on the body, '
-      'regions list under the map with muscle rows', (tester) async {
+  testWidgets('Body map (Phase E): callout on tap then sheet; tier legend; regions list under the map with muscle rows',
+      (tester) async {
     final h = AppHarness(tester);
     await h.launchFresh();
     await h.onboard(bodyweight: '106');
@@ -58,19 +58,11 @@ void main() {
     await h.tap(_tab('Body'));
     await h.waitFor(find.byKey(const ValueKey('body-front')), scroll: false);
 
-    debugPrint('STEP the figure is big: nearly the full width');
-    final front = tester.getRect(find.byKey(const ValueKey('body-front')));
-    final back = tester.getRect(find.byKey(const ValueKey('body-back')));
-    final screenW = tester.view.physicalSize.width / tester.view.devicePixelRatio;
-    expect(back.right - front.left, greaterThan(screenW - 20));
-
-    debugPrint('STEP legend shows only the tiers on my body + Unranked');
-    final legend = find.byKey(const ValueKey('tier-legend'));
-    final shown = [for (final t in Tier.values) if (find.descendant(of: legend, matching: find.text(t.label)).evaluate().isNotEmpty) t];
-    expect(shown.length, lessThan(Tier.values.length));
-    expect(shown, isNotEmpty);
-    expect(find.descendant(of: legend, matching: find.text('Unranked')), findsOneWidget);
-    await h.shot('body-map-rank');
+    debugPrint('STEP legend: every tier + Unranked');
+    for (final t in Tier.values) {
+      expect(find.text(t.label), findsWidgets, reason: t.label);
+    }
+    expect(find.text('Unranked'), findsWidgets);
 
     debugPrint('STEP tap Lower Chest: callout first, then the sheet');
     final map = (await tester.runAsync(BodyMap.load))!;

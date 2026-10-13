@@ -11,38 +11,25 @@ double contrast(Color a, Color b) {
   return (math.max(la, lb) + 0.05) / (math.min(la, lb) + 0.05);
 }
 
-double hueDistance(Color a, Color b) {
-  final d = (HSLColor.fromColor(a).hue - HSLColor.fromColor(b).hue).abs();
-  return math.min(d, 360 - d);
-}
-
 void main() {
-  test('one color per tier', () => expect(tierColors.length, Tier.values.length));
+  test('one color per tier: the original v2 palette', () {
+    expect(tierColors.length, Tier.values.length);
+    expect(tierColors[Tier.silver.index], const Color(0xFFB9C6D3));
+    expect(tierColors[Tier.grandmaster.index], const Color(0xFFFF5A6E));
+  });
 
-  test('every tier color has WCAG contrast ≥ 3:1 against the body fill', () {
+  test('every tier color has WCAG contrast ≥ 3:1 against the body map silhouette (bodyBase)', () {
     for (final (i, c) in tierColors.indexed) {
-      expect(contrast(c, AppColors.unranked), greaterThanOrEqualTo(3), reason: Tier.values[i].name);
+      expect(contrast(c, AppColors.bodyBase), greaterThanOrEqualTo(3), reason: Tier.values[i].name);
     }
   });
 
-  test('saturated, and no two tiers share a hue family (≥ 24° apart)', () {
+  test('unranked is a dark slate: darker than every tier, still distinguishable from the body base', () {
     for (final (i, c) in tierColors.indexed) {
-      expect(HSLColor.fromColor(c).saturation, greaterThanOrEqualTo(0.6), reason: Tier.values[i].name);
-      for (var j = i + 1; j < tierColors.length; j++) {
-        expect(hueDistance(c, tierColors[j]), greaterThanOrEqualTo(24), reason: '${Tier.values[i].name} vs ${Tier.values[j].name}');
-      }
+      expect(AppColors.unranked.computeLuminance(), lessThan(c.computeLuminance() / 2), reason: Tier.values[i].name);
     }
-  });
-
-  test('adjacent tiers are far apart in hue (≥ 25°)', () {
-    for (var i = 0; i + 1 < tierColors.length; i++) {
-      expect(hueDistance(tierColors[i], tierColors[i + 1]), greaterThanOrEqualTo(25), reason: '${Tier.values[i].name} → ${Tier.values[i + 1].name}');
-    }
-  });
-
-  test('the body fill is a dark neutral', () {
-    final hsl = HSLColor.fromColor(AppColors.unranked);
-    expect(hsl.lightness, lessThan(0.2));
-    expect(hsl.saturation, lessThan(0.25));
+    expect(contrast(AppColors.unranked, AppColors.bodyBase), greaterThan(1.2));
+    final slate = HSLColor.fromColor(AppColors.unranked);
+    expect(slate.lightness, lessThan(0.3));
   });
 }

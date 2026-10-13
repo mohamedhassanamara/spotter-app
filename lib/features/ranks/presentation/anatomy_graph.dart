@@ -51,9 +51,9 @@ Color recoveryColor(RecoveryBand? band) => switch (band) {
       null => AppColors.unranked,
     };
 
-/// Front and back side by side (no flipping), as large as the width allows: flat muscle shapes filled
-/// by tier (Rank), recovery band (Recovery) or last-7-days volume (Volume), separated by a dark gap.
-/// Tapping a muscle glows its outline and shows a small callout ([callout]) above it.
+/// Front and back side by side (no flipping): flat muscle shapes filled by tier (Rank), recovery band
+/// (Recovery) or last-7-days volume (Volume), thin dark outlines between regions. The selected muscle
+/// gets an outline glow.
 class AnatomyGraph extends ConsumerWidget {
   const AnatomyGraph({
     super.key,
@@ -73,16 +73,16 @@ class AnatomyGraph extends ConsumerWidget {
   final RecoveryState? recovery;
   final Muscle? selected;
 
-  /// Which figure the selected muscle was tapped on (where the callout goes).
+  /// Which figure the selected muscle was tapped on (where [callout] goes).
   final bool selectedOnBack;
 
-  /// Shown above the selected muscle while it's selected.
+  /// Name + badge shown above the selected muscle before its sheet opens.
   final Widget? callout;
   final void Function(Muscle muscle, bool back) onTap;
 
   Color colorFor(Muscle m) => switch (mode) {
         BodyGraphMode.ranks => scores[m] == null ? AppColors.unranked : tierColors[scores[m]!.tier.index],
-        BodyGraphMode.volume => volumeLevel(volume[m]) == VolumeLevel.none ? AppColors.unranked : volumeColor(volumeLevel(volume[m])),
+        BodyGraphMode.volume => volumeColor(volumeLevel(volume[m])),
         BodyGraphMode.recovery => recoveryColor(recovery?.of(m).band),
       };
 
@@ -94,21 +94,25 @@ class AnatomyGraph extends ConsumerWidget {
       error: (e, _) => Text('Body map failed to load: $e'),
       data: (m) {
         final label = AppType.label.copyWith(fontSize: 11, color: AppColors.textTertiary, letterSpacing: 2);
-        Widget side(BodyView v, bool back) => Expanded(
+        Widget side(BodyView v, String key, String title) => Expanded(
               child: Column(children: [
                 _ViewCanvas(
-                  key: ValueKey(back ? 'body-back' : 'body-front'),
+                  key: ValueKey(key),
                   view: v,
                   color: colorFor,
                   selected: selected,
-                  callout: selected != null && selectedOnBack == back ? callout : null,
-                  onTap: (muscle) => onTap(muscle, back),
+                  callout: selected != null && selectedOnBack == (key == 'body-back') ? callout : null,
+                  onTap: (muscle) => onTap(muscle, key == 'body-back'),
                 ),
-                const SizedBox(height: 4),
-                Text(back ? 'BACK' : 'FRONT', style: label),
+                const SizedBox(height: 6),
+                Text(title, style: label),
               ]),
             );
-        return Row(crossAxisAlignment: CrossAxisAlignment.start, children: [side(m.front, false), const SizedBox(width: 4), side(m.back, true)]);
+        return Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          side(m.front, 'body-front', 'FRONT'),
+          const SizedBox(width: 12),
+          side(m.back, 'body-back', 'BACK'),
+        ]);
       },
     );
   }
@@ -131,12 +135,8 @@ class _ViewCanvas extends StatelessWidget {
       child: LayoutBuilder(
         builder: (context, c) {
           final painter = _AnatomyPainter(view: view, color: color, selected: selected);
-          final target = selected == null ? null : view.shapeBoundsOf(selected!);
-          Offset? anchor;
-          if (callout != null && target != null) {
-            final t = painter.toScreen(c.biggest);
-            anchor = MatrixUtils.transformPoint(t, target.topCenter);
-          }
+          final target = selected == null || callout == null ? null : view.boundsOf(selected!);
+          final anchor = target == null ? null : MatrixUtils.transformPoint(painter._transform(c.biggest), target.topCenter);
           return Stack(clipBehavior: Clip.none, children: [
             GestureDetector(
               onTapUp: (d) {
@@ -169,12 +169,12 @@ class _AnatomyPainter extends CustomPainter {
   final Color Function(Muscle) color;
   final Muscle? selected;
 
-  /// Head, hands, feet, joints: darker than any muscle so the muscles read as shapes.
-  static const _silhouette = Color(0xFF161A22);
+  static const _structure = AppColors.bodyBase;
+  static const _neutral = Color(0xFF2A3142);
 
   double _scale(Size size) => math.min(size.width / view.bounds.width, size.height / view.bounds.height);
 
-  Matrix4 toScreen(Size size) {
+  Matrix4 _transform(Size size) {
     final b = view.bounds;
     final s = _scale(size);
     final dx = (size.width - b.width * s) / 2 - b.left * s;
@@ -185,14 +185,17 @@ class _AnatomyPainter extends CustomPainter {
   }
 
   Muscle? muscleAt(Offset p, Size size) {
-    final local = MatrixUtils.transformPoint(Matrix4.inverted(toScreen(size)), p);
-    for (final r in view.shapes.reversed) {
-      if (r.path.contains(local)) return r.muscle;
+    final inv = Matrix4.inverted(_transform(size));
+    final local = MatrixUtils.transformPoint(inv, p);
+    for (final r in view.parts.reversed) {
+      if (r.muscle != null && r.path.contains(local)) return r.muscle;
     }
     // Forgiving taps: the nearest muscle within ~14 screen px.
+    final radius = 14 / _scale(size);
     Muscle? best;
-    var bestD = 14 / _scale(size);
-    for (final r in view.shapes) {
+    var bestD = radius;
+    for (final r in view.parts) {
+      if (r.muscle == null) continue;
       final d = (r.path.getBounds().center - local).distance;
       if (d < bestD) {
         bestD = d;
@@ -206,35 +209,53 @@ class _AnatomyPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final s = _scale(size);
     canvas.save();
-    canvas.transform(toScreen(size).storage);
-    for (final p in view.silhouette) {
-      canvas.drawPath(p.path, Paint()..color = _silhouette);
-    }
-    // Flat fills; a background-colored stroke cuts a clear dark gap between neighbouring muscles.
-    final gap = Paint()
+    canvas.transform(_transform(size).storage);
+    // Flat fills with a thin dark outline (constant on screen whatever the size).
+    final outline = Paint()
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.6 / s
+      ..strokeWidth = 1.2 / s
       ..strokeJoin = StrokeJoin.round
       ..color = AppColors.background;
-    for (final m in view.shapes) {
-      canvas.drawPath(m.path, Paint()..color = color(m.muscle));
-      canvas.drawPath(m.path, gap);
-    }
-    if (selected != null) {
-      for (final m in view.shapes.where((x) => x.muscle == selected)) {
+    for (final r in view.parts) {
+      final g = r.muscle;
+      final fill = switch (r.role) {
+        RegionRole.structure => _structure,
+        RegionRole.neutral => _neutral,
+        RegionRole.muscle => g == null ? _neutral : color(g),
+      };
+      canvas.drawPath(r.path, Paint()..color = fill);
+      // A subtle top highlight keeps the flat shapes from looking like stickers.
+      if (g != null) {
+        final bounds = r.path.getBounds();
         canvas.drawPath(
-          m.path,
+          r.path,
+          Paint()
+            ..shader = LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [Colors.white.withValues(alpha: 0.10), Colors.white.withValues(alpha: 0)],
+              stops: const [0, 0.6],
+            ).createShader(bounds),
+        );
+      }
+      canvas.drawPath(r.path, outline);
+    }
+    // Selected muscle: outline glow on top.
+    if (selected != null) {
+      for (final r in view.parts.where((p) => p.muscle == selected)) {
+        canvas.drawPath(
+          r.path,
           Paint()
             ..style = PaintingStyle.stroke
-            ..strokeWidth = 7 / s
-            ..color = Colors.white.withValues(alpha: 0.6)
-            ..maskFilter = MaskFilter.blur(BlurStyle.normal, 5 / s),
+            ..strokeWidth = 6 / s
+            ..color = Colors.white.withValues(alpha: 0.55)
+            ..maskFilter = MaskFilter.blur(BlurStyle.normal, 4 / s),
         );
         canvas.drawPath(
-          m.path,
+          r.path,
           Paint()
             ..style = PaintingStyle.stroke
-            ..strokeWidth = 2.4 / s
+            ..strokeWidth = 2.2 / s
             ..strokeJoin = StrokeJoin.round
             ..color = Colors.white,
         );
@@ -245,35 +266,6 @@ class _AnatomyPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _AnatomyPainter old) => true;
-}
-
-/// Callout shown on tap: badge + muscle name (+ the mode's value).
-class MuscleCallout extends StatelessWidget {
-  const MuscleCallout({super.key, required this.muscle, this.score, this.trailing});
-  final Muscle muscle;
-  final RankScore? score;
-  final String? trailing;
-
-  @override
-  Widget build(BuildContext context) => Container(
-        key: const ValueKey('muscle-callout'),
-        padding: const EdgeInsets.fromLTRB(6, 4, 10, 4),
-        decoration: BoxDecoration(
-          color: AppColors.surfaceTop,
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: AppColors.outlineBright),
-          boxShadow: const [BoxShadow(color: Colors.black54, blurRadius: 8)],
-        ),
-        child: Row(mainAxisSize: MainAxisSize.min, children: [
-          RankBadge(score: score, size: BadgeSize.small, width: 22, animate: false),
-          const SizedBox(width: 6),
-          Text(muscle.label, style: AppType.bodyS.copyWith(fontWeight: FontWeight.w800, fontSize: 13)),
-          if (trailing != null) ...[
-            const SizedBox(width: 6),
-            Text(trailing!, style: AppType.bodyS.copyWith(fontSize: 12, color: AppColors.textSecondary)),
-          ],
-        ]),
-      );
 }
 
 /// Small body silhouette (the view that shows [muscle]) with that muscle highlighted in [color],
@@ -329,7 +321,36 @@ class _ThumbPainter extends CustomPainter {
   bool shouldRepaint(covariant _ThumbPainter old) => old.view != view || old.muscle != muscle || old.color != color;
 }
 
-/// Generated exercise thumbnail when there's no 3D GIF: our body silhouette (the side where the
+/// Callout shown on tap before the sheet opens: badge + muscle name (+ the mode's value).
+class MuscleCallout extends StatelessWidget {
+  const MuscleCallout({super.key, required this.muscle, this.score, this.trailing});
+  final Muscle muscle;
+  final RankScore? score;
+  final String? trailing;
+
+  @override
+  Widget build(BuildContext context) => Container(
+        key: const ValueKey('muscle-callout'),
+        padding: const EdgeInsets.fromLTRB(6, 4, 10, 4),
+        decoration: BoxDecoration(
+          color: AppColors.surfaceTop,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: AppColors.outlineBright),
+          boxShadow: const [BoxShadow(color: Colors.black54, blurRadius: 8)],
+        ),
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+          RankBadge(score: score, size: BadgeSize.small, width: 22, animate: false),
+          const SizedBox(width: 6),
+          Text(muscle.label, style: AppType.bodyS.copyWith(fontWeight: FontWeight.w800, fontSize: 13)),
+          if (trailing != null) ...[
+            const SizedBox(width: 6),
+            Text(trailing!, style: AppType.bodyS.copyWith(fontSize: 12, color: AppColors.textSecondary)),
+          ],
+        ]),
+      );
+}
+
+/// Generated exercise thumbnail when there's no 3D GIF: the body silhouette (the side where the
 /// exercise works most), cropped around its muscles, prime movers lit in the accent color and helpers
 /// dimmer. Never a photo.
 class ExerciseMuscleThumb extends ConsumerWidget {
@@ -361,7 +382,7 @@ class _ExerciseThumbPainter extends CustomPainter {
     Rect? target;
     for (final e in targets.weights.entries) {
       if (e.value < MuscleTargets.primaryThreshold) continue;
-      final b = view.shapeBoundsOf(e.key);
+      final b = view.boundsOf(e.key);
       if (b != null) target = target == null ? b : target.expandToInclude(b);
     }
     target ??= view.bounds;
@@ -372,20 +393,15 @@ class _ExerciseThumbPainter extends CustomPainter {
     canvas.clipRect(Offset.zero & size);
     canvas.translate(-win.left * s, -win.top * s);
     canvas.scale(s);
-    for (final p in view.silhouette) {
-      canvas.drawPath(p.path, Paint()..color = const Color(0xFF2E3542));
-    }
-    final gap = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.6 / s
-      ..color = AppColors.surfaceHigh;
-    for (final m in view.shapes) {
-      final w = targets.weightFor(m.muscle);
-      final c = w >= MuscleTargets.primaryThreshold
-          ? AppColors.accent
-          : (w > 0 ? AppColors.accent.withValues(alpha: 0.45) : const Color(0xFF3A4252));
-      canvas.drawPath(m.path, Paint()..color = c);
-      canvas.drawPath(m.path, gap);
+    for (final p in view.parts) {
+      final m = p.muscle;
+      final w = m == null ? 0.0 : targets.weightFor(m);
+      final c = m == null
+          ? const Color(0xFF2E3542)
+          : w >= MuscleTargets.primaryThreshold
+              ? AppColors.accent
+              : (w > 0 ? AppColors.accent.withValues(alpha: 0.45) : const Color(0xFF3A4252));
+      canvas.drawPath(p.path, Paint()..color = c);
     }
     canvas.restore();
   }
