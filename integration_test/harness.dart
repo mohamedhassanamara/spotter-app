@@ -80,8 +80,16 @@ class AppHarness {
   Future<void> _scrollDown() async {
     final scrollables = find.byWidgetPredicate((w) => w is Scrollable && w.axisDirection == AxisDirection.down);
     if (scrollables.evaluate().isEmpty) return;
+    final position = tester.state<ScrollableState>(scrollables.last).position;
+    final before = position.pixels;
     await tester.drag(scrollables.last, const Offset(0, -320), warnIfMissed: false);
     await settle(2);
+    // A drag that starts on a platform view (the embedded YouTube player) goes to the web view, not
+    // the list: move the list like the remaining visible part of the page would.
+    if ((position.pixels - before).abs() < 1 && position.pixels < position.maxScrollExtent) {
+      position.jumpTo((position.pixels + 320).clamp(0, position.maxScrollExtent));
+      await settle(2);
+    }
   }
 
   Future<void> scrollToTop() async {
@@ -90,6 +98,8 @@ class AppHarness {
     for (var i = 0; i < 6; i++) {
       await tester.drag(scrollables.last, const Offset(0, 900), warnIfMissed: false);
     }
+    final position = tester.state<ScrollableState>(scrollables.last).position;
+    if (position.pixels > 0) position.jumpTo(0); // same platform-view case as [_scrollDown]
     await settle(2);
   }
 

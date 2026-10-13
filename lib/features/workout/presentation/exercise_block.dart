@@ -149,6 +149,16 @@ class _ExerciseBlockState extends ConsumerState<ExerciseBlock> {
           _restRow(),
           _RankStrip(exerciseId: ex.row.exerciseId),
           _prescription(),
+          if (ex.suggestion?.formResetHint != null && !ex.sets.any((s) => s.completed))
+            Align(
+              alignment: Alignment.centerLeft,
+              child: ActionChip(
+                key: ValueKey('form-reset-hint-${ex.row.id}'),
+                avatar: const Icon(Icons.restart_alt_rounded, size: 18),
+                label: Text('Form reset at ${formatKg(ex.suggestion!.formResetHint!)} kg?'),
+                onPressed: () => ctx.onMenu('form-reset'),
+              ),
+            ),
           if (_infoOpen) _details(),
           const SizedBox(height: 4),
           const _TableHeader(),
@@ -245,6 +255,9 @@ class _ExerciseBlockState extends ConsumerState<ExerciseBlock> {
           const PopupMenuItem(value: 'replace', child: Text('Replace')),
           PopupMenuItem(value: 'superset', child: Text(ex.row.supersetGroup == null ? 'Superset with…' : 'Remove from superset')),
           const PopupMenuItem(value: 'targets', child: Text('Target reps')),
+          const PopupMenuItem(value: 'form-reset', child: Text('Form reset…')),
+          if (widget.info?.equipmentKind == EquipmentKind.machineCable || isAssisted(ex.row.exerciseId))
+            const PopupMenuItem(value: 'weight-steps', child: Text('Weight steps…')),
           const PopupMenuItem(value: 'notes', child: Text('Notes')),
           const PopupMenuItem(value: 'howto', child: Text('How to')),
           const PopupMenuItem(value: 'up', child: Text('Move up')),
@@ -374,13 +387,22 @@ class _ExerciseBlockState extends ConsumerState<ExerciseBlock> {
       if (freeze != null) 'Progression frozen: ${freeze.reason}',
       if (ex.row.notes.isNotEmpty) 'Notes: ${ex.row.notes}',
     ];
+    // The suggestion's chain reads as labelled steps: Base → Rule → Readiness / Recovery / Nutrition → Weight.
+    final style = AppType.bodyS.copyWith(fontSize: 13, color: AppColors.textSecondary);
     return Padding(
+      key: ValueKey('why-${ex.row.id}'),
       padding: const EdgeInsets.only(bottom: 6),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         for (final l in lines)
           Padding(
-            padding: const EdgeInsets.only(top: 2),
-            child: Text('• $l', style: AppType.bodyS.copyWith(fontSize: 13, color: AppColors.textSecondary)),
+            padding: const EdgeInsets.only(top: 3),
+            child: switch (RegExp(r'^(Base|Rule|Readiness|Recovery|Nutrition|Weight|Form reset\?)(?::\s?|\s)').firstMatch(l)) {
+              final m? => Text.rich(TextSpan(children: [
+                  TextSpan(text: '${m.group(1)}  ', style: style.copyWith(fontWeight: FontWeight.w800, color: AppColors.accent)),
+                  TextSpan(text: l.substring(m.end)),
+                ]), style: style),
+              null => Text('• $l', style: style),
+            },
           ),
       ]),
     );
@@ -402,6 +424,7 @@ class _ExerciseBlockState extends ConsumerState<ExerciseBlock> {
         _parentOf(s),
         kind,
         increment: _increment,
+        grid: ref.read(exerciseGridProvider(ex.row.exerciseId)),
         technique: technique ?? (kind == SetKind.drop ? s.technique : null),
       );
 
@@ -501,7 +524,7 @@ class _ExerciseBlockState extends ConsumerState<ExerciseBlock> {
       final hasFollowUps = i + 1 < ex.sets.length && ex.sets[i + 1].isFollowUp;
       if (!hasFollowUps) {
         for (final k in followUpsFor(id)) {
-          await repo.addFollowUp(ex, s, k, increment: _increment, technique: id);
+          await repo.addFollowUp(ex, s, k, increment: _increment, grid: ref.read(exerciseGridProvider(ex.row.exerciseId)), technique: id);
         }
       }
     }

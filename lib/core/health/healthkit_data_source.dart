@@ -26,6 +26,8 @@ class HealthKitDataSource implements HealthDataSource {
     ..._asleepTypes,
     HealthDataType.ACTIVE_ENERGY_BURNED,
     HealthDataType.WEIGHT,
+    HealthDataType.DIETARY_ENERGY_CONSUMED,
+    HealthDataType.DIETARY_PROTEIN_CONSUMED,
   ];
 
   @override
@@ -95,6 +97,12 @@ class HealthKitDataSource implements HealthDataSource {
   @override
   Future<List<TimedValue>> activeEnergy(DateTime from, DateTime to) =>
       _numeric(HealthDataType.ACTIVE_ENERGY_BURNED, from, to);
+
+  @override
+  Future<List<TimedValue>> dietaryEnergy(DateTime from, DateTime to) => _numeric(HealthDataType.DIETARY_ENERGY_CONSUMED, from, to);
+
+  @override
+  Future<List<TimedValue>> dietaryProtein(DateTime from, DateTime to) => _numeric(HealthDataType.DIETARY_PROTEIN_CONSUMED, from, to);
 
   @override
   Future<List<TimeInterval>> asleepIntervals(DateTime from, DateTime to) async {

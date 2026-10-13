@@ -6,7 +6,6 @@ import 'package:intl/intl.dart';
 
 import '../../../app_providers.dart';
 import '../../gamification/domain/streaks.dart';
-import '../../../core/domain/equipment.dart';
 import '../../../core/domain/training.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/common.dart';
@@ -14,6 +13,7 @@ import '../../../router.dart';
 import '../../coach/domain/suggestion_engine.dart' show formatKg;
 import '../../export/data/export_service.dart';
 import '../../program/data/program_repository.dart';
+import 'gym_equipment_card.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -85,26 +85,8 @@ class SettingsScreen extends ConsumerWidget {
               ),
             ]),
           ),
-          const SectionHeader('Equipment increments'),
-          AppCard(
-            padding: const EdgeInsets.symmetric(vertical: 4),
-            child: Column(children: [
-              for (final kind in EquipmentKind.values)
-                ListTile(
-                  title: Text(kind.label),
-                  trailing: Text('${formatKg(s.increments.of(kind))} kg', style: _valueStyle),
-                  onTap: () async {
-                    final v = await promptNumber(context, title: '${kind.label} increment', initial: s.increments.of(kind), suffix: 'kg');
-                    if (v == null) return;
-                    if (v <= 0 || v > 50) {
-                      if (context.mounted) _snack(context, 'Increment must be between 0 and 50 kg');
-                      return;
-                    }
-                    await ctrl.setIncrement(s.increments, kind, v);
-                  },
-                ),
-            ]),
-          ),
+          const SectionHeader('My gym equipment'),
+          const GymEquipmentCard(),
           const SectionHeader('Body'),
           AppCard(
             padding: const EdgeInsets.symmetric(vertical: 4),

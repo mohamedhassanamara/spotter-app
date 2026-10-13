@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../../core/domain/gym.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../coach/domain/suggestion_engine.dart';
 
@@ -49,10 +50,13 @@ class KeypadBuffer {
   }
 
   /// ± one increment (kg) or one rep, starting from what's typed or [fallback] (the cell's value).
-  void step(int direction, {required double increment, required double fallback}) {
+  /// ± on the keypad: reps by one; kg to the next / previous weight that exists ([grid]), else by
+  /// [increment].
+  void step(int direction, {required double increment, required double fallback, WeightGrid? grid}) {
     final base = value ?? fallback;
-    final next = field == KeypadField.kg ? base + direction * increment : (base + direction).clamp(0, 999).toDouble();
-    set(next);
+    if (field != KeypadField.kg) return set((base + direction).clamp(0, 999).toDouble());
+    final g = grid == null ? null : (direction > 0 ? grid.next(base) : grid.previous(base));
+    set(g ?? base + direction * increment);
   }
 
   void set(double v) {

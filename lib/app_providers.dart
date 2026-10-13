@@ -11,6 +11,10 @@ import 'core/health/health_data_source.dart';
 import 'core/health/healthkit_data_source.dart';
 import 'core/notifications/notification_service.dart';
 import 'core/providers.dart';
+import 'core/domain/gym.dart';
+import 'features/coach/data/gym_repository.dart';
+import 'features/coach/domain/energy.dart';
+import 'features/coach/domain/suggestion_engine.dart' show FormReset;
 import 'features/recovery/domain/recovery.dart';
 import 'features/coach/data/coach_context.dart';
 import 'features/gamification/data/gamification_repository.dart';
@@ -115,6 +119,35 @@ final redDaysProvider = Provider<Set<DateTime>>((ref) {
   };
 });
 
+final gymRepositoryProvider = Provider((ref) => GymRepository(ref.watch(databaseProvider)));
+
+/// Settings → My gym equipment (with per-exercise stack overrides).
+final gymEquipmentProvider = StreamProvider<GymEquipment>((ref) => ref.watch(gymRepositoryProvider).watch());
+
+/// The loads that exist for one exercise (gym equipment + weights logged on it).
+final exerciseGridProvider = Provider.family<WeightGrid?, String>((ref, exerciseId) {
+  final info = ref.watch(catalogProvider).value?[exerciseId];
+  if (info == null) return null;
+  return gridForExercise(ref.watch(gymEquipmentProvider).value ?? GymEquipment.defaults, ref.watch(historyProvider).value ?? TrainingHistory.empty, info);
+});
+
+final formResetsProvider = StreamProvider<Map<String, FormReset>>((ref) => ref.watch(gymRepositoryProvider).watchResets());
+
+/// Bodyweight trend (7-day average, 2–4 week slope) and nutrition from Apple Health.
+final energyProvider = Provider<EnergyContext>((ref) {
+  final weights = ref.watch(_allBodyWeightsProvider).value ?? const [];
+  final days = ref.watch(dailyMetricsProvider).value ?? const [];
+  return energyFrom(weights, days, ref.watch(clockProvider)());
+});
+
+final _allBodyWeightsProvider = StreamProvider<List<BodyWeight>>((ref) => ref.watch(bodyWeightRepositoryProvider).watchAll());
+
+EnergyContext energyFrom(List<BodyWeight> weights, List<DailyMetric> days, DateTime now) => EnergyContext.compute(
+      now: now,
+      bodyweights: [for (final w in weights) (w.measuredAt, w.kg)],
+      nutrition: [for (final d in days) DayNutrition(parseDayKey(d.date), kcal: d.dietaryKcal, proteinG: d.proteinG)],
+    );
+
 final latestBodyWeightProvider = StreamProvider<BodyWeight?>(
   (ref) => ref.watch(bodyWeightRepositoryProvider).watchLatest(),
 );
@@ -144,7 +177,13 @@ final coachContextBuilderProvider = Provider<Future<CoachContext> Function()>((r
     final readinessRepo = ref.read(readinessRepositoryProvider);
     final readiness = readinessRepo.computeFor(now, await readinessRepo.allDays());
     final freezes = latestFreezes(await ref.read(freezeRepositoryProvider).all());
+    final days = await readinessRepo.allDays();
+    final band = readiness.calibrating ? null : readiness.band.name;
     return CoachContext(
+      gym: await ref.read(gymRepositoryProvider).load(),
+      formResets: await ref.read(gymRepositoryProvider).resets(),
+      energy: energyFrom(await ref.read(bodyWeightRepositoryProvider).all(), days, now),
+      recovery: computeRecovery(history, now: now, readinessBand: band),
       history: history,
       readiness: readiness,
       overloaded: const TrainingLoad().overloaded(now, groupSetEntries(history)),

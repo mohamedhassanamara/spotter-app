@@ -19,6 +19,7 @@ import '../../library/domain/exercise_info.dart';
 import '../../library/domain/load_kinds.dart';
 import '../../library/domain/name_resolver.dart';
 import '../../program/data/program_repository.dart';
+import '../../settings/presentation/gym_equipment_card.dart' show editStack;
 import '../../tutorials/presentation/form_check_sheet.dart';
 import '../../recovery/domain/recovery.dart';
 import '../../recovery/presentation/recovery_card.dart' show muscleNames;
@@ -43,6 +44,9 @@ class ActiveWorkoutScreen extends ConsumerStatefulWidget {
 class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
   bool _finishing = false;
   bool _headsUpDismissed = false;
+
+  /// Exercises already offered a form reset this workout.
+  final _resetOffered = <int>{};
   bool _hideWarmups = false;
   KeypadTarget? _target;
   KeypadBuffer? _buffer;
@@ -205,7 +209,10 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
             onDigit: (d) => setState(() => _buffer!.digit(d)),
             onDot: () => setState(_buffer!.dot),
             onBackspace: () => setState(_buffer!.backspace),
-            onStep: (dir) => setState(() => _buffer!.step(dir, increment: _increment(catalog[targetEx!.row.exerciseId]), fallback: _cellValue(session, target))),
+            onStep: (dir) => setState(() => _buffer!.step(dir,
+                increment: _increment(catalog[targetEx!.row.exerciseId]),
+                fallback: _cellValue(session, target),
+                grid: ref.read(exerciseGridProvider(targetEx.row.exerciseId)))),
             onCopy: () => _copy(session, targetEx!),
             onSign: () => setState(_buffer!.toggleSign),
             onNext: () => _next(session),
@@ -297,7 +304,10 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
       // Pending drop sets under this set follow its new load.
       final session = ref.read(activeSessionProvider).value;
       final ex = session?.exercises.where((e) => e.sets.any((x) => x.id == t.setId)).firstOrNull;
-      if (ex != null) await repo.refreshDrops(t.setId, increment: _increment(ref.read(catalogProvider).value?[ex.row.exerciseId]));
+      if (ex != null) {
+        await repo.refreshDrops(t.setId,
+            increment: _increment(ref.read(catalogProvider).value?[ex.row.exerciseId]), grid: ref.read(exerciseGridProvider(ex.row.exerciseId)));
+      }
     } else {
       await repo.updateSet(t.setId, reps: v.round().clamp(0, 999));
     }
@@ -396,6 +406,35 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
       exerciseRepMin: ex.row.repMin,
     );
     await _startRest(session, ex, s);
+    _maybeOfferFormReset(ex, s);
+  }
+
+  /// A working set clearly lighter than your recent best (at least one available step) done at the
+  /// top of its range looks like a deliberate step down: offer a form reset, once per exercise.
+  void _maybeOfferFormReset(ActiveExercise ex, WorkoutSet s) {
+    if (!s.isWorkingSet || _resetOffered.contains(ex.row.id) || !mounted) return;
+    final logs = ref.read(historyProvider).value?.logsFor(ex.row.exerciseId).where((l) => l.hasWorkingSets).toList() ?? const [];
+    if (logs.isEmpty) return;
+    final recentBest = logs.sublist(math.max(0, logs.length - 3)).map((l) => l.topWeight).reduce(math.max);
+    final step = ref.read(exerciseGridProvider(ex.row.exerciseId))?.previous(recentBest);
+    final reset = ref.read(formResetsProvider).value?[ex.row.exerciseId];
+    final top = s.targetRepMax ?? ex.row.repMax;
+    if (step == null || s.weight > step + 0.01 || s.reps < top) return;
+    if (reset != null && (reset.weight - s.weight).abs() < 0.01) return;
+    _resetOffered.add(ex.row.id);
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      duration: const Duration(seconds: 8),
+      content: Text('${formatKg(s.weight)} kg × ${s.reps}, lighter than your recent ${formatKg(recentBest)} kg. Fixing form?'),
+      action: SnackBarAction(label: 'Form reset', onPressed: () => _exerciseMenuById(ex.row.id, 'form-reset')),
+    ));
+  }
+
+  Future<void> _exerciseMenuById(int sessionExerciseId, String action) async {
+    final session = ref.read(activeSessionProvider).value;
+    final ex = session?.exercises.where((e) => e.row.id == sessionExerciseId).firstOrNull;
+    final catalog = ref.read(catalogProvider).value;
+    if (session == null || ex == null || catalog == null) return;
+    await _exerciseMenu(session, ex, catalog, action);
   }
 
   /// Rest after working sets (section 6): none before a drop set or a hold, 5 s before a myo-rep cycle,
@@ -474,6 +513,13 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
         if (picked != null) await repo.superset(ex, picked);
       case 'targets':
         await _targetReps(ex, catalog);
+      case 'form-reset':
+        await _formReset(ex, catalog);
+      case 'weight-steps':
+        final g = await ref.read(gymRepositoryProvider).load();
+        if (!mounted) return;
+        final spec = await editStack(context, title: 'Weight steps · ${catalog[ex.row.exerciseId]?.name ?? ''}', initial: g.stackFor(ex.row.exerciseId));
+        if (spec != null) await ref.read(gymRepositoryProvider).setStack(ex.row.exerciseId, spec);
       case 'reorder':
         await _reorderSheet(session, catalog);
       case 'notes':
@@ -538,6 +584,31 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
       ),
     );
     if (ok == true) await ref.read(sessionRepositoryProvider).setTargetReps(ex, RepRange(min, max));
+  }
+
+  /// Form reset: progression restarts from a lighter weight you chose on purpose (e.g. to fix form);
+  /// heavier older sessions stop triggering reductions. Refreshes today's suggestion when nothing
+  /// is logged on the exercise yet.
+  Future<void> _formReset(ActiveExercise ex, Map<String, ExerciseInfo> catalog) async {
+    final info = catalog[ex.row.exerciseId];
+    final history = ref.read(historyProvider).value;
+    final logs = history?.logsFor(ex.row.exerciseId).where((l) => l.hasWorkingSets).toList() ?? const [];
+    final initial = ex.suggestion?.formResetHint ?? (logs.isEmpty ? ex.sets.firstOrNull?.weight : logs.last.topWeight) ?? 0;
+    final w = await promptNumber(context,
+        title: 'Form reset', initial: initial, suffix: 'kg', message: 'Progression restarts from this weight; heavier sessions before it stop counting.');
+    if (w == null || info == null || !mounted) return;
+    // Date it from the last session at (or under) this weight, so that session is the new base.
+    final base = logs.lastWhere((l) => l.topWeight <= w + 0.01, orElse: () => ExerciseSessionLog(sessionId: -1, date: ref.read(clockProvider)(), sets: const []));
+    await ref.read(gymRepositoryProvider).setFormReset(ex.row.exerciseId, weight: w, at: base.date);
+    if (!ex.sets.any((s) => s.completed)) {
+      await ref.read(sessionRepositoryProvider).replaceExercise(
+            old: ex,
+            info: info,
+            coach: await ref.read(coachContextBuilderProvider)(),
+            program: await ref.read(programProvider.future),
+          );
+    }
+    if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Form reset: progression restarts from ${formatKg(w)} kg')));
   }
 
   /// Drag to reorder every exercise of the workout at once.

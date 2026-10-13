@@ -56,7 +56,7 @@ void main() {
       expect(s.reps, 6);
       expect(s.sets, 3);
       expect(s.headline, 'Today: 82.5 kg × 6, 3 sets, stop at 2 reps in reserve');
-      expect(s.why.first, 'Last session (1/5): 80 kg × 10, 10, 10 @ RPE 8, 8, 7.5.');
+      expect(s.why.first, 'Base: last session (1/5): 80 kg × 10, 10, 10 @ RPE 8, 8, 7.5.');
     });
 
     test('within the range → same weight, +1 rep on the weakest set', () {
@@ -176,9 +176,13 @@ void main() {
       expect(s.weight, 7.5); // 9.5 → floor 7.5
     });
 
-    test('increase is one increment even when that exceeds 5%', () {
+    test('a big relative jump (+20 %) waits for extended reps, then jumps one increment', () {
       final s = run([log([(10, 15, 7), (10, 15, 7)])], range: RepRange.isolation, eq: EquipmentKind.dumbbell);
-      expect(s.weight, 12);
+      expect(s.weight, 10, reason: '15 reps = top, not yet top + 2');
+      expect(s.reps, 16);
+      expect(s.why.any((w) => w.contains('extend')), isTrue);
+      final after = run([log([(10, 17, 7), (10, 17, 7)])], range: RepRange.isolation, eq: EquipmentKind.dumbbell);
+      expect(after.weight, 12);
     });
 
     test('helpers', () {
@@ -206,19 +210,35 @@ void main() {
       expect(s.kind, SuggestionKind.addReps);
     });
 
-    test('Red: −10% and one fewer set, technique day', () {
+    test('Red, isolation: never below last session; one fewer set instead', () {
       final s = run(topAtEight, score: 30);
-      expect(s.weight, 72.5); // 82.5 × 0.9 = 74.25 → 72.5
+      expect(s.weight, 80);
       expect(s.sets, 2);
       expect(s.techniqueDay, isTrue);
-      expect(s.headline, 'Technique day: 72.5 kg × 6, 2 sets, stop at 2 reps in reserve');
+      expect(s.headline, 'Technique day: 80 kg × 10, 2 sets, stop at 2 reps in reserve');
+    });
+
+    test('Red, compound: at most one step down', () {
+      final s = const SuggestionEngine().suggest(SuggestionInput(
+        range: RepRange.compound,
+        targetSets: 3,
+        targetRir: 2,
+        increment: 2.5,
+        equipment: EquipmentKind.barbell,
+        history: topAtEight,
+        readiness: const ExerciseReadiness(score: 30, calibrating: false),
+        now: now,
+        compound: true,
+      ));
+      expect(s.weight, 77.5);
+      expect(s.sets, 2);
     });
 
     test('training-load penalty turns a neutral 60 into Yellow (50)', () {
       final s = run(topAtEight, score: 60, loadGroups: ['Chest']);
       expect(s.band, ReadinessBand.yellow);
       expect(s.weight, 80);
-      expect(s.why.any((w) => w.startsWith('Chest volume')), isTrue);
+      expect(s.why.any((w) => w.startsWith('Readiness: Chest volume')), isTrue);
     });
   });
 
@@ -249,10 +269,10 @@ void main() {
       expect(s.weight, -30);
     });
 
-    test('Red day: −10% of effective load', () {
-      // Hold at −25 (effective 55) → 49.5 → −30.5 → −32.5.
+    test('Red day: never below last session (isolation rule); one fewer set', () {
       final s = assisted([log([(-25, 5, 9), (-25, 5, 9)])], score: 30);
-      expect(s.weight, -32.5);
+      expect(s.weight, -25);
+      expect(s.sets, 2);
     });
 
     test('never more assistance than bodyweight', () {

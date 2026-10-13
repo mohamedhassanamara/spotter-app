@@ -48,15 +48,24 @@ class ReadinessRepository {
       source.hrvSdnn(from, to),
       source.restingHeartRate(from, to),
       source.activeEnergy(from, to),
+      source.dietaryEnergy(from, to).catchError((_) => <TimedValue>[]),
+      source.dietaryProtein(from, to).catchError((_) => <TimedValue>[]),
     ]);
     final sleep = await source.asleepIntervals(from, to);
     final hrv = results[0], rhr = results[1], energy = results[2];
 
-    final energyByDay = <String, double>{};
-    for (final e in energy) {
-      final k = dayKey(e.to);
-      energyByDay[k] = (energyByDay[k] ?? 0) + e.value;
+    Map<String, double> byDay(List<TimedValue> samples) {
+      final out = <String, double>{};
+      for (final e in samples) {
+        final k = dayKey(e.to);
+        out[k] = (out[k] ?? 0) + e.value;
+      }
+      return out;
     }
+
+    final energyByDay = byDay(energy);
+    final foodByDay = byDay(results[3]);
+    final proteinByDay = byDay(results[4]);
 
     var withData = 0;
     final rows = <DailyMetricsCompanion>[];
@@ -70,6 +79,8 @@ class ReadinessRepository {
         restingHr: Value(m.restingHr),
         sleepMinutes: Value(m.sleepMinutes),
         activeEnergyKcal: Value(energyByDay[dayKey(day)]),
+        dietaryKcal: Value(foodByDay[dayKey(day)]),
+        proteinG: Value(proteinByDay[dayKey(day)]),
         updatedAt: now,
       ));
     }

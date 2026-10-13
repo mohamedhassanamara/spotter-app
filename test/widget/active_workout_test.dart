@@ -109,6 +109,9 @@ void main() {
     expect(done.rpe, 8, reason: 'effort pre-filled from the prescription (2 left → RPE 8)');
     expect(notifications.scheduled.single, now.add(const Duration(seconds: 90)));
     expect(find.text('REST 1:30'), findsOneWidget);
+    // Unmount first so no provider has a query in flight in the fake-async zone.
+    await tester.pumpWidget(const SizedBox());
+    await settle(tester);
     await tester.runAsync(db.close);
   });
 
@@ -122,7 +125,8 @@ void main() {
     });
     await settle(tester);
 
-    // KG cell → keypad → +2.5 (barbell increment) → hide: 22.5 kg, 12.5 % over 20.
+    // KG cell → keypad → + (the next barbell load that exists: 2.25 kg plates each side) → hide:
+    // 24.5 kg, 22.5 % over 20.
     await tester.tap(find.byKey(ValueKey('cell-kg-${sets.first.id}')));
     await settle(tester);
     expect(find.byKey(const ValueKey('workout-keypad')), findsOneWidget);
@@ -131,7 +135,7 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('key-hide')));
     await settle(tester);
     expect(find.byKey(const ValueKey('workout-keypad')), findsNothing);
-    expect(find.text('+13%'), findsOneWidget);
+    expect(find.text('+23%'), findsOneWidget);
 
     // Reps inside the range: logged without any interruption, flagged as an override.
     await tester.tap(find.byTooltip('Complete set').first);
@@ -153,6 +157,9 @@ void main() {
     rows = await tester.runAsync(() => db.select(db.workoutSets).get());
     expect(rows!.last.completed, isTrue);
     expect(rows.last.overrideReason, 'feltStrong');
+    // Unmount first so no provider has a query in flight in the fake-async zone.
+    await tester.pumpWidget(const SizedBox());
+    await settle(tester);
     await tester.runAsync(db.close);
   });
 }

@@ -1235,3 +1235,70 @@ hypertrophy program trained close to failure. They are not validated against any
   swaps (Straight Arm Pulldown, Pendulum Squat, Decline Crunch) and the listed substitutions.
 - Rules the table relies on: rest = top of the program's range; warm-ups = top of the range for the
   day's first exercise and compounds, bottom otherwise; effort chip = F for RIR 0, else the RIR.
+
+## Real-device fixes, Fix 6: suggestion engine rework
+
+**a) Only weights that exist.** `lib/core/domain/gym.dart`.
+- Settings → **My gym equipment**: dumbbells (default 2.5–50 kg by 2.5; edit as "from-to/step" or a
+  list), smallest barbell plate per side (default 2.25 kg, so barbell loads move in 4.5 kg from the
+  20 kg bar), and the machine / cable stack (default first plate 5 kg, step 5 kg). Each machine or cable exercise can
+  override its stack from the logger's exercise menu → **Weight steps…** (also listed, with a reset,
+  under Settings). Kettlebells use a standard set (4–48 kg). Assisted machines use the stack as negative load.
+- **Every weight you've logged on an exercise also counts as available** (e.g. your Triceps Pushdown
+  72 kg position, which the default 5-kg stack wouldn't have). Otherwise the engine would move you off a weight
+  you actually use.
+- Suggestions, warm-ups, drop sets and the keypad's ± all land on this grid (`WeightGrid`): increases
+  go to the *next available* weight, reductions to the next lighter one, computed loads snap down.
+  The old per-category "increments" settings are gone from the UI (still used internally as a fallback).
+  Property test: 2,000 random histories × readiness × recovery × nutrition × 4 grids, never off-grid.
+
+**b) No drop spirals.**
+- Readiness never cuts an **isolation** below last session's working weight. Yellow turns an increase into a
+  hold. Red holds and removes one working set (recorded and shown in the logger, Fix 5).
+  **Compounds** on Red: at most one step below last session, plus one fewer set.
+- At most **two load decreases in a row**; a third (from a missed range, a plateau or readiness) becomes
+  a hold, unless an ego freeze is active.
+- **Big jumps:** if the next available weight is > 10 % heavier (7.5 → 10 kg is +33 %), the top of the
+  range isn't enough: the target extends to top + 2 (aiming up to + 3) at the same weight, and the jump
+  comes once every working set reaches top + 2. In the **first 2 sessions after any jump**, falling below the range holds
+  the weight instead of dropping it.
+- **Form reset:** exercise menu → Form reset…, or the "Form reset at X kg?" chip the engine shows
+  when your last session stepped down at least one available weight from your recent best and still hit
+  the top of the range, or a snackbar when you complete such a set mid-workout. Stored per exercise
+  (`form_resets`); sessions before the reset date stop counting (no reductions from heavier history),
+  progression restarts from the reset weight. If nothing is logged on the exercise yet that day, the
+  suggestion refreshes immediately.
+
+**c) More inputs (Apple Health), applied transparently.**
+- Health now reads dietaryEnergyConsumed and dietaryProtein (schema v10 stores them per day next
+  to HRV/RHR/sleep). `lib/features/coach/domain/energy.dart` computes the 7-day bodyweight average, the
+  2–4 week slope (least squares, ≥ 4 weigh-ins over ≥ 14 days; losing < −0.2, gaining > +0.2 kg/week),
+  7-/28-day intake and protein per kg.
+- **Clear deficit** = losing ≥ 0.25 kg/week, or 7-day intake ≤ 85 % of the 28-day average. Effect: a
+  missed range holds instead of dropping, and a plateau needs three flat sessions instead of two.
+  Low protein (< 1.6 g/kg) adds a note only. Nutrition never adds load.
+- No nutrition in Health: skipped, and the readiness card and the "why" say so.
+- **Recovery:** a Fatigued prime mover may soften by one step (an increase becomes a hold; a compound
+  one step down). Readiness and recovery together never soften by more than one step.
+
+**d) Explained.** `Suggestion.why` is the chain, one line per stage: **Base** (last session and how it's
+read) → **Rule** (the progression rule that applied) → **Readiness / Recovery / Nutrition** (what each
+did) → **Weight** (the load exists, or what it snapped from). The logger's ⓘ shows it with the stage
+labels; the "Form reset?" line appears when relevant.
+
+**Y Raise (the reported case).** History: 10 kg sessions, best 10 × 13; 6 Oct the deliberate 7.5 × 10,
+7.5 × 12 (+ 5 × 15). The old engine on a Red day: same weight 7.5 × 11, then −10 % = 6.75, floored to its
+2 kg dumbbell step = **6 kg** (a weight that doesn't exist). Now, on every band: **7.5 kg × 11** ("within
+10–12 → same weight"; Red: "isolation: never below last session's 7.5 kg; one fewer working set"),
+plus the form-reset hint. Regression test with that history:
+`test/domain/suggestion_rework_test.dart` (it also runs the old engine to show the 6).
+
+**Before/after for all routines:** `docs/SUGGESTIONS_BEFORE_AFTER.md` (generated by
+`test/tool/suggestions_before_after_test.dart` from the Liftoff CSV, Green and Red). Sessions logged in
+the app after the export (11 Oct) aren't in it.
+
+Tests: `suggestion_rework_test` (28), `suggestion_engine_test` (updated for the intended changes: big
+jumps extend first, Red isolations hold, the "Base:" prefix), `seed_and_export_test` (Pendulum
+"no spiral" instead of "trend up", since the simulated lifter stops at the prescribed 2 in reserve),
+`migration_test` v9 → v10, `suggestion_rework_flow_test` (settings, weight steps, 7.5 kg + why chain,
+form reset, nutrition line).

@@ -34,6 +34,12 @@ abstract interface class HealthDataSource {
   /// Active energy samples in kcal.
   Future<List<TimedValue>> activeEnergy(DateTime from, DateTime to);
 
+  /// Food energy logged in Health (dietaryEnergyConsumed), kcal samples. Empty when not tracked.
+  Future<List<TimedValue>> dietaryEnergy(DateTime from, DateTime to);
+
+  /// Protein logged in Health (dietaryProtein), gram samples. Empty when not tracked.
+  Future<List<TimedValue>> dietaryProtein(DateTime from, DateTime to);
+
   Future<BodyMassSample?> latestBodyMass();
 
   /// Every body mass sample in the window, oldest first. Ranks score each set against the

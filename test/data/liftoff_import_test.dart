@@ -106,14 +106,16 @@ void main() {
       increments: Increments.defaults,
       now: now,
     );
-    // Chest press 60 kg × 10, 8 at 6–8 to failure (failure prescribed): top of the range → +1 increment.
+    // Chest press 60 kg × 10, 8 at 6–8 to failure (failure prescribed): top of the range → the next
+    // stack position (default machine stack: 5 kg steps; +8 %, a normal jump).
     final s = ctx.suggest(cat['Leverage_Chest_Press']!, const RepRange(6, 8), 2, 0);
     expect(s.kind, SuggestionKind.increase);
-    expect(s.weight, 62.5);
-    // The 20-rep back-off set only informs a 20-rep slot.
+    expect(s.weight, 65);
+    // The 20-rep back-off set only informs a 20-rep slot: 40 → 45 kg would be +12.5 %, so it
+    // extends the reps first.
     final b = ctx.suggest(cat['Leverage_Chest_Press']!, const RepRange(20, 20), 1, 0);
-    expect(b.kind, SuggestionKind.increase);
-    expect(b.weight, 42.5);
+    expect(b.weight, 40);
+    expect(b.reps, greaterThan(20));
     // A slot range never done is re-anchored from recent e1RM.
     final r = ctx.suggest(cat['Leverage_Chest_Press']!, const RepRange(10, 12), 2, 1);
     expect(r.kind, SuggestionKind.seeded);

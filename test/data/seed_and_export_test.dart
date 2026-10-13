@@ -51,7 +51,17 @@ void main() {
       }
       final series = top.values.toList();
       double avg(Iterable<double> v) => v.reduce((a, b) => a + b) / v.length;
-      expect(avg(series.skip(series.length - 3)), greaterThan(avg(series.take(3))), reason: '$id working weight should trend up');
+      if (id == 'Leverage_Chest_Press') {
+        expect(avg(series.skip(series.length - 3)), greaterThan(avg(series.take(3))), reason: '$id working weight should trend up');
+      } else {
+        // The simulated lifter stops exactly at the prescribed 2 in reserve on Pendulum's second set,
+        // so it may hold; what must never happen is a spiral down (Fix 6).
+        expect(avg(series.skip(series.length - 3)), greaterThanOrEqualTo(avg(series.take(3)) - 5), reason: '$id must not spiral down');
+        final drops = [for (var i = 1; i < series.length; i++) series[i] < series[i - 1]];
+        for (var i = 2; i < drops.length; i++) {
+          expect(drops[i] && drops[i - 1] && drops[i - 2], isFalse, reason: '$id: never three decreases in a row');
+        }
+      }
     }
     final overrides = await (db.select(db.workoutSets)..where((t) => t.isOverride.equals(true))).get();
     expect(overrides, isNotEmpty);

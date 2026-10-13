@@ -171,6 +171,10 @@ class DailyMetrics extends Table {
   RealColumn get restingHr => real().nullable()();
   RealColumn get sleepMinutes => real().nullable()();
   RealColumn get activeEnergyKcal => real().nullable()();
+
+  /// v10: food logged in Health that day (kcal, protein g); null when nothing was logged.
+  RealColumn get dietaryKcal => real().nullable()();
+  RealColumn get proteinG => real().nullable()();
   IntColumn get readinessScore => integer().nullable()();
   TextColumn get readinessBand => text().nullable()();
   BoolColumn get calibrating => boolean().withDefault(const Constant(true))();

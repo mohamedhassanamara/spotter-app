@@ -1,11 +1,14 @@
 import '../../../core/db/database.dart';
 import '../../../core/domain/equipment.dart';
+import '../../../core/domain/gym.dart';
 import '../../../core/domain/history.dart';
 import '../../../core/domain/muscles.dart';
 import '../../../core/domain/training.dart';
 import '../../library/domain/exercise_info.dart';
 import '../../library/domain/load_kinds.dart';
 import '../../readiness/domain/readiness.dart';
+import '../../recovery/domain/recovery.dart';
+import '../domain/energy.dart';
 import '../domain/suggestion_engine.dart';
 
 class EgoFreezeRepository {
@@ -59,6 +62,10 @@ class CoachContext {
     required this.now,
     this.bodyweight = 0,
     this.bodyweightLoaded = const {},
+    this.gym = GymEquipment.defaults,
+    this.energy = EnergyContext.none,
+    this.recovery,
+    this.formResets = const {},
   });
 
   final TrainingHistory history;
@@ -71,6 +78,19 @@ class CoachContext {
   /// Latest bodyweight and the exercises whose load is relative to it (pull-ups, dips, assisted).
   final double bodyweight;
   final Set<String> bodyweightLoaded;
+
+  /// Settings → My gym equipment: suggestions only land on weights that exist.
+  final GymEquipment gym;
+
+  /// Bodyweight trend and nutrition (Apple Health).
+  final EnergyContext energy;
+
+  /// Muscle recovery now; Fatigued prime movers may soften a suggestion by one step.
+  final RecoveryState? recovery;
+  final Map<String, FormReset> formResets;
+
+  /// The loads that exist for [info]: the gym's grid plus every weight logged on it.
+  WeightGrid gridFor(ExerciseInfo info) => gridForExercise(gym, history, info);
 
   static const _engine = SuggestionEngine();
 
@@ -94,8 +114,24 @@ class CoachContext {
         bodyweight: bodyweightLoaded.contains(info.id) ? bodyweight : 0,
         assisted: isAssisted(info.id),
         rangeMatched: history.logsFor(info.id).isEmpty || history.hasLogsAtRange(info.id, range),
+        grid: gridFor(info),
+        compound: info.isCompound,
+        fatigued: [
+          if (recovery != null)
+            for (final m in fatiguedPrimaries(recovery!, [info.targets])) m.label,
+        ],
+        energy: energy,
+        formReset: formResets[info.id],
       ));
 }
+
+/// The loads that exist for [info]: the gym's grid plus every working weight you've logged on it.
+WeightGrid gridForExercise(GymEquipment gym, TrainingHistory history, ExerciseInfo info) => gym.gridFor(
+      exerciseId: info.id,
+      kind: info.equipmentKind,
+      assisted: isAssisted(info.id),
+      logged: [for (final l in history.logsFor(info.id)) for (final s in l.sets) if (!s.isWarmup) snapNoise(s.weight)],
+    );
 
 /// Working sets per session exercise, attributed to its primary groups (training-load modifier).
 List<GroupSetEntry> groupSetEntries(TrainingHistory history) => [

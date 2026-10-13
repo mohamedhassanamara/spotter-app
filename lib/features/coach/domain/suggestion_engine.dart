@@ -1,8 +1,10 @@
 import 'dart:math' as math;
 
 import '../../../core/domain/equipment.dart';
+import '../../../core/domain/gym.dart';
 import '../../../core/domain/training.dart';
 import '../../readiness/domain/readiness.dart';
+import 'energy.dart';
 
 /// An active progression freeze caused by an ego flag.
 class FreezeState {
@@ -43,6 +45,14 @@ class ExerciseReadiness {
   ReadinessBand get band => ReadinessCalculator.bandFor(adjustedScore);
 }
 
+/// "Form reset": you chose a lighter weight on purpose (to fix form). Progression restarts from
+/// [weight] on [at]; older, heavier sessions no longer count (no reductions from them).
+class FormReset {
+  const FormReset({required this.weight, required this.at});
+  final double weight;
+  final DateTime at;
+}
+
 class SuggestionInput {
   const SuggestionInput({
     required this.range,
@@ -57,11 +67,18 @@ class SuggestionInput {
     this.bodyweight = 0,
     this.assisted = false,
     this.rangeMatched = true,
+    this.grid,
+    this.compound = false,
+    this.fatigued = const [],
+    this.energy = EnergyContext.none,
+    this.formReset,
   });
 
   final RepRange range;
   final int targetSets;
   final int targetRir;
+
+  /// Used only when no [grid] is given (a plain grid in this step from 0).
   final double increment;
   final EquipmentKind equipment;
 
@@ -80,6 +97,19 @@ class SuggestionInput {
   /// False when none of [history] was done at [range] (e.g. imported 10–12 work for a 4–6 slot):
   /// the load is then re-anchored from the best e1RM of the last 3 sessions.
   final bool rangeMatched;
+
+  /// The loads that exist for this exercise (Settings → My gym equipment + weights you've logged).
+  final WeightGrid? grid;
+
+  /// Compound lifts may drop one step on a Red day; isolations never go below last session.
+  final bool compound;
+
+  /// Prime-mover muscles that are Fatigued right now (muscle recovery).
+  final List<String> fatigued;
+
+  /// Bodyweight trend and nutrition from Apple Health.
+  final EnergyContext energy;
+  final FormReset? formReset;
 }
 
 class Suggestion {
@@ -94,6 +124,7 @@ class Suggestion {
     this.techniqueDay = false,
     this.rampUp = false,
     this.band = ReadinessBand.green,
+    this.formResetHint,
   });
 
   final SuggestionKind kind;
@@ -102,12 +133,19 @@ class Suggestion {
   final int sets;
   final int rir;
   final String headline;
+
+  /// The chain behind the number, one step per line, each starting with its stage:
+  /// "Base:", "Rule:", "Readiness:", "Recovery:", "Nutrition:", "Weight:".
   final List<String> why;
   final bool techniqueDay;
 
   /// Calibration: ramp the weight up across sets instead of a fixed load.
   final bool rampUp;
   final ReadinessBand band;
+
+  /// Set when the last session looks like a deliberate step down to fix form: the weight a
+  /// "Form reset" would restart from.
+  final double? formResetHint;
 }
 
 /// Loads as the lifter reads them. Multiples of 0.25 kg (plates, micro-plates) show exactly;
@@ -123,138 +161,276 @@ String formatKg(double kg) {
 
 String formatRpe(double rpe) => rpe == rpe.roundToDouble() ? rpe.toStringAsFixed(0) : rpe.toStringAsFixed(1);
 
-/// Double progression + readiness modifiers + ego freeze.
+/// Double progression on the weights that exist, then readiness / recovery / nutrition, never more
+/// than one step of softening, and no drop spirals. Every step is explained in [Suggestion.why].
 class SuggestionEngine {
   const SuggestionEngine();
 
-  static const double maxIncreaseFraction = 0.05;
   static const double failureReduction = 0.05;
   static const double plateauReduction = 0.10;
-  static const double redReduction = 0.10;
   static const double freezeReduction = 0.05;
   static const double calibrationStopRpe = 8;
 
+  /// A jump to the next available weight bigger than this (relative) waits for extended reps.
+  static const double bigJump = 0.10;
+
+  /// Extended rep target before a big jump: top of the range + 2 (aim up to + 3).
+  static const int extendBy = 2;
+  static const int extendMax = 3;
+
+  /// Load decreases in a row allowed before the engine holds (ego flags excepted).
+  static const int maxConsecutiveDrops = 2;
+
+  /// Sessions after a jump during which falling short of the range means hold, not drop.
+  static const int postJumpGrace = 2;
+
   Suggestion suggest(SuggestionInput input) {
-    final all = input.history.where((l) => l.hasWorkingSets).toList();
-    if (all.isEmpty) return _calibration(input);
+    final grid = input.grid ?? _plainGrid(input);
+    var all = input.history.where((l) => l.hasWorkingSets).toList();
+    final reset = input.formReset;
+    if (reset != null) all = [for (final l in all) if (!dateOnlyOf(l.date).isBefore(dateOnlyOf(reset.at))) l];
+    if (all.isEmpty && reset == null) return _calibration(input, grid);
+
     // Readiness is applied after progression, so a Red technique day (load cut for recovery,
     // not performance) is not the progression base. Use the last normal session instead.
     final normal = all.where((l) => !l.techniqueDay).toList();
     final logs = normal.isEmpty ? all : normal;
-
-    final last = logs.last;
-    final why = <String>[_describe('Last session', last)];
-    final inc = input.increment;
     final range = input.range;
+    final why = <String>[];
+    final energy = input.energy;
 
     SuggestionKind kind;
     double weight;
     int reps;
-    final lastTop = last.topWeight;
+    double lastTop;
+    double? resetHint;
 
-    if (last.suggestionKind == SuggestionKind.calibration || !input.rangeMatched) {
-      final recent = logs.sublist(math.max(0, logs.length - 3));
-      final best = recent.map((l) => _bestSet(l, input.bodyweight)).reduce(
-          (a, b) => b.e1rm(bodyweight: input.bodyweight) > a.e1rm(bodyweight: input.bodyweight) ? b : a);
-      final e1rm = best.e1rm(bodyweight: input.bodyweight);
-      weight = floorToIncrement(e1rm / (1 + (range.min + input.targetRir) / 30) - input.bodyweight, inc);
-      weight = math.max(weight, _minLoad(input));
+    if (logs.isEmpty) {
+      // Form reset with nothing logged since: start from the reset weight.
+      lastTop = reset!.weight;
+      weight = reset.weight;
       reps = range.min;
       kind = SuggestionKind.seeded;
-      why.add(last.suggestionKind == SuggestionKind.calibration
-          ? 'Calibration best set ${formatKg(best.weight)} kg × ${best.reps} @ RPE ${formatRpe(best.effectiveRpe)} '
-              '→ e1RM ${e1rm.toStringAsFixed(1)} kg. Working weight for ${range.min} reps at ${input.targetRir} RIR.'
-          : 'No recent sets at $range. Best of the last ${recent.length} session(s): ${_loadText(best.weight)} × ${best.reps} '
-              '@ RPE ${formatRpe(best.effectiveRpe)} → e1RM ${e1rm.toStringAsFixed(1)} kg, '
-              'so ${_loadText(weight)} for ${range.min} reps at ${input.targetRir} RIR.');
+      why.add('Base: form reset on ${_d(reset.at)} at ${_loadText(reset.weight)}; nothing logged since.');
+      why.add('Rule: progression restarts from the reset weight at ${range.min} reps.');
     } else {
-      final working = last.workingSets;
-      // Effort is judged against the prescription: going to failure is never a failed set, only
-      // missing the bottom of the range is. The top of the range only counts if it was reached
-      // without going past the prescribed reps in reserve.
-      final maxRpe = 10.0 - input.targetRir;
-      final failed = working.any((s) => s.reps < range.min);
-      final allTop = working.every((s) => s.reps >= range.max && s.effectiveRpe <= maxRpe);
-      final topSets = last.topSets;
-      final minTopReps = topSets.map((s) => s.reps).reduce(math.min);
+      final last = logs.last;
+      lastTop = last.topWeight;
+      why.add('Base: ${_describe('last session', last)}${reset != null ? ' (since your form reset on ${_d(reset.at)})' : ''}');
+      final drops = _consecutiveDrops(logs);
 
-      if (failed) {
-        kind = SuggestionKind.reduce;
-        weight = _scaled(input, lastTop, 1 - failureReduction);
-        if (weight >= lastTop) weight = _lowered(input, lastTop);
+      if (last.suggestionKind == SuggestionKind.calibration || !input.rangeMatched) {
+        final recent = logs.sublist(math.max(0, logs.length - 3));
+        final best = recent.map((l) => _bestSet(l, input.bodyweight)).reduce(
+            (a, b) => b.e1rm(bodyweight: input.bodyweight) > a.e1rm(bodyweight: input.bodyweight) ? b : a);
+        final e1rm = best.e1rm(bodyweight: input.bodyweight);
+        weight = e1rm / (1 + (range.min + input.targetRir) / 30) - input.bodyweight;
         reps = range.min;
-        why.add('A working set fell below $range reps → weight −5% '
-            '(${formatKg(lastTop)} → ${formatKg(weight)} kg), target ${range.min} reps.');
-      } else if (allTop) {
-        kind = SuggestionKind.increase;
-        // Exactly one increment up from what was lifted (cable stacks and dumbbells aren't on a
-        // 2.5 kg grid, so snapping to it would turn +2.5 into +3.5).
-        weight = snapNoise(lastTop + inc);
-        reps = range.min;
-        why.add('All working sets hit the top of $range at the prescribed effort '
-            '(${input.targetRir == 0 ? 'failure' : 'RPE ≤ ${formatRpe(maxRpe)}'}) → +${formatKg(weight - lastTop)} kg, '
-            'reps reset to ${range.min}.');
-      } else if (_isPlateau(logs)) {
-        kind = SuggestionKind.plateauDeload;
-        weight = _scaled(input, lastTop, 1 - plateauReduction);
-        if (weight >= lastTop) weight = _lowered(input, lastTop);
-        reps = math.max(range.min, math.min(range.max, minTopReps));
-        why.add('Plateau: two sessions in a row without progress (same weight, no extra reps, RPE not lower) '
-            '→ one lighter session at −10%, then rebuild.');
+        kind = SuggestionKind.seeded;
+        why.add(last.suggestionKind == SuggestionKind.calibration
+            ? 'Rule: calibration best set ${_loadText(best.weight)} × ${best.reps} @ RPE ${formatRpe(best.effectiveRpe)} '
+                '→ e1RM ${e1rm.toStringAsFixed(1)} kg → ${formatKg(weight)} kg for ${range.min} reps at ${input.targetRir} RIR.'
+            : 'Rule: no recent sets at $range. Best of the last ${recent.length} session(s): ${_loadText(best.weight)} × ${best.reps} '
+                '@ RPE ${formatRpe(best.effectiveRpe)} → e1RM ${e1rm.toStringAsFixed(1)} kg → ${formatKg(weight)} kg for ${range.min} reps at ${input.targetRir} RIR.');
       } else {
-        kind = SuggestionKind.addReps;
-        weight = lastTop;
-        reps = math.min(range.max, minTopReps + 1);
-        why.add(minTopReps >= range.max
-            ? 'Top of $range reached but past the prescribed effort → same weight, own the reps.'
-            : 'Within $range → same weight, beat last time\'s reps on at least one set.');
+        final working = last.workingSets;
+        // Effort is judged against the prescription: going to failure is never a failed set, only
+        // missing the bottom of the range is. The top only counts at the prescribed effort.
+        final maxRpe = 10.0 - input.targetRir;
+        final failed = working.any((s) => s.reps < range.min);
+        final allTop = working.every((s) => s.reps >= range.max && s.effectiveRpe <= maxRpe);
+        final minTopReps = last.topSets.map((s) => s.reps).reduce(math.min);
+        final sessionsAtWeight = _trailingAtWeight(logs);
+        final before = logs.length > sessionsAtWeight ? logs[logs.length - sessionsAtWeight - 1].topWeight : null;
+        final justJumped = before != null && before < lastTop - 0.01 && sessionsAtWeight <= postJumpGrace;
+
+        if (failed) {
+          final drop = _reduced(input, grid, lastTop, failureReduction);
+          if (justJumped) {
+            kind = SuggestionKind.addReps;
+            weight = lastTop;
+            reps = range.min;
+            why.add('Rule: a set fell below $range, but this is session $sessionsAtWeight at ${_loadText(lastTop)} after a jump '
+                '→ hold the weight and build back into the range (no drop).');
+          } else if (energy.deficit) {
+            kind = SuggestionKind.addReps;
+            weight = lastTop;
+            reps = range.min;
+            why.add('Rule: a set fell below $range, but you\'re in a deficit (${energy.deficitReason}) where a stall is expected '
+                '→ hold ${_loadText(lastTop)} instead of dropping.');
+          } else if (drops >= maxConsecutiveDrops && !_frozen(input)) {
+            kind = SuggestionKind.addReps;
+            weight = lastTop;
+            reps = range.min;
+            why.add('Rule: a set fell below $range, but the load already went down $drops sessions in a row '
+                '→ hold ${_loadText(lastTop)} (no third drop).');
+          } else {
+            kind = SuggestionKind.reduce;
+            weight = drop;
+            reps = range.min;
+            why.add('Rule: a working set fell below $range → −5 % on the next available weight '
+                '(${_loadText(lastTop)} → ${_loadText(weight)}), target ${range.min} reps.');
+          }
+        } else if (allTop) {
+          final next = grid.next(lastTop);
+          final jump = grid.nextJump(lastTop, bodyweight: input.bodyweight);
+          final target = range.max + extendBy;
+          if (next == null) {
+            kind = SuggestionKind.addReps;
+            weight = lastTop;
+            reps = math.min(range.max + extendMax, minTopReps + 1);
+            why.add('Rule: top of $range, but ${_loadText(lastTop)} is the heaviest you have → keep it and add reps.');
+          } else if (jump != null && jump > bigJump && minTopReps < target) {
+            kind = SuggestionKind.addReps;
+            weight = lastTop;
+            reps = math.min(range.max + extendMax, math.max(range.max + 1, minTopReps + 1));
+            why.add('Rule: top of $range, but the next weight (${_loadText(next)}) is +${(jump * 100).round()} % '
+                '→ extend to $target–${range.max + extendMax} reps at ${_loadText(lastTop)} before jumping.');
+          } else {
+            kind = SuggestionKind.increase;
+            weight = next;
+            reps = range.min;
+            why.add('Rule: all working sets hit the top of $range at the prescribed effort '
+                '(${input.targetRir == 0 ? 'failure' : 'RPE ≤ ${formatRpe(maxRpe)}'})${jump != null && jump > bigJump ? ' and the extended reps' : ''} '
+                '→ next available weight ${_loadText(next)}, reps reset to ${range.min}.');
+          }
+        } else if (_isPlateau(logs, energy.deficit ? 3 : 2)) {
+          if (drops >= maxConsecutiveDrops && !_frozen(input)) {
+            kind = SuggestionKind.addReps;
+            weight = lastTop;
+            reps = math.max(range.min, math.min(range.max, minTopReps));
+            why.add('Rule: plateau, but the load already went down $drops sessions in a row → hold.');
+          } else {
+            kind = SuggestionKind.plateauDeload;
+            weight = _reduced(input, grid, lastTop, plateauReduction);
+            reps = math.max(range.min, math.min(range.max, minTopReps));
+            why.add('Rule: plateau: ${energy.deficit ? 'three' : 'two'} sessions in a row without progress '
+                '→ one lighter session (${_loadText(weight)}, about −10 %), then rebuild.');
+          }
+        } else {
+          kind = SuggestionKind.addReps;
+          weight = lastTop;
+          reps = math.min(range.max, minTopReps + 1);
+          why.add(minTopReps >= range.max
+              ? 'Rule: top of $range reached but past the prescribed effort → same weight, own the reps.'
+              : 'Rule: within $range → same weight, beat last time\'s reps on at least one set.');
+        }
+
+        // A deliberate step down at the top of the range looks like a form reset.
+        final previous = logs.length > 1 ? logs.sublist(math.max(0, logs.length - 4), logs.length - 1) : const <ExerciseSessionLog>[];
+        final prevBest = previous.isEmpty ? null : previous.map((l) => l.topWeight).reduce(math.max);
+        final hitTop = last.topSets.any((s) => s.reps >= range.max);
+        if (prevBest != null && grid.previous(prevBest) != null && lastTop <= grid.previous(prevBest)! + 0.01 && hitTop && !last.techniqueDay) {
+          resetHint = lastTop;
+          why.add('Form reset? You went from ${_loadText(prevBest)} to ${_loadText(lastTop)} and hit ${range.max}+ reps. If that was on purpose, '
+              'use Form reset so progression starts from ${_loadText(lastTop)} and the heavier sessions stop counting.');
+        }
       }
     }
 
     var sets = input.targetSets;
+    // A hold (readiness / recovery) keeps the reps you reached, inside the range.
+    final holdReps = logs.isEmpty ? range.min : math.min(range.max, math.max(range.min, logs.last.topSets.map((s) => s.reps).reduce(math.min)));
 
     // Ego freeze overrides progression.
     final freeze = input.freeze;
     if (freeze != null && freeze.isActive(input.now)) {
-      final frozen = _scaled(input, freeze.baseWeight, 1 - freezeReduction);
+      final frozen = grid.snapDown((freeze.baseWeight + input.bodyweight) * (1 - freezeReduction) - input.bodyweight);
       weight = math.min(weight, frozen);
       kind = SuggestionKind.egoFreeze;
       reps = range.min;
-      why.add('Ego flag: progression frozen for ${freeze.daysLeft(input.now)} more day(s) '
-          '→ 5% below ${formatKg(freeze.baseWeight)} kg.');
+      why.add('Rule: ego flag, progression frozen for ${freeze.daysLeft(input.now)} more day(s) '
+          '→ 5 % below ${formatKg(freeze.baseWeight)} kg.');
     }
 
-    // Readiness modifier.
+    // Readiness and recovery soften by one step at most, together.
     final r = input.readiness;
     final band = r.band;
     var technique = false;
+    var softened = false;
     if (r.loadPenaltyGroups.isNotEmpty) {
-      why.add('${r.loadPenaltyGroups.join(', ')} volume over the last 7 days is above 1.5× your 4-week average '
+      why.add('Readiness: ${r.loadPenaltyGroups.join(', ')} volume over the last 7 days is above 1.5× your 4-week average '
           '→ readiness −${ReadinessCalculator.loadPenalty} for this exercise.');
     }
     final scoreText = r.calibrating ? 'calibrating, treated as Green' : '${r.adjustedScore}';
     switch (band) {
       case ReadinessBand.green:
-        why.add('Readiness ${band.label} ($scoreText) → no change.');
+        why.add('Readiness: Green ($scoreText) → no change.');
       case ReadinessBand.yellow:
-        if (weight > lastTop) {
+        if (weight > lastTop + 0.01) {
           weight = lastTop;
-          reps = math.min(range.max, math.max(range.min, last.topSets.map((s) => s.reps).reduce(math.min)));
+          reps = holdReps;
           if (kind == SuggestionKind.increase) kind = SuggestionKind.addReps;
-          why.add('Readiness ${band.label} ($scoreText) → no weight increase today, holding ${formatKg(weight)} kg.');
+          softened = true;
+          why.add('Readiness: Yellow ($scoreText) → no increase today, holding ${_loadText(weight)}.');
         } else {
-          why.add('Readiness ${band.label} ($scoreText) → no increase planned anyway; sets unchanged.');
+          why.add('Readiness: Yellow ($scoreText) → no increase was planned; load and sets unchanged.');
         }
       case ReadinessBand.red:
-        final before = weight;
-        weight = _scaled(input, weight, 1 - redReduction);
-        sets = math.max(1, sets - 1);
         technique = true;
-        why.add('Readiness ${band.label} ($scoreText) → technique day: '
-            '${formatKg(before)} → ${formatKg(weight)} kg (−10%) and one fewer working set.');
+        softened = true;
+        sets = math.max(1, sets - 1);
+        if (weight > lastTop + 0.01) {
+          weight = lastTop;
+          reps = holdReps;
+          if (kind == SuggestionKind.increase) kind = SuggestionKind.addReps;
+        }
+        if (input.compound && weight >= lastTop - 0.01) {
+          final down = grid.previous(lastTop);
+          if (down != null && down >= _minLoad(input)) weight = down;
+          why.add('Readiness: Red ($scoreText) → compound: one step down (${_loadText(weight)}) and one fewer working set.');
+        } else {
+          why.add(weight < lastTop - 0.01
+              ? 'Readiness: Red ($scoreText) → isolation: no extra cut on top of today\'s ${_loadText(weight)}; one fewer working set instead.'
+              : 'Readiness: Red ($scoreText) → isolation: never below last session\'s ${_loadText(lastTop)}; one fewer working set instead.');
+        }
+    }
+    if (input.fatigued.isNotEmpty) {
+      final names = input.fatigued.join(', ');
+      if (softened) {
+        why.add('Recovery: $names still fatigued; readiness already softened today (one step at most in total).');
+      } else if (weight > lastTop + 0.01) {
+        weight = lastTop;
+        reps = holdReps;
+        if (kind == SuggestionKind.increase) kind = SuggestionKind.addReps;
+        why.add('Recovery: $names still fatigued → hold ${_loadText(weight)} instead of increasing.');
+      } else if (input.compound && weight >= lastTop - 0.01 && grid.previous(lastTop) != null) {
+        weight = grid.previous(lastTop)!;
+        why.add('Recovery: $names still fatigued → one step lighter (${_loadText(weight)}).');
+      } else {
+        why.add('Recovery: $names still fatigued; isolations keep last session\'s load.');
+      }
     }
 
-    weight = snapNoise(weight);
+    // Nutrition: modest, transparent, never a reason to add load.
+    if (!energy.hasNutrition && energy.trend == null) {
+      why.add('Nutrition: no nutrition or bodyweight trend data in Apple Health, so it isn\'t used.');
+    } else {
+      if (energy.deficit) {
+        why.add('Nutrition: deficit (${energy.deficitReason}): stalls are expected, so falling short holds instead of dropping, and plateaus need three flat sessions.');
+      } else if (energy.trend != null) {
+        why.add('Nutrition: bodyweight ${energy.trend!.label}${energy.hasNutrition ? '' : ' (no food logged in Health)'} → no effect.');
+      }
+      if (energy.lowProtein) {
+        why.add('Nutrition: protein ${energy.proteinPerKg!.toStringAsFixed(1)} g/kg over the last 7 days is under ${EnergyConfig.lowProteinPerKg} g/kg; loads unchanged.');
+      }
+    }
+
+    // No drop spirals: never a third decrease in a row (ego flags excepted).
+    if (logs.isNotEmpty && weight < lastTop - 0.01 && _consecutiveDrops(logs) >= maxConsecutiveDrops && !_frozen(input)) {
+      weight = lastTop;
+      why.add('Rule: the load already went down ${_consecutiveDrops(logs)} sessions in a row → holding ${_loadText(lastTop)}.');
+    }
+
+    // Only weights that exist.
+    weight = math.max(weight, _minLoad(input));
+    final exact = weight;
+    weight = grid.contains(exact) ? grid.snap(exact) : grid.snapDown(exact);
+    if (weight < _minLoad(input)) weight = grid.snapUp(_minLoad(input));
+    why.add(grid.contains(exact)
+        ? 'Weight: ${_loadText(weight)} exists in your gym.'
+        : 'Weight: ${formatKg(exact)} kg isn\'t available → ${_loadText(weight)} (the next lighter one you have).');
+
     return Suggestion(
       kind: kind,
       weight: weight,
@@ -265,28 +441,28 @@ class SuggestionEngine {
       band: band,
       headline: _headline(weight, reps, sets, input.targetRir, technique, input.equipment),
       why: why,
+      formResetHint: resetHint,
     );
   }
 
-  Suggestion _calibration(SuggestionInput input) {
+  Suggestion _calibration(SuggestionInput input, WeightGrid grid) {
     // Assisted machines start with about half of bodyweight as assistance.
-    final start = input.assisted
-        ? floorToIncrement(-input.bodyweight * 0.5, input.increment)
-        : startingWeight(input.equipment, input.increment);
+    final raw = input.assisted ? -input.bodyweight * 0.5 : startingWeight(input.equipment, input.increment);
+    final start = input.assisted ? grid.snapDown(raw) : grid.snapUp(raw);
     final r = input.readiness;
     var sets = input.targetSets;
     var technique = false;
     final why = <String>[
-      'No history for this exercise → calibration session.',
-      'Start at ${_loadText(start)} and add weight each set while form stays clean. '
-          'Stop every set at RPE ${formatRpe(calibrationStopRpe)} (2 reps left).',
-      'Your best working set today seeds future suggestions.',
+      'Base: no history for this exercise → calibration session.',
+      'Rule: start at ${_loadText(start)} and add weight each set while form stays clean. '
+          'Stop every set at RPE ${formatRpe(calibrationStopRpe)} (2 reps left). Your best working set today seeds future suggestions.',
     ];
     if (r.band == ReadinessBand.red) {
       sets = math.max(1, sets - 1);
       technique = true;
-      why.add('Readiness Red (${r.adjustedScore}) → one fewer set, keep it light.');
+      why.add('Readiness: Red (${r.adjustedScore}) → one fewer set, keep it light.');
     }
+    why.add('Weight: ${_loadText(start)} is the lightest you have for it.');
     final loadText = _loadText(start);
     return Suggestion(
       kind: SuggestionKind.calibration,
@@ -308,21 +484,56 @@ class SuggestionEngine {
     return technique ? 'Technique day: $core' : 'Today: $core';
   }
 
-  /// [weight] scaled by [factor] on the effective load (bodyweight + weight for bodyweight-loaded
-  /// lifts), floored to the increment. Never below the lightest allowed load.
-  static double _scaled(SuggestionInput input, double weight, double factor) {
-    final bw = input.bodyweight;
-    final scaled = floorToIncrement((weight + bw) * factor - bw, input.increment);
-    return math.max(_minLoad(input), scaled);
+  /// When no gym grid is given: every multiple of the increment (and every logged weight).
+  static WeightGrid _plainGrid(SuggestionInput input) {
+    final inc = input.increment <= 0 ? 2.5 : input.increment;
+    final lo = input.assisted ? -(input.bodyweight <= 0 ? 150 : input.bodyweight) : 0.0;
+    return WeightGrid([
+      for (var w = lo; w <= 400; w += inc) (w * 1000).roundToDouble() / 1000,
+      for (final l in input.history) for (final s in l.sets) snapNoise(s.weight),
+    ]);
   }
 
-  /// One increment lighter (for loads too small for a percentage to move them).
-  static double _lowered(SuggestionInput input, double weight) => math.max(_minLoad(input), weight - input.increment);
+  /// [lastTop] reduced by [fraction] on the effective load, on the next available lighter weight
+  /// (always at least one step lighter).
+  static double _reduced(SuggestionInput input, WeightGrid grid, double lastTop, double fraction) {
+    final bw = input.bodyweight;
+    var w = grid.snapDown((lastTop + bw) * (1 - fraction) - bw);
+    if (w >= lastTop - 0.01) w = grid.previous(lastTop) ?? lastTop;
+    return math.max(w, _minLoad(input));
+  }
+
+  static bool _frozen(SuggestionInput input) => input.freeze != null && input.freeze!.isActive(input.now);
+
+  /// Sessions in a row (ending with the last) whose top weight went down from the one before.
+  static int _consecutiveDrops(List<ExerciseSessionLog> logs) {
+    var n = 0;
+    for (var i = logs.length - 1; i > 0; i--) {
+      if (logs[i].topWeight < logs[i - 1].topWeight - 0.01) {
+        n++;
+      } else {
+        break;
+      }
+    }
+    return n;
+  }
+
+  /// How many sessions in a row (ending with the last) were at the last session's top weight.
+  static int _trailingAtWeight(List<ExerciseSessionLog> logs) {
+    final w = logs.last.topWeight;
+    var n = 0;
+    for (var i = logs.length - 1; i >= 0 && (logs[i].topWeight - w).abs() < 0.01; i--) {
+      n++;
+    }
+    return n;
+  }
 
   /// Plain lifts can't go below 0 kg; assisted lifts can add assistance down to full bodyweight.
   static double _minLoad(SuggestionInput input) => input.assisted ? -input.bodyweight : 0;
 
   static String _loadText(double w) => w == 0 ? 'bodyweight' : (w < 0 ? '${formatKg(-w)} kg assistance' : '${formatKg(w)} kg');
+
+  static String _d(DateTime d) => '${d.day}/${d.month}';
 
   static LoggedSet _bestSet(ExerciseSessionLog log, double bodyweight) {
     LoggedSet best = log.workingSets.first;
@@ -332,14 +543,15 @@ class SuggestionEngine {
     return best;
   }
 
-  /// Two consecutive sessions without progress over the last three logs.
-  static bool _isPlateau(List<ExerciseSessionLog> logs) {
-    if (logs.length < 3) return false;
-    final a = logs[logs.length - 3], b = logs[logs.length - 2], c = logs.last;
-    if (b.suggestionKind == SuggestionKind.plateauDeload || c.suggestionKind == SuggestionKind.plateauDeload) {
-      return false;
+  /// [pairs] consecutive sessions without progress over the last [pairs] + 1 logs.
+  static bool _isPlateau(List<ExerciseSessionLog> logs, int pairs) {
+    if (logs.length < pairs + 1) return false;
+    final tail = logs.sublist(logs.length - pairs - 1);
+    if (tail.skip(1).any((l) => l.suggestionKind == SuggestionKind.plateauDeload)) return false;
+    for (var i = 1; i < tail.length; i++) {
+      if (!_noProgress(tail[i - 1], tail[i])) return false;
     }
-    return _noProgress(a, b) && _noProgress(b, c);
+    return true;
   }
 
   static bool _noProgress(ExerciseSessionLog prev, ExerciseSessionLog cur) {
@@ -367,3 +579,5 @@ class SuggestionEngine {
     return '$label (${d.day}/${d.month}): $load @ RPE $rpes.';
   }
 }
+
+DateTime dateOnlyOf(DateTime d) => DateTime(d.year, d.month, d.day);

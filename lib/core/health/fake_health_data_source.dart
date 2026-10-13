@@ -124,6 +124,13 @@ class FakeHealthDataSource implements HealthDataSource {
     return out;
   }
 
+  /// The fake source logs no food: nutrition is optional and the app must cope without it.
+  @override
+  Future<List<TimedValue>> dietaryEnergy(DateTime from, DateTime to) async => const [];
+
+  @override
+  Future<List<TimedValue>> dietaryProtein(DateTime from, DateTime to) async => const [];
+
   /// Body mass on [day]: a slow upward trend with day-to-day noise.
   double bodyMassOn(DateTime day) {
     final d = dateOnly(day);

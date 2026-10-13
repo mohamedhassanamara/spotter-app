@@ -4,6 +4,7 @@ import 'dart:math' as math;
 import 'package:drift/drift.dart';
 
 import '../../../core/db/database.dart';
+import '../../../core/domain/gym.dart';
 import '../../../core/domain/training.dart';
 import '../../coach/data/coach_context.dart';
 import '../../coach/domain/guardrail.dart';
@@ -28,6 +29,7 @@ class StoredSuggestion {
     required this.rampUp,
     required this.band,
     this.setsTrimmed = 0,
+    this.formResetHint,
   });
 
   final SuggestionKind kind;
@@ -44,6 +46,10 @@ class StoredSuggestion {
   /// mistaken for a routine change at Finish).
   final int setsTrimmed;
 
+  /// The engine thinks the last session was a deliberate step down: the weight a form reset would
+  /// restart from.
+  final double? formResetHint;
+
   static String encode(Suggestion s, {int setsTrimmed = 0}) => jsonEncode({
         'headline': s.headline,
         'why': s.why,
@@ -51,6 +57,7 @@ class StoredSuggestion {
         'ramp': s.rampUp,
         'band': s.band.name,
         if (setsTrimmed > 0) 'trimmed': setsTrimmed,
+        if (s.formResetHint != null) 'reset': s.formResetHint,
       });
 
   static StoredSuggestion? fromRow(SessionExercise e) {
@@ -68,6 +75,7 @@ class StoredSuggestion {
       rampUp: j['ramp'] as bool? ?? false,
       band: ReadinessBand.fromName(j['band'] as String?),
       setsTrimmed: (j['trimmed'] as num?)?.toInt() ?? 0,
+      formResetHint: (j['reset'] as num?)?.toDouble(),
     );
   }
 }
@@ -361,6 +369,7 @@ class SessionRepository {
       techniqueDay: main.techniqueDay,
       rampUp: main.rampUp,
       band: main.band,
+      formResetHint: main.formResetHint,
     );
     // Readiness may take sets away; keep the first ones of each slot and record how many went.
     final takes = [
@@ -399,7 +408,8 @@ class SessionRepository {
               sessionExerciseId: exId,
               position: pos++,
               isWarmup: const Value(true),
-              weight: Value(w.weight),
+              // Warm-ups land on weights that exist too.
+              weight: Value(main.weight > 0 ? coach.gridFor(info).snap(w.weight) : w.weight),
               reps: Value(w.reps),
               targetRepMin: Value(w.repRange.min),
               targetRepMax: Value(w.repRange.max),
@@ -596,7 +606,8 @@ class SessionRepository {
   /// Adds a follow-up under [parent] (after any already there): a drop set [dropPct] % lighter than the
   /// set above it, rounded to [increment]; a myo-rep cycle (same load, 2 reps); a static hold (same load,
   /// 30 s). Program drop sets carry their technique id so a later load change re-derives them at 25 %.
-  Future<int> addFollowUp(ActiveExercise ex, WorkoutSet parent, SetKind kind, {required double increment, int? dropPct, String? technique}) =>
+  Future<int> addFollowUp(ActiveExercise ex, WorkoutSet parent, SetKind kind,
+          {required double increment, WeightGrid? grid, int? dropPct, String? technique}) =>
       _db.transaction(() async {
         final sets = await _setsOf(ex.row.id);
         final i = sets.indexWhere((s) => s.id == parent.id);
@@ -612,7 +623,7 @@ class SessionRepository {
               sessionExerciseId: ex.row.id,
               position: anchor.position + 1,
               setType: Value(kind.setType),
-              weight: Value(kind == SetKind.drop ? dropWeight(from, pct: pct, increment: increment) : parent.weight),
+              weight: Value(kind == SetKind.drop ? _drop(from, pct, increment, grid) : parent.weight),
               reps: Value(switch (kind) {
                 SetKind.myo => myoRepsPerCycle,
                 SetKind.hold => holdSeconds,
@@ -626,7 +637,7 @@ class SessionRepository {
       });
 
   /// After the load of [parent] changes: its not-yet-done drop sets follow, each [pct] % under the one above.
-  Future<void> refreshDrops(int parentId, {required double increment}) => _db.transaction(() async {
+  Future<void> refreshDrops(int parentId, {required double increment, WeightGrid? grid}) => _db.transaction(() async {
         final parent = await (_db.select(_db.workoutSets)..where((t) => t.id.equals(parentId))).getSingleOrNull();
         if (parent == null || parent.isFollowUp) return;
         final sets = await _setsOf(parent.sessionExerciseId);
@@ -636,7 +647,7 @@ class SessionRepository {
           if (s.setType != 'drop') continue;
           if (!s.completed) {
             final pct = s.technique == dropTechnique ? programDropPct : defaultDropPct;
-            final w = dropWeight(from, pct: pct, increment: increment);
+            final w = _drop(from, pct, increment, grid);
             await (_db.update(_db.workoutSets)..where((t) => t.id.equals(s.id))).write(WorkoutSetsCompanion(weight: Value(w)));
             from = w;
           } else {
@@ -644,6 +655,14 @@ class SessionRepository {
           }
         }
       });
+
+  /// A drop's load: [pct] % lighter, on a weight that exists (always at least one step lighter).
+  static double _drop(double from, int pct, double increment, WeightGrid? grid) {
+    final w = dropWeight(from, pct: pct, increment: increment);
+    if (grid == null) return w;
+    final snapped = grid.snapDown(w);
+    return snapped < from - 0.01 ? snapped : (grid.previous(from) ?? w);
+  }
 
   Future<List<WorkoutSet>> _setsOf(int sessionExerciseId) => (_db.select(_db.workoutSets)
         ..where((t) => t.sessionExerciseId.equals(sessionExerciseId))

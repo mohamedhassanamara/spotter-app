@@ -19,6 +19,8 @@ class ReadinessCard extends ConsumerWidget {
     final source = ref.watch(healthSourceProvider);
     final overloaded = ref.watch(overloadedGroupsProvider);
     final energy = _energyYesterday(ref);
+    final body = ref.watch(energyProvider).describe();
+    final bodyLine = Text(body, key: const ValueKey('nutrition-line'), style: const TextStyle(color: AppColors.textSecondary, fontSize: 12));
 
     if (r == null) {
       return const Skeleton(height: 210, radius: Radii.card);
@@ -31,10 +33,13 @@ class ReadinessCard extends ConsumerWidget {
           const Icon(Icons.favorite_border_rounded, color: AppColors.textSecondary),
           const SizedBox(width: 10),
           Expanded(
-            child: Text(
-              'Readiness: no recovery data from ${source.name}. Suggestions use a neutral readiness.',
-              style: AppType.bodyS.copyWith(color: AppColors.textSecondary),
-            ),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(
+                'Readiness: no recovery data from ${source.name}. Suggestions use a neutral readiness.',
+                style: AppType.bodyS.copyWith(color: AppColors.textSecondary),
+              ),
+              if (body.isNotEmpty) ...[const SizedBox(height: 4), bodyLine],
+            ]),
           ),
           IconButton(
             tooltip: 'Refresh from Health',
@@ -133,6 +138,7 @@ class ReadinessCard extends ConsumerWidget {
                 ],
               ),
             ),
+          if (body.isNotEmpty) ...[const SizedBox(height: 8), bodyLine],
           const SizedBox(height: 8),
           Row(
             children: [

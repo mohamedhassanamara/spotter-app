@@ -5451,6 +5451,28 @@ class $DailyMetricsTable extends DailyMetrics
     type: DriftSqlType.double,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _dietaryKcalMeta = const VerificationMeta(
+    'dietaryKcal',
+  );
+  @override
+  late final GeneratedColumn<double> dietaryKcal = GeneratedColumn<double>(
+    'dietary_kcal',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _proteinGMeta = const VerificationMeta(
+    'proteinG',
+  );
+  @override
+  late final GeneratedColumn<double> proteinG = GeneratedColumn<double>(
+    'protein_g',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _readinessScoreMeta = const VerificationMeta(
     'readinessScore',
   );
@@ -5518,6 +5540,8 @@ class $DailyMetricsTable extends DailyMetrics
     restingHr,
     sleepMinutes,
     activeEnergyKcal,
+    dietaryKcal,
+    proteinG,
     readinessScore,
     readinessBand,
     calibrating,
@@ -5572,6 +5596,21 @@ class $DailyMetricsTable extends DailyMetrics
           data['active_energy_kcal']!,
           _activeEnergyKcalMeta,
         ),
+      );
+    }
+    if (data.containsKey('dietary_kcal')) {
+      context.handle(
+        _dietaryKcalMeta,
+        dietaryKcal.isAcceptableOrUnknown(
+          data['dietary_kcal']!,
+          _dietaryKcalMeta,
+        ),
+      );
+    }
+    if (data.containsKey('protein_g')) {
+      context.handle(
+        _proteinGMeta,
+        proteinG.isAcceptableOrUnknown(data['protein_g']!, _proteinGMeta),
       );
     }
     if (data.containsKey('readiness_score')) {
@@ -5647,6 +5686,14 @@ class $DailyMetricsTable extends DailyMetrics
         DriftSqlType.double,
         data['${effectivePrefix}active_energy_kcal'],
       ),
+      dietaryKcal: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}dietary_kcal'],
+      ),
+      proteinG: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}protein_g'],
+      ),
       readinessScore: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}readiness_score'],
@@ -5682,6 +5729,10 @@ class DailyMetric extends DataClass implements Insertable<DailyMetric> {
   final double? restingHr;
   final double? sleepMinutes;
   final double? activeEnergyKcal;
+
+  /// v10: food logged in Health that day (kcal, protein g); null when nothing was logged.
+  final double? dietaryKcal;
+  final double? proteinG;
   final int? readinessScore;
   final String? readinessBand;
   final bool calibrating;
@@ -5693,6 +5744,8 @@ class DailyMetric extends DataClass implements Insertable<DailyMetric> {
     this.restingHr,
     this.sleepMinutes,
     this.activeEnergyKcal,
+    this.dietaryKcal,
+    this.proteinG,
     this.readinessScore,
     this.readinessBand,
     required this.calibrating,
@@ -5714,6 +5767,12 @@ class DailyMetric extends DataClass implements Insertable<DailyMetric> {
     }
     if (!nullToAbsent || activeEnergyKcal != null) {
       map['active_energy_kcal'] = Variable<double>(activeEnergyKcal);
+    }
+    if (!nullToAbsent || dietaryKcal != null) {
+      map['dietary_kcal'] = Variable<double>(dietaryKcal);
+    }
+    if (!nullToAbsent || proteinG != null) {
+      map['protein_g'] = Variable<double>(proteinG);
     }
     if (!nullToAbsent || readinessScore != null) {
       map['readiness_score'] = Variable<int>(readinessScore);
@@ -5742,6 +5801,12 @@ class DailyMetric extends DataClass implements Insertable<DailyMetric> {
       activeEnergyKcal: activeEnergyKcal == null && nullToAbsent
           ? const Value.absent()
           : Value(activeEnergyKcal),
+      dietaryKcal: dietaryKcal == null && nullToAbsent
+          ? const Value.absent()
+          : Value(dietaryKcal),
+      proteinG: proteinG == null && nullToAbsent
+          ? const Value.absent()
+          : Value(proteinG),
       readinessScore: readinessScore == null && nullToAbsent
           ? const Value.absent()
           : Value(readinessScore),
@@ -5765,6 +5830,8 @@ class DailyMetric extends DataClass implements Insertable<DailyMetric> {
       restingHr: serializer.fromJson<double?>(json['restingHr']),
       sleepMinutes: serializer.fromJson<double?>(json['sleepMinutes']),
       activeEnergyKcal: serializer.fromJson<double?>(json['activeEnergyKcal']),
+      dietaryKcal: serializer.fromJson<double?>(json['dietaryKcal']),
+      proteinG: serializer.fromJson<double?>(json['proteinG']),
       readinessScore: serializer.fromJson<int?>(json['readinessScore']),
       readinessBand: serializer.fromJson<String?>(json['readinessBand']),
       calibrating: serializer.fromJson<bool>(json['calibrating']),
@@ -5781,6 +5848,8 @@ class DailyMetric extends DataClass implements Insertable<DailyMetric> {
       'restingHr': serializer.toJson<double?>(restingHr),
       'sleepMinutes': serializer.toJson<double?>(sleepMinutes),
       'activeEnergyKcal': serializer.toJson<double?>(activeEnergyKcal),
+      'dietaryKcal': serializer.toJson<double?>(dietaryKcal),
+      'proteinG': serializer.toJson<double?>(proteinG),
       'readinessScore': serializer.toJson<int?>(readinessScore),
       'readinessBand': serializer.toJson<String?>(readinessBand),
       'calibrating': serializer.toJson<bool>(calibrating),
@@ -5795,6 +5864,8 @@ class DailyMetric extends DataClass implements Insertable<DailyMetric> {
     Value<double?> restingHr = const Value.absent(),
     Value<double?> sleepMinutes = const Value.absent(),
     Value<double?> activeEnergyKcal = const Value.absent(),
+    Value<double?> dietaryKcal = const Value.absent(),
+    Value<double?> proteinG = const Value.absent(),
     Value<int?> readinessScore = const Value.absent(),
     Value<String?> readinessBand = const Value.absent(),
     bool? calibrating,
@@ -5808,6 +5879,8 @@ class DailyMetric extends DataClass implements Insertable<DailyMetric> {
     activeEnergyKcal: activeEnergyKcal.present
         ? activeEnergyKcal.value
         : this.activeEnergyKcal,
+    dietaryKcal: dietaryKcal.present ? dietaryKcal.value : this.dietaryKcal,
+    proteinG: proteinG.present ? proteinG.value : this.proteinG,
     readinessScore: readinessScore.present
         ? readinessScore.value
         : this.readinessScore,
@@ -5829,6 +5902,10 @@ class DailyMetric extends DataClass implements Insertable<DailyMetric> {
       activeEnergyKcal: data.activeEnergyKcal.present
           ? data.activeEnergyKcal.value
           : this.activeEnergyKcal,
+      dietaryKcal: data.dietaryKcal.present
+          ? data.dietaryKcal.value
+          : this.dietaryKcal,
+      proteinG: data.proteinG.present ? data.proteinG.value : this.proteinG,
       readinessScore: data.readinessScore.present
           ? data.readinessScore.value
           : this.readinessScore,
@@ -5853,6 +5930,8 @@ class DailyMetric extends DataClass implements Insertable<DailyMetric> {
           ..write('restingHr: $restingHr, ')
           ..write('sleepMinutes: $sleepMinutes, ')
           ..write('activeEnergyKcal: $activeEnergyKcal, ')
+          ..write('dietaryKcal: $dietaryKcal, ')
+          ..write('proteinG: $proteinG, ')
           ..write('readinessScore: $readinessScore, ')
           ..write('readinessBand: $readinessBand, ')
           ..write('calibrating: $calibrating, ')
@@ -5869,6 +5948,8 @@ class DailyMetric extends DataClass implements Insertable<DailyMetric> {
     restingHr,
     sleepMinutes,
     activeEnergyKcal,
+    dietaryKcal,
+    proteinG,
     readinessScore,
     readinessBand,
     calibrating,
@@ -5884,6 +5965,8 @@ class DailyMetric extends DataClass implements Insertable<DailyMetric> {
           other.restingHr == this.restingHr &&
           other.sleepMinutes == this.sleepMinutes &&
           other.activeEnergyKcal == this.activeEnergyKcal &&
+          other.dietaryKcal == this.dietaryKcal &&
+          other.proteinG == this.proteinG &&
           other.readinessScore == this.readinessScore &&
           other.readinessBand == this.readinessBand &&
           other.calibrating == this.calibrating &&
@@ -5897,6 +5980,8 @@ class DailyMetricsCompanion extends UpdateCompanion<DailyMetric> {
   final Value<double?> restingHr;
   final Value<double?> sleepMinutes;
   final Value<double?> activeEnergyKcal;
+  final Value<double?> dietaryKcal;
+  final Value<double?> proteinG;
   final Value<int?> readinessScore;
   final Value<String?> readinessBand;
   final Value<bool> calibrating;
@@ -5909,6 +5994,8 @@ class DailyMetricsCompanion extends UpdateCompanion<DailyMetric> {
     this.restingHr = const Value.absent(),
     this.sleepMinutes = const Value.absent(),
     this.activeEnergyKcal = const Value.absent(),
+    this.dietaryKcal = const Value.absent(),
+    this.proteinG = const Value.absent(),
     this.readinessScore = const Value.absent(),
     this.readinessBand = const Value.absent(),
     this.calibrating = const Value.absent(),
@@ -5922,6 +6009,8 @@ class DailyMetricsCompanion extends UpdateCompanion<DailyMetric> {
     this.restingHr = const Value.absent(),
     this.sleepMinutes = const Value.absent(),
     this.activeEnergyKcal = const Value.absent(),
+    this.dietaryKcal = const Value.absent(),
+    this.proteinG = const Value.absent(),
     this.readinessScore = const Value.absent(),
     this.readinessBand = const Value.absent(),
     this.calibrating = const Value.absent(),
@@ -5936,6 +6025,8 @@ class DailyMetricsCompanion extends UpdateCompanion<DailyMetric> {
     Expression<double>? restingHr,
     Expression<double>? sleepMinutes,
     Expression<double>? activeEnergyKcal,
+    Expression<double>? dietaryKcal,
+    Expression<double>? proteinG,
     Expression<int>? readinessScore,
     Expression<String>? readinessBand,
     Expression<bool>? calibrating,
@@ -5949,6 +6040,8 @@ class DailyMetricsCompanion extends UpdateCompanion<DailyMetric> {
       if (restingHr != null) 'resting_hr': restingHr,
       if (sleepMinutes != null) 'sleep_minutes': sleepMinutes,
       if (activeEnergyKcal != null) 'active_energy_kcal': activeEnergyKcal,
+      if (dietaryKcal != null) 'dietary_kcal': dietaryKcal,
+      if (proteinG != null) 'protein_g': proteinG,
       if (readinessScore != null) 'readiness_score': readinessScore,
       if (readinessBand != null) 'readiness_band': readinessBand,
       if (calibrating != null) 'calibrating': calibrating,
@@ -5964,6 +6057,8 @@ class DailyMetricsCompanion extends UpdateCompanion<DailyMetric> {
     Value<double?>? restingHr,
     Value<double?>? sleepMinutes,
     Value<double?>? activeEnergyKcal,
+    Value<double?>? dietaryKcal,
+    Value<double?>? proteinG,
     Value<int?>? readinessScore,
     Value<String?>? readinessBand,
     Value<bool>? calibrating,
@@ -5977,6 +6072,8 @@ class DailyMetricsCompanion extends UpdateCompanion<DailyMetric> {
       restingHr: restingHr ?? this.restingHr,
       sleepMinutes: sleepMinutes ?? this.sleepMinutes,
       activeEnergyKcal: activeEnergyKcal ?? this.activeEnergyKcal,
+      dietaryKcal: dietaryKcal ?? this.dietaryKcal,
+      proteinG: proteinG ?? this.proteinG,
       readinessScore: readinessScore ?? this.readinessScore,
       readinessBand: readinessBand ?? this.readinessBand,
       calibrating: calibrating ?? this.calibrating,
@@ -6003,6 +6100,12 @@ class DailyMetricsCompanion extends UpdateCompanion<DailyMetric> {
     }
     if (activeEnergyKcal.present) {
       map['active_energy_kcal'] = Variable<double>(activeEnergyKcal.value);
+    }
+    if (dietaryKcal.present) {
+      map['dietary_kcal'] = Variable<double>(dietaryKcal.value);
+    }
+    if (proteinG.present) {
+      map['protein_g'] = Variable<double>(proteinG.value);
     }
     if (readinessScore.present) {
       map['readiness_score'] = Variable<int>(readinessScore.value);
@@ -6033,6 +6136,8 @@ class DailyMetricsCompanion extends UpdateCompanion<DailyMetric> {
           ..write('restingHr: $restingHr, ')
           ..write('sleepMinutes: $sleepMinutes, ')
           ..write('activeEnergyKcal: $activeEnergyKcal, ')
+          ..write('dietaryKcal: $dietaryKcal, ')
+          ..write('proteinG: $proteinG, ')
           ..write('readinessScore: $readinessScore, ')
           ..write('readinessBand: $readinessBand, ')
           ..write('calibrating: $calibrating, ')
@@ -12888,6 +12993,8 @@ typedef $$DailyMetricsTableCreateCompanionBuilder =
       Value<double?> restingHr,
       Value<double?> sleepMinutes,
       Value<double?> activeEnergyKcal,
+      Value<double?> dietaryKcal,
+      Value<double?> proteinG,
       Value<int?> readinessScore,
       Value<String?> readinessBand,
       Value<bool> calibrating,
@@ -12902,6 +13009,8 @@ typedef $$DailyMetricsTableUpdateCompanionBuilder =
       Value<double?> restingHr,
       Value<double?> sleepMinutes,
       Value<double?> activeEnergyKcal,
+      Value<double?> dietaryKcal,
+      Value<double?> proteinG,
       Value<int?> readinessScore,
       Value<String?> readinessBand,
       Value<bool> calibrating,
@@ -12941,6 +13050,16 @@ class $$DailyMetricsTableFilterComposer
 
   ColumnFilters<double> get activeEnergyKcal => $composableBuilder(
     column: $table.activeEnergyKcal,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get dietaryKcal => $composableBuilder(
+    column: $table.dietaryKcal,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get proteinG => $composableBuilder(
+    column: $table.proteinG,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -13004,6 +13123,16 @@ class $$DailyMetricsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<double> get dietaryKcal => $composableBuilder(
+    column: $table.dietaryKcal,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get proteinG => $composableBuilder(
+    column: $table.proteinG,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<int> get readinessScore => $composableBuilder(
     column: $table.readinessScore,
     builder: (column) => ColumnOrderings(column),
@@ -13057,6 +13186,14 @@ class $$DailyMetricsTableAnnotationComposer
     column: $table.activeEnergyKcal,
     builder: (column) => column,
   );
+
+  GeneratedColumn<double> get dietaryKcal => $composableBuilder(
+    column: $table.dietaryKcal,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get proteinG =>
+      $composableBuilder(column: $table.proteinG, builder: (column) => column);
 
   GeneratedColumn<int> get readinessScore => $composableBuilder(
     column: $table.readinessScore,
@@ -13118,6 +13255,8 @@ class $$DailyMetricsTableTableManager
                 Value<double?> restingHr = const Value.absent(),
                 Value<double?> sleepMinutes = const Value.absent(),
                 Value<double?> activeEnergyKcal = const Value.absent(),
+                Value<double?> dietaryKcal = const Value.absent(),
+                Value<double?> proteinG = const Value.absent(),
                 Value<int?> readinessScore = const Value.absent(),
                 Value<String?> readinessBand = const Value.absent(),
                 Value<bool> calibrating = const Value.absent(),
@@ -13130,6 +13269,8 @@ class $$DailyMetricsTableTableManager
                 restingHr: restingHr,
                 sleepMinutes: sleepMinutes,
                 activeEnergyKcal: activeEnergyKcal,
+                dietaryKcal: dietaryKcal,
+                proteinG: proteinG,
                 readinessScore: readinessScore,
                 readinessBand: readinessBand,
                 calibrating: calibrating,
@@ -13144,6 +13285,8 @@ class $$DailyMetricsTableTableManager
                 Value<double?> restingHr = const Value.absent(),
                 Value<double?> sleepMinutes = const Value.absent(),
                 Value<double?> activeEnergyKcal = const Value.absent(),
+                Value<double?> dietaryKcal = const Value.absent(),
+                Value<double?> proteinG = const Value.absent(),
                 Value<int?> readinessScore = const Value.absent(),
                 Value<String?> readinessBand = const Value.absent(),
                 Value<bool> calibrating = const Value.absent(),
@@ -13156,6 +13299,8 @@ class $$DailyMetricsTableTableManager
                 restingHr: restingHr,
                 sleepMinutes: sleepMinutes,
                 activeEnergyKcal: activeEnergyKcal,
+                dietaryKcal: dietaryKcal,
+                proteinG: proteinG,
                 readinessScore: readinessScore,
                 readinessBand: readinessBand,
                 calibrating: calibrating,
