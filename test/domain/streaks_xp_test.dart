@@ -1,89 +1,11 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:spotter/core/domain/training.dart';
-import 'package:spotter/features/gamification/domain/streaks.dart';
 import 'package:spotter/features/gamification/domain/xp.dart';
 
 // Mondays: 2026-01-05, 01-12, 01-19, 01-26.
 DateTime d(int month, int day) => DateTime(2026, month, day, 18);
 
 void main() {
-  const calc = StreakCalculator();
-
-  group('weekly streak', () {
-    test('smart rest lowers the goal; a missed week breaks the streak', () {
-      final r = calc.compute(
-        sessionDays: [
-          d(1, 5), d(1, 6), d(1, 7), // week 1: 3 sessions
-          d(1, 12), d(1, 14), // week 2: 2 sessions + 1 smart rest
-          d(1, 20), // week 3: 1 session
-          d(1, 26), d(1, 27), d(1, 28), // week 4 (current): 3 sessions
-        ],
-        redDays: {DateTime(2026, 1, 13)},
-        goal: 3,
-        now: d(1, 28),
-      );
-      expect(r.weeks.map((w) => w.met).toList(), [true, true, false, true]);
-      expect(r.weeks[1].effectiveGoal, 2);
-      expect(r.current, 1);
-      expect(r.longest, 2);
-    });
-
-    test('smart rest is capped at 2 per week', () {
-      final r = calc.compute(
-        sessionDays: [d(1, 5)],
-        redDays: {DateTime(2026, 1, 6), DateTime(2026, 1, 7), DateTime(2026, 1, 8)},
-        goal: 6,
-        now: d(1, 11),
-      );
-      expect(r.weeks.single.smartRestDays, 2);
-      expect(r.weeks.single.effectiveGoal, 4);
-    });
-
-    test('a Red day you trained on is not a smart rest day', () {
-      final r = calc.compute(sessionDays: [d(1, 5)], redDays: {DateTime(2026, 1, 5)}, goal: 6, now: d(1, 11));
-      expect(r.weeks.single.smartRestDays, 0);
-    });
-
-    test('future Red days never count', () {
-      final r = calc.compute(sessionDays: [d(1, 5)], redDays: {DateTime(2026, 1, 10)}, goal: 6, now: d(1, 7));
-      expect(r.weeks.single.smartRestDays, 0);
-    });
-
-    test('an unfinished current week does not break the streak', () {
-      final r = calc.compute(
-        sessionDays: [d(1, 5), d(1, 6), d(1, 12), d(1, 13)],
-        redDays: const {},
-        goal: 2,
-        now: d(1, 20),
-      );
-      expect(r.current, 2);
-      expect(r.thisWeek.sessions, 0);
-    });
-
-    test('a Red day on a planned rest day is planned rest, not smart rest', () {
-      // 2026-01-07 is a Wednesday, 2026-01-11 a Sunday (planned rest); 2026-01-08 a Thursday.
-      final r = calc.compute(
-        sessionDays: [d(1, 5)],
-        redDays: {DateTime(2026, 1, 7), DateTime(2026, 1, 11), DateTime(2026, 1, 8)},
-        goal: 5,
-        now: d(1, 11),
-        plannedRestWeekdays: {DateTime.wednesday, DateTime.sunday},
-      );
-      expect(r.weeks.single.smartRestDays, 1);
-      expect(r.weeks.single.effectiveGoal, 4);
-    });
-
-    test('total smart rest days for achievements', () {
-      expect(
-        calc.totalSmartRestDays(
-          sessionDays: [d(1, 5)],
-          redDays: {DateTime(2026, 1, 5), DateTime(2026, 1, 6), DateTime(2026, 1, 7), DateTime(2026, 1, 8), DateTime(2026, 1, 13)},
-          now: d(1, 20),
-        ),
-        3, // week 1: 3 eligible → capped at 2; week 2: 1
-      );
-    });
-  });
 
   group('XP', () {
     const xp = XpRules();

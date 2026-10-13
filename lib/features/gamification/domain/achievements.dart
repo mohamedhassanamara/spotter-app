@@ -5,9 +5,10 @@ import '../../../core/domain/training.dart';
 enum AchievementType {
   sessions,
   cleanSessionStreak,
-  smartRestDays,
   comebacks,
-  weeklyStreak,
+
+  /// Longest day streak (Liftoff-style: no more than two rest days in a row).
+  streakDays,
   bestExerciseTier,
   discipline,
   prs,
@@ -54,9 +55,8 @@ class AchievementStats {
   const AchievementStats({
     this.sessions = 0,
     this.longestCleanSessionStreak = 0,
-    this.smartRestDays = 0,
     this.comebacks = 0,
-    this.longestWeeklyStreak = 0,
+    this.longestStreakDays = 0,
     this.bestExerciseTierIndex = -1,
     this.disciplinePct30,
     this.workingSets30 = 0,
@@ -67,9 +67,8 @@ class AchievementStats {
 
   final int sessions;
   final int longestCleanSessionStreak;
-  final int smartRestDays;
   final int comebacks;
-  final int longestWeeklyStreak;
+  final int longestStreakDays;
   final int bestExerciseTierIndex;
   final double? disciplinePct30;
   final int workingSets30;
@@ -86,12 +85,10 @@ class AchievementStats {
         return sessions.toDouble();
       case AchievementType.cleanSessionStreak:
         return longestCleanSessionStreak.toDouble();
-      case AchievementType.smartRestDays:
-        return smartRestDays.toDouble();
       case AchievementType.comebacks:
         return comebacks.toDouble();
-      case AchievementType.weeklyStreak:
-        return longestWeeklyStreak.toDouble();
+      case AchievementType.streakDays:
+        return longestStreakDays.toDouble();
       case AchievementType.bestExerciseTier:
         return bestExerciseTierIndex.toDouble();
       case AchievementType.discipline:

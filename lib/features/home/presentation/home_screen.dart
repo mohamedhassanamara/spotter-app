@@ -9,6 +9,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/common.dart';
 import '../../../router.dart';
 import '../../coach/domain/suggestion_engine.dart';
+import '../../gamification/domain/streaks.dart';
 import '../../ranks/presentation/progress_screen.dart' show enterBodyweight;
 import '../../ranks/presentation/rank_badge.dart';
 import '../../readiness/presentation/readiness_card.dart';
@@ -298,35 +299,37 @@ class _Streak extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final streak = ref.watch(streakProvider);
     final days = ref.watch(dayStreakProvider);
     final history = ref.watch(historyProvider).value;
-    final red = ref.watch(redDaysProvider);
     final now = ref.watch(clockProvider)();
-    if (streak == null || history == null) {
+    if (days == null || history == null) {
       return const Padding(padding: EdgeInsets.only(top: 22), child: Skeleton(height: 120, radius: Radii.card));
     }
-    final week = streak.thisWeek;
     final monday = weekStart(now);
     final trained = {for (final s in history.inWeek(now)) dateOnly(s.startedAt)};
     final today = dateOnly(now);
-    final plannedRest = ref.watch(plannedRestWeekdaysProvider);
     DayDotState stateFor(DateTime d) {
       if (trained.contains(d)) return DayDotState.trained;
-      if (plannedRest.contains(d.weekday)) return DayDotState.plannedRest;
       if (d.isAfter(today)) return DayDotState.future;
-      if (red.contains(d)) return DayDotState.smartRest;
       if (d == today) return DayDotState.today;
       return DayDotState.empty;
     }
 
+    final (text, color) = switch (days.safety) {
+      StreakSafety.trainedToday => ('Safe: trained today', AppColors.green),
+      StreakSafety.safe => ('Safe: trained yesterday, no rest days used', AppColors.green),
+      StreakSafety.oneRestDay => ('1 rest day used', AppColors.warning),
+      StreakSafety.lastChance => ('Last chance: train today or the streak resets', AppColors.danger),
+      StreakSafety.none => ('Your next workout starts a new streak', AppColors.textSecondary),
+    };
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         const SectionLabel('Streak'),
         GameCard(
+          key: const ValueKey('streak-card'),
           onTap: () => context.go(Routes.profile),
-          accent: (days?.days ?? 0) > 0 ? AppColors.warning : null,
+          accent: days.days > 0 ? color : null,
           child: Column(
             children: [
               Row(
@@ -335,37 +338,26 @@ class _Streak extends ConsumerWidget {
                   const SizedBox(width: 10),
                   Expanded(
                     child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      Text('${days?.days ?? 0}-day streak', key: const ValueKey('day-streak'), style: AppType.title),
-                      Text('Longest ${days?.longestDays ?? 0} days', style: AppType.bodyS.copyWith(color: AppColors.textSecondary)),
+                      Text('${days.days}-day streak', key: const ValueKey('day-streak'), style: AppType.title),
+                      Text('Longest ${days.longestDays} days', style: AppType.bodyS.copyWith(color: AppColors.textSecondary)),
                     ]),
-                  ),
-                  Text(
-                    '${week.sessions}/${week.effectiveGoal}',
-                    style: AppType.number.copyWith(color: week.met ? AppColors.primary : AppColors.textPrimary),
                   ),
                 ],
               ),
               const SizedBox(height: 14),
               DayDots(states: [for (var i = 0; i < 7; i++) stateFor(addDays(monday, i))]),
-              if (days != null && days.days > 0 && !days.met)
-                Padding(
-                  padding: const EdgeInsets.only(top: 10),
-                  child: Text(
-                    days.frozen
-                        ? 'Streak paused: ${days.sessionsNeeded} more session${days.sessionsNeeded == 1 ? '' : 's'} needed and '
-                            '${days.daysLeftInWeek} day${days.daysLeftInWeek == 1 ? '' : 's'} left. It ends on Sunday below ${days.goal}.'
-                        : '${days.sessionsNeeded} more session${days.sessionsNeeded == 1 ? '' : 's'} by Sunday keeps it going.',
-                    style: AppType.bodyS.copyWith(color: days.frozen ? AppColors.danger : AppColors.textSecondary),
-                  ),
+              const SizedBox(height: 10),
+              Row(children: [
+                Icon(
+                  days.safety == StreakSafety.lastChance ? Icons.warning_amber_rounded : Icons.shield_outlined,
+                  size: 18,
+                  color: color,
                 ),
-              if (week.smartRestDays > 0)
-                Padding(
-                  padding: const EdgeInsets.only(top: 10),
-                  child: Text(
-                    '${week.smartRestDays} smart rest day${week.smartRestDays == 1 ? '' : 's'} lowered this week\'s goal to ${week.effectiveGoal}.',
-                    style: AppType.bodyS.copyWith(color: AppColors.accent),
-                  ),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(text, key: const ValueKey('streak-safety'), style: AppType.bodyS.copyWith(color: color, fontWeight: FontWeight.w700)),
                 ),
+              ]),
             ],
           ),
         ),

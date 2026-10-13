@@ -111,14 +111,6 @@ final todayReadinessProvider = Provider<ReadinessResult?>((ref) {
   return ref.watch(readinessRepositoryProvider).computeFor(ref.watch(clockProvider)(), rows);
 });
 
-final redDaysProvider = Provider<Set<DateTime>>((ref) {
-  final rows = ref.watch(dailyMetricsProvider).value ?? const [];
-  return {
-    for (final r in rows)
-      if (r.readinessBand == ReadinessBand.red.name) parseDayKey(r.date),
-  };
-});
-
 final gymRepositoryProvider = Provider((ref) => GymRepository(ref.watch(databaseProvider)));
 
 /// Settings → My gym equipment (with per-exercise stack overrides).
@@ -240,34 +232,27 @@ final totalXpProvider = StreamProvider<int>((ref) => ref.watch(gamificationRepos
 
 final levelProvider = Provider<LevelInfo>((ref) => levelFor(ref.watch(totalXpProvider).value ?? 0));
 
-final streakProvider = Provider<StreakResult?>((ref) {
-  final history = ref.watch(historyProvider).value;
-  if (history == null) return null;
-  return const StreakCalculator().compute(
-    plannedRestWeekdays: ref.watch(plannedRestWeekdaysProvider),
-    sessionDays: [for (final s in history.sessions) s.startedAt],
-    redDays: ref.watch(redDaysProvider),
-    goal: ref.watch(currentSettingsProvider).weeklyGoal,
-    now: ref.watch(clockProvider)(),
-  );
-});
-
 /// Streak carried over from Liftoff (setting `streak_offset`), if any.
 final streakOffsetProvider = StreamProvider<StreakOffset?>(
   (ref) => ref.watch(databaseProvider).watchSettings().map((m) => StreakOffset.decode(m[StreakOffset.settingKey])),
 );
 
-/// Liftoff-style day streak on top of the weekly goal.
+/// Liftoff-style day streak: breaks only after three days in a row without a workout.
 final dayStreakProvider = Provider<DayStreak?>((ref) {
-  final weekly = ref.watch(streakProvider);
   final history = ref.watch(historyProvider).value;
-  if (weekly == null || history == null) return null;
+  if (history == null) return null;
   return const DayStreakCalculator().compute(
-    weekly: weekly,
-    sessionDays: [for (final s in history.sessions) s.startedAt],
+    workoutStarts: streakWorkoutStarts(history),
     now: ref.watch(clockProvider)(),
     offset: ref.watch(streakOffsetProvider).value,
   );
+});
+
+/// When to remind about the streak (18:00 on the last-chance day), or null.
+final streakReminderProvider = Provider<({DateTime at, String body})?>((ref) {
+  final s = ref.watch(dayStreakProvider);
+  if (s == null) return null;
+  return streakReminderPlan(s, ref.watch(clockProvider)(), enabled: ref.watch(currentSettingsProvider).streakReminder);
 });
 
 final disciplineProvider = Provider<double?>((ref) {
@@ -288,9 +273,8 @@ final questsProvider = StreamProvider<List<QuestProgress>>((ref) async* {
   final now = ref.watch(clockProvider)();
   final repo = ref.watch(gamificationRepositoryProvider);
   final history = await ref.watch(historyProvider.future);
-  final settings = ref.watch(currentSettingsProvider);
   await repo.ensureQuests(now, () => const QuestEngine().generate(QuestGenInput(
-        weeklyGoal: settings.weeklyGoal,
+        sessionsPerWeek: sessionsPerWeekLast4([for (final s in history.sessions) s.startedAt], now),
         groupSets4w: regionSetsLast4Weeks(history, now),
         disciplinePct: disciplineLast30(history, now),
         rpeLoggedPct: rpeLoggedPct(history, now),
@@ -315,13 +299,11 @@ final achievementStatsProvider = FutureProvider<AchievementStats>((ref) async {
   final bw = ref.watch(latestBodyWeightProvider).value?.kg ?? 0;
   return buildAchievementStats(
     history: history,
-    redDays: ref.watch(redDaysProvider),
-    weeklyGoal: ref.watch(currentSettingsProvider).weeklyGoal,
+    longestStreakDays: ref.watch(dayStreakProvider)?.longestDays ?? 0,
     now: ref.watch(clockProvider)(),
     bestTierIndex: RanksRepository.bestTierIndex(ranks),
     totalXp: ref.watch(totalXpProvider).value ?? 0,
     prCount: findPrs(history, bodyweightLoaded: bwIds, bodyweight: bw).length,
-    plannedRestWeekdays: ref.watch(plannedRestWeekdaysProvider),
   );
 });
 
@@ -420,7 +402,3 @@ final programRepositoryProvider = Provider((ref) => ProgramRepository(ref.watch(
 final programProvider = FutureProvider<Program>((ref) => ProgramRepository.load());
 
 
-
-/// Weekdays the program schedules as rest (Wednesday and Sunday for Min-Max Phase 2): planned rest
-/// for the streak, never "smart rest".
-final plannedRestWeekdaysProvider = Provider<Set<int>>((ref) => ref.watch(programProvider).value?.plannedRestWeekdays ?? const {});

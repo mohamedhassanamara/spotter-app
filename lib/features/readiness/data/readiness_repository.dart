@@ -136,11 +136,7 @@ class ReadinessRepository {
     });
   }
 
-  /// Days whose readiness band was Red (for smart rest).
-  Future<Set<DateTime>> redDays() async {
-    final rows = await (_db.select(_db.dailyMetrics)..where((t) => t.readinessBand.equals(ReadinessBand.red.name))).get();
-    return {for (final r in rows) parseDayKey(r.date)};
-  }
+
 }
 
 class BodyWeightRepository {

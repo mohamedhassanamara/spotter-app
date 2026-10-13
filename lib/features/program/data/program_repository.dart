@@ -230,8 +230,6 @@ class ProgramRepository {
         }
       }
       await _db.putSetting(routinesInstalledKey, '${definition['schema_version'] ?? 1}');
-      // The program trains 5 days a week (two planned rest days).
-      await _db.putSetting(SettingsModel.kWeeklyGoal, '${program.sessionsPerWeek}');
     });
     return skipped;
   }

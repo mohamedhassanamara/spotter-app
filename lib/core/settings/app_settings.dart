@@ -7,7 +7,7 @@ import '../domain/training.dart';
 class SettingsModel {
   const SettingsModel({
     this.onboarded = false,
-    this.weeklyGoal = 6,
+    this.streakReminder = true,
     this.increments = Increments.defaults,
     this.compoundRange = RepRange.compound,
     this.isolationRange = RepRange.isolation,
@@ -21,7 +21,8 @@ class SettingsModel {
   });
 
   final bool onboarded;
-  final int weeklyGoal;
+  /// 18:00 reminder on the streak's last-chance day (Settings → Streak).
+  final bool streakReminder;
   final Increments increments;
   final RepRange compoundRange;
   final RepRange isolationRange;
@@ -38,7 +39,7 @@ class SettingsModel {
   final int? restTotalSeconds;
 
   static const kOnboarded = 'onboarded';
-  static const kWeeklyGoal = 'weekly_goal';
+  static const kStreakReminder = 'streak_reminder';
   static const kIncrements = 'increments';
   static const kCompoundRange = 'compound_range';
   static const kIsolationRange = 'isolation_range';
@@ -74,7 +75,7 @@ class SettingsModel {
     final restEnds = m[kRestEndsAt];
     return SettingsModel(
       onboarded: m[kOnboarded] == 'true',
-      weeklyGoal: int.tryParse(m[kWeeklyGoal] ?? '') ?? 6,
+      streakReminder: m[kStreakReminder] != 'false',
       increments: increments,
       compoundRange: parseRange(m[kCompoundRange], RepRange.compound),
       isolationRange: parseRange(m[kIsolationRange], RepRange.isolation),

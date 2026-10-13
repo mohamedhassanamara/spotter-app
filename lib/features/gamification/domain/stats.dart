@@ -6,7 +6,6 @@ import '../../../core/domain/muscles.dart';
 import '../../coach/domain/guardrail.dart';
 import 'achievements.dart';
 import 'quests.dart';
-import 'streaks.dart';
 import 'xp.dart';
 
 class PrRecord {
@@ -47,23 +46,17 @@ int workingSetsLast30(TrainingHistory history, DateTime now) =>
 
 AchievementStats buildAchievementStats({
   required TrainingHistory history,
-  required Set<DateTime> redDays,
-  required int weeklyGoal,
+  required int longestStreakDays,
   required DateTime now,
   required int bestTierIndex,
   required int totalXp,
   required int prCount,
-  Set<int> plannedRestWeekdays = const {},
 }) {
-  const streaks = StreakCalculator();
-  final days = [for (final s in history.sessions) s.startedAt];
   return AchievementStats(
     sessions: history.sessions.length,
     longestCleanSessionStreak: longestCleanStreak([for (final s in history.sessions) s.hasOverrides]),
-    smartRestDays: streaks.totalSmartRestDays(sessionDays: days, redDays: redDays, now: now, plannedRestWeekdays: plannedRestWeekdays),
     comebacks: countComebacks(history.logsByExercise.values),
-    longestWeeklyStreak:
-        streaks.compute(sessionDays: days, redDays: redDays, goal: weeklyGoal, now: now, plannedRestWeekdays: plannedRestWeekdays).longest,
+    longestStreakDays: longestStreakDays,
     bestExerciseTierIndex: bestTierIndex,
     disciplinePct30: disciplineLast30(history, now),
     workingSets30: workingSetsLast30(history, now),

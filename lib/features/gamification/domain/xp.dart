@@ -9,7 +9,6 @@ class XpRules {
   static const int perWorkingSet = 10;
   static const int followBonus = 15;
   static const int perPr = 50;
-  static const int weeklyGoal = 100;
   static const int perQuest = 40;
 
   /// 0 XP for override sets; otherwise +10, +15 more when the suggestion was followed (±5 %).

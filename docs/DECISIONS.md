@@ -1369,3 +1369,46 @@ form reset, nutrition line).
   Ready/Recovering/Fatigued × compound/isolation over four histories and 1–4 routine sets);
   `suggestion_engine_test` updated; `canonical_week_migration_test` (restore with Red-day evidence,
   leave my own change). `docs/SUGGESTIONS_BEFORE_AFTER.md` regenerated.
+
+## Streak rework: Liftoff-style, no weekly goal, no fixed training days
+
+- **Rule** (`DayStreakCalculator`): every calendar day counts while the streak is alive, rest days
+  included. Up to **2** consecutive days without a workout are fine. When a **3rd** consecutive day
+  ends without one, the streak resets to 0, and the next workout starts it again at 1. A workout day is the
+  local calendar day a finished session *started* (a session crossing midnight belongs to the day it
+  started); sessions without a completed working set don't count (`streakWorkoutStarts`). Days are
+  compared as calendar days (UTC-normalised day numbers), so DST's 23/25-hour days are one day each,
+  and UTC timestamps count for their local day.
+- **Last-chance day** = the 3rd day after the last workout (two rest days behind you). That is when Home
+  says "Last chance: train today or the streak resets" and the reminder fires (18:00, "Train today to
+  keep your N-day streak."). The request called it "the 2nd consecutive day without a workout", but under
+  its own reset rule (reset only when the 3rd rest day *ends*) the day you must train is the 3rd, so
+  that's the one used. If you meant "train on the 2nd rest day", it's one constant: `maxRestDays`.
+- **Home safety line**: Safe: trained today; Safe: trained yesterday, no rest days used; 1 rest day
+  used; Last chance…; or "Your next workout starts a new streak" after a reset.
+- **Carry-over**: the 177-day Liftoff offset stands in for everything up to its date (counted as a
+  workout day); from that date on the new rule applies. A broken run's length counts its two safe rest
+  days. Longest stays ≥ 177. Settings → Streak keeps the "Carried-over streak" edit.
+- **Reminder**: local notification, one at a time, rescheduled whenever the streak changes (app start,
+  every finished workout, settings change). Toggle in Settings → Streak ("Last-chance reminder", on by
+  default; `streak_reminder`). Nothing is scheduled when the streak is 0 or 18:00 has passed.
+- **Removed**: the weekly session goal (setting, Settings stepper, onboarding step, the program
+  install writing it), the weekly streak (`StreakCalculator`, `WeekStatus`), smart rest (Red days lowering the goal),
+  planned rest days for the streak, the "goal still achievable / paused" logic, the weekly-goal XP bonus
+  (+100) and its summary banner, the smart-rest / planned-rest day dots, and the calendar's "goal met" checkmarks
+  (now a session count per week). Onboarding's third step now explains the streak instead.
+- **Adapted achievements** (keys kept, so earlier unlocks stay):
+  - `smart_rest` "Take 5 smart rest days" → `streak_14` "Two Weeks Unbroken": a 14-day streak;
+  - `streak_4` "Hit your weekly goal 4 weeks in a row" → a 28-day streak;
+  - `streak_12` "… 12 weeks in a row" → an 84-day streak.
+  New metric type `streakDays` (longest day streak, carry-over included); `smartRestDays` and
+  `weeklyStreak` are gone.
+- **Adapted quest**: "No overrides in N sessions" took N from the weekly goal − 1. It now uses your
+  average sessions per week over the last 4 weeks − 1 (clamped 2–6).
+- **Profile**: "This week: N sessions since Monday", display only.
+- Tests: `day_streak_test` (17: two rest days continue, 3rd ends → 0, workout after reset → 1, crossing
+  midnight, an empty workout through the history filter, DST in October and March, UTC timestamps,
+  carry-over incl. recomputation and sessions before the import, reminder timing),
+  `aggregation_quests_test` (adapted achievements, quest sizing); `streak_flow_test` (the three Home
+  states with screenshots in docs/screenshots/streak/, reset, carry-over + edit, reminder toggle,
+  Profile, no weekly goal in Settings).

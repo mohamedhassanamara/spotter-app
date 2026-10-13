@@ -178,9 +178,9 @@ class _RingPainter extends CustomPainter {
   bool shouldRepaint(covariant _RingPainter old) => old.value != value || old.color != color;
 }
 
-enum DayDotState { empty, trained, today, smartRest, plannedRest, future }
+enum DayDotState { empty, trained, today, future }
 
-/// Monday → Sunday dots for the weekly streak.
+/// Monday → Sunday dots: the days you trained this week.
 class DayDots extends StatelessWidget {
   const DayDots({super.key, required this.states});
   final List<DayDotState> states;
@@ -221,20 +221,6 @@ class DayDots extends StatelessWidget {
           width: size,
           height: size,
           decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: AppColors.primary, width: 2)),
-        );
-      case DayDotState.smartRest:
-        return Container(
-          width: size,
-          height: size,
-          decoration: BoxDecoration(color: AppColors.accent.withValues(alpha: 0.18), shape: BoxShape.circle),
-          child: const Icon(Icons.bedtime_rounded, size: 14, color: AppColors.accent),
-        );
-      case DayDotState.plannedRest:
-        return Container(
-          width: size,
-          height: size,
-          decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: AppColors.outline)),
-          child: const Icon(Icons.weekend_outlined, size: 13, color: AppColors.textTertiary),
         );
       case DayDotState.future:
         return Container(

@@ -75,13 +75,14 @@ class SessionActivity {
 
 class QuestGenInput {
   const QuestGenInput({
-    required this.weeklyGoal,
+    required this.sessionsPerWeek,
     required this.groupSets4w,
     required this.disciplinePct,
     required this.rpeLoggedPct,
   });
 
-  final int weeklyGoal;
+  /// Average finished sessions per week over the last 4 weeks (sizes the no-override quest).
+  final int sessionsPerWeek;
 
   /// Working sets per body region over the last 4 weeks (regions of primary muscles).
   final Map<BodyRegion, int> groupSets4w;
@@ -118,7 +119,7 @@ class QuestEngine {
     } else if (rpe == null || rpe < 90) {
       quests.add(const QuestDef(key: QuestKey.logRpe, target: 3));
     } else {
-      quests.add(QuestDef(key: QuestKey.noOverride, target: (input.weeklyGoal - 1).clamp(2, 6)));
+      quests.add(QuestDef(key: QuestKey.noOverride, target: (input.sessionsPerWeek - 1).clamp(2, 6)));
     }
     return quests;
   }
@@ -155,4 +156,11 @@ class QuestEngine {
         return week.length;
     }
   }
+}
+
+/// Average finished sessions per week over the 4 weeks before [now] (at least 1).
+int sessionsPerWeekLast4(Iterable<DateTime> sessionStarts, DateTime now) {
+  final from = now.subtract(const Duration(days: 28));
+  final n = sessionStarts.where((d) => d.isAfter(from) && !d.isAfter(now)).length;
+  return (n / 4).round().clamp(1, 14);
 }

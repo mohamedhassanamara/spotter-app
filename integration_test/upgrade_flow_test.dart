@@ -28,7 +28,7 @@ Future<void> _writeV2Install() async {
 
   await sql('INSERT INTO exercises (id, name, primary_muscles, secondary_muscles, equipment, mechanic, instructions, images) '
       "VALUES ('Barbell_Bench_Press_-_Medium_Grip', 'Barbell Bench Press - Medium Grip', '[\"chest\"]', '[\"triceps\"]', 'barbell', 'compound', '[]', '[]')");
-  for (final (k, v) in [('onboarded', 'true'), ('exercise_dataset_version', '1'), ('weekly_goal', '6'), ('rank_ladder_version', '2')]) {
+  for (final (k, v) in [('onboarded', 'true'), ('exercise_dataset_version', '1'), ('rank_ladder_version', '2')]) {
     await sql('INSERT INTO app_settings (key, value) VALUES (?, ?)', [k, v]);
   }
   await sql('INSERT INTO body_weights (measured_at, kg, source) VALUES (?, 80, ?)', [ago(const Duration(days: 3)), 'manual']);

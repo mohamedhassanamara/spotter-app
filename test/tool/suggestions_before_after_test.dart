@@ -54,7 +54,7 @@ void main() {
     final catalog = await ExerciseRepository(db).watchCatalog().first;
     final service = LiftoffImportService(db);
     await service.commit(await service.preview(File(path!).readAsStringSync(), catalog: catalog),
-        catalog: catalog, settings: const SettingsModel(weeklyGoal: 5), now: now);
+        catalog: catalog, settings: const SettingsModel(), now: now);
 
     final cat = await ExerciseRepository(db).watchCatalog().first;
     final history = await HistoryRepository(db).load(cat);

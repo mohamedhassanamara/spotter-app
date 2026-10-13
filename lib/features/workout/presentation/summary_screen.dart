@@ -36,16 +36,6 @@ class SummaryScreen extends ConsumerWidget {
       _Hero(s: s),
       _XpCard(s: s),
       _StatsRow(s: s),
-      if (s.weeklyGoalReached)
-        const GameCard(
-          accent: AppColors.primary,
-          glow: true,
-          child: Row(children: [
-            Icon(Icons.local_fire_department_rounded, color: AppColors.primary, size: 32),
-            SizedBox(width: 12),
-            Expanded(child: Text('Weekly goal complete! +100 XP', style: AppType.title)),
-          ]),
-        ),
       if (s.prs.isNotEmpty) _PrSection(prs: s.prs),
       if (s.rankChanges.any((r) => r.up) || s.rankDowns.isNotEmpty) _RankSection(s: s),
       if (s.flags.isNotEmpty || s.overrideSets > 0) _GuardrailSection(s: s),

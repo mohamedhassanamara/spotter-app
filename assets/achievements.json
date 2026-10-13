@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "description": "Achievement definitions. type is one of: sessions, cleanSessionStreak, smartRestDays, comebacks, weeklyStreak, bestExerciseTier (0=Iron, 1=Bronze, 2=Silver, 3=Gold, 4=Platinum, 5=Emerald, 6=Diamond, 7=Master, 8=Grandmaster, 9=Challenger), discipline (% over 30 days, needs 50+ sets), prs, totalVolumeKg, level. Unlocked when the metric >= threshold.",
+  "description": "Achievement definitions. type is one of: sessions, cleanSessionStreak, comebacks, streakDays (longest day streak), bestExerciseTier (0=Iron, 1=Bronze, 2=Silver, 3=Gold, 4=Platinum, 5=Emerald, 6=Diamond, 7=Master, 8=Grandmaster, 9=Challenger), discipline (% over 30 days, needs 50+ sets), prs, totalVolumeKg, level. Unlocked when the metric >= threshold.",
   "achievements": [
     {
       "key": "first_workout",
@@ -51,12 +51,12 @@
       "threshold": 30
     },
     {
-      "key": "smart_rest",
-      "title": "Smart Rest",
-      "description": "Take 5 smart rest days (Red readiness, no training).",
-      "icon": "bed",
-      "type": "smartRestDays",
-      "threshold": 5
+      "key": "streak_14",
+      "title": "Two Weeks Unbroken",
+      "description": "Keep a 14-day streak (no more than two rest days in a row).",
+      "icon": "fire",
+      "type": "streakDays",
+      "threshold": 14
     },
     {
       "key": "comeback",
@@ -77,18 +77,18 @@
     {
       "key": "streak_4",
       "title": "On a Roll",
-      "description": "Hit your weekly goal 4 weeks in a row.",
+      "description": "Keep a 28-day streak.",
       "icon": "fire",
-      "type": "weeklyStreak",
-      "threshold": 4
+      "type": "streakDays",
+      "threshold": 28
     },
     {
       "key": "streak_12",
       "title": "Unbreakable",
-      "description": "Hit your weekly goal 12 weeks in a row.",
+      "description": "Keep an 84-day streak.",
       "icon": "fire",
-      "type": "weeklyStreak",
-      "threshold": 12
+      "type": "streakDays",
+      "threshold": 84
     },
     {
       "key": "rank_silver",

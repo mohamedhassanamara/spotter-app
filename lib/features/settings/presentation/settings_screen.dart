@@ -35,13 +35,6 @@ class SettingsScreen extends ConsumerWidget {
           AppCard(
             padding: const EdgeInsets.symmetric(vertical: 4),
             child: Column(children: [
-              _CounterTile(
-                title: 'Weekly goal',
-                subtitle: 'Sessions per week for the streak',
-                value: '${s.weeklyGoal}',
-                onMinus: s.weeklyGoal > 1 ? () => ctrl.setWeeklyGoal(s.weeklyGoal - 1) : null,
-                onPlus: s.weeklyGoal < 14 ? () => ctrl.setWeeklyGoal(s.weeklyGoal + 1) : null,
-              ),
               ListTile(
                 title: const Text('Compound rep range'),
                 subtitle: const Text('Default for new routine exercises'),
@@ -165,7 +158,19 @@ class SettingsScreen extends ConsumerWidget {
             ),
           ),
           const SectionHeader('Streak'),
-          const AppCard(padding: EdgeInsets.symmetric(vertical: 4), child: _StreakOffsetTile()),
+          AppCard(
+            padding: const EdgeInsets.symmetric(vertical: 4),
+            child: Column(children: [
+              const _StreakOffsetTile(),
+              SwitchListTile(
+                key: const ValueKey('streak-reminder'),
+                title: const Text('Last-chance reminder'),
+                subtitle: const Text('18:00 on the day you must train to keep the streak (after two rest days)'),
+                value: s.streakReminder,
+                onChanged: ctrl.setStreakReminder,
+              ),
+            ]),
+          ),
           const SectionHeader('Export'),
           AppCard(
             child: Column(
@@ -335,8 +340,7 @@ class _ProgramTiles extends ConsumerWidget {
       ListTile(
         leading: const Icon(Icons.calendar_view_week_rounded),
         title: Text(program?.name ?? 'Program'),
-        subtitle: const Text('One fixed weekly template: the same sets, reps and effort every session. '
-            'Planned rest: Wednesday and Sunday.'),
+        subtitle: const Text('One fixed weekly template: the same sets, reps and effort every session. Train on any days you like.'),
       ),
       FutureBuilder<List<String>>(
         future: ProgramRepository.restoredSetCounts(ref.read(databaseProvider)),

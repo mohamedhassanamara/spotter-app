@@ -12,6 +12,7 @@ class NotificationService {
   bool _ready = false;
 
   static const int restTimerId = 1001;
+  static const int streakReminderId = 1002;
 
   Future<void> init() async {
     if (_ready) return;
@@ -66,5 +67,28 @@ class NotificationService {
   Future<void> cancelRest() async {
     await init();
     await _plugin.cancel(id: restTimerId);
+  }
+
+  /// The streak's last-chance reminder (one at a time; rescheduled whenever the streak changes).
+  Future<void> scheduleStreakReminder(DateTime at, {required String body}) async {
+    await init();
+    await _plugin.cancel(id: streakReminderId);
+    if (!at.isAfter(DateTime.now())) return;
+    await _plugin.zonedSchedule(
+      id: streakReminderId,
+      scheduledDate: tz.TZDateTime.from(at, tz.local),
+      notificationDetails: const NotificationDetails(
+        iOS: DarwinNotificationDetails(presentAlert: true, presentSound: true, presentBanner: true),
+        android: AndroidNotificationDetails('streak', 'Streak reminder', importance: Importance.defaultImportance),
+      ),
+      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+      title: 'Streak',
+      body: body,
+    );
+  }
+
+  Future<void> cancelStreakReminder() async {
+    await init();
+    await _plugin.cancel(id: streakReminderId);
   }
 }

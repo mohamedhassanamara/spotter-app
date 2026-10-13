@@ -35,7 +35,7 @@ void main() {
         body: DayDots(states: [
           DayDotState.trained,
           DayDotState.trained,
-          DayDotState.smartRest,
+          DayDotState.empty,
           DayDotState.today,
           DayDotState.future,
           DayDotState.future,
@@ -44,7 +44,6 @@ void main() {
       ),
     ));
     expect(find.byIcon(Icons.check_rounded), findsNWidgets(2));
-    expect(find.byIcon(Icons.bedtime_rounded), findsOneWidget);
     expect(find.text('M'), findsOneWidget);
   });
 }

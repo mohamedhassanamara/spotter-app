@@ -28,7 +28,7 @@ class SettingsController {
   final AppDatabase _db;
 
   Future<void> setOnboarded(bool v) => _db.putSetting(SettingsModel.kOnboarded, '$v');
-  Future<void> setWeeklyGoal(int v) => _db.putSetting(SettingsModel.kWeeklyGoal, '${v.clamp(1, 14)}');
+  Future<void> setStreakReminder(bool v) => _db.putSetting(SettingsModel.kStreakReminder, '$v');
   Future<void> setIncrement(Increments current, EquipmentKind kind, double v) =>
       _db.putSetting(SettingsModel.kIncrements, SettingsModel.encodeIncrements(current.copyWith(kind, v)));
   Future<void> setCompoundRange(RepRange r) => _db.putSetting(SettingsModel.kCompoundRange, SettingsModel.encodeRange(r));

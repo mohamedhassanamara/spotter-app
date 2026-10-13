@@ -12,7 +12,6 @@ import '../../../core/domain/muscles.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/common.dart';
 import '../../../router.dart';
-import '../../gamification/domain/streaks.dart';
 import '../../readiness/domain/readiness.dart';
 import '../domain/ranks.dart';
 import '../domain/body_regions.dart';
@@ -738,7 +737,6 @@ class _HistoryTabState extends ConsumerState<_HistoryTab> {
 
   @override
   Widget build(BuildContext context) {
-    final streak = ref.watch(streakProvider);
     final today = dateOnly(ref.watch(clockProvider)());
     return AsyncBody(
       value: ref.watch(historyProvider),
@@ -747,9 +745,6 @@ class _HistoryTabState extends ConsumerState<_HistoryTab> {
         for (final s in history.sessions) {
           (byDay[dateOnly(s.startedAt)] ??= []).add(s);
         }
-        final metWeeks = <DateTime>{
-          for (final w in streak?.weeks ?? const <WeekStatus>[]) if (w.met) w.weekStart,
-        };
         final monthEnd = DateTime(_month.year, _month.month + 1, 0);
         final rows = <DateTime>[];
         for (var w = weekStart(_month); !w.isAfter(monthEnd); w = addDays(w, 7)) {
@@ -818,9 +813,13 @@ class _HistoryTabState extends ConsumerState<_HistoryTab> {
                           ),
                         SizedBox(
                           width: 28,
-                          child: metWeeks.contains(w)
-                              ? const Icon(Icons.check_circle_rounded, size: 18, color: AppColors.green)
-                              : const SizedBox.shrink(),
+                          // Sessions that week (display only; there's no weekly goal).
+                          child: Center(
+                            child: Text(
+                              '${[for (var i = 0; i < 7; i++) ...?byDay[addDays(w, i)]].length}',
+                              style: AppType.bodyS.copyWith(fontSize: 12, color: AppColors.textTertiary),
+                            ),
+                          ),
                         ),
                       ],
                     ),

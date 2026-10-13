@@ -60,7 +60,7 @@ void main() {
     final csv = File(path!).readAsStringSync();
 
     final preview = await service.preview(csv, catalog: catalog);
-    final result = await service.commit(preview, catalog: catalog, settings: const SettingsModel(weeklyGoal: 5), now: now);
+    final result = await service.commit(preview, catalog: catalog, settings: const SettingsModel(), now: now);
     final again = await service.preview(csv, catalog: await ExerciseRepository(db).watchCatalog().first);
     expect(again.newSessions, isEmpty, reason: 'idempotent');
 

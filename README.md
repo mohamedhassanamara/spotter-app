@@ -152,10 +152,14 @@ Useful routes:
 
 ## Streak
 
-The streak is counted in days, like Liftoff. Every day counts, rest days included, as long as this
-week's session goal is still reachable. A week that ends below its goal breaks the streak, and smart
-rest days lower the goal. Your Liftoff streak (177 days on the import date) carries over as an offset
-that you can edit in Settings → Streak.
+The streak is counted in days, like Liftoff. There's no weekly goal and no fixed training days. Every
+calendar day counts while the streak is alive, rest days included. Up to two days in a row without a
+workout are fine; when a third one ends without one, the streak resets to 0, and the next workout
+starts it again at 1. A day counts when a finished workout (at least one completed working set)
+*started* that day. Home shows how safe it is ("Safe: trained today" / "1 rest day used" / "Last
+chance: train today or the streak resets"), and an optional reminder fires at 18:00 on the
+last-chance day (Settings → Streak). Your Liftoff streak (177 days on the import date) carries over as
+an offset that you can edit in Settings → Streak.
 
 ## Muscle recovery
 
@@ -216,7 +220,7 @@ Importing the same file again only adds sessions that aren't already in the app.
   How tiers come from the anchors, and the full anchor table, are in `docs/DECISIONS.md`
   (section 8).
 - **Achievements:** `assets/achievements.json`. Each has a key, title, description, icon, a metric
-  `type` (sessions, cleanSessionStreak, smartRestDays, comebacks, weeklyStreak, bestExerciseTier (tier index 0–9),
+  `type` (sessions, cleanSessionStreak, comebacks, streakDays, bestExerciseTier (tier index 0–9),
   discipline, prs, totalVolumeKg or level) and a `threshold`.
 - **Muscle mapping for the rest of the library:** `lib/features/library/domain/muscle_mapping.dart`
   derives contributions from the dataset's muscles plus name keywords (incline → upper chest, lateral
@@ -227,7 +231,7 @@ Importing the same file again only adds sessions that aren't already in the app.
   again and bump `exerciseDatasetVersion` in `lib/features/library/data/exercise_repository.dart`.
 - **Liftoff names:** `assets/liftoff_name_map.json` maps Liftoff exercise names to library ids, or defines
   a custom exercise for them.
-- **Increments, rep ranges, RIR, rest times and the weekly goal:** in the app's Settings.
+- **Gym equipment, rep ranges, RIR, rest times and the streak reminder:** in the app's Settings.
 
 ## Credits
 

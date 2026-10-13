@@ -42,7 +42,6 @@ SessionSummary demoSummary() => SessionSummary(
         AchievementDef(key: 'pr_25', title: 'Record Breaker', description: 'Set 25 valid PRs.', icon: 'star', type: AchievementType.prs, threshold: 25),
       ],
       questsCompleted: const ['Hit the top of your rep range on 2 lifts'],
-      weeklyGoalReached: true,
       healthSaved: true,
       disciplinePct: 94.4,
     );

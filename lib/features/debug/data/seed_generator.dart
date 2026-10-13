@@ -180,7 +180,7 @@ class SeedGenerator {
         bodyweightLoaded: _bodyweightLoaded,
       );
       await gami.ensureQuests(start, () => const QuestEngine().generate(QuestGenInput(
-            weeklyGoal: settings.weeklyGoal,
+            sessionsPerWeek: sessionsPerWeekLast4([for (final s in history.sessions) s.startedAt], start),
             groupSets4w: regionSetsLast4Weeks(history, start),
             disciplinePct: disciplineLast30(history, start),
             rpeLoggedPct: rpeLoggedPct(history, start),

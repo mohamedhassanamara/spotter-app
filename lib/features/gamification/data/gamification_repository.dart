@@ -52,13 +52,6 @@ class GamificationRepository {
         ));
   }
 
-  Future<bool> hasWeeklyGoalBonus(DateTime week) async {
-    final rows = await (_db.select(_db.xpEvents)
-          ..where((t) => t.reason.equals('weekly_goal') & t.weekStart.equals(dayKey(week))))
-        .get();
-    return rows.isNotEmpty;
-  }
-
   Future<List<XpEvent>> xpEvents() => (_db.select(_db.xpEvents)..orderBy([(t) => OrderingTerm.asc(t.at)])).get();
 
   // ---- achievements ----

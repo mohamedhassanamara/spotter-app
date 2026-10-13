@@ -118,7 +118,7 @@ void main() {
 
     test('generation picks the least-trained group and a discipline quest', () {
       final q = engine.generate(QuestGenInput(
-        weeklyGoal: 6,
+        sessionsPerWeek: 6,
         groupSets4w: {
           for (final g in BodyRegion.values) g: 40,
           BodyRegion.arms: 12,
@@ -132,12 +132,19 @@ void main() {
     });
 
     test('disciplined lifters get an RPE or no-override quest instead', () {
-      final base = QuestGenInput(weeklyGoal: 6, groupSets4w: const {}, disciplinePct: 95, rpeLoggedPct: 50);
+      final base = QuestGenInput(sessionsPerWeek: 6, groupSets4w: const {}, disciplinePct: 95, rpeLoggedPct: 50);
       expect(engine.generate(base)[2].key, QuestKey.logRpe);
       expect(engine.generate(base)[1].group, BodyRegion.back);
-      final q = engine.generate(QuestGenInput(weeklyGoal: 6, groupSets4w: const {}, disciplinePct: 95, rpeLoggedPct: 95));
+      final q = engine.generate(QuestGenInput(sessionsPerWeek: 6, groupSets4w: const {}, disciplinePct: 95, rpeLoggedPct: 95));
       expect(q[2].key, QuestKey.noOverride);
       expect(q[2].target, 5);
+    });
+
+    test('the no-override quest is sized from recent sessions per week (no weekly goal)', () {
+      final now = DateTime(2026, 10, 13);
+      final starts = [for (var i = 0; i < 16; i++) now.subtract(Duration(days: 1 + i * 26 ~/ 16))];
+      expect(sessionsPerWeekLast4(starts, now), 4);
+      expect(sessionsPerWeekLast4(const [], now), 1);
     });
 
     test('progress', () {
@@ -210,9 +217,9 @@ void main() {
           .toList();
       expect(defs.length, greaterThanOrEqualTo(15));
       const eval = AchievementEvaluator();
-      const stats = AchievementStats(sessions: 12, longestCleanSessionStreak: 10, smartRestDays: 5, prs: 1);
+      const stats = AchievementStats(sessions: 12, longestCleanSessionStreak: 10, longestStreakDays: 30, prs: 1);
       final unlocked = eval.newlyUnlocked(defs, stats, {'first_workout'}).map((d) => d.key).toSet();
-      expect(unlocked, {'ten_workouts', 'patience', 'smart_rest', 'first_pr'});
+      expect(unlocked, {'ten_workouts', 'patience', 'streak_14', 'streak_4', 'first_pr'});
     });
 
     test('discipline needs 50 sets', () {

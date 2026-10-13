@@ -15,7 +15,6 @@ import '../../gamification/domain/stats.dart';
 import '../../gamification/domain/streaks.dart';
 import '../../gamification/domain/xp.dart';
 import '../../library/domain/exercise_info.dart';
-import '../../program/data/program_repository.dart';
 import '../../ranks/data/rank_exclusions.dart';
 import '../../ranks/data/ranks_repository.dart';
 import '../../ranks/domain/ranks.dart';
@@ -65,7 +64,6 @@ class SessionSummary {
     required this.flags,
     required this.achievements,
     required this.questsCompleted,
-    required this.weeklyGoalReached,
     required this.healthSaved,
     this.disciplinePct,
   });
@@ -85,7 +83,6 @@ class SessionSummary {
   final List<GuardrailFlag> flags;
   final List<AchievementDef> achievements;
   final List<String> questsCompleted;
-  final bool weeklyGoalReached;
   final bool? healthSaved;
 
   /// % of this session's working sets within ±5 % of the suggestion (null without suggestions).
@@ -103,14 +100,12 @@ class FinishService {
       : _history = HistoryRepository(_db),
         _gami = GamificationRepository(_db),
         _freezes = EgoFreezeRepository(_db),
-        _readiness = ReadinessRepository(_db),
         _bodyweights = BodyWeightRepository(_db);
 
   final AppDatabase _db;
   final HistoryRepository _history;
   final GamificationRepository _gami;
   final EgoFreezeRepository _freezes;
-  final ReadinessRepository _readiness;
   final BodyWeightRepository _bodyweights;
 
   static const _guardrail = Guardrail();
@@ -154,13 +149,11 @@ class FinishService {
     final ranks = await _ranks(history, standards, catalog, now, excluded);
     final stats = buildAchievementStats(
       history: history,
-      redDays: await _readiness.redDays(),
-      weeklyGoal: settings.weeklyGoal,
+      longestStreakDays: await _longestStreak(history, now),
       now: now,
       bestTierIndex: RanksRepository.bestTierIndex(ranks),
       totalXp: await _gami.totalXp(),
       prCount: findPrs(history, bodyweightLoaded: bwLoaded, bodyweight: bodyweight).length,
-      plannedRestWeekdays: (await ProgramRepository.load()).plannedRestWeekdays,
     );
     final unlocked = const AchievementEvaluator().newlyUnlocked(defs, stats, await _gami.unlockedKeys());
     if (unlocked.isNotEmpty) await _gami.unlock(unlocked.map((d) => d.key), now);
@@ -202,25 +195,8 @@ class FinishService {
     await _gami.addXp(at: now, amount: xpSession, reason: 'session', sessionId: sessionId);
     var bonus = 0;
 
-    // Weekly goal bonus.
-    final redDays = await _readiness.redDays();
-    final restWeekdays = (await ProgramRepository.load()).plannedRestWeekdays;
-    final streak = const StreakCalculator().compute(
-      plannedRestWeekdays: restWeekdays,
-      sessionDays: [for (final s in after.sessions) s.startedAt],
-      redDays: redDays,
-      goal: settings.weeklyGoal,
-      now: session.startedAt,
-    );
-    final week = weekStart(session.startedAt);
-    var weeklyGoalReached = false;
-    if (streak.thisWeek.met && !await _gami.hasWeeklyGoalBonus(week)) {
-      await _gami.addXp(at: now, amount: XpRules.weeklyGoal, reason: 'weekly_goal', sessionId: sessionId, week: week);
-      bonus += XpRules.weeklyGoal;
-      weeklyGoalReached = true;
-    }
-
     // Quests.
+    final week = weekStart(session.startedAt);
     final questsDone = <String>[];
     final activity = weekActivity(after, session.startedAt);
     for (final q in await _gami.quests(session.startedAt)) {
@@ -262,13 +238,11 @@ class FinishService {
     final allPrs = findPrs(after, bodyweightLoaded: bwLoaded, bodyweight: bodyweight).length;
     final stats = buildAchievementStats(
       history: after,
-      redDays: redDays,
-      weeklyGoal: settings.weeklyGoal,
+      longestStreakDays: await _longestStreak(after, now),
       now: now,
       bestTierIndex: bestTier,
       totalXp: xpBefore + xpSession + bonus,
       prCount: allPrs,
-      plannedRestWeekdays: restWeekdays,
     );
     final unlocked = await _gami.unlockedKeys();
     final newAchievements = const AchievementEvaluator().newlyUnlocked(defs, stats, unlocked);
@@ -308,7 +282,6 @@ class FinishService {
       flags: flags,
       achievements: newAchievements,
       questsCompleted: questsDone,
-      weeklyGoalReached: weeklyGoalReached,
       healthSaved: saved,
       disciplinePct: _guardrail.disciplinePct(session.workingSets),
     );
@@ -343,4 +316,10 @@ class FinishService {
     }
     return out;
   }
+
+  /// Longest day streak (the carried-over Liftoff streak included), for streak achievements.
+  Future<int> _longestStreak(TrainingHistory history, DateTime now) async => const DayStreakCalculator()
+      .compute(workoutStarts: streakWorkoutStarts(history), now: now, offset: StreakOffset.decode(await _db.getSetting(StreakOffset.settingKey)))
+      .longestDays;
+
 }

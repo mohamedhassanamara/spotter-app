@@ -31,6 +31,11 @@ class _SpotterAppState extends ConsumerState<SpotterApp> {
     ref.listenManual(mediaBootstrapProvider, (_, next) {
       if (next.hasError) ErrorLog.instance.recordCaught(next.error!, next.stackTrace ?? StackTrace.current);
     });
+    // The streak's last-chance reminder follows the streak and the Settings toggle.
+    ref.listenManual(streakReminderProvider, (_, plan) {
+      final n = ref.read(notificationServiceProvider);
+      _step(() => plan == null ? n.cancelStreakReminder() : n.scheduleStreakReminder(plan.at, body: plan.body));
+    }, fireImmediately: true);
     _lifecycle = AppLifecycleListener(onResume: _refreshHealth);
     // Independent startup steps: one failing must not block the others, and every failure is logged.
     WidgetsBinding.instance.addPostFrameCallback((_) {

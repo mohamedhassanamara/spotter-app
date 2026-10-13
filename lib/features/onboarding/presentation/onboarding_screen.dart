@@ -3,9 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app_providers.dart';
 import '../../../core/theme/app_theme.dart';
-import '../../../core/widgets/common.dart';
 
-/// Three steps: bodyweight, Apple Health permissions, weekly goal.
+/// Three steps: bodyweight, Apple Health permissions, how the streak works.
 class OnboardingScreen extends ConsumerStatefulWidget {
   const OnboardingScreen({super.key});
 
@@ -17,9 +16,6 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   final _pages = PageController();
   final _bw = TextEditingController();
   int _page = 0;
-  /// Follows the stored goal (the program install sets 5 a week) until the lifter changes it here.
-  int? _goalChoice;
-  int get _goal => _goalChoice ?? ref.read(currentSettingsProvider).weeklyGoal;
   bool _healthAsked = false;
   bool _healthBusy = false;
   String? _healthStatus;
@@ -68,9 +64,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     final bw = _bodyweight;
     final hasHealthWeight = ref.read(healthSyncProvider).lastResult?.bodyMass != null;
     if (bw != null && !hasHealthWeight) await ref.read(bodyWeightRepositoryProvider).addManual(bw);
-    final settings = ref.read(settingsControllerProvider);
-    await settings.setWeeklyGoal(_goal);
-    await settings.setOnboarded(true);
+    await ref.read(settingsControllerProvider).setOnboarded(true);
   }
 
   @override
@@ -103,7 +97,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 controller: _pages,
                 physics: const NeverScrollableScrollPhysics(),
                 onPageChanged: (p) => setState(() => _page = p),
-                children: [_welcome(), _health(), _goalPage()],
+                children: [_welcome(), _health(), _streakPage()],
               ),
             ),
           ],
@@ -175,20 +169,14 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     );
   }
 
-  Widget _goalPage() {
+  Widget _streakPage() {
     return _frame(
       icon: Icons.local_fire_department_rounded,
-      title: 'Weekly goal',
-      body: 'Hit your goal to keep your weekly streak alive. Days with Red readiness that you rest count as smart rest '
-          'and lower that week\'s goal by one (up to two per week).',
+      title: 'Your streak',
+      body: 'Every day counts, rest days too. Take up to two rest days in a row; if a third one ends without a '
+          'workout, the streak starts over. No weekly goal, no fixed training days.',
       children: [
-        StepperField(
-          label: 'Sessions per week',
-          value: '$_goal',
-          onMinus: () => setState(() => _goalChoice = (_goal - 1).clamp(1, 14)),
-          onPlus: () => setState(() => _goalChoice = (_goal + 1).clamp(1, 14)),
-        ),
-        const SizedBox(height: 28),
+        const SizedBox(height: 12),
         FilledButton(onPressed: _finish, child: const Text('Let\'s lift')),
       ],
     );

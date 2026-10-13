@@ -10,6 +10,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/common.dart';
 import '../../../router.dart';
 import '../../gamification/domain/achievements.dart';
+import '../../gamification/domain/streaks.dart';
 import '../../ranks/domain/ranks.dart';
 import '../../ranks/presentation/progress_screen.dart' show enterBodyweight;
 import '../../ranks/presentation/rank_badge.dart';
@@ -36,8 +37,9 @@ class ProfileScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final level = ref.watch(levelProvider);
-    final streak = ref.watch(streakProvider);
     final days = ref.watch(dayStreakProvider);
+    final history = ref.watch(historyProvider).value;
+    final thisWeek = history == null ? 0 : sessionsThisWeek(history, ref.watch(clockProvider)());
     final discipline = ref.watch(disciplineProvider);
     final bw = ref.watch(latestBodyWeightProvider).value;
     final overall = ref.watch(ranksProvider).value?.overall;
@@ -114,7 +116,7 @@ class ProfileScreen extends ConsumerWidget {
                       ),
                       const SizedBox(height: 6),
                       Text(
-                        'Longest: ${days?.longestDays ?? 0} days · ${streak?.current ?? 0} goal week${streak?.current == 1 ? '' : 's'} in a row',
+                        'Longest: ${days?.longestDays ?? 0} days',
                         style: const TextStyle(color: AppColors.textSecondary),
                       ),
                     ],
@@ -129,15 +131,13 @@ class ProfileScreen extends ConsumerWidget {
                     children: [
                       StatTile(
                         label: 'This week',
-                        value: '${streak?.thisWeek.sessions ?? 0}/${streak?.thisWeek.effectiveGoal ?? ref.watch(currentSettingsProvider).weeklyGoal}',
+                        value: '$thisWeek',
                         icon: Icons.event_available_rounded,
-                        color: (streak?.thisWeek.met ?? false) ? AppColors.green : null,
                       ),
                       const SizedBox(height: 6),
                       Text(
-                        (streak?.thisWeek.smartRestDays ?? 0) > 0
-                            ? '${streak!.thisWeek.smartRestDays} smart rest day${streak.thisWeek.smartRestDays == 1 ? '' : 's'} used'
-                            : 'No smart rest used',
+                        'session${thisWeek == 1 ? '' : 's'} since Monday',
+                        key: const ValueKey('profile-sessions-this-week'),
                         style: const TextStyle(color: AppColors.textSecondary),
                       ),
                     ],
@@ -263,9 +263,8 @@ class _DisciplineCard extends StatelessWidget {
 Color achievementColor(AchievementType type) => switch (type) {
       AchievementType.sessions => AppColors.primary,
       AchievementType.cleanSessionStreak => AppColors.accent,
-      AchievementType.smartRestDays => const Color(0xFF7FA7FF),
       AchievementType.comebacks => AppColors.green,
-      AchievementType.weeklyStreak => AppColors.warning,
+      AchievementType.streakDays => AppColors.warning,
       AchievementType.bestExerciseTier => tierColors[Tier.gold.index],
       AchievementType.discipline => const Color(0xFF3FD5C0),
       AchievementType.prs => const Color(0xFFFFC93C),
