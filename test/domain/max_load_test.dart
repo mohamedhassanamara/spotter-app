@@ -4,7 +4,6 @@ import 'package:spotter/core/domain/gym.dart';
 import 'package:spotter/core/domain/load_types.dart';
 import 'package:spotter/core/domain/training.dart';
 import 'package:spotter/features/coach/domain/suggestion_engine.dart';
-import 'package:spotter/features/readiness/domain/readiness.dart';
 import 'package:spotter/features/workout/presentation/keypad.dart';
 
 ExerciseSessionLog log(List<(double, int)> sets, {int day = 1}) => ExerciseSessionLog(
