@@ -606,6 +606,39 @@ class SessionRepository {
     }
   }
 
+  /// The only thing allowed to change a plan during a workout: after a working set falls short of its
+  /// rep range, the *later, untouched working sets of the same exercise* move one available step lighter so
+  /// they can stay in range. Sets you already edited, done sets, drop sets and warm-ups never change; the
+  /// weight never goes up. The changed sets keep the original weight and the reason (the ⓘ marker).
+  /// Returns the sets that changed.
+  Future<List<int>> adaptLaterSets(WorkoutSet done, {required WeightGrid? grid, required int exerciseRepMin}) async {
+    if (done.isWarmup || done.isFollowUp || done.weight <= 0 || done.reps <= 0 || grid == null) return const [];
+    final min = done.targetRepMin ?? exerciseRepMin;
+    if (done.reps >= min) return const [];
+    final lighter = grid.previous(done.weight);
+    if (lighter == null) return const [];
+    final sets = await _setsOf(done.sessionExerciseId);
+    final number = sets.where((s) => s.isWorkingSet).toList().indexWhere((s) => s.id == done.id) + 1;
+    final max = done.targetRepMax;
+    final range = max == null ? '$min+' : '$min–$max';
+    final changed = <int>[];
+    for (final s in sets) {
+      if (s.position <= done.position || s.completed || !s.isWorkingSet) continue;
+      final planned = s.suggestedWeight;
+      // Untouched: still at its planned weight, and heavier than the step down.
+      if (planned == null || (s.weight - planned).abs() > 0.01 || s.weight <= lighter + 0.01) continue;
+      await (_db.update(_db.workoutSets)..where((t) => t.id.equals(s.id))).write(WorkoutSetsCompanion(
+        weight: Value(lighter),
+        suggestedWeight: Value(lighter),
+        adjustedFrom: Value(s.adjustedFrom ?? s.weight),
+        adjustReason: Value('Set $number: ${done.reps} reps at ${formatKg(done.weight)} kg, below the $range rep range. '
+            'This set moves one step lighter (${formatKg(s.adjustedFrom ?? s.weight)} → ${formatKg(lighter)} kg) so it can stay in range.'),
+      ));
+      changed.add(s.id);
+    }
+    return changed;
+  }
+
   /// SET-cell menu: working, warm-up (W), drop (D), myo-rep cycle (M), static hold (H), or a program technique.
   Future<void> setSetKind(WorkoutSet set, {required String kind}) async {
     final k = kind.startsWith('technique:') ? SetKind.working : SetKind.fromId(kind);

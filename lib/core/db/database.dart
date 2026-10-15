@@ -34,7 +34,7 @@ class AppDatabase extends _$AppDatabase {
   factory AppDatabase.open() => AppDatabase(driftDatabase(name: 'spotter'));
 
   @override
-  int get schemaVersion => 10;
+  int get schemaVersion => 11;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -99,6 +99,10 @@ class AppDatabase extends _$AppDatabase {
           if (from < 10) {
             await m.addColumn(dailyMetrics, dailyMetrics.dietaryKcal);
             await m.addColumn(dailyMetrics, dailyMetrics.proteinG);
+          }
+          if (from < 11) {
+            await m.addColumn(workoutSets, workoutSets.adjustedFrom);
+            await m.addColumn(workoutSets, workoutSets.adjustReason);
           }
         },
         beforeOpen: (details) async {

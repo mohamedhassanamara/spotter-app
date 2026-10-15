@@ -436,6 +436,9 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> with 
       exerciseRepMin: ex.row.repMin,
     );
     if (quiet) return;
+    // Missed reps change the later sets of this exercise (and only those).
+    await repo.adaptLaterSets(s,
+        grid: ref.read(exerciseGridProvider(ex.row.exerciseId)), exerciseRepMin: ex.row.repMin);
     await _startRest(session, ex, s);
     await _maybeOfferFormReset(ex, s);
   }
@@ -678,7 +681,7 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> with 
       await ref.read(sessionRepositoryProvider).replaceExercise(
             old: ex,
             info: info,
-            coach: await ref.read(coachContextBuilderProvider)(),
+            coach: await ref.read(workoutCoachProvider)(ex.row.sessionId),
             program: await ref.read(programProvider.future),
           );
     }
@@ -816,7 +819,7 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> with 
     await ref.read(sessionRepositoryProvider).replaceExercise(
           old: ex,
           info: info,
-          coach: await ref.read(coachContextBuilderProvider)(),
+          coach: await ref.read(workoutCoachProvider)(ex.row.sessionId),
           program: program,
         );
   }
@@ -851,7 +854,7 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> with 
     final info = catalog[id];
     if (info == null) return;
     final settings = ref.read(currentSettingsProvider);
-    final coach = await ref.read(coachContextBuilderProvider)();
+    final coach = await ref.read(workoutCoachProvider)(session.session.id);
     await ref.read(sessionRepositoryProvider).addExercise(
           sessionId: session.session.id,
           info: info,

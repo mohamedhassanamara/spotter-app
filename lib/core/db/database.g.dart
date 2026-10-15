@@ -4538,6 +4538,28 @@ class $WorkoutSetsTable extends WorkoutSets
     ),
     defaultValue: const Constant(false),
   );
+  static const VerificationMeta _adjustedFromMeta = const VerificationMeta(
+    'adjustedFrom',
+  );
+  @override
+  late final GeneratedColumn<double> adjustedFrom = GeneratedColumn<double>(
+    'adjusted_from',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _adjustReasonMeta = const VerificationMeta(
+    'adjustReason',
+  );
+  @override
+  late final GeneratedColumn<String> adjustReason = GeneratedColumn<String>(
+    'adjust_reason',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -4559,6 +4581,8 @@ class $WorkoutSetsTable extends WorkoutSets
     technique,
     setType,
     partials,
+    adjustedFrom,
+    adjustReason,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -4708,6 +4732,24 @@ class $WorkoutSetsTable extends WorkoutSets
         partials.isAcceptableOrUnknown(data['partials']!, _partialsMeta),
       );
     }
+    if (data.containsKey('adjusted_from')) {
+      context.handle(
+        _adjustedFromMeta,
+        adjustedFrom.isAcceptableOrUnknown(
+          data['adjusted_from']!,
+          _adjustedFromMeta,
+        ),
+      );
+    }
+    if (data.containsKey('adjust_reason')) {
+      context.handle(
+        _adjustReasonMeta,
+        adjustReason.isAcceptableOrUnknown(
+          data['adjust_reason']!,
+          _adjustReasonMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -4793,6 +4835,14 @@ class $WorkoutSetsTable extends WorkoutSets
         DriftSqlType.bool,
         data['${effectivePrefix}partials'],
       )!,
+      adjustedFrom: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}adjusted_from'],
+      ),
+      adjustReason: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}adjust_reason'],
+      ),
     );
   }
 
@@ -4832,6 +4882,11 @@ class WorkoutSet extends DataClass implements Insertable<WorkoutSet> {
   /// v9: section 7's "+ partials": partial reps after the last full rep. Informational only (the
   /// full reps are what count).
   final bool partials;
+
+  /// v11: the weight this set was planned at before an earlier set of the same exercise (this workout)
+  /// changed it; null = the plan is untouched. [adjustReason] says why, for the marker's explanation.
+  final double? adjustedFrom;
+  final String? adjustReason;
   const WorkoutSet({
     required this.id,
     required this.sessionExerciseId,
@@ -4852,6 +4907,8 @@ class WorkoutSet extends DataClass implements Insertable<WorkoutSet> {
     this.technique,
     this.setType,
     required this.partials,
+    this.adjustedFrom,
+    this.adjustReason,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -4895,6 +4952,12 @@ class WorkoutSet extends DataClass implements Insertable<WorkoutSet> {
       map['set_type'] = Variable<String>(setType);
     }
     map['partials'] = Variable<bool>(partials);
+    if (!nullToAbsent || adjustedFrom != null) {
+      map['adjusted_from'] = Variable<double>(adjustedFrom);
+    }
+    if (!nullToAbsent || adjustReason != null) {
+      map['adjust_reason'] = Variable<String>(adjustReason);
+    }
     return map;
   }
 
@@ -4937,6 +5000,12 @@ class WorkoutSet extends DataClass implements Insertable<WorkoutSet> {
           ? const Value.absent()
           : Value(setType),
       partials: Value(partials),
+      adjustedFrom: adjustedFrom == null && nullToAbsent
+          ? const Value.absent()
+          : Value(adjustedFrom),
+      adjustReason: adjustReason == null && nullToAbsent
+          ? const Value.absent()
+          : Value(adjustReason),
     );
   }
 
@@ -4965,6 +5034,8 @@ class WorkoutSet extends DataClass implements Insertable<WorkoutSet> {
       technique: serializer.fromJson<String?>(json['technique']),
       setType: serializer.fromJson<String?>(json['setType']),
       partials: serializer.fromJson<bool>(json['partials']),
+      adjustedFrom: serializer.fromJson<double?>(json['adjustedFrom']),
+      adjustReason: serializer.fromJson<String?>(json['adjustReason']),
     );
   }
   @override
@@ -4990,6 +5061,8 @@ class WorkoutSet extends DataClass implements Insertable<WorkoutSet> {
       'technique': serializer.toJson<String?>(technique),
       'setType': serializer.toJson<String?>(setType),
       'partials': serializer.toJson<bool>(partials),
+      'adjustedFrom': serializer.toJson<double?>(adjustedFrom),
+      'adjustReason': serializer.toJson<String?>(adjustReason),
     };
   }
 
@@ -5013,6 +5086,8 @@ class WorkoutSet extends DataClass implements Insertable<WorkoutSet> {
     Value<String?> technique = const Value.absent(),
     Value<String?> setType = const Value.absent(),
     bool? partials,
+    Value<double?> adjustedFrom = const Value.absent(),
+    Value<String?> adjustReason = const Value.absent(),
   }) => WorkoutSet(
     id: id ?? this.id,
     sessionExerciseId: sessionExerciseId ?? this.sessionExerciseId,
@@ -5039,6 +5114,8 @@ class WorkoutSet extends DataClass implements Insertable<WorkoutSet> {
     technique: technique.present ? technique.value : this.technique,
     setType: setType.present ? setType.value : this.setType,
     partials: partials ?? this.partials,
+    adjustedFrom: adjustedFrom.present ? adjustedFrom.value : this.adjustedFrom,
+    adjustReason: adjustReason.present ? adjustReason.value : this.adjustReason,
   );
   WorkoutSet copyWithCompanion(WorkoutSetsCompanion data) {
     return WorkoutSet(
@@ -5077,6 +5154,12 @@ class WorkoutSet extends DataClass implements Insertable<WorkoutSet> {
       technique: data.technique.present ? data.technique.value : this.technique,
       setType: data.setType.present ? data.setType.value : this.setType,
       partials: data.partials.present ? data.partials.value : this.partials,
+      adjustedFrom: data.adjustedFrom.present
+          ? data.adjustedFrom.value
+          : this.adjustedFrom,
+      adjustReason: data.adjustReason.present
+          ? data.adjustReason.value
+          : this.adjustReason,
     );
   }
 
@@ -5101,13 +5184,15 @@ class WorkoutSet extends DataClass implements Insertable<WorkoutSet> {
           ..write('targetRir: $targetRir, ')
           ..write('technique: $technique, ')
           ..write('setType: $setType, ')
-          ..write('partials: $partials')
+          ..write('partials: $partials, ')
+          ..write('adjustedFrom: $adjustedFrom, ')
+          ..write('adjustReason: $adjustReason')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(
+  int get hashCode => Object.hashAll([
     id,
     sessionExerciseId,
     position,
@@ -5127,7 +5212,9 @@ class WorkoutSet extends DataClass implements Insertable<WorkoutSet> {
     technique,
     setType,
     partials,
-  );
+    adjustedFrom,
+    adjustReason,
+  ]);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -5150,7 +5237,9 @@ class WorkoutSet extends DataClass implements Insertable<WorkoutSet> {
           other.targetRir == this.targetRir &&
           other.technique == this.technique &&
           other.setType == this.setType &&
-          other.partials == this.partials);
+          other.partials == this.partials &&
+          other.adjustedFrom == this.adjustedFrom &&
+          other.adjustReason == this.adjustReason);
 }
 
 class WorkoutSetsCompanion extends UpdateCompanion<WorkoutSet> {
@@ -5173,6 +5262,8 @@ class WorkoutSetsCompanion extends UpdateCompanion<WorkoutSet> {
   final Value<String?> technique;
   final Value<String?> setType;
   final Value<bool> partials;
+  final Value<double?> adjustedFrom;
+  final Value<String?> adjustReason;
   const WorkoutSetsCompanion({
     this.id = const Value.absent(),
     this.sessionExerciseId = const Value.absent(),
@@ -5193,6 +5284,8 @@ class WorkoutSetsCompanion extends UpdateCompanion<WorkoutSet> {
     this.technique = const Value.absent(),
     this.setType = const Value.absent(),
     this.partials = const Value.absent(),
+    this.adjustedFrom = const Value.absent(),
+    this.adjustReason = const Value.absent(),
   });
   WorkoutSetsCompanion.insert({
     this.id = const Value.absent(),
@@ -5214,6 +5307,8 @@ class WorkoutSetsCompanion extends UpdateCompanion<WorkoutSet> {
     this.technique = const Value.absent(),
     this.setType = const Value.absent(),
     this.partials = const Value.absent(),
+    this.adjustedFrom = const Value.absent(),
+    this.adjustReason = const Value.absent(),
   }) : sessionExerciseId = Value(sessionExerciseId),
        position = Value(position);
   static Insertable<WorkoutSet> custom({
@@ -5236,6 +5331,8 @@ class WorkoutSetsCompanion extends UpdateCompanion<WorkoutSet> {
     Expression<String>? technique,
     Expression<String>? setType,
     Expression<bool>? partials,
+    Expression<double>? adjustedFrom,
+    Expression<String>? adjustReason,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -5257,6 +5354,8 @@ class WorkoutSetsCompanion extends UpdateCompanion<WorkoutSet> {
       if (technique != null) 'technique': technique,
       if (setType != null) 'set_type': setType,
       if (partials != null) 'partials': partials,
+      if (adjustedFrom != null) 'adjusted_from': adjustedFrom,
+      if (adjustReason != null) 'adjust_reason': adjustReason,
     });
   }
 
@@ -5280,6 +5379,8 @@ class WorkoutSetsCompanion extends UpdateCompanion<WorkoutSet> {
     Value<String?>? technique,
     Value<String?>? setType,
     Value<bool>? partials,
+    Value<double?>? adjustedFrom,
+    Value<String?>? adjustReason,
   }) {
     return WorkoutSetsCompanion(
       id: id ?? this.id,
@@ -5301,6 +5402,8 @@ class WorkoutSetsCompanion extends UpdateCompanion<WorkoutSet> {
       technique: technique ?? this.technique,
       setType: setType ?? this.setType,
       partials: partials ?? this.partials,
+      adjustedFrom: adjustedFrom ?? this.adjustedFrom,
+      adjustReason: adjustReason ?? this.adjustReason,
     );
   }
 
@@ -5364,6 +5467,12 @@ class WorkoutSetsCompanion extends UpdateCompanion<WorkoutSet> {
     if (partials.present) {
       map['partials'] = Variable<bool>(partials.value);
     }
+    if (adjustedFrom.present) {
+      map['adjusted_from'] = Variable<double>(adjustedFrom.value);
+    }
+    if (adjustReason.present) {
+      map['adjust_reason'] = Variable<String>(adjustReason.value);
+    }
     return map;
   }
 
@@ -5388,7 +5497,9 @@ class WorkoutSetsCompanion extends UpdateCompanion<WorkoutSet> {
           ..write('targetRir: $targetRir, ')
           ..write('technique: $technique, ')
           ..write('setType: $setType, ')
-          ..write('partials: $partials')
+          ..write('partials: $partials, ')
+          ..write('adjustedFrom: $adjustedFrom, ')
+          ..write('adjustReason: $adjustReason')
           ..write(')'))
         .toString();
   }
@@ -12415,6 +12526,8 @@ typedef $$WorkoutSetsTableCreateCompanionBuilder =
       Value<String?> technique,
       Value<String?> setType,
       Value<bool> partials,
+      Value<double?> adjustedFrom,
+      Value<String?> adjustReason,
     });
 typedef $$WorkoutSetsTableUpdateCompanionBuilder =
     WorkoutSetsCompanion Function({
@@ -12437,6 +12550,8 @@ typedef $$WorkoutSetsTableUpdateCompanionBuilder =
       Value<String?> technique,
       Value<String?> setType,
       Value<bool> partials,
+      Value<double?> adjustedFrom,
+      Value<String?> adjustReason,
     });
 
 final class $$WorkoutSetsTableReferences
@@ -12558,6 +12673,16 @@ class $$WorkoutSetsTableFilterComposer
 
   ColumnFilters<bool> get partials => $composableBuilder(
     column: $table.partials,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get adjustedFrom => $composableBuilder(
+    column: $table.adjustedFrom,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get adjustReason => $composableBuilder(
+    column: $table.adjustReason,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -12684,6 +12809,16 @@ class $$WorkoutSetsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<double> get adjustedFrom => $composableBuilder(
+    column: $table.adjustedFrom,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get adjustReason => $composableBuilder(
+    column: $table.adjustReason,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   $$SessionExercisesTableOrderingComposer get sessionExerciseId {
     final $$SessionExercisesTableOrderingComposer composer = $composerBuilder(
       composer: this,
@@ -12785,6 +12920,16 @@ class $$WorkoutSetsTableAnnotationComposer
   GeneratedColumn<bool> get partials =>
       $composableBuilder(column: $table.partials, builder: (column) => column);
 
+  GeneratedColumn<double> get adjustedFrom => $composableBuilder(
+    column: $table.adjustedFrom,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get adjustReason => $composableBuilder(
+    column: $table.adjustReason,
+    builder: (column) => column,
+  );
+
   $$SessionExercisesTableAnnotationComposer get sessionExerciseId {
     final $$SessionExercisesTableAnnotationComposer composer = $composerBuilder(
       composer: this,
@@ -12856,6 +13001,8 @@ class $$WorkoutSetsTableTableManager
                 Value<String?> technique = const Value.absent(),
                 Value<String?> setType = const Value.absent(),
                 Value<bool> partials = const Value.absent(),
+                Value<double?> adjustedFrom = const Value.absent(),
+                Value<String?> adjustReason = const Value.absent(),
               }) => WorkoutSetsCompanion(
                 id: id,
                 sessionExerciseId: sessionExerciseId,
@@ -12876,6 +13023,8 @@ class $$WorkoutSetsTableTableManager
                 technique: technique,
                 setType: setType,
                 partials: partials,
+                adjustedFrom: adjustedFrom,
+                adjustReason: adjustReason,
               ),
           createCompanionCallback:
               ({
@@ -12898,6 +13047,8 @@ class $$WorkoutSetsTableTableManager
                 Value<String?> technique = const Value.absent(),
                 Value<String?> setType = const Value.absent(),
                 Value<bool> partials = const Value.absent(),
+                Value<double?> adjustedFrom = const Value.absent(),
+                Value<String?> adjustReason = const Value.absent(),
               }) => WorkoutSetsCompanion.insert(
                 id: id,
                 sessionExerciseId: sessionExerciseId,
@@ -12918,6 +13069,8 @@ class $$WorkoutSetsTableTableManager
                 technique: technique,
                 setType: setType,
                 partials: partials,
+                adjustedFrom: adjustedFrom,
+                adjustReason: adjustReason,
               ),
           withReferenceMapper: (p0) => p0
               .map(

@@ -162,6 +162,11 @@ class WorkoutSets extends Table {
   /// v9: section 7's "+ partials": partial reps after the last full rep. Informational only (the
   /// full reps are what count).
   BoolColumn get partials => boolean().withDefault(const Constant(false))();
+
+  /// v11: the weight this set was planned at before an earlier set of the same exercise (this workout)
+  /// changed it; null = the plan is untouched. [adjustReason] says why, for the marker's explanation.
+  RealColumn get adjustedFrom => real().nullable()();
+  TextColumn get adjustReason => text().nullable()();
 }
 
 /// One row per calendar day: raw Health metrics and the readiness computed from them.

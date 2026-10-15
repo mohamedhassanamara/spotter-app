@@ -1549,3 +1549,22 @@ compact, minimal) show the upcoming exercise, a countdown and the next set's tar
 - Tests: `rest_live_activity_test` (next-set text, rest timer → activity calls, channel), `live_activity_flow_test`
   (real taps; asks native ActivityKit how many are running: ✓ → 1, next ✓ → 1, Skip → 0, Finish → 0).
 - Not verified visually: the simulator screenshot did not capture the island (the rest had expired); check on a device.
+
+## 5. Targets during a workout (plan freeze)
+
+**What changed targets mid-workout before (audit).** Stored plans (`suggested_*` on the exercise and its sets) are
+written once, at Start, from one coach snapshot; nothing re-runs the engine for exercises already in the workout.
+Set completion, Health syncs and readiness / recovery refreshes did **not** rewrite them. What could differ:
+1. **Swap exercise, Form reset and Add exercise** each built a *fresh* coach context at that moment, so after a Health
+   sync (new readiness, recovery, nutrition) the swapped-in exercise was planned from different inputs than the rest.
+2. **Add set** copies the last set's load (looks like a target change after you edited it).
+3. **Drop sets** re-derive from their parent's load, and the keypad / drop grid follow live gym settings.
+4. The PREV column and Home / Train previews are live views of history and readiness, not the plan.
+**New rule.** (a) The coach snapshot a workout started with is kept for the whole workout (`frozenCoachProvider`,
+`workoutCoachProvider`): swaps, form resets and added exercises use it, so no Health sync or readiness refresh
+re-plans anything. After a cold restart mid-workout there is no snapshot, so the first such action builds one and
+freezes it. (b) The one allowed change: when a working set ends **below its rep range**, the *later untouched
+working sets of that exercise* move one available step lighter (`adaptLaterSets`; schema v11 `adjusted_from`,
+`adjust_reason`). Done sets, sets you typed over, drops, warm-ups and other exercises never change; weight never goes up;
+reps targets stay. The changed weight shows a small accent dot; tapping it says what it was, what happened and why.
+Tests: `plan_freeze_test`, migration v10 → v11, `plan_freeze_flow_test` (real taps).

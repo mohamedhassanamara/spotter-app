@@ -194,6 +194,29 @@ final coachContextBuilderProvider = Provider<Future<CoachContext> Function()>((r
   };
 });
 
+/// The coach inputs (readiness, recovery, nutrition, freezes…) a workout was planned with, kept for the
+/// whole workout: a Health sync or a readiness refresh while you train never re-plans it.
+class FrozenCoachNotifier extends Notifier<({int sessionId, CoachContext coach})?> {
+  @override
+  ({int sessionId, CoachContext coach})? build() => null;
+  void freeze(int sessionId, CoachContext coach) => state = (sessionId: sessionId, coach: coach);
+}
+
+final frozenCoachProvider = NotifierProvider<FrozenCoachNotifier, ({int sessionId, CoachContext coach})?>(FrozenCoachNotifier.new);
+
+/// The coach context for anything planned *during* workout [sessionId] (swapping an exercise, a form
+/// reset, adding an exercise): the one the workout started with. After a cold restart mid-workout there is
+/// none, so it is built once, then frozen.
+final workoutCoachProvider = Provider<Future<CoachContext> Function(int sessionId)>((ref) {
+  return (sessionId) async {
+    final frozen = ref.read(frozenCoachProvider);
+    if (frozen != null && frozen.sessionId == sessionId) return frozen.coach;
+    final fresh = await ref.read(coachContextBuilderProvider)();
+    ref.read(frozenCoachProvider.notifier).freeze(sessionId, fresh);
+    return fresh;
+  };
+});
+
 // ---------------------------------------------------------------------------
 // Ranks
 // ---------------------------------------------------------------------------

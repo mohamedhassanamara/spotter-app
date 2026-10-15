@@ -681,6 +681,18 @@ class _RankStrip extends ConsumerWidget {
 }
 
 /// One compact set row.
+/// The ⓘ on a target that changed during the workout: what it was and why it moved.
+void _explainAdjustment(BuildContext context, WorkoutSet s) => showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        key: ValueKey('adjusted-dialog-${s.id}'),
+        title: const Text('Target changed'),
+        content: Text('${s.adjustReason}\n\nOnly later sets of the same exercise change, and only from how your earlier sets went. '
+            'The rest of today\'s plan stays as it was when you started.'),
+        actions: [TextButton(onPressed: () => Navigator.of(ctx).pop(), child: const Text('OK'))],
+      ),
+    );
+
 class _SetRow extends ConsumerWidget {
   const _SetRow({
     super.key,
@@ -769,6 +781,20 @@ class _SetRow extends ConsumerWidget {
                   color: grey ? AppColors.textTertiary : AppColors.textPrimary,
                 ),
               ),
+              if (f == KeypadField.kg && s.adjustReason != null)
+                Positioned(
+                  left: 0,
+                  top: 0,
+                  child: GestureDetector(
+                    key: ValueKey('adjusted-${s.id}'),
+                    behavior: HitTestBehavior.opaque,
+                    onTap: () => _explainAdjustment(context, s),
+                    child: const Padding(
+                      padding: EdgeInsets.all(5),
+                      child: SizedBox(width: 8, height: 8, child: DecoratedBox(decoration: BoxDecoration(color: AppColors.accent, shape: BoxShape.circle))),
+                    ),
+                  ),
+                ),
               if (amber)
                 Positioned(
                   right: -4,
