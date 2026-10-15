@@ -44,6 +44,8 @@ SessionSummary demoSummary() => SessionSummary(
       questsCompleted: const ['Hit the top of your rep range on 2 lifts'],
       healthSaved: true,
       disciplinePct: 94.4,
+      streakBefore: 178,
+      streakAfter: 179,
     );
 
 class SummaryPreviewScreen extends ConsumerStatefulWidget {

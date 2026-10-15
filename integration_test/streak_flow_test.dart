@@ -68,17 +68,18 @@ void main() {
       await tester.runAsync(() => onlyWorkout(db, daysAgo));
       await showStreakCard(h);
       final want = (await tester.runAsync(() => expected(h)))!;
-      expect(want.days, daysAgo + 1);
+      expect(want.days, daysAgo == 0 ? 1 : daysAgo, reason: 'today counts only once earned; rest days count at midnight');
       await h.waitFor(find.text('${want.days}-day streak'), reason: 'days on Home', scroll: false);
       expect(find.descendant(of: find.byKey(const ValueKey('streak-safety')), matching: find.text(text), matchRoot: true), findsOneWidget);
       await h.shot(shot);
     }
 
-    debugPrint('STEP the 3rd rest day ended → reset');
+    debugPrint('STEP the 3rd rest day ended → reset to 0, with the lost message');
     await tester.runAsync(() => onlyWorkout(db, 4));
     await showStreakCard(h);
     await h.waitFor(find.text('0-day streak'), scroll: false);
-    expect(find.text('Your next workout starts a new streak'), findsOneWidget);
+    expect(find.text(DayStreak.lostMessage), findsWidgets, reason: 'the card says it, and a snackbar announced it once');
+    await h.shot('streak-lost');
 
     debugPrint('STEP first Liftoff import writes the 177-day offset (no fake sessions)');
     await tester.runAsync(() async {

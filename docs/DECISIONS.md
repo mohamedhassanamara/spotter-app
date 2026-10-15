@@ -1514,3 +1514,22 @@ with the other gym settings; "Use default" clears it).
   prescription (`Suggestion.maxReached`, stored in the suggestion JSON) and in the ⓘ explanation.
 - Tests: `max_load_test` (grid, settings round trip, suggestion below / at the max, keypad), `max_load_flow_test`
   (real taps: Weight steps → 50 → + stops at 50 → clearing it).
+
+## 3. Streak: earned days (supersedes the day-count rule of the streak rework)
+
+Rules, exactly (`DayStreakCalculator`):
+- **Today does not count until it is earned.** Before training, the streak shows the count up to yesterday.
+- **Workout day:** counts the moment the workout is finished. Finish shows a flame and a counter that ticks
+  old → new with a pop and a haptic (1.5 s, `StreakCelebration`). A second workout the same day adds nothing.
+- **Rest day:** the 1st and 2nd consecutive rest day count when they end, at midnight. A `dayTickProvider`
+  (midnight timer + app resume) refreshes the streak without a restart.
+- **3rd day in a row without a workout:** when it ends, the streak is lost → 0 (`StreakSafety.lost`). From day 4 the
+  Home card says "Streak lost after 3 days without training", and a snackbar announces it once per lost streak.
+  It stays 0 until the next workout, which starts a new streak at 1. Opening the app days later gives the same result.
+- **Carry-over:** the 177 days still count *on the import day itself*; everything after is computed under these rules.
+  The longest streak keeps the lost run (workout days plus its two allowed rest days) and the carry-over.
+- The last-chance reminder now says "Train today to keep your N-day streak" with the streak you have (N = shown value).
+- Example: workout on the 1st → 1 on the 1st; 1 on the 2nd (morning); 2 from midnight into the 3rd; 3 from midnight
+  into the 4th (last chance, train or lose it); 0 from midnight into the 5th.
+- Tests: `day_streak_test` (every case above, DST, UTC, carry-over, opening late), `streak_flow_test`,
+  `streak_finish_flow_test` (celebration at Finish, nothing on a second workout the same day).

@@ -9,6 +9,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/common.dart';
 import '../../../router.dart';
 import '../../gamification/domain/stats.dart';
+import '../../gamification/presentation/streak_celebration.dart';
 import '../../ranks/presentation/rank_badge.dart';
 import '../data/finish_service.dart';
 
@@ -35,6 +36,7 @@ class SummaryScreen extends ConsumerWidget {
     final sections = <Widget>[
       _Hero(s: s),
       _XpCard(s: s),
+      if (s.streakGrew) StreakCelebration(from: s.streakBefore, to: s.streakAfter),
       _StatsRow(s: s),
       if (s.prs.isNotEmpty) _PrSection(prs: s.prs),
       if (s.rankChanges.any((r) => r.up) || s.rankDowns.isNotEmpty) _RankSection(s: s),

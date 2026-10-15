@@ -66,6 +66,8 @@ class SessionSummary {
     required this.questsCompleted,
     required this.healthSaved,
     this.disciplinePct,
+    this.streakBefore = 0,
+    this.streakAfter = 0,
   });
 
   final int sessionId;
@@ -87,6 +89,12 @@ class SessionSummary {
 
   /// % of this session's working sets within ±5 % of the suggestion (null without suggestions).
   final double? disciplinePct;
+
+  /// The day streak before and after this workout; today counts once it is finished.
+  final int streakBefore;
+  final int streakAfter;
+
+  bool get streakGrew => streakAfter > streakBefore;
 
   int get xpTotal => xpSession + xpBonus;
 
@@ -251,6 +259,12 @@ class FinishService {
     await (_db.update(_db.sessions)..where((t) => t.id.equals(sessionId)))
         .write(SessionsCompanion(xpEarned: Value(xpSession + bonus)));
 
+    // The day streak: today is earned by finishing this workout (an empty one earns nothing).
+    final offset = StreakOffset.decode(await _db.getSetting(StreakOffset.settingKey));
+    int streakOn(TrainingHistory h) =>
+        const DayStreakCalculator().compute(workoutStarts: streakWorkoutStarts(h), now: now, offset: offset).days;
+    final streakBefore = streakOn(before), streakAfter = streakOn(after);
+
     // Apple Health.
     bool? saved;
     if (health != null) {
@@ -284,6 +298,8 @@ class FinishService {
       questsCompleted: questsDone,
       healthSaved: saved,
       disciplinePct: _guardrail.disciplinePct(session.workingSets),
+      streakBefore: streakBefore,
+      streakAfter: streakAfter,
     );
   }
 

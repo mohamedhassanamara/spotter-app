@@ -36,7 +36,10 @@ class _SpotterAppState extends ConsumerState<SpotterApp> {
       final n = ref.read(notificationServiceProvider);
       _step(() => plan == null ? n.cancelStreakReminder() : n.scheduleStreakReminder(plan.at, body: plan.body));
     }, fireImmediately: true);
-    _lifecycle = AppLifecycleListener(onResume: _refreshHealth);
+    _lifecycle = AppLifecycleListener(onResume: () {
+      ref.read(dayTickProvider.notifier).bump();
+      _refreshHealth();
+    });
     // Independent startup steps: one failing must not block the others, and every failure is logged.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _step(() => ref.read(notificationServiceProvider).init());

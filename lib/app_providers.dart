@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -237,8 +239,39 @@ final streakOffsetProvider = StreamProvider<StreakOffset?>(
   (ref) => ref.watch(databaseProvider).watchSettings().map((m) => StreakOffset.decode(m[StreakOffset.settingKey])),
 );
 
-/// Liftoff-style day streak: breaks only after three days in a row without a workout.
+/// Bumps at every local midnight and when the app comes back to the foreground, so anything computed
+/// from "today" (the streak counts a rest day at midnight) refreshes without a restart.
+class DayTickNotifier extends Notifier<int> {
+  Timer? _timer;
+
+  @override
+  int build() {
+    ref.onDispose(() => _timer?.cancel());
+    _arm();
+    return 0;
+  }
+
+  void _arm() {
+    _timer?.cancel();
+    final now = ref.read(clockProvider)();
+    final next = DateTime(now.year, now.month, now.day + 1);
+    _timer = Timer(next.difference(now) + const Duration(seconds: 1), () {
+      bump();
+    });
+  }
+
+  void bump() {
+    state++;
+    _arm();
+  }
+}
+
+final dayTickProvider = NotifierProvider<DayTickNotifier, int>(DayTickNotifier.new);
+
+/// Liftoff-style day streak: today counts once a workout is finished, a rest day counts at midnight,
+/// and it is lost when a 3rd day in a row ends without a workout.
 final dayStreakProvider = Provider<DayStreak?>((ref) {
+  ref.watch(dayTickProvider);
   final history = ref.watch(historyProvider).value;
   if (history == null) return null;
   return const DayStreakCalculator().compute(

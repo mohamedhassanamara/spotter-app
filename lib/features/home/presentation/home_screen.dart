@@ -294,12 +294,35 @@ class _Quests extends ConsumerWidget {
   }
 }
 
-class _Streak extends ConsumerWidget {
+/// Setting: the day (yyyy-MM-dd) of the last workout of the streak whose loss was already announced.
+const _lostSeenKey = 'streak_lost_seen';
+
+class _Streak extends ConsumerStatefulWidget {
   const _Streak();
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_Streak> createState() => _StreakState();
+}
+
+class _StreakState extends ConsumerState<_Streak> {
+  /// Day 4 and later: opening the app after the streak was lost says so once.
+  Future<void> _announceLoss(DayStreak s) async {
+    final last = s.lastWorkoutDay;
+    if (!s.lost || last == null) return;
+    final db = ref.read(databaseProvider);
+    final key = dayKey(last);
+    if (await db.getSetting(_lostSeenKey) == key) return;
+    await db.putSetting(_lostSeenKey, key);
+    if (!mounted) return;
+    ScaffoldMessenger.of(context)
+      ..clearSnackBars()
+      ..showSnackBar(const SnackBar(content: Text(DayStreak.lostMessage), duration: Duration(seconds: 4)));
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final days = ref.watch(dayStreakProvider);
+    if (days != null && days.lost) WidgetsBinding.instance.addPostFrameCallback((_) => _announceLoss(days));
     final history = ref.watch(historyProvider).value;
     final now = ref.watch(clockProvider)();
     if (days == null || history == null) {
@@ -321,6 +344,7 @@ class _Streak extends ConsumerWidget {
       StreakSafety.oneRestDay => ('1 rest day used', AppColors.warning),
       StreakSafety.lastChance => ('Last chance: train today or the streak resets', AppColors.danger),
       StreakSafety.none => ('Your next workout starts a new streak', AppColors.textSecondary),
+      StreakSafety.lost => (DayStreak.lostMessage, AppColors.danger),
     };
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -339,7 +363,12 @@ class _Streak extends ConsumerWidget {
                   Expanded(
                     child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                       Text('${days.days}-day streak', key: const ValueKey('day-streak'), style: AppType.title),
-                      Text('Longest ${days.longestDays} days', style: AppType.bodyS.copyWith(color: AppColors.textSecondary)),
+                      Text(
+                        days.days > 0 && !days.earnedToday
+                            ? 'Longest ${days.longestDays} days · today counts when you finish a workout'
+                            : 'Longest ${days.longestDays} days',
+                        style: AppType.bodyS.copyWith(color: AppColors.textSecondary),
+                      ),
                     ]),
                   ),
                 ],
