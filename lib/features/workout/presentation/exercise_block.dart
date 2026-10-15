@@ -159,6 +159,15 @@ class _ExerciseBlockState extends ConsumerState<ExerciseBlock> {
           _restRow(),
           _RankStrip(exerciseId: ex.row.exerciseId),
           _prescription(),
+          if (ex.suggestion?.maxReached == true)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 4),
+              child: Row(children: [
+                const Icon(Icons.vertical_align_top_rounded, size: 16, color: AppColors.accent),
+                const SizedBox(width: 6),
+                Expanded(child: Text(maxReachedMessage, key: ValueKey('max-reached-${ex.row.id}'), style: AppType.bodyS.copyWith(color: AppColors.accent))),
+              ]),
+            ),
           if (ex.suggestion?.formResetHint != null && !ex.sets.any((s) => s.completed))
             Align(
               alignment: Alignment.centerLeft,

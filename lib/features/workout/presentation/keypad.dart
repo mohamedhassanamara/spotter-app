@@ -56,7 +56,10 @@ class KeypadBuffer {
     final base = value ?? fallback;
     if (field != KeypadField.kg) return set((base + direction).clamp(0, 999).toDouble());
     final g = grid == null ? null : (direction > 0 ? grid.next(base) : grid.previous(base));
-    set(g ?? base + direction * increment);
+    var v = g ?? base + direction * increment;
+    final cap = grid?.maxLoad;
+    if (direction > 0 && cap != null && v > cap) v = cap; // never above the machine's max load
+    set(v);
   }
 
   void set(double v) {

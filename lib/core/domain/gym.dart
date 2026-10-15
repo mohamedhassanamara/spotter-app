@@ -30,6 +30,7 @@ class GymEquipment {
     this.stack = const StackSpec(start: 5, step: 5),
     this.perExercise = const {},
     this.typeOverrides = const {},
+    this.maxLoads = const {},
   });
 
   /// Dumbbell weights available (per hand), ascending.
@@ -49,6 +50,10 @@ class GymEquipment {
   /// Load type chosen by hand for an exercise (exercise menu → Weight steps); wins over the classification.
   final Map<String, LoadType> typeOverrides;
 
+  /// Heaviest load of an exercise (exercise menu → Weight steps → Max load): a machine's top plate.
+  /// Absent = unlimited. Suggestions, drop sets and the keypad's + never go above it.
+  final Map<String, double> maxLoads;
+
   static const double defaultSmallestPlate = 2.5;
 
   static const List<double> defaultDumbbells = [
@@ -66,6 +71,7 @@ class GymEquipment {
     StackSpec? stack,
     Map<String, StackSpec>? perExercise,
     Map<String, LoadType>? typeOverrides,
+    Map<String, double>? maxLoads,
   }) =>
       GymEquipment(
         dumbbells: dumbbells ?? this.dumbbells,
@@ -74,6 +80,7 @@ class GymEquipment {
         stack: stack ?? this.stack,
         perExercise: perExercise ?? this.perExercise,
         typeOverrides: typeOverrides ?? this.typeOverrides,
+        maxLoads: maxLoads ?? this.maxLoads,
       );
 
   /// The load type in effect for one exercise: your override, else [classified].
@@ -150,7 +157,12 @@ class GymEquipment {
     for (final w in logged) {
       values.add(_q(w));
     }
-    return WeightGrid(values);
+    final max = maxLoads[exerciseId];
+    if (max == null) return WeightGrid(values);
+    // Nothing above the cap; if everything is above it (a cap under the lightest load) the cap itself exists.
+    final capped = values.where((v) => v <= max + 1e-9).toSet();
+    if (capped.isEmpty) capped.add(max);
+    return WeightGrid(capped, maxLoad: max);
   }
 
   /// Weights near zero rounding noise (Liftoff's pound conversions) are kept to 0.05 kg.
@@ -166,6 +178,7 @@ class GymEquipment {
         'stack': stack.toJson(),
         'per_exercise': {for (final e in perExercise.entries) e.key: e.value.toJson()},
         'type_overrides': {for (final e in typeOverrides.entries) e.key: e.value.name},
+        if (maxLoads.isNotEmpty) 'max_loads': maxLoads,
       });
 
   static GymEquipment decode(String? raw) {
@@ -182,6 +195,7 @@ class GymEquipment {
       typeOverrides: Map.fromEntries([
         for (final e in ((j['type_overrides'] as Map<String, dynamic>?) ?? const {}).entries) ?_typeEntry(e),
       ]),
+      maxLoads: {for (final e in ((j['max_loads'] as Map<String, dynamic>?) ?? const {}).entries) e.key: (e.value as num).toDouble()},
     );
   }
 
@@ -222,9 +236,15 @@ class GymEquipment {
 
 /// The ordered set of loads that exist for one exercise.
 class WeightGrid {
-  WeightGrid(Iterable<double> values) : values = (values.toSet().toList()..sort());
+  WeightGrid(Iterable<double> values, {this.maxLoad}) : values = (values.toSet().toList()..sort());
 
   final List<double> values;
+
+  /// The exercise's max load, when it has one (the grid stops there).
+  final double? maxLoad;
+
+  /// True when [w] is at (or above) the max load.
+  bool atMax(double w) => maxLoad != null && w >= maxLoad! - _eps;
 
   static const double _eps = 0.01;
 

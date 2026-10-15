@@ -101,9 +101,12 @@ class GymEquipmentCard extends ConsumerWidget {
 
 /// What the logger's "Weight steps…" returns: how the exercise is loaded and, for a stack, its numbers.
 class LoadChoice {
-  const LoadChoice({required this.type, this.stack, this.reset = false});
+  const LoadChoice({required this.type, this.stack, this.reset = false, this.maxLoad});
   final LoadType type;
   final StackSpec? stack;
+
+  /// The exercise's heaviest load; null = unlimited.
+  final double? maxLoad;
 
   /// Go back to the classification and the gym's default stack.
   final bool reset;
@@ -117,14 +120,16 @@ Future<LoadChoice?> editLoad(
   required LoadType current,
   required StackSpec stack,
   required double plate,
+  double? maxLoad,
 }) =>
     showDialog<LoadChoice>(
       context: context,
-      builder: (_) => _LoadDialog(title: title, current: current, stack: stack, plate: plate),
+      builder: (_) => _LoadDialog(title: title, current: current, stack: stack, plate: plate, maxLoad: maxLoad),
     );
 
 class _LoadDialog extends StatefulWidget {
-  const _LoadDialog({required this.title, required this.current, required this.stack, required this.plate});
+  const _LoadDialog({required this.title, required this.current, required this.stack, required this.plate, this.maxLoad});
+  final double? maxLoad;
   final String title;
   final LoadType current;
   final StackSpec stack;
@@ -138,11 +143,13 @@ class _LoadDialogState extends State<_LoadDialog> {
   late LoadType _type = LoadType.pickable.contains(widget.current) ? widget.current : LoadType.stack;
   late final _start = TextEditingController(text: formatKg(widget.stack.start));
   late final _step = TextEditingController(text: formatKg(widget.stack.step));
+  late final _max = TextEditingController(text: widget.maxLoad == null ? '' : formatKg(widget.maxLoad!));
 
   @override
   void dispose() {
     _start.dispose();
     _step.dispose();
+    _max.dispose();
     super.dispose();
   }
 
@@ -153,7 +160,10 @@ class _LoadDialogState extends State<_LoadDialog> {
       if (a == null || b == null || a < 0 || b <= 0) return;
       spec = StackSpec(start: a, step: b);
     }
-    Navigator.of(context).pop(LoadChoice(type: _type, stack: spec));
+    final maxText = _max.text.replaceAll(',', '.').trim();
+    final maxLoad = maxText.isEmpty ? null : double.tryParse(maxText);
+    if (maxText.isNotEmpty && (maxLoad == null || maxLoad <= 0)) return;
+    Navigator.of(context).pop(LoadChoice(type: _type, stack: spec, maxLoad: maxLoad));
   }
 
   @override
@@ -194,6 +204,12 @@ class _LoadDialogState extends State<_LoadDialog> {
                 decoration: const InputDecoration(labelText: 'Step (kg)'),
               ),
             ],
+            TextField(
+              key: const ValueKey('max-load'),
+              controller: _max,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              decoration: const InputDecoration(labelText: 'Max load (kg, optional)', helperText: 'Empty = unlimited. Suggestions never go above it.'),
+            ),
           ]),
         ),
         actions: [

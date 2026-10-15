@@ -47,6 +47,14 @@ class GymRepository {
     await save(g.copyWith(typeOverrides: over));
   }
 
+  /// Exercise menu → Weight steps → Max load. Null (or ≤ 0) clears it: unlimited.
+  Future<void> setMaxLoad(String exerciseId, double? kg) async {
+    final g = await load();
+    final m = {...g.maxLoads};
+    kg == null || kg <= 0 ? m.remove(exerciseId) : m[exerciseId] = kg;
+    await save(g.copyWith(maxLoads: m));
+  }
+
   static const platesMigratedKey = 'smallest_plate_2_5';
 
   /// Startup, once: the first version defaulted the smallest plate to 2.25 kg; this gym's is 2.5 kg.

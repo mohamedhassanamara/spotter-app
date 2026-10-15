@@ -29,6 +29,7 @@ class StoredSuggestion {
     required this.rampUp,
     required this.band,
     this.formResetHint,
+    this.maxReached = false,
   });
 
   final SuggestionKind kind;
@@ -45,6 +46,9 @@ class StoredSuggestion {
   /// restart from.
   final double? formResetHint;
 
+  /// The target is the machine's max load: only reps can progress.
+  final bool maxReached;
+
   static String encode(Suggestion s) => jsonEncode({
         'headline': s.headline,
         'why': s.why,
@@ -52,6 +56,7 @@ class StoredSuggestion {
         'ramp': s.rampUp,
         'band': s.band.name,
         if (s.formResetHint != null) 'reset': s.formResetHint,
+        if (s.maxReached) 'max': true,
       });
 
   static StoredSuggestion? fromRow(SessionExercise e) {
@@ -69,6 +74,7 @@ class StoredSuggestion {
       rampUp: j['ramp'] as bool? ?? false,
       band: ReadinessBand.fromName(j['band'] as String?),
       formResetHint: (j['reset'] as num?)?.toDouble(),
+      maxReached: j['max'] as bool? ?? false,
     );
   }
 }
@@ -371,6 +377,7 @@ class SessionRepository {
       rampUp: main.rampUp,
       band: main.band,
       formResetHint: main.formResetHint,
+      maxReached: main.maxReached,
     );
     final exId = await _db.into(_db.sessionExercises).insert(SessionExercisesCompanion.insert(
           sessionId: sessionId,

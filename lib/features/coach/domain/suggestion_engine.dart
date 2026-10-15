@@ -125,6 +125,7 @@ class Suggestion {
     this.rampUp = false,
     this.band = ReadinessBand.green,
     this.formResetHint,
+    this.maxReached = false,
   });
 
   final SuggestionKind kind;
@@ -146,7 +147,13 @@ class Suggestion {
   /// Set when the last session looks like a deliberate step down to fix form: the weight a
   /// "Form reset" would restart from.
   final double? formResetHint;
+
+  /// The target weight is the exercise's max load: only reps can progress.
+  final bool maxReached;
 }
+
+/// Shown at max load, in the logger and in the suggestion's explanation.
+const String maxReachedMessage = 'Machine max reached: progress with reps or switch variation';
 
 /// Loads as the lifter reads them. Multiples of 0.25 kg (plates, micro-plates) show exactly;
 /// anything else (pound conversions from the Liftoff import, stored at full precision) is
@@ -275,7 +282,13 @@ class SuggestionEngine {
           final next = grid.next(lastTop);
           final jump = grid.nextJump(lastTop, bodyweight: input.bodyweight);
           final target = range.max + extendBy;
-          if (next == null) {
+          if (next == null && grid.atMax(lastTop)) {
+            // The machine's max load: reps keep progressing past the range, with no cap.
+            kind = SuggestionKind.addReps;
+            weight = lastTop;
+            reps = minTopReps + 1;
+            why.add('Rule: top of $range at the max load (${_loadText(lastTop)}) → same weight, aim for $reps reps. $maxReachedMessage.');
+          } else if (next == null) {
             kind = SuggestionKind.addReps;
             weight = lastTop;
             reps = math.min(range.max + extendMax, minTopReps + 1);
@@ -426,6 +439,7 @@ class SuggestionEngine {
       headline: _headline(weight, reps, sets, input.targetRir, adjustment, input.equipment),
       why: why,
       formResetHint: resetHint,
+      maxReached: grid.atMax(weight),
     );
   }
 

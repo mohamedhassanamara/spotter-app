@@ -1501,3 +1501,16 @@ exercise as per dumbbell, so the next target became 37.5 kg *per dumbbell*.
   Dumbbell Calf Raise (max 37.5), Dumbbell Shrug (37.5), Dumbbell Romanian Deadlift (37.5). All three equal the
   heaviest pair in your gym and fit a per-dumbbell reading, so I left them.
 - Tests: `lunge_per_dumbbell_test`.
+
+## 2. Machine max load
+
+Exercise menu → Weight steps… has an optional **Max load (kg)**; empty = unlimited (`GymEquipment.maxLoads`, stored
+with the other gym settings; "Use default" clears it).
+- The exercise's weight grid stops at the max (also over weights logged above it), so suggestions, calibration,
+  deloads, drop sets (snap down) and the keypad's + all stay at or below it. The keypad's + at the top of the grid
+  used to fall back to "+ increment"; it now clamps to the max.
+- At the max with the top of the range hit, the suggestion keeps the weight and raises reps **without the usual
+  range + 3 cap**, and shows "Machine max reached: progress with reps or switch variation" under the
+  prescription (`Suggestion.maxReached`, stored in the suggestion JSON) and in the ⓘ explanation.
+- Tests: `max_load_test` (grid, settings round trip, suggestion below / at the max, keypad), `max_load_flow_test`
+  (real taps: Weight steps → 50 → + stops at 50 → clearing it).

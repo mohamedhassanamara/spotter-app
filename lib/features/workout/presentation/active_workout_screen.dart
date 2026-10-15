@@ -568,14 +568,17 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> with 
           current: g.typeFor(info.id, loadTypeOf(info)),
           stack: g.stackFor(info.id),
           plate: g.smallestPlate,
+          maxLoad: g.maxLoads[info.id],
         );
         if (choice == null) return;
         if (choice.reset) {
           await gymRepo.setStack(info.id, null);
           await gymRepo.setLoadType(info.id, null);
+          await gymRepo.setMaxLoad(info.id, null);
         } else {
           await gymRepo.setLoadType(info.id, choice.type);
           await gymRepo.setStack(info.id, choice.stack);
+          await gymRepo.setMaxLoad(info.id, choice.maxLoad);
         }
       case 'reorder':
         await _reorderSheet(session, catalog);
