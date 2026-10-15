@@ -1533,3 +1533,19 @@ Rules, exactly (`DayStreakCalculator`):
   into the 4th (last chance, train or lose it); 0 from midnight into the 5th.
 - Tests: `day_streak_test` (every case above, DST, UTC, carry-over, opening late), `streak_flow_test`,
   `streak_finish_flow_test` (celebration at Finish, nothing on a second workout the same day).
+
+## 4. Lock-screen rest timer (Live Activity)
+
+Native WidgetKit extension `SpotterLiveActivity` (ios/SpotterLiveActivity, bundle id `com.hassan.spotter.LiveActivity`,
+iOS 17) plus an own ActivityKit bridge (`ios/Runner/LiveActivityBridge.swift`, channel `spotter/live_activity`); no
+package needed. `RestTimerAttributes` is compiled into both targets. Lock screen and Dynamic Island (expanded,
+compact, minimal) show the upcoming exercise, a countdown and the next set's target ("Set 3 · 80 kg × 8").
+- **Countdown runs on its own:** `Text(timerInterval:)` and a timer `ProgressView`, drawn by the system.
+- **Ends** when the rest is skipped or runs out in the app, when the next set is completed (a rest from the set before is
+  over, whether or not the new set has its own rest), and at Finish / Discard. ±15 s updates it in place.
+- **Backgrounded mid-rest:** the activity is ended with a dismissal date equal to the rest's end, so it keeps counting
+  down on the lock screen and removes itself at 0:00 without the app running. Coming back mid-rest it is shown again.
+- Feasibility: yes, fully native; needs `NSSupportsLiveActivities` (added) and the user's Live Activities switch.
+- Tests: `rest_live_activity_test` (next-set text, rest timer → activity calls, channel), `live_activity_flow_test`
+  (real taps; asks native ActivityKit how many are running: ✓ → 1, next ✓ → 1, Skip → 0, Finish → 0).
+- Not verified visually: the simulator screenshot did not capture the island (the rest had expired); check on a device.

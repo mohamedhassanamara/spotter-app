@@ -11,6 +11,7 @@ import 'core/domain/muscles.dart';
 import 'core/health/fake_health_data_source.dart';
 import 'core/health/health_data_source.dart';
 import 'core/health/healthkit_data_source.dart';
+import 'core/live_activity/live_activity_service.dart';
 import 'core/notifications/notification_service.dart';
 import 'core/providers.dart';
 import 'core/domain/gym.dart';
@@ -48,6 +49,9 @@ export 'core/providers.dart';
 // ---------------------------------------------------------------------------
 
 final notificationServiceProvider = Provider<NotificationService>((ref) => NotificationService());
+
+/// The rest timer's lock-screen Live Activity (iOS).
+final liveActivityProvider = Provider<LiveActivityService>((ref) => defaultLiveActivityService());
 
 final _healthKitProvider = Provider<HealthDataSource>((ref) => HealthKitDataSource());
 final _fakeHealthProvider = Provider<HealthDataSource>((ref) => FakeHealthDataSource());

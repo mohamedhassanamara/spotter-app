@@ -6,6 +6,8 @@
 	<string>Spotter reads your heart rate variability, resting heart rate, sleep, active energy and body weight to calculate a daily readiness score and adjust today's training suggestions. This data never leaves your iPhone.</string>
 	<key>NSHealthUpdateUsageDescription</key>
 	<string>Spotter saves each finished session to Apple Health as a Traditional Strength Training workout with its start and end time.</string>
+	<key>NSSupportsLiveActivities</key>
+	<true/>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 	<key>CADisableMinimumFrameDurationOnPhone</key>

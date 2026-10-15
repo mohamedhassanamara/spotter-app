@@ -30,6 +30,7 @@ import '../domain/set_kinds.dart';
 import '../domain/superset_rounds.dart';
 import 'exercise_block.dart';
 import 'keypad.dart';
+import '../domain/rest_preview.dart';
 import 'rest_timer.dart';
 import 'superset_style.dart';
 
@@ -481,22 +482,35 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> with 
   /// and in a superset none until the round is done (one set of each partner), then the longest rest of
   /// the group.
   Future<void> _startRest(ActiveSession session, ActiveExercise ex, WorkoutSet s) async {
-    if (s.isWarmup || !ex.row.restEnabled) return;
     final timer = ref.read(restTimerProvider);
+    // Completing a set means the next one started: a rest still running from the one before is over (its
+    // Live Activity with it), whether or not this set starts a rest of its own.
+    if (s.isWarmup || !ex.row.restEnabled) return timer.stop();
     final idx = ex.sets.indexWhere((x) => x.id == s.id);
     final nextSet = idx >= 0 && idx + 1 < ex.sets.length ? ex.sets[idx + 1] : null;
     if (nextSet != null && nextSet.isFollowUp) {
-      if (nextSet.kind == SetKind.myo) await timer.start(myoRestSeconds);
-      return;
+      return nextSet.kind == SetKind.myo ? timer.start(myoRestSeconds, preview: _restPreview(session, ex, s)) : timer.stop();
     }
     var seconds = ex.row.restSeconds;
     final group = ex.row.supersetGroup;
     if (group != null) {
       final members = session.exercises.where((e) => e.row.supersetGroup == group).toList();
-      if (!supersetRoundDone(members, ex.row.id, s.id)) return;
+      if (!supersetRoundDone(members, ex.row.id, s.id)) return timer.stop();
       seconds = members.map((e) => e.row.restSeconds).reduce((a, b) => a > b ? a : b);
     }
-    await timer.start(seconds);
+    await timer.start(seconds, preview: _restPreview(session, ex, s));
+  }
+
+  /// The Live Activity's text: the exercise and set that come after this rest.
+  RestPreview _restPreview(ActiveSession session, ActiveExercise ex, WorkoutSet done) {
+    final catalog = ref.read(catalogProvider).value ?? const {};
+    String nameOf(ActiveExercise e) => e.row.displayName ?? catalog[e.row.exerciseId]?.name ?? e.row.exerciseId;
+    final next = nextSetAfter(session, ex, done);
+    return RestPreview(
+      workoutName: session.session.name,
+      exerciseName: next == null ? 'Workout' : nameOf(next.exercise),
+      nextTarget: next == null ? 'Last set done. Finish when ready' : setTarget(next.exercise, next.set),
+    );
   }
 
   Future<OverrideReason?> _askReason(WorkoutSet s) => showModalBottomSheet<OverrideReason>(

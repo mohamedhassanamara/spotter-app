@@ -6,6 +6,7 @@ import 'app_providers.dart';
 import 'core/diagnostics/error_log.dart';
 import 'core/theme/app_theme.dart';
 import 'features/tutorials/presentation/exercise_demo.dart';
+import 'features/workout/presentation/rest_timer.dart';
 import 'router.dart';
 
 class SpotterApp extends ConsumerStatefulWidget {
@@ -38,6 +39,7 @@ class _SpotterAppState extends ConsumerState<SpotterApp> {
     }, fireImmediately: true);
     _lifecycle = AppLifecycleListener(onResume: () {
       ref.read(dayTickProvider.notifier).bump();
+      _step(() => ref.read(restTimerProvider).resync());
       _refreshHealth();
     });
     // Independent startup steps: one failing must not block the others, and every failure is logged.

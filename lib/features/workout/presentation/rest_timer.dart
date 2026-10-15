@@ -5,8 +5,17 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app_providers.dart';
+import '../../../core/live_activity/live_activity_service.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/common.dart';
+
+/// Which exercise and set follow the rest (the Live Activity's text).
+class RestPreview {
+  const RestPreview({required this.workoutName, required this.exerciseName, required this.nextTarget});
+  final String workoutName;
+  final String exerciseName;
+  final String nextTarget;
+}
 
 /// Starts, adjusts and cancels the rest timer. The end time lives in settings so it survives
 /// the app being killed, and a local notification is scheduled for the end.
@@ -16,12 +25,37 @@ class RestTimerController {
   RestTimerController(this._ref);
   final Ref _ref;
 
+  /// What the Live Activity shows for the running rest (kept so it can be re-shown after the app was in the
+  /// background: iOS lets it run out on its own there).
+  RestActivity? _activity;
+
   /// No-op for 0 s (first exercise of a superset: go straight to the partner).
-  Future<void> start(int seconds) async {
+  Future<void> start(int seconds, {RestPreview? preview}) async {
     if (seconds <= 0) return;
-    final endsAt = _ref.read(clockProvider)().add(Duration(seconds: seconds));
+    final now = _ref.read(clockProvider)();
+    final endsAt = now.add(Duration(seconds: seconds));
     await _ref.read(settingsControllerProvider).setRestTimer(endsAt, seconds);
     await _ref.read(notificationServiceProvider).scheduleRestDone(endsAt);
+    if (preview == null) {
+      _activity = null;
+      await _ref.read(liveActivityProvider).end();
+      return;
+    }
+    _activity = RestActivity(
+      workoutName: preview.workoutName,
+      exerciseName: preview.exerciseName,
+      nextTarget: preview.nextTarget,
+      startsAt: now,
+      endsAt: endsAt,
+    );
+    await _ref.read(liveActivityProvider).startRest(_activity!);
+  }
+
+  /// Back in the foreground with a rest still running: show the Live Activity again if iOS let it go.
+  Future<void> resync() async {
+    final a = _activity, endsAt = _ref.read(currentSettingsProvider).restEndsAt;
+    if (a == null || endsAt == null || !endsAt.isAfter(_ref.read(clockProvider)())) return;
+    await _ref.read(liveActivityProvider).startRest(a.withEnd(endsAt));
   }
 
   Future<void> adjust(int deltaSeconds) async {
@@ -33,11 +67,19 @@ class RestTimerController {
     if (!next.isAfter(now)) return stop();
     await _ref.read(settingsControllerProvider).setRestTimer(next, (s.restTotalSeconds ?? 0) + deltaSeconds);
     await _ref.read(notificationServiceProvider).scheduleRestDone(next);
+    final a = _activity;
+    if (a != null) {
+      _activity = a.withEnd(next);
+      await _ref.read(liveActivityProvider).startRest(_activity!);
+    }
   }
 
+  /// Rest over, skipped, the next set started or the workout finished: timer, notification and Live Activity go.
   Future<void> stop() async {
+    _activity = null;
     await _ref.read(settingsControllerProvider).setRestTimer(null, null);
     await _ref.read(notificationServiceProvider).cancelRest();
+    await _ref.read(liveActivityProvider).end();
   }
 }
 
