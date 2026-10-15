@@ -1593,3 +1593,17 @@ for the body map, badges, LP bars, legends, rank-up screen, muscle sheet and Ran
 Judgement calls: Challenger's emblem is gold with blue flame edges; the gold body wins by pixel count, and the blue glow is
 left out so it stays apart from Platinum and Diamond. Iron is a warm grey because its bevels are brown. All ten keep the ≥ 3:1
 contrast the body map needs (`tier_palette_test`).
+
+## 7. Keyboard dismissal
+
+**Root cause.** Only the active workout had a tap-to-unfocus handler; every other screen (Library and pick-exercise
+search, sheets, dialogs, settings) had none and no list dismissed on drag, and the custom logger keypad only closed from
+its own hide key.
+- `KeyboardDismisser` wraps the whole app (`MaterialApp.router.builder`): a tap (a pointer that travelled less than the
+  touch slop) outside the focused field, measured on the whole field including its decoration and icons, unfocuses it;
+  a finger-drag scroll start anywhere (not inside the field itself) unfocuses it too. Sheets and dialogs are covered
+  because they live under the same builder.
+- The logger keypad: each exercise's set table and the keypad share one `TapRegion` group; a tap that ends outside
+  both commits and closes the keypad. Taps on other cells, ✓, NEXT or the keys are inside.
+- Test: `keyboard_dismiss_flow_test` (real taps: Library search field, tap outside, tap on a result, drag the list; workout keypad
+  stays for another cell, closes on the page margin).

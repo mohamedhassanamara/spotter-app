@@ -180,6 +180,12 @@ class _ExerciseBlockState extends ConsumerState<ExerciseBlock> {
             ),
           if (_infoOpen) _details(),
           const SizedBox(height: 4),
+          TapRegion(
+            groupId: keypadTapGroup,
+            onTapUpOutside: (_) {
+              if (ctx.focused != null) ctx.onCommit();
+            },
+            child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
           const _TableHeader(),
           if (ctx.hideWarmups && warmups > 0)
             _MutedLine(text: '$warmups warm-up${warmups == 1 ? '' : 's'} hidden', onTap: ctx.onToggleWarmups),
@@ -219,6 +225,8 @@ class _ExerciseBlockState extends ConsumerState<ExerciseBlock> {
                 child: Text(ctx.hideWarmups ? 'Show warm-ups' : 'Hide warm-ups', style: const TextStyle(color: AppColors.textSecondary)),
               ),
           ]),
+            ]),
+          ),
         ],
       ],
     );

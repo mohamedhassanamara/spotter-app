@@ -20,6 +20,9 @@ class KeypadTarget {
   int get hashCode => Object.hash(setId, field);
 }
 
+/// The set table and the keypad are one tap region: a tap anywhere else closes the keypad.
+const Object keypadTapGroup = 'workout-keypad-region';
+
 /// Text being typed into a KG/REPS cell. Pure, so the keypad rules are unit-testable.
 class KeypadBuffer {
   KeypadBuffer({required this.field, this.text = ''});
@@ -148,7 +151,9 @@ class WorkoutKeypad extends StatelessWidget {
         );
     Widget digit(String d) => key(d, () => onDigit(d), k: ValueKey('key-$d'));
 
-    return Container(
+    return TapRegion(
+      groupId: keypadTapGroup,
+      child: Container(
       key: const ValueKey('workout-keypad'),
       color: AppColors.surface,
       padding: const EdgeInsets.fromLTRB(6, 6, 6, 4),
@@ -187,6 +192,7 @@ class WorkoutKeypad extends StatelessWidget {
             ),
           ],
         ),
+      ),
       ),
     );
   }

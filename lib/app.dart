@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'app_providers.dart';
 import 'core/diagnostics/error_log.dart';
 import 'core/theme/app_theme.dart';
+import 'core/widgets/keyboard_dismisser.dart';
 import 'features/tutorials/presentation/exercise_demo.dart';
 import 'features/workout/presentation/rest_timer.dart';
 import 'router.dart';
@@ -93,6 +94,7 @@ class _SpotterAppState extends ConsumerState<SpotterApp> {
           darkTheme: buildAppTheme(),
           themeMode: ThemeMode.dark,
           routerConfig: _router,
+          builder: (context, child) => KeyboardDismisser(child: child ?? const SizedBox.shrink()),
         );
       },
     );
