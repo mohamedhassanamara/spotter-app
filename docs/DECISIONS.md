@@ -1483,3 +1483,21 @@ warm-ups, rest 1–2 min); the video comes from the program slot as before.
   adding to a routine, migration), `single_arm_reverse_fly_test` (fresh install, in-place migration, program
   prescription, video), `rank_toggle_flow_test` (real taps). `docs/RANK_POLICY.md` has the before / after
   ranks and the first suggestions.
+
+# Batch 2 (after a few days of real use)
+
+## 1. Walking Lunge is per dumbbell (supersedes "combined" in Rank calibration v4)
+
+**Root cause.** Liftoff logged Walking Lunge as the total of both dumbbells (35 kg). The v4 decision kept that
+as a special "combined weight" exercise, but the suggestion engine and the logger treat every dumbbell
+exercise as per dumbbell, so the next target became 37.5 kg *per dumbbell*.
+- **Data:** a one-time fix (`DataFixes.ensureLungePerDumbbell`, setting `fix_lunge_per_dumbbell_v1`) halves every
+  *imported* Walking Lunge set (35 → 17.5). In-app sets are untouched. New imports halve at import time
+  (`liftoffTotalLoadIds`), so a later re-import stays consistent.
+- **Rule:** every dumbbell exercise is logged per dumbbell, lunges included. The "Dumbbell walking lunge"
+  (combined) standard is deleted; `sp_db_walking_lunge` ranks on *Dumbbell lunge* (per dumbbell).
+- **Suspects (not converted):** compared with sibling lifts in the Liftoff data, no other dumbbell exercise
+  looks like a total. The ones worth a look, if the numbers feel off when you next train them:
+  Dumbbell Calf Raise (max 37.5), Dumbbell Shrug (37.5), Dumbbell Romanian Deadlift (37.5). All three equal the
+  heaviest pair in your gym and fit a per-dumbbell reading, so I left them.
+- Tests: `lunge_per_dumbbell_test`.

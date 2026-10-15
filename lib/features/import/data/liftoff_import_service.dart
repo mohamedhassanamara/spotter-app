@@ -25,6 +25,10 @@ const liftoffImportedAtKey = 'liftoff_imported_at';
 /// [StreakOffset] on the first import; Settings → Streak can change it.
 const int liftoffStreakDays = 177;
 
+/// Exercises Liftoff logged as the total of both dumbbells. The app logs every dumbbell exercise per
+/// dumbbell, so their imported weight is halved.
+const liftoffTotalLoadIds = {'sp_db_walking_lunge'};
+
 /// What an import would do, shown before anything is written.
 class LiftoffPreview {
   const LiftoffPreview({
@@ -172,6 +176,7 @@ class LiftoffImportService {
           final first = scheme.rangeFor(0) ?? observed;
           final (exerciseId, displayName) = resolved[i];
           final assisted = isAssisted(exerciseId) || isLiftoffAssisted(e.name);
+          final loadScale = liftoffTotalLoadIds.contains(exerciseId) ? 0.5 : 1.0;
           final exId = await _db.into(_db.sessionExercises).insert(SessionExercisesCompanion.insert(
                 sessionId: sessionId,
                 exerciseId: exerciseId,
@@ -190,7 +195,7 @@ class LiftoffImportService {
             await _db.into(_db.workoutSets).insert(WorkoutSetsCompanion.insert(
                   sessionExerciseId: exId,
                   position: j,
-                  weight: Value(assisted ? -x.weightKg.abs() : x.weightKg),
+                  weight: Value((assisted ? -x.weightKg.abs() : x.weightKg) * loadScale),
                   reps: Value(scheme.repsFor(j, x.reps)),
                   rpe: Value(x.rpe ?? 10),
                   completed: const Value(true),

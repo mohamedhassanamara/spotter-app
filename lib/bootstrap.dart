@@ -1,5 +1,6 @@
 import 'package:flutter/services.dart' show rootBundle;
 
+import 'core/db/data_fixes.dart';
 import 'core/db/database.dart';
 import 'features/coach/data/gym_repository.dart';
 import 'features/library/data/exercise_repository.dart';
@@ -19,6 +20,7 @@ Future<void> bootstrapDatabase(AppDatabase db) async {
   await ProgramRepository.ensureProgramSupersets(db);
   await ProgramRepository.ensureRoutineSetCounts(db);
   await ProgramRepository.ensureSingleArmReverseFly(db);
+  await DataFixes.runAll(db);
   await HistoryRepository.markSavedValuesFixed(db, DateTime.now());
   await GymRepository.ensureSmallestPlate(db);
   await RankExclusions.ensureMigrated(db);

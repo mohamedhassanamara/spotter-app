@@ -1329,7 +1329,8 @@
    "base": "squat",
    "factor": 0.2,
    "exercise_ids": [
-    "Dumbbell_Lunges"
+    "Dumbbell_Lunges",
+    "sp_db_walking_lunge"
    ],
    "anchors": {
     "beginner": 0.15,
@@ -1337,24 +1338,6 @@
     "intermediate": 0.28,
     "advanced": 0.37,
     "elite": 0.47
-   }
-  },
-  {
-   "id": "dumbbell_walking_lunge",
-   "name": "Dumbbell walking lunge",
-   "kind": "free",
-   "per_hand": false,
-   "base": "squat",
-   "factor": 0.4,
-   "exercise_ids": [
-    "sp_db_walking_lunge"
-   ],
-   "anchors": {
-    "beginner": 0.3,
-    "novice": 0.42,
-    "intermediate": 0.56,
-    "advanced": 0.74,
-    "elite": 0.94
    }
   },
   {
