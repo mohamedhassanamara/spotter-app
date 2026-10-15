@@ -63,21 +63,21 @@ abstract final class Motion {
   static const pop = Curves.easeOutBack;
 }
 
-/// One colour per rank tier, Iron → Challenger.
-/// The original v2 tier colors (the ones the badges were designed with), restored after the flat
-/// body-map experiment. Every tier keeps ≥ 3:1 contrast with [AppColors.bodyBase] and is lighter than
-/// [AppColors.unranked] (test/widget/tier_palette_test.dart).
+/// One colour per rank tier, Iron → Challenger: the dominant colour of each League of Legends ranked
+/// emblem (sampled with tool/tier_colors/sample_emblems.py; docs/DECISIONS.md has the table). Only colours;
+/// the badge artwork is original. Every tier keeps ≥ 3:1 contrast with [AppColors.bodyBase] and is lighter
+/// than [AppColors.unranked] (test/widget/tier_palette_test.dart).
 const List<Color> tierColors = [
-  Color(0xFF8B8580), // Iron: grey
-  Color(0xFFC07A4B), // Bronze: copper
-  Color(0xFFB9C6D3), // Silver: light silver-blue
-  Color(0xFFF2C14E), // Gold
-  Color(0xFF3FD5C0), // Platinum: teal
-  Color(0xFF2EC27E), // Emerald: green
-  Color(0xFF7FA7FF), // Diamond: periwinkle blue
-  Color(0xFFB57BFF), // Master: purple
-  Color(0xFFFF5A6E), // Grandmaster: red
-  Color(0xFFFFE27A), // Challenger: pale gold
+  Color(0xFFA38887), // Iron
+  Color(0xFFBE7F6D), // Bronze
+  Color(0xFF8296BB), // Silver
+  Color(0xFFC49258), // Gold
+  Color(0xFF2295BF), // Platinum
+  Color(0xFF3CD17C), // Emerald
+  Color(0xFF4280CD), // Diamond
+  Color(0xFFAE39E6), // Master
+  Color(0xFFEB663E), // Grandmaster
+  Color(0xFFB48E52), // Challenger
 ];
 
 ThemeData buildAppTheme() {

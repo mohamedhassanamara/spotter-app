@@ -12,10 +12,15 @@ double contrast(Color a, Color b) {
 }
 
 void main() {
-  test('one color per tier: the original v2 palette', () {
+  test('one color per tier: the League of Legends emblem palette (docs/DECISIONS.md)', () {
     expect(tierColors.length, Tier.values.length);
-    expect(tierColors[Tier.silver.index], const Color(0xFFB9C6D3));
-    expect(tierColors[Tier.grandmaster.index], const Color(0xFFFF5A6E));
+    const hex = {
+      Tier.iron: 0xFFA38887, Tier.bronze: 0xFFBE7F6D, Tier.silver: 0xFF8296BB, Tier.gold: 0xFFC49258, Tier.platinum: 0xFF2295BF,
+      Tier.emerald: 0xFF3CD17C, Tier.diamond: 0xFF4280CD, Tier.master: 0xFFAE39E6, Tier.grandmaster: 0xFFEB663E, Tier.challenger: 0xFFB48E52,
+    };
+    for (final t in Tier.values) {
+      expect(tierColors[t.index], Color(hex[t]!), reason: t.name);
+    }
   });
 
   test('every tier color has WCAG contrast ≥ 3:1 against the body map silhouette (bodyBase)', () {

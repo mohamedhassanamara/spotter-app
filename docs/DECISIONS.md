@@ -1568,3 +1568,28 @@ working sets of that exercise* move one available step lighter (`adaptLaterSets`
 `adjust_reason`). Done sets, sets you typed over, drops, warm-ups and other exercises never change; weight never goes up;
 reps targets stay. The changed weight shows a small accent dot; tapping it says what it was, what happened and why.
 Tests: `plan_freeze_test`, migration v10 → v11, `plan_freeze_flow_test` (real taps).
+
+## 6. League of Legends tier colors
+
+Source: the official ranked emblems from Riot's client assets (CommunityDragon,
+`…/rcp-fe-lol-static-assets/global/default/images/ranked-emblem/emblem-<tier>.png`). `tool/tier_colors/sample_emblems.py`
+samples the dominant colour of each (centre crop, opaque pixels, no shadows or white highlights, most-populated hue sector,
+average of its most vivid third). Only colours are used: the badge artwork stays original. `tierColors` is the single source
+for the body map, badges, LP bars, legends, rank-up screen, muscle sheet and Ranks tab.
+
+| Tier | Old | New (sampled) | Contrast vs body base |
+|---|---|---|---|
+| Iron | #8B8580 | **#A38887** | 4.9 |
+| Bronze | #C07A4B | **#BE7F6D** | 4.9 |
+| Silver | #B9C6D3 | **#8296BB** | 5.3 |
+| Gold | #F2C14E | **#C49258** | 5.8 |
+| Platinum | #3FD5C0 | **#2295BF** | 4.6 |
+| Emerald | #2EC27E | **#3CD17C** | 8.0 |
+| Diamond | #7FA7FF | **#4280CD** | 3.9 |
+| Master | #B57BFF | **#AE39E6** | 3.4 |
+| Grandmaster | #FF5A6E | **#EB663E** | 4.9 |
+| Challenger | #FFE27A | **#B48E52** | 5.3 |
+
+Judgement calls: Challenger's emblem is gold with blue flame edges; the gold body wins by pixel count, and the blue glow is
+left out so it stays apart from Platinum and Diamond. Iron is a warm grey because its bevels are brown. All ten keep the ≥ 3:1
+contrast the body map needs (`tier_palette_test`).
