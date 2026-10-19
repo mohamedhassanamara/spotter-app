@@ -36,8 +36,10 @@ void main() {
     await h.settle();
 
     debugPrint('STEP non-program exercise: GIF only, no Jeff card');
+    await tester.tap(find.byType(TextField).first); // the keyboard was dismissed by tapping a result
     await tester.enterText(find.byType(TextField).first, 'barbell cur');
     await h.settle(6);
+    await h.waitFor(find.text('Barbell Curl'), scroll: false, reason: 'search result');
     await h.tap(find.text('Barbell Curl').first);
     await h.waitFor(find.textContaining('3D demo: ExerciseDB'), timeout: const Duration(seconds: 30), scroll: false);
     expect(find.byKey(const ValueKey('jeff-video-card')), findsNothing);

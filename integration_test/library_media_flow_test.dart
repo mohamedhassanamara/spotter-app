@@ -30,6 +30,7 @@ void main() {
     await h.settle();
 
     debugPrint('STEP wger exercise → Demo tab, credits with licence');
+    await tester.tap(find.byType(TextField).first); // the keyboard was dismissed by tapping a result
     await tester.enterText(find.byType(TextField).first, 'Kettlebell Swing');
     await h.settle(6);
     await h.tap(find.text('2 Handed Kettlebell Swing'));

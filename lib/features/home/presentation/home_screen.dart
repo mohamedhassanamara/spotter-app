@@ -308,10 +308,11 @@ class _StreakState extends ConsumerState<_Streak> {
   /// Day 4 and later: opening the app after the streak was lost says so once.
   Future<void> _announceLoss(DayStreak s) async {
     final last = s.lastWorkoutDay;
-    if (!s.lost || last == null) return;
+    if (!s.lost || last == null || !mounted) return;
     final db = ref.read(databaseProvider);
     final key = dayKey(last);
     if (await db.getSetting(_lostSeenKey) == key) return;
+    if (!mounted) return;
     await db.putSetting(_lostSeenKey, key);
     if (!mounted) return;
     ScaffoldMessenger.of(context)
