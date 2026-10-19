@@ -79,11 +79,26 @@ void main() {
       expect(s.weight, 80);
     });
 
-    test('a set below the bottom of the range → −5% rounded down', () {
+    test('a set below the bottom of the range → hold the weight and try again (never lowered automatically)', () {
       final s = run([log([(80, 7, 9), (80, 6, 9.5), (80, 5, 10)])]);
-      expect(s.kind, SuggestionKind.reduce);
-      expect(s.weight, 75); // 76 → floor to 2.5
+      expect(s.kind, SuggestionKind.addReps);
+      expect(s.weight, 80);
       expect(s.reps, 6);
+      expect(s.downNote, isNull);
+      expect(s.lighterOption, isNull, reason: 'one session below the range is not enough for the option');
+      expect(s.why.join(' '), contains('hold 80 kg and try again'));
+    });
+
+    test('three sessions in a row below the range at one weight → a lighter OPTION is offered, the target stays', () {
+      final bad = [log([(80, 5, 10), (80, 5, 10)], day: 1), log([(80, 5, 10), (80, 4, 10)], day: 2), log([(80, 5, 10), (80, 5, 10)], day: 3)];
+      final s = run(bad);
+      expect(s.weight, 80, reason: 'never applied automatically');
+      expect(s.lighterOption, 75, reason: '−5 % on the next available weight');
+      expect(s.why.join(' '), contains('lighter option'));
+      // Two sessions are not enough, and a different weight in between resets the count.
+      expect(run(bad.sublist(1)).lighterOption, isNull);
+      final mixed = [bad[0], log([(82.5, 5, 10)], day: 2), bad[2]];
+      expect(run(mixed).lighterOption, isNull);
     });
 
     test('a set to failure inside the range is not a failed set → same weight, beat the reps', () {
@@ -119,15 +134,15 @@ void main() {
       expect(s.reps, 6);
     });
 
-    test('plateau: two consecutive sessions without progress → −10% for one session', () {
+    test('a plateau (two sessions without progress) holds the weight: no automatic deload', () {
       final s = run([
         log([(80, 8, 8.5), (80, 8, 8.5), (80, 7, 8.5)], day: 1),
         log([(80, 8, 8.5), (80, 8, 8.5), (80, 7, 8.5)], day: 2),
         log([(80, 8, 9), (80, 7, 9), (80, 7, 9)], day: 3),
       ]);
-      expect(s.kind, SuggestionKind.plateauDeload);
-      expect(s.weight, 70); // 72 → floor to 2.5
-      expect(s.reps, 7);
+      expect(s.kind, SuggestionKind.addReps);
+      expect(s.weight, 80);
+      expect(s.downNote, isNull);
     });
 
     test('lower RPE counts as progress (no plateau)', () {
@@ -167,13 +182,13 @@ void main() {
     test('dumbbell increments of 2 kg', () {
       final up = run([log([(22, 15, 8), (22, 15, 8), (22, 15, 8)])], range: RepRange.isolation, eq: EquipmentKind.dumbbell);
       expect(up.weight, 24);
-      final down = run([log([(22, 9, 9), (22, 9, 9), (22, 8, 9)])], range: RepRange.isolation, eq: EquipmentKind.dumbbell);
-      expect(down.weight, 20); // 20.9 → 20
+      final miss = run([log([(22, 9, 9), (22, 9, 9), (22, 8, 9)])], range: RepRange.isolation, eq: EquipmentKind.dumbbell);
+      expect(miss.weight, 22, reason: 'missing reps holds the weight'); // it used to drop to 20
     });
 
-    test('light weights still drop by at least one increment', () {
+    test('light weights: missing reps holds them too (a one-step drop would be −25 % on a dumbbell grid)', () {
       final s = run([log([(10, 4, 10)])]);
-      expect(s.weight, 7.5); // 9.5 → floor 7.5
+      expect(s.weight, 10);
     });
 
     test('a big relative jump (+20 %) waits for extended reps, then jumps one increment', () {
@@ -219,7 +234,7 @@ void main() {
       expect(s.headline, 'Repeat: 80 kg × 10, 3 sets, stop at 2 reps in reserve');
     });
 
-    test('Red, compound: at most one step down', () {
+    test('Red, compound: repeat last session, the weight is never lowered', () {
       final s = const SuggestionEngine().suggest(SuggestionInput(
         range: RepRange.compound,
         targetSets: 3,
@@ -231,9 +246,11 @@ void main() {
         now: now,
         compound: true,
       ));
-      expect(s.weight, 77.5);
+      expect(s.weight, 80);
+      expect(s.reps, 10);
       expect(s.sets, 3);
-      expect(s.headline, startsWith('Small deload: 77.5 kg'));
+      expect(s.headline, startsWith('Repeat: 80 kg'));
+      expect(s.downNote, isNull);
     });
 
     test('training-load penalty turns a neutral 60 into Yellow (50)', () {
@@ -264,11 +281,10 @@ void main() {
       expect(s.weight, -22.5);
     });
 
-    test('−5% applies to the effective load: more assistance, not less', () {
-      // Effective 55 kg × 0.95 = 52.25 → weight −27.75 → floored to −30 (lighter).
+    test('missing reps holds the assistance too (no automatic extra help)', () {
       final s = assisted([log([(-25, 3, 10), (-25, 3, 10)])]);
-      expect(s.kind, SuggestionKind.reduce);
-      expect(s.weight, -30);
+      expect(s.kind, SuggestionKind.addReps);
+      expect(s.weight, -25);
     });
 
     test('Red day (isolation input): repeat last session, every set', () {

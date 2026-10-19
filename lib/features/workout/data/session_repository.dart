@@ -17,6 +17,10 @@ import '../domain/set_kinds.dart';
 import 'routine_repository.dart';
 
 /// Suggestion as stored with a session exercise.
+extension on String {
+  String? ifEmpty() => isEmpty ? null : this;
+}
+
 class StoredSuggestion {
   const StoredSuggestion({
     required this.kind,
@@ -30,6 +34,8 @@ class StoredSuggestion {
     required this.band,
     this.formResetHint,
     this.maxReached = false,
+    this.downNote,
+    this.lighterOption,
   });
 
   final SuggestionKind kind;
@@ -49,6 +55,12 @@ class StoredSuggestion {
   /// The target is the machine's max load: only reps can progress.
   final bool maxReached;
 
+  /// "↓ from 10 kg: reason" when the target is below last time's weight; shown inline, always.
+  final String? downNote;
+
+  /// A lighter weight the lifter may choose after three sessions below the range (never applied for them).
+  final double? lighterOption;
+
   static String encode(Suggestion s) => jsonEncode({
         'headline': s.headline,
         'why': s.why,
@@ -57,6 +69,8 @@ class StoredSuggestion {
         'band': s.band.name,
         if (s.formResetHint != null) 'reset': s.formResetHint,
         if (s.maxReached) 'max': true,
+        if (s.downNote != null) 'down': s.downNote,
+        if (s.lighterOption != null) 'lighter': s.lighterOption,
       });
 
   static StoredSuggestion? fromRow(SessionExercise e) {
@@ -75,6 +89,8 @@ class StoredSuggestion {
       band: ReadinessBand.fromName(j['band'] as String?),
       formResetHint: (j['reset'] as num?)?.toDouble(),
       maxReached: j['max'] as bool? ?? false,
+      downNote: j['down'] as String?,
+      lighterOption: (j['lighter'] as num?)?.toDouble(),
     );
   }
 }
@@ -378,6 +394,12 @@ class SessionRepository {
       band: main.band,
       formResetHint: main.formResetHint,
       maxReached: main.maxReached,
+      downNote: [
+        if (main.downNote != null) main.downNote!,
+        for (var i = 1; i < groups.length; i++)
+          if (suggestions[i].downNote != null) '${groups[i].first.repRange} sets: ${suggestions[i].downNote}',
+      ].join('\n').ifEmpty(),
+      lighterOption: main.lighterOption,
     );
     final exId = await _db.into(_db.sessionExercises).insert(SessionExercisesCompanion.insert(
           sessionId: sessionId,
@@ -469,6 +491,20 @@ class SessionRepository {
         supersetGroup: row.supersetGroup,
       );
     });
+  }
+
+  /// The optional "Lighter option: X kg" chip (after three sessions below the range): the not-yet-done working sets of
+  /// [ex] move to [weight], marked and explained like any other change; the done ones stay as logged.
+  Future<void> applyLighterOption(ActiveExercise ex, double weight) async {
+    for (final set in ex.sets) {
+      if (set.completed || !set.isWorkingSet || (set.weight - weight).abs() < 0.01) continue;
+      await (_db.update(_db.workoutSets)..where((t) => t.id.equals(set.id))).write(WorkoutSetsCompanion(
+        weight: Value(weight),
+        suggestedWeight: Value(weight),
+        adjustedFrom: Value(set.adjustedFrom ?? set.weight),
+        adjustReason: Value('You chose the lighter option (${formatKg(weight)} kg) after three sessions below the rep range at ${formatKg(set.adjustedFrom ?? set.weight)} kg.'),
+      ));
+    }
   }
 
   /// Mid-workout "Target reps": one range for every working set (drops and warm-ups keep theirs).

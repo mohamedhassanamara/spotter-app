@@ -1836,3 +1836,39 @@ week is topped back up to three.
 No XP, challenge, achievement or badge looks at the suggestion any more. The per-set XP is a flat 10 for every completed working set (the
 +15 "followed it" bonus is gone, and so is the 0 XP for override sets); PR XP and challenge XP are unchanged. The Discipline stat stays on
 Profile as information only and says so.
+
+## 5. Weight dropped after hitting the top of the range; unexplained decreases
+
+**The case:** 6–8 reps, last week 10 kg × 8 (top of the range), this week 7.5 kg × 8, no explanation.
+**Root cause.** Tracing the round-1 engine step by step for that history (dumbbell grid 2.5, 5, 7.5, 10, 12.5…), only two rules can turn
+"10 kg × 8 at the top of 6–8" into "7.5 kg × 8":
+1. **The readiness "small deload" on a Red day** (compound lifts): *one step down the grid from last session's top weight, same reps*.
+   On a dumbbell grid one step from 10 kg is 7.5 kg, a 25 % cut, with the reps repeated (8). It ran *after* the progression rule, so it
+   cancelled a correct "extend the reps / +1 step" and its reason sat only in ⓘ.
+2. The plateau deload (−10 % after two sessions without progress, which includes a top-of-range session logged above the prescribed
+   effort): 10 × 0.9 = 9 → the next lighter dumbbell, 7.5, reps kept.
+The other suspects are cleared: the failure rule would give 7.5 × **6** (reps reset to the bottom); the big-jump rule (10 → 12.5 is +25 %)
+only ever *holds* and extends reps; effort saved differently only makes the top "not counted" (same weight, own the reps); a stale ego flag
+shows its own "Rule: ego flag" line; the nutrition deficit only ever *held* the weight; duplicate history is item 9. Since the user's
+in-app sessions are not in the Liftoff export, the exact session can't be replayed here; the same pattern is in the real data, see below.
+**The scan of all my routine exercises** (`docs/SUGGESTION_DECREASES_BEFORE.md`, round-1 engine, Green and Red readiness): 23 suggestions were
+lower than the last working weight, **2 of them right after a top-of-range session**, both by the Red small deload:
+Chest Supported T-Bar Row 57.5 kg × 8 (top of 6–8) → 55 kg × 8, and Walking Lunge 17.5 kg × 10 (top of 10) → 15 kg × 10. The other 21: a Red deload
+after a non-top session (7), or the −5 % "a set fell below the range" rule (14: Lying Leg Curl 85 → 80, Close-Grip Lat Pulldown 68 → 64 and 52 → 48,
+Cable Wrist Curl 40 → 36, Cable Reverse Wrist Curl 12 → 10, Cable Lateral Raise 8 → 6, …).
+**New rules** (`SuggestionEngine`):
+- **Top of the range at the prescribed effort never leads to a lower weight:** +1 step, or the same weight with the reps pushed past the range when
+  the step is over 10 %. Property test: for **every exercise in the library** (2,355) × 3 weights × 4 ranges × RIR 0 / 2 × Green / Yellow / Red × fatigued × deficit
+  (≈ 170,000 cases) the next weight is the same or the next step, never lower, and carries no decrease note.
+- **Missing reps hold the weight** and try again for the bottom of the range. Only after **3 sessions in a row below the range at the same weight** does the
+  exercise show a chip, **"Lighter option: X kg"** (−5 % on the next available weight): tapping it moves the sets not done yet, with the target-changed
+  marker; it is never applied automatically. (This removes the −5 % rule, the "no third drop" and "after a jump" special cases, and the plateau deload.)
+- **Red readiness repeats** (last session's weight and reps); the weight is never lowered for readiness, recovery or nutrition.
+- **No silent decreases:** whenever the target is below last time's weight for that slot, the block shows **"↓ from 10 kg: reason"** inline (no ⓘ needed).
+  The only remaining ways down are the ego-flag freeze (5 % below the base, with its days left), a calibration or an exercise with no sets at that rep range
+  re-anchoring the load, a max-load cap, and a weight that doesn't exist in the gym. Each states itself; an unexplained one trips a debug assertion, and a 20,000-history
+  random test asserts "lower ⇒ note". A back-off slot with no sets at its own rep range yet has no "last time", so no note.
+**After (same real data, same scan):** 0 suggestions below the last working weight (`docs/SUGGESTION_DECREASES.md`); `docs/SUGGESTIONS_BEFORE_AFTER.md` is the
+re-run before/after table (round-1 engine vs now): 17 of 37 slots change.
+**Tests:** `suggestion_engine_test` and `suggestion_rework_test` (rewritten to the new rules), `no_silent_decrease_test` (the two property tests and the notes),
+`no_silent_decrease_flow_test` (real taps: three bad sessions → weight held and the chip; the chip applies; an ego flag shows the inline note).

@@ -174,6 +174,25 @@ class _ExerciseBlockState extends ConsumerState<ExerciseBlock> {
                 Expanded(child: Text(maxReachedMessage, key: ValueKey('max-reached-${ex.row.id}'), style: AppType.bodyS.copyWith(color: AppColors.accent))),
               ]),
             ),
+          if (ex.suggestion?.downNote != null)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 4),
+              child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                const Icon(Icons.south_east_rounded, size: 16, color: AppColors.warning),
+                const SizedBox(width: 6),
+                Expanded(child: Text(ex.suggestion!.downNote!, key: ValueKey('down-note-${ex.row.id}'), style: AppType.bodyS.copyWith(color: AppColors.warning))),
+              ]),
+            ),
+          if (ex.suggestion?.lighterOption != null && !ex.sets.any((s) => s.completed))
+            Align(
+              alignment: Alignment.centerLeft,
+              child: ActionChip(
+                key: ValueKey('lighter-option-${ex.row.id}'),
+                avatar: const Icon(Icons.remove_circle_outline_rounded, size: 18),
+                label: Text('Lighter option: ${formatKg(ex.suggestion!.lighterOption!)} kg'),
+                onPressed: () => ref.read(sessionRepositoryProvider).applyLighterOption(ex, ex.suggestion!.lighterOption!),
+              ),
+            ),
           if (ex.suggestion?.formResetHint != null && !ex.sets.any((s) => s.completed))
             Align(
               alignment: Alignment.centerLeft,

@@ -139,11 +139,13 @@ void main() {
       }
     });
 
-    test('a computed in-between load snaps down to the next lighter weight you have', () {
-      // 10 kg failing → −5 % = 9.5 → the next lighter dumbbell, 7.5.
-      final s = suggest([log(now.subtract(const Duration(days: 7)), [(10, 7), (10, 6)])]);
-      expect(s.weight, 7.5);
-      expect(s.why.last, 'Weight: 7.5 kg exists in your gym.');
+    test('the lighter OPTION after three bad sessions snaps down to the next lighter weight you have', () {
+      // 10 kg below the range three times → −5 % = 9.5 → the next lighter dumbbell, 7.5, offered but not applied.
+      final h = [for (var d = 21; d >= 7; d -= 7) log(now.subtract(Duration(days: d)), [(10, 7), (10, 6)])];
+      final s = suggest(h, range: const RepRange(8, 10));
+      expect(s.weight, 10, reason: 'never applied');
+      expect(s.lighterOption, 7.5);
+      expect(dumbbells.contains(s.lighterOption!), isTrue);
     });
 
     test('weights you have logged exist even if the settings don\'t list them (a 72 kg stack position)', () {
@@ -153,7 +155,7 @@ void main() {
     });
   });
 
-  group('no drop spirals', () {
+  group('no silent decreases, no drop spirals', () {
     test('Yellow / Red never cut an isolation below last session, and never take a set', () {
       final h = [log(now.subtract(const Duration(days: 7)), [(12.5, 11), (12.5, 10)])];
       expect(suggest(h, readiness: yellow).weight, 12.5);
@@ -163,14 +165,15 @@ void main() {
       expect(r.sets, 3);
     });
 
-    test('Red on a compound: at most one step down', () {
+    test('Red on a compound: repeat, never a step down', () {
       final grid = GymEquipment.defaults.gridFor(exerciseId: 'bb', kind: EquipmentKind.barbell);
       final h = [log(now.subtract(const Duration(days: 7)), [(65, 6), (65, 5)])];
       final s = suggest(h, range: const RepRange(4, 6), readiness: red, grid: grid, compound: true, eq: EquipmentKind.barbell);
-      expect(s.weight, grid.previous(65));
+      expect(s.weight, 65);
+      expect(s.downNote, isNull);
     });
 
-    test('two decreases in a row → the third failing session holds', () {
+    test('falling short three sessions in a row never lowers the weight by itself', () {
       final h = [
         log(DateTime(2026, 9, 22), [(15, 10), (15, 10)]),
         log(DateTime(2026, 9, 29), [(12.5, 9), (12.5, 8)]),
@@ -178,10 +181,10 @@ void main() {
       ];
       final s = suggest(h);
       expect(s.weight, 10);
-      expect(s.why.any((w) => w.contains('no third drop')), isTrue);
+      expect(s.downNote, isNull);
     });
 
-    test('...unless the guardrail flagged ego sets (freeze active)', () {
+    test('...but an ego flag (freeze active) does lower it, and says so visibly', () {
       final h = [
         log(DateTime(2026, 9, 22), [(15, 10), (15, 10)]),
         log(DateTime(2026, 9, 29), [(12.5, 9), (12.5, 8)]),
@@ -189,6 +192,7 @@ void main() {
       ];
       final s = suggest(h, freeze: FreezeState(until: now.add(const Duration(days: 3)), baseWeight: 10));
       expect(s.weight, lessThan(10));
+      expect(s.downNote, startsWith('↓ from 10 kg: ego flag'));
     });
 
     test('big jump (7.5 → 10 kg dumbbells = +33 %): extend reps past the range first, then jump', () {
@@ -207,16 +211,15 @@ void main() {
       expect(s.weight, grid.next(110));
     });
 
-    test('below the range in the first 2 sessions after a jump → hold, not drop', () {
+    test('below the range, whenever: hold the weight (also right after a jump, and from the third session on)', () {
       final h = [
         log(DateTime(2026, 9, 29), [(7.5, 14), (7.5, 14)]),
         log(DateTime(2026, 10, 6), [(10, 9), (10, 8)]),
       ];
-      final s = suggest(h);
-      expect(s.weight, 10);
-      expect(s.why.any((w) => w.contains('after a jump')), isTrue);
+      expect(suggest(h).weight, 10);
       final third = suggest([...h, log(DateTime(2026, 10, 9), [(10, 9), (10, 8)]), log(DateTime(2026, 10, 12), [(10, 9), (10, 8)])]);
-      expect(third.weight, 7.5, reason: 'from the third session at the new weight, normal rules');
+      expect(third.weight, 10, reason: 'still held; at most a lighter option');
+      expect(third.downNote, isNull);
     });
 
     test('form reset: progression restarts from the reset weight and old heavier sets don\'t trigger reductions', () {
@@ -242,39 +245,39 @@ void main() {
       expect(s.why.any((w) => w.startsWith('Recovery: biceps Fatigued → repeat last session (40 kg × 12)')), isTrue);
     });
 
-    test('readiness and recovery together soften by one step at most', () {
+    test('readiness and recovery together repeat, they never lower', () {
       final s = suggest(topReached, readiness: yellow, fatigued: const ['Biceps']);
       expect(s.weight, 40);
       expect(s.why.any((w) => w.contains('Readiness Yellow (45) + biceps Fatigued → repeat last session')), isTrue);
       final grid = GymEquipment.defaults.gridFor(exerciseId: 'bb', kind: EquipmentKind.barbell);
       final c = suggest([log(now.subtract(const Duration(days: 7)), [(65, 5), (65, 5)])],
           range: const RepRange(4, 6), readiness: red, fatigued: const ['Chest'], grid: grid, compound: true, eq: EquipmentKind.barbell);
-      expect(c.weight, grid.previous(65), reason: 'one step, not two');
+      expect(c.weight, 65, reason: 'repeat, not a step down');
     });
 
-    test('Red + quads Fatigued on a compound → small deload, one step, same reps, all sets', () {
+    test('Red + quads Fatigued on a compound → repeat last session, same weight, all sets', () {
       final grid = GymEquipment.defaults.gridFor(exerciseId: 'm', kind: EquipmentKind.machineCable);
       final s = suggest([log(now.subtract(const Duration(days: 7)), [(40, 8), (40, 7)])],
           range: const RepRange(6, 8), readiness: red, fatigued: const ['Quadriceps'], grid: grid, compound: true, eq: EquipmentKind.machineCable);
-      expect(s.weight, 35);
+      expect(s.weight, 40);
       expect(s.reps, 8);
       expect(s.sets, 3);
-      expect(s.why.any((w) => w.contains('Readiness Red (30) + quadriceps Fatigued → small deload: 35 kg × 8 (one step down')), isTrue);
+      expect(s.why.any((w) => w.contains('Readiness Red (30) + quadriceps Fatigued → repeat last session (40 kg × 8)')), isTrue);
     });
 
-    test('never more than one step down in total, whatever the inputs', () {
+    test('whatever the inputs, never below last time without a freeze', () {
       final grid = GymEquipment.defaults.gridFor(exerciseId: 'm', kind: EquipmentKind.machineCable);
-      // A missed range (−5 %) + plateau-free + Red + Fatigued + deficit on a compound.
+      // A missed range + Red + Fatigued + deficit on a compound.
       final s = suggest([log(now.subtract(const Duration(days: 7)), [(60, 4), (60, 3)])],
           range: const RepRange(6, 8), readiness: red, fatigued: const ['Chest'], grid: grid, compound: true, eq: EquipmentKind.machineCable,
           energy: const EnergyContext(avg7: 100, slopePerWeek: -0.5));
-      expect(s.weight, greaterThanOrEqualTo(grid.previous(60)!));
+      expect(s.weight, 60);
       expect(s.sets, 3);
     });
 
-    test('a clear deficit: falling short holds instead of dropping', () {
+    test('a clear deficit changes nothing about holding: falling short holds, with or without it', () {
       final h = [log(now.subtract(const Duration(days: 7)), [(20, 9), (20, 8)])];
-      expect(suggest(h).weight, lessThan(20));
+      expect(suggest(h).weight, 20);
       final d = suggest(h, energy: const EnergyContext(avg7: 100, slopePerWeek: -0.5));
       expect(d.weight, 20);
       expect(d.why.any((w) => w.contains('deficit')), isTrue);
@@ -384,8 +387,8 @@ void main() {
                 expect(s.sets, routineSets, reason: '${c.key}, $routineSets sets');
                 if (c.value.isNotEmpty) {
                   final last = c.value.last.topWeight;
-                  expect(s.weight, greaterThanOrEqualTo(barbell.previous(last)! - 0.01), reason: '${c.key}: one step down at most');
-                  if (!compound && c.key != 'below range') expect(s.weight, greaterThanOrEqualTo(last), reason: '${c.key}: isolation never below last');
+                  expect(s.weight, greaterThanOrEqualTo(last), reason: '${c.key}: never below last time');
+                  expect(s.downNote, isNull);
                 }
               }
             }

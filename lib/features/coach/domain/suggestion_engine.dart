@@ -126,6 +126,8 @@ class Suggestion {
     this.band = ReadinessBand.green,
     this.formResetHint,
     this.maxReached = false,
+    this.downNote,
+    this.lighterOption,
   });
 
   final SuggestionKind kind;
@@ -150,6 +152,13 @@ class Suggestion {
 
   /// The target weight is the exercise's max load: only reps can progress.
   final bool maxReached;
+
+  /// "↓ from 10 kg: …" whenever the target is below last time's weight; null otherwise. A decrease without a stated rule is a
+  /// bug (asserted in debug builds and in tests).
+  final String? downNote;
+
+  /// After three sessions in a row below the range at one weight: a lighter weight the lifter may choose. Never applied.
+  final double? lighterOption;
 }
 
 /// Shown at max load, in the logger and in the suggestion's explanation.
@@ -174,7 +183,6 @@ class SuggestionEngine {
   const SuggestionEngine();
 
   static const double failureReduction = 0.05;
-  static const double plateauReduction = 0.10;
   static const double freezeReduction = 0.05;
   static const double calibrationStopRpe = 8;
 
@@ -185,11 +193,8 @@ class SuggestionEngine {
   static const int extendBy = 2;
   static const int extendMax = 3;
 
-  /// Load decreases in a row allowed before the engine holds (ego flags excepted).
-  static const int maxConsecutiveDrops = 2;
-
-  /// Sessions after a jump during which falling short of the range means hold, not drop.
-  static const int postJumpGrace = 2;
+  /// Sessions in a row below the range, at the same weight, before a lighter weight is offered (never applied).
+  static const int lighterOptionAfter = 3;
 
   Suggestion suggest(SuggestionInput input) {
     final grid = input.grid ?? _plainGrid(input);
@@ -211,6 +216,11 @@ class SuggestionEngine {
     int reps;
     double lastTop;
     double? resetHint;
+    double? lighter;
+
+    // Why the target may sit below last time's weight. Every decrease must have one (asserted below); there is no
+    // silent way down.
+    String? decreaseWhy;
 
     if (logs.isEmpty) {
       // Form reset with nothing logged since: start from the reset weight.
@@ -224,7 +234,6 @@ class SuggestionEngine {
       final last = logs.last;
       lastTop = last.topWeight;
       why.add('Base: ${_describe('last session', last)}${reset != null ? ' (since your form reset on ${_d(reset.at)})' : ''}');
-      final drops = _consecutiveDrops(logs);
 
       if (last.suggestionKind == SuggestionKind.calibration || !input.rangeMatched) {
         final recent = logs.sublist(math.max(0, logs.length - 3));
@@ -239,6 +248,9 @@ class SuggestionEngine {
                 '→ e1RM ${e1rm.toStringAsFixed(1)} kg → ${formatKg(weight)} kg for ${range.min} reps at ${input.targetRir} RIR.'
             : 'Rule: no recent sets at $range. Best of the last ${recent.length} session(s): ${_loadText(best.weight)} × ${best.reps} '
                 '@ RPE ${formatRpe(best.effectiveRpe)} → e1RM ${e1rm.toStringAsFixed(1)} kg → ${formatKg(weight)} kg for ${range.min} reps at ${input.targetRir} RIR.');
+        decreaseWhy = last.suggestionKind == SuggestionKind.calibration
+            ? 'your calibration sets set the starting load for $range'
+            : 'you have no recent sets at $range, so it starts from your best estimated max';
       } else {
         final working = last.workingSets;
         // Effort is judged against the prescription: going to failure is never a failed set, only
@@ -247,36 +259,22 @@ class SuggestionEngine {
         final failed = working.any((s) => s.reps < range.min);
         final allTop = working.every((s) => s.reps >= range.max && s.effectiveRpe <= maxRpe);
         final minTopReps = last.topSets.map((s) => s.reps).reduce(math.min);
-        final sessionsAtWeight = _trailingAtWeight(logs);
-        final before = logs.length > sessionsAtWeight ? logs[logs.length - sessionsAtWeight - 1].topWeight : null;
-        final justJumped = before != null && before < lastTop - 0.01 && sessionsAtWeight <= postJumpGrace;
 
         if (failed) {
-          final drop = _reduced(input, grid, lastTop, failureReduction);
-          if (justJumped) {
-            kind = SuggestionKind.addReps;
-            weight = lastTop;
-            reps = range.min;
-            why.add('Rule: a set fell below $range, but this is session $sessionsAtWeight at ${_loadText(lastTop)} after a jump '
-                '→ hold the weight and build back into the range (no drop).');
-          } else if (energy.deficit) {
-            kind = SuggestionKind.addReps;
-            weight = lastTop;
-            reps = range.min;
-            why.add('Rule: a set fell below $range, but you\'re in a deficit (${energy.deficitReason}) where a stall is expected '
-                '→ hold ${_loadText(lastTop)} instead of dropping.');
-          } else if (drops >= maxConsecutiveDrops && !_frozen(input)) {
-            kind = SuggestionKind.addReps;
-            weight = lastTop;
-            reps = range.min;
-            why.add('Rule: a set fell below $range, but the load already went down $drops sessions in a row '
-                '→ hold ${_loadText(lastTop)} (no third drop).');
-          } else {
-            kind = SuggestionKind.reduce;
-            weight = drop;
-            reps = range.min;
-            why.add('Rule: a working set fell below $range → −5 % on the next available weight '
-                '(${_loadText(lastTop)} → ${_loadText(weight)}), target ${range.min} reps.');
+          // Missing reps never lowers the weight by itself: hold it and try again. A lighter weight is only offered
+          // (as an optional choice, never applied) after three sessions in a row below the range at this weight.
+          kind = SuggestionKind.addReps;
+          weight = lastTop;
+          reps = range.min;
+          why.add('Rule: a working set fell below $range → hold ${_loadText(lastTop)} and try again for ${range.min} reps '
+              '(the weight only goes down if you choose it).');
+          if (_belowRangeStreak(logs, range) >= lighterOptionAfter) {
+            lighter = _reduced(input, grid, lastTop, failureReduction);
+            if (lighter >= lastTop - 0.01) lighter = null;
+            if (lighter != null) {
+              why.add('Option: three sessions in a row below $range at ${_loadText(lastTop)} → a lighter option, ${_loadText(lighter)}, '
+                  'is offered. It is never applied for you.');
+            }
           }
         } else if (allTop) {
           final next = grid.next(lastTop);
@@ -307,19 +305,6 @@ class SuggestionEngine {
                 '(${input.targetRir == 0 ? 'failure' : 'RPE ≤ ${formatRpe(maxRpe)}'})${jump != null && jump > bigJump ? ' and the extended reps' : ''} '
                 '→ next available weight ${_loadText(next)}, reps reset to ${range.min}.');
           }
-        } else if (_isPlateau(logs, energy.deficit ? 3 : 2)) {
-          if (drops >= maxConsecutiveDrops && !_frozen(input)) {
-            kind = SuggestionKind.addReps;
-            weight = lastTop;
-            reps = math.max(range.min, math.min(range.max, minTopReps));
-            why.add('Rule: plateau, but the load already went down $drops sessions in a row → hold.');
-          } else {
-            kind = SuggestionKind.plateauDeload;
-            weight = _reduced(input, grid, lastTop, plateauReduction);
-            reps = math.max(range.min, math.min(range.max, minTopReps));
-            why.add('Rule: plateau: ${energy.deficit ? 'three' : 'two'} sessions in a row without progress '
-                '→ one lighter session (${_loadText(weight)}, about −10 %), then rebuild.');
-          }
         } else {
           kind = SuggestionKind.addReps;
           weight = lastTop;
@@ -349,10 +334,11 @@ class SuggestionEngine {
         ? range.min
         : logs.last.topSets.map((s) => s.reps).reduce(math.max).clamp(range.min, range.max + extendMax).toInt();
 
-    // Ego freeze overrides progression.
+    // Ego freeze overrides progression: the one deliberate way down, always shown.
     final freeze = input.freeze;
     if (freeze != null && freeze.isActive(input.now)) {
       final frozen = grid.snapDown((freeze.baseWeight + input.bodyweight) * (1 - freezeReduction) - input.bodyweight);
+      if (frozen < weight - 0.01) decreaseWhy = 'ego flag: progression is frozen ${freeze.daysLeft(input.now)} more day(s) at 5 % below ${formatKg(freeze.baseWeight)} kg';
       weight = math.min(weight, frozen);
       kind = SuggestionKind.egoFreeze;
       reps = range.min;
@@ -360,12 +346,10 @@ class SuggestionEngine {
           '→ 5 % below ${formatKg(freeze.baseWeight)} kg.');
     }
 
-    // Readiness + recovery adjust the target, never the volume: "repeat" (last session's weight and
-    // reps, no progression) or a "small deload" (one available step down, same reps). One step at
-    // most in total; isolations never below last session.
+    // Readiness + recovery adjust the target, never the weight downwards and never the volume: a day that isn't
+    // Green (or a Fatigued muscle) means "repeat" (last session's weight and reps, no progression).
     final r = input.readiness;
     final band = r.band;
-    var deloadDay = false;
     var adjustment = '';
     if (r.loadPenaltyGroups.isNotEmpty) {
       why.add('Readiness: ${r.loadPenaltyGroups.join(', ')} volume over the last 7 days is above 1.5× your 4-week average '
@@ -379,44 +363,29 @@ class SuggestionEngine {
     ].join(' + ');
     if (!fatigued && band == ReadinessBand.green) {
       why.add('Readiness: Green ($scoreText) → no change.');
-    } else if (band == ReadinessBand.red && input.compound && weight >= lastTop - 0.01) {
-      // Small deload: one available step below last session, same rep target, every set.
-      final down = grid.previous(lastTop);
-      weight = down == null ? lastTop : math.max(down, _minLoad(input));
-      reps = repeatReps.clamp(range.min, range.max).toInt();
-      if (kind == SuggestionKind.increase) kind = SuggestionKind.addReps;
-      deloadDay = true;
-      adjustment = 'Small deload';
-      why.add('Readiness: $cause → small deload: ${_loadText(weight)} × $reps (one step down from ${_loadText(lastTop)}), all $sets sets.');
-    } else if (weight >= lastTop - 0.01) {
+    } else if (weight >= lastTop - 0.01 && kind != SuggestionKind.egoFreeze) {
       weight = lastTop;
       reps = repeatReps;
       if (kind == SuggestionKind.increase) kind = SuggestionKind.addReps;
       adjustment = 'Repeat';
-      why.add('${band == ReadinessBand.green ? 'Recovery' : 'Readiness'}: $cause → repeat last session (${_loadText(weight)} × $reps), all $sets sets.');
+      why.add('${band == ReadinessBand.green ? 'Recovery' : 'Readiness'}: $cause → repeat last session (${_loadText(weight)} × $reps), all $sets sets. '
+          'The weight is never lowered for readiness.');
     } else {
-      why.add('${band == ReadinessBand.green ? 'Recovery' : 'Readiness'}: $cause → no extra change: the progression rule already '
-          'lowered today\'s load to ${_loadText(weight)}${input.compound ? '' : ' (isolations never go lower for readiness)'}.');
+      why.add('${band == ReadinessBand.green ? 'Recovery' : 'Readiness'}: $cause → no extra change.');
     }
 
-    // Nutrition: modest, transparent, never a reason to add load.
+    // Nutrition: modest, transparent, never a reason to add or cut load.
     if (!energy.hasNutrition && energy.trend == null) {
       why.add('Nutrition: no nutrition or bodyweight trend data in Apple Health, so it isn\'t used.');
     } else {
       if (energy.deficit) {
-        why.add('Nutrition: deficit (${energy.deficitReason}): stalls are expected, so falling short holds instead of dropping, and plateaus need three flat sessions.');
+        why.add('Nutrition: deficit (${energy.deficitReason}): stalls are expected, so missing reps holds the weight and nothing is lowered.');
       } else if (energy.trend != null) {
         why.add('Nutrition: bodyweight ${energy.trend!.label}${energy.hasNutrition ? '' : ' (no food logged in Health)'} → no effect.');
       }
       if (energy.lowProtein) {
         why.add('Nutrition: protein ${energy.proteinPerKg!.toStringAsFixed(1)} g/kg over the last 7 days is under ${EnergyConfig.lowProteinPerKg} g/kg; loads unchanged.');
       }
-    }
-
-    // No drop spirals: never a third decrease in a row (ego flags excepted).
-    if (logs.isNotEmpty && weight < lastTop - 0.01 && _consecutiveDrops(logs) >= maxConsecutiveDrops && !_frozen(input)) {
-      weight = lastTop;
-      why.add('Rule: the load already went down ${_consecutiveDrops(logs)} sessions in a row → holding ${_loadText(lastTop)}.');
     }
 
     // Only weights that exist.
@@ -428,19 +397,43 @@ class SuggestionEngine {
         ? 'Weight: ${_loadText(weight)} exists in your gym.'
         : 'Weight: ${formatKg(exact)} kg isn\'t available → ${_loadText(weight)} (the next lighter one you have).');
 
+    // The visible reason whenever the target is below last time's weight *for this slot*. Nothing else may lower it.
+    // A slot with no sets at its rep range yet (a back-off set after top sets) has no "last time" to be below.
+    String? downNote;
+    if (logs.isNotEmpty && input.rangeMatched && weight < lastTop - 0.01) {
+      if (decreaseWhy == null && grid.maxLoad != null && lastTop > grid.maxLoad! + 0.01) decreaseWhy = 'your max load for this exercise is ${formatKg(grid.maxLoad!)} kg';
+      if (decreaseWhy == null && !grid.contains(exact) && exact >= lastTop - 0.01) decreaseWhy = 'that weight isn\'t available in your gym';
+      assert(decreaseWhy != null,
+          'Unexplained decrease: ${_loadText(lastTop)} → ${_loadText(weight)} (${kind.name}). Every decrease needs a stated rule.');
+      downNote = '↓ from ${_loadText(lastTop)}: ${decreaseWhy ?? 'see the explanation'}';
+    }
+
     return Suggestion(
       kind: kind,
       weight: weight,
       reps: reps,
       sets: sets,
       rir: input.targetRir,
-      techniqueDay: deloadDay,
       band: band,
       headline: _headline(weight, reps, sets, input.targetRir, adjustment, input.equipment),
       why: why,
       formResetHint: resetHint,
       maxReached: grid.atMax(weight),
+      downNote: downNote,
+      lighterOption: lighter,
     );
+  }
+
+  /// Sessions in a row, ending with the last, that fell below [range] at the last session's top weight.
+  static int _belowRangeStreak(List<ExerciseSessionLog> logs, RepRange range) {
+    final w = logs.last.topWeight;
+    var n = 0;
+    for (var i = logs.length - 1; i >= 0; i--) {
+      final l = logs[i];
+      if ((l.topWeight - w).abs() > 0.01 || !l.workingSets.any((s) => s.reps < range.min)) break;
+      n++;
+    }
+    return n;
   }
 
   Suggestion _calibration(SuggestionInput input, WeightGrid grid) {
@@ -498,30 +491,6 @@ class SuggestionEngine {
     return math.max(w, _minLoad(input));
   }
 
-  static bool _frozen(SuggestionInput input) => input.freeze != null && input.freeze!.isActive(input.now);
-
-  /// Sessions in a row (ending with the last) whose top weight went down from the one before.
-  static int _consecutiveDrops(List<ExerciseSessionLog> logs) {
-    var n = 0;
-    for (var i = logs.length - 1; i > 0; i--) {
-      if (logs[i].topWeight < logs[i - 1].topWeight - 0.01) {
-        n++;
-      } else {
-        break;
-      }
-    }
-    return n;
-  }
-
-  /// How many sessions in a row (ending with the last) were at the last session's top weight.
-  static int _trailingAtWeight(List<ExerciseSessionLog> logs) {
-    final w = logs.last.topWeight;
-    var n = 0;
-    for (var i = logs.length - 1; i >= 0 && (logs[i].topWeight - w).abs() < 0.01; i--) {
-      n++;
-    }
-    return n;
-  }
 
   /// Plain lifts can't go below 0 kg; assisted lifts can add assistance down to full bodyweight.
   static double _minLoad(SuggestionInput input) => input.assisted ? -input.bodyweight : 0;
@@ -536,30 +505,6 @@ class SuggestionEngine {
       if (s.e1rm(bodyweight: bodyweight) > best.e1rm(bodyweight: bodyweight)) best = s;
     }
     return best;
-  }
-
-  /// [pairs] consecutive sessions without progress over the last [pairs] + 1 logs.
-  static bool _isPlateau(List<ExerciseSessionLog> logs, int pairs) {
-    if (logs.length < pairs + 1) return false;
-    final tail = logs.sublist(logs.length - pairs - 1);
-    if (tail.skip(1).any((l) => l.suggestionKind == SuggestionKind.plateauDeload)) return false;
-    for (var i = 1; i < tail.length; i++) {
-      if (!_noProgress(tail[i - 1], tail[i])) return false;
-    }
-    return true;
-  }
-
-  static bool _noProgress(ExerciseSessionLog prev, ExerciseSessionLog cur) {
-    if (cur.topWeight != prev.topWeight) return false;
-    final prevReps = prev.topSets.fold<int>(0, (s, x) => s + x.reps);
-    final curReps = cur.topSets.fold<int>(0, (s, x) => s + x.reps);
-    if (curReps > prevReps) return false;
-    return _avgRpe(cur) >= _avgRpe(prev);
-  }
-
-  static double _avgRpe(ExerciseSessionLog l) {
-    final t = l.topSets;
-    return t.fold<double>(0, (s, x) => s + x.effectiveRpe) / t.length;
   }
 
   static String _describe(String label, ExerciseSessionLog log) {
