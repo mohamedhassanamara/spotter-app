@@ -16,8 +16,9 @@ class _Notifications extends NotificationService {
   Future<void> init() async {}
   @override
   Future<void> scheduleRestDone(DateTime at, {String body = ''}) async {}
+  int cancels = 0;
   @override
-  Future<void> cancelRest() async {}
+  Future<void> cancelRest() async => cancels++;
 }
 
 class _FakeActivity implements LiveActivityService {
@@ -107,14 +108,16 @@ void main() {
     late AppDatabase db;
     late _FakeActivity activity;
     late ProviderContainer c;
+    late _Notifications notes;
     final now = DateTime(2026, 10, 12, 18);
     setUp(() {
       db = AppDatabase(NativeDatabase.memory());
       activity = _FakeActivity();
+      notes = _Notifications();
       c = ProviderContainer(overrides: [
         databaseProvider.overrideWithValue(db),
         liveActivityProvider.overrideWithValue(activity),
-        notificationServiceProvider.overrideWithValue(_Notifications()),
+        notificationServiceProvider.overrideWithValue(notes),
         clockProvider.overrideWithValue(() => now),
       ]);
       c.listen(settingsProvider, (_, _) {});
@@ -153,6 +156,42 @@ void main() {
       expect(activity.calls, isEmpty);
       await c.read(restTimerProvider).start(60);
       expect(activity.calls, ['end']);
+    });
+
+    test('un-ticking the set whose rest is running cancels it: timer, notification and Live Activity', () async {
+      final timer = c.read(restTimerProvider);
+      await timer.start(90, preview: preview, setId: 7);
+      await c.read(settingsProvider.future);
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+      expect(c.read(currentSettingsProvider).restEndsAt, isNotNull);
+      activity.calls.clear();
+      final before = notes.cancels;
+      expect(await timer.cancelIfFor(7), isTrue);
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+      expect(c.read(currentSettingsProvider).restEndsAt, isNull, reason: 'the in-app timer is gone');
+      expect(activity.calls, ['end'], reason: 'the Live Activity ends');
+      expect(notes.cancels, before + 1, reason: 'the pending "rest done" notification is cancelled');
+    });
+
+    test('un-ticking some other set leaves the running rest alone; nothing running → nothing to cancel', () async {
+      final timer = c.read(restTimerProvider);
+      expect(await timer.cancelIfFor(7), isFalse, reason: 'no rest running');
+      await timer.start(90, preview: preview, setId: 7);
+      await c.read(settingsProvider.future);
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+      activity.calls.clear();
+      expect(await timer.cancelIfFor(3), isFalse);
+      expect(activity.calls, isEmpty);
+      expect(c.read(currentSettingsProvider).restEndsAt, isNotNull);
+    });
+
+    test('a rest from before this process (set unknown) is cancelled when the latest set done is un-ticked', () async {
+      final timer = c.read(restTimerProvider);
+      await timer.start(90, preview: preview);
+      await c.read(settingsProvider.future);
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+      expect(await timer.cancelIfFor(9, latestDone: false), isFalse);
+      expect(await timer.cancelIfFor(9, latestDone: true), isTrue);
     });
 
     test('back in the foreground mid-rest: the activity is shown again with the same end', () async {

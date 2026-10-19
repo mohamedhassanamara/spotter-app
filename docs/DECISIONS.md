@@ -1894,3 +1894,11 @@ of the exercise to this ✓; when the rest timer was **skipped**, to the moment 
 small row between the two sets shows it: a timer icon and the time, e.g. "⏱ 2:14". The first set of an exercise has none, a drop / myo / hold set has none (it follows its
 set with no rest), and unticking a set clears it. Tests: `rest_taken_test` (✓ to ✓, the skip, an old skip ignored, un-tick, drops), migration v11 → v12,
 `rest_marker_flow_test` (real taps: skip then ✓ much later shows the rest to the skip, ✓ to ✓, un-tick removes it).
+
+## 10. Unchecking a set cancels its rest
+
+**Root cause.** The rest timer was global and knew nothing about which set started it; un-ticking a set only flipped the set back, so the timer, its
+pending "Rest done" notification and the Live Activity ran on for a set that no longer counted. Now the timer remembers the set whose ✓ started it
+(`RestTimerController.cancelIfFor`): un-ticking that set while its rest runs cancels all three; un-ticking another set leaves the running rest alone; a
+rest from before the app process (set unknown) is cancelled when the latest set done is un-ticked. Tests: `rest_live_activity_test` (timer cleared, "Rest done" notification cancelled,
+Live Activity ended; other set; nothing running), `uncheck_rest_flow_test` (real taps with the native Live Activity count).

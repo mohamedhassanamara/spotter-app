@@ -25,13 +25,26 @@ class RestTimerController {
   RestTimerController(this._ref);
   final Ref _ref;
 
+  /// The set whose ✓ started the running rest.
+  int? _restSetId;
+
+  /// Un-ticking a set cancels the rest it started, if it is still running: timer, pending notification and Live Activity.
+  /// [latestDone] says the set was the last one done (covers a rest started before this process, whose set is unknown).
+  Future<bool> cancelIfFor(int setId, {bool latestDone = false}) async {
+    final running = _ref.read(currentSettingsProvider).restEndsAt?.isAfter(_ref.read(clockProvider)()) ?? false;
+    if (!running || !(_restSetId == setId || (_restSetId == null && latestDone))) return false;
+    await stop();
+    return true;
+  }
+
   /// What the Live Activity shows for the running rest (kept so it can be re-shown after the app was in the
   /// background: iOS lets it run out on its own there).
   RestActivity? _activity;
 
   /// No-op for 0 s (first exercise of a superset: go straight to the partner).
-  Future<void> start(int seconds, {RestPreview? preview}) async {
+  Future<void> start(int seconds, {RestPreview? preview, int? setId}) async {
     if (seconds <= 0) return;
+    _restSetId = setId;
     final now = _ref.read(clockProvider)();
     final endsAt = now.add(Duration(seconds: seconds));
     await _ref.read(settingsControllerProvider).setRestTimer(endsAt, seconds);
@@ -93,6 +106,7 @@ class RestTimerController {
   /// Rest over, skipped, the next set started or the workout finished: timer, notification and Live Activity go.
   Future<void> stop() async {
     _activity = null;
+    _restSetId = null;
     await _ref.read(settingsControllerProvider).setRestTimer(null, null);
     await _ref.read(notificationServiceProvider).cancelRest();
     await _ref.read(liveActivityProvider).end();

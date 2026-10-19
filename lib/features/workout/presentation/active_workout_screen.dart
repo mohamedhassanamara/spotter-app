@@ -431,7 +431,15 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> with 
     // Read the set from the database: the session stream can still hold the numbers from before the
     // commit above, and ✓ would log those instead of what was just typed.
     final s = await repo.workoutSet(tapped.id) ?? tapped;
-    if (s.completed) return repo.uncompleteSet(s.id);
+    if (s.completed) {
+      await repo.uncompleteSet(s.id);
+      // Its rest timer goes with it (in-app, Live Activity, pending notification).
+      final done = session.exercises.expand((e) => e.sets).where((x) => x.completed && x.completedAt != null && x.id != s.id).toList()
+        ..sort((a, b) => a.completedAt!.compareTo(b.completedAt!));
+      final latest = s.completedAt != null && (done.isEmpty || !done.last.completedAt!.isAfter(s.completedAt!));
+      await ref.read(restTimerProvider).cancelIfFor(s.id, latestDone: latest);
+      return;
+    }
     final rpe = s.isWarmup || s.kind == SetKind.hold ? null : (s.rpe ?? Effort.fromRir(s.targetRir ?? ex.row.targetRir).rpe);
     OverrideReason? reason;
     if (repo.needsReason(s, weight: s.weight, reps: s.reps, exerciseRepMin: ex.row.repMin)) {
@@ -546,7 +554,7 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> with 
     final idx = ex.sets.indexWhere((x) => x.id == s.id);
     final nextSet = idx >= 0 && idx + 1 < ex.sets.length ? ex.sets[idx + 1] : null;
     if (nextSet != null && nextSet.isFollowUp) {
-      return nextSet.kind == SetKind.myo ? timer.start(myoRestSeconds, preview: _restPreview(session, ex, s)) : timer.stop();
+      return nextSet.kind == SetKind.myo ? timer.start(myoRestSeconds, preview: _restPreview(session, ex, s), setId: s.id) : timer.stop();
     }
     var seconds = ex.row.restSeconds;
     final group = ex.row.supersetGroup;
@@ -555,7 +563,7 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> with 
       if (!supersetRoundDone(members, ex.row.id, s.id)) return timer.stop();
       seconds = members.map((e) => e.row.restSeconds).reduce((a, b) => a > b ? a : b);
     }
-    await timer.start(seconds, preview: _restPreview(session, ex, s));
+    await timer.start(seconds, preview: _restPreview(session, ex, s), setId: s.id);
   }
 
   /// The Live Activity's text: the exercise and set that come after this rest.
