@@ -19,6 +19,7 @@ import 'anatomy_graph.dart';
 import '../../recovery/domain/recovery.dart';
 import 'muscle_sheet.dart';
 import 'rank_badge.dart';
+import 'rank_evolution.dart';
 import 'rank_toggle.dart';
 
 /// Progress tab. Deep-linkable: `/progress?tab=ranks`, `/progress?back=1&mode=volume&group=chest`.
@@ -394,6 +395,17 @@ class _RanksTab extends ConsumerWidget {
           children: [
             if (bw.hasValue && bw.value == null) ...[const _BodyweightCard(), const SizedBox(height: 12)],
             _OverallCard(score: summary.overall, rankedRegions: summary.rankedRegions),
+            const SizedBox(height: 10),
+            const RankEvolutionCard(),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton.icon(
+                key: const ValueKey('open-ladder'),
+                onPressed: () => context.push(Routes.ladder),
+                icon: const Icon(Icons.stacked_bar_chart_rounded),
+                label: const Text('The ladder: every tier and what it takes'),
+              ),
+            ),
             const SectionLabel('Regions'),
             for (final r in BodyRegion.values) ...[
               _RegionCard(region: summary.regions[r]!, summary: summary, onMuscle: open),

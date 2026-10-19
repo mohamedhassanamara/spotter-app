@@ -1672,3 +1672,16 @@ Extension", Incline T-raise vs Incline Y raise. The `liftoff_*` canonicals only 
 coach's weight and reps from your history, not Calibration, whenever the exercise has history (merged history counts, see item 8).
 Only an exercise you have never logged calibrates. ADD SET adds more, copying the last set. Covered in `hip_adduction_flow_test`
 (one set, prefilled from the Liftoff history; ADD SET → two).
+
+## 12. Rank history and the ladder
+
+- **Rank evolution** (Progress → Ranks, under the overall card): a line of the overall rank over time with the ten tier
+  bands (in the tier colors) behind it. `rankEvolution` rebuilds the ranks for every week since the first logged session
+  (the Liftoff import included), each from the 90 days before that day, using today's "counts toward rank" switches and
+  today's names. Chips below pick a body region or a single muscle to see its own line; the header shows its current rank.
+  Tap the line for the date and rank with LP.
+- **The ladder** (button under the chart, `/ladder`): all ten tiers, Challenger at the top, each with its badge for every
+  division (IV → I; one badge for the apex tiers), what it asks for as best-set e1RM on bench press, back squat and deadlift
+  at your current bodyweight (entry per division for the divisional tiers, from each standard's anchors), a "YOU ARE HERE"
+  marker with LP on your overall tier, and a list of every ranked muscle positioned on a tier-colored ladder bar.
+- Tests: `rank_history_flow_test` (real taps: chart from imported history, region and muscle series, all ten tiers, marker, muscles).
