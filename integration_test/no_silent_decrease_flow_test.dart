@@ -1,4 +1,3 @@
-import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
@@ -8,7 +7,6 @@ import 'package:spotter/features/import/data/liftoff_import_service.dart';
 import 'package:spotter/features/library/data/exercise_repository.dart';
 
 import 'harness.dart';
-import 'logger_helpers.dart';
 
 String _csv() {
   String d(int daysAgo) {

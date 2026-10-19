@@ -77,7 +77,7 @@ void main() {
                   expect(s.downNote, isNull);
                   // Either one step up, or the same weight with the reps pushed past the range (a jump over 10 % waits).
                   final next = grid.next(w);
-                  expect(s.weight, anyOf(w, next ?? w), reason: '${info.id}');
+                  expect(s.weight, anyOf(w, next ?? w), reason: info.id);
                 }
               }
             }

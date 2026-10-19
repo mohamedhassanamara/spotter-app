@@ -117,7 +117,7 @@ void main() {
                 '${formatKg(a.weight)} kg × ${a.reps}',
                 topHit,
                 a.why.where((x) => x.startsWith('Rule:') || x.startsWith('Readiness:') || x.startsWith('Recovery:')).join(' ').replaceAll('|', '/'),
-                "",
+                '',
               ));
             }
           }
