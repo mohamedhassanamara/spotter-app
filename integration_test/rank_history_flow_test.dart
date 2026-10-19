@@ -79,11 +79,11 @@ void _flow() {
 
     debugPrint('STEP the ladder: every tier, every division, where I sit, each muscle');
     await h.tap(find.byKey(const ValueKey('open-ladder')));
-    await h.waitFor(find.byKey(const ValueKey('ladder-tier-challenger')), scroll: false);
-    expect(find.byKey(const ValueKey('ladder-you-are-here')), findsNothing, reason: 'Challenger is not where I am');
+    await h.waitFor(find.byKey(const ValueKey('ladder-tier-radiant')), scroll: false);
+    expect(find.byKey(const ValueKey('ladder-you-are-here')), findsNothing, reason: 'Radiant is not where I am');
     final list = find.descendant(of: find.byKey(const ValueKey('ladder-list')), matching: find.byType(Scrollable)).first;
     var sawYouAreHere = false;
-    for (final t in ['challenger', 'grandmaster', 'master', 'diamond', 'emerald', 'platinum', 'gold', 'silver', 'bronze', 'iron']) {
+    for (final t in ['radiant', 'immortal', 'champion', 'diamond', 'platinum', 'gold', 'silver', 'bronze', 'iron']) {
       await tester.scrollUntilVisible(find.byKey(ValueKey('ladder-tier-$t')), 200, scrollable: list);
       await h.settle(2);
       expect(find.byKey(ValueKey('ladder-tier-$t')), findsOneWidget, reason: 'tier $t on the ladder');

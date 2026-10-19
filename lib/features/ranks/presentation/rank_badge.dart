@@ -195,7 +195,7 @@ class EmblemPainter extends CustomPainter {
     final facets = i == 0
         ? [(_poly([_ul, _top, _bot, _ll]), 0.15), (_poly([_top, _ur, _lr, _bot]), 0.85)]
         : i == 1
-            ? [(_poly([_ul, _top, _t1, _t3, _ll]), 0.1), (_poly([_top, _ur, _t2, _t1]), 0.3), (_poly([_ur, _lr, _t3, _t2]), 0.7), (_poly([_ll, _bot, _lr, _t3]), 1.0)]
+            ? [(_poly([_ul, _top, _t1, _t3, _ll]), 0.1), (_poly([_top, _ur, _t2, _t1]), 0.3), (_poly([_t1, _t2, _t3]), 0.45), (_poly([_ur, _lr, _t3, _t2]), 0.7), (_poly([_ll, _bot, _lr, _t3]), 1.0)]
             : [for (final (pts, f) in _facets) (_poly(pts), f)];
     final stroke = Paint()
       ..style = PaintingStyle.stroke
