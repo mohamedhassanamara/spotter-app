@@ -113,6 +113,8 @@ void main() {
     debugPrint('STEP hide Machine Chest Fly from ranks on its exercise page');
     await h.tap(tab('Ranks'));
     await h.tap(find.text('Machine Chest Fly'));
+    await h.waitFor(find.byKey(const ValueKey('tab-rank')), scroll: false);
+    await h.tap(find.byKey(const ValueKey('tab-rank'))); // the switch lives on the Rank tab
     await h.waitFor(find.byKey(const ValueKey('count-toward-ranks')), reason: 'Count toward ranks switch');
     await h.tap(find.byKey(const ValueKey('count-toward-ranks')));
     await h.scrollToTop();

@@ -7,6 +7,7 @@ import 'core/diagnostics/error_log.dart';
 import 'core/theme/app_theme.dart';
 import 'core/widgets/keyboard_dismisser.dart';
 import 'features/tutorials/presentation/exercise_demo.dart';
+import 'features/workout/data/equipment_sync.dart';
 import 'features/workout/data/workout_activity_sync.dart';
 import 'features/workout/presentation/rest_timer.dart';
 import 'router.dart';
@@ -42,6 +43,12 @@ class _SpotterAppState extends ConsumerState<SpotterApp> {
     // The workout's Live Activity follows the active session (sets ticked, exercises added) and the rest.
     ref.listenManual(activeSessionProvider, (_, _) => ref.read(workoutActivitySyncProvider).refresh(), fireImmediately: true);
     ref.listenManual(catalogProvider, (_, _) => ref.read(workoutActivitySyncProvider).refresh());
+    // A Weight steps change (menu in a workout, or Settings → My gym equipment) re-snaps the running workout's sets that are not done yet.
+    ref.listenManual(gymEquipmentProvider, (prev, next) {
+      final a = prev?.value, b = next.value;
+      if (a == null || b == null || a.encode() == b.encode()) return;
+      _step(() => ref.read(equipmentSyncProvider).onGymChanged(b));
+    });
     _lifecycle = AppLifecycleListener(onResume: () {
       ref.read(dayTickProvider.notifier).bump();
       _step(() => ref.read(restTimerProvider).resync());

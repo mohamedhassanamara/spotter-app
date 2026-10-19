@@ -107,6 +107,8 @@ void main() {
     await h.settle();
     await h.waitFor(find.text('HIDDEN FROM RANKS (1)'));
     await h.tap(find.text('Chest Press').last);
+    await h.waitFor(find.byKey(const ValueKey('tab-rank')), scroll: false);
+    await h.tap(find.byKey(const ValueKey('tab-rank'))); // the switch lives on the Rank tab
     await h.waitFor(find.byKey(const ValueKey('count-toward-ranks')), reason: 'exercise page switch');
     expect((find.byKey(const ValueKey('count-toward-ranks')).evaluate().first.widget as SwitchListTile).value, isFalse);
     await h.tap(find.byKey(const ValueKey('count-toward-ranks')));

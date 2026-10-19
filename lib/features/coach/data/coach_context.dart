@@ -90,6 +90,22 @@ class CoachContext {
   final RecoveryState? recovery;
   final Map<String, FormReset> formResets;
 
+  /// The same context with other gym equipment (a Weight steps change during a workout: the one exception to the frozen plan).
+  CoachContext withGym(GymEquipment g) => CoachContext(
+        history: history,
+        readiness: readiness,
+        overloaded: overloaded,
+        freezes: freezes,
+        increments: increments,
+        now: now,
+        bodyweight: bodyweight,
+        bodyweightLoaded: bodyweightLoaded,
+        gym: g,
+        energy: energy,
+        recovery: recovery,
+        formResets: formResets,
+      );
+
   /// The loads that exist for [info]: the gym's grid plus every weight logged on it.
   WeightGrid gridFor(ExerciseInfo info) => gridForExercise(gym, history, info);
 

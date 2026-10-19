@@ -154,8 +154,12 @@ class GymEquipment {
         values.add(0);
         stepped(2.5, 2.5, 300);
     }
-    for (final w in logged) {
-      values.add(_q(w));
+    // A weight you have logged exists by definition, unless you told the app how this exercise is loaded (Weight steps…): then your
+    // starting weight, step and type are the truth, and weights logged under an earlier setting must not keep the old grid alive.
+    if (!typeOverrides.containsKey(exerciseId) && !perExercise.containsKey(exerciseId)) {
+      for (final w in logged) {
+        values.add(_q(w));
+      }
     }
     final max = maxLoads[exerciseId];
     if (max == null) return WeightGrid(values);

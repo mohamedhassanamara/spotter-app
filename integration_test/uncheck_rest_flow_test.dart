@@ -23,7 +23,7 @@ void main() {
     final sets = (await activeSets(h))['Chest Press']!;
     Finder untick(int id) => find.descendant(of: find.byKey(ValueKey('set-$id')), matching: find.byTooltip('Mark not done'));
 
-    debugPrint('STEP ✓ starts a rest and a Live Activity; un-ticking that set cancels both');
+    debugPrint('STEP ✓ starts a rest and a Live Activity; un-ticking that set cancels the rest (the activity goes back to the workout view)');
     await checkSet(h, sets[0]);
     await h.waitFor(find.textContaining('REST '), scroll: false, reason: 'rest running');
     await h.settle(6);
@@ -31,7 +31,7 @@ void main() {
     await h.tap(untick(sets[0].id));
     await h.settle(6);
     expect(find.textContaining('REST '), findsNothing, reason: 'the header is back to the workout clock');
-    expect(await active(), 0, reason: 'Live Activity ended');
+    expect(await active(), 1, reason: 'the workout\'s Live Activity stays, back in its working view (no rest)');
     expect((await setRow(h, sets[0].id)).completed, isFalse);
 
     debugPrint('STEP two sets done: un-ticking the EARLIER one leaves the later set\'s rest running');
@@ -49,7 +49,7 @@ void main() {
     await h.tap(untick(sets[1].id));
     await h.settle(5);
     expect(find.textContaining('REST '), findsNothing);
-    expect(await active(), 0);
+    expect(await active(), 1, reason: 'still the workout\'s activity');
     await h.expectNoLoggedErrors();
     await h.dispose();
   });

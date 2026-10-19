@@ -2089,3 +2089,26 @@ Each tier keeps its shape, wings, crown and colours across its divisions (Radian
 `docs/screenshots/badges/badge-sheet.png`.
 Tests: `badge_divisions_test` (the crystal's pixels differ between 1→2 and 2→3 for every divisional tier, division 3 is further from 1 than 2 is; the mean hue and lightness stay the same across divisions so the tier is recognizable),
 integration `badge_sheet_flow_test`.
+
+## Round 3, item 8: Weight steps / max load did not update suggestions
+
+**Root causes** (checked against the four suspects):
+1. **The plan is frozen at workout start, and nothing re-planned it.** The sets of a running workout hold the weights the engine suggested when the workout started, planned with a `CoachContext` that is frozen for the whole workout
+   (`frozenCoachProvider`) and that carries a *snapshot of the gym equipment*. The Weight steps dialog only saved the setting (`setStack` / `setLoadType` / `setMaxLoad`); no code ever touched the existing sets, and the frozen
+   coach kept the old gym, so even a swap or form reset in that workout planned on the old grid. (The provider chain itself is fine: `gymEquipmentProvider` watches the settings, the sheet saves under the same exercise id the engine reads,
+   and a *new* workout reads the gym fresh, so outside a workout the suggestion is always computed from the current setting: nothing is cached.)
+2. **Weights you had logged kept the old grid alive.** `GymEquipment.gridFor` adds "every weight you have logged on the exercise" to the grid. After changing the first plate or the step, the old weights (5, 10, 15 … 60) were still
+   on the grid, so the engine kept landing on them and the suggestion looked unchanged. Fix: once you have set an exercise's load type or stack yourself (Weight steps…), your setting is the truth and logged weights no longer add
+   points to it. Without an explicit setting they still count (the default guess may be wrong). The max load still caps everything, as before.
+3. Snapping before the new grid is applied: not the case; the engine snaps to the grid it is given. Wrong exercise entry: not the case.
+
+**Rules now**
+- **Outside a workout:** nothing to recompute or invalidate: suggestions exist only when a workout is planned, from a fresh gym read, and there is no stored suggestion in the routine preview, the exercise page or the Live Activity.
+  (If a workout is open, "during a workout" below applies, wherever the setting was changed: the exercise menu or Settings → My gym equipment.)
+- **During a workout** (the one exception to the frozen plan, `EquipmentSync`): when the gym equipment changes, the workout's coach takes the new gym (everything else it was planned with stays), and every exercise whose grid
+  changed re-snaps its **not-yet-completed** sets to the nearest load of the new grid, capped at the max load; completed sets are never touched. Each changed set gets the usual "target changed" marker (ⓘ) with the reason:
+  "Weight steps updated: 60 kg is now 62 kg (the nearest weight on the new steps)." / "… (the max load is 50 kg)."; the marker keeps the weight the workout started with. The sets keep their target (it is snapped, not re-planned),
+  so nothing else about today's plan moves.
+- The new values always apply: a suggestion above the max load or off the grid is a bug; the property test checks 4000 random histories, starts, steps and max loads.
+Tests: `weight_steps_change_test` (grid shift 7, 12, 17…; logged weights vs an explicit setting; max cap; the suggestion follows a changed step and start; the off-grid / above-max property; mid-workout max load caps the open sets and leaves the done one;
+untouched vs typed weights), integration `weight_steps_flow_test` (real taps through the Weight steps dialog: first plate 7 / step 5, then max 50; the done set stays, the open sets move, the marker and its dialog).

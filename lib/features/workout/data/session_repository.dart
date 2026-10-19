@@ -13,6 +13,7 @@ import '../../readiness/domain/readiness.dart';
 import '../../program/data/program_repository.dart';
 import '../../program/domain/program.dart';
 import '../../ranks/data/rank_exclusions.dart';
+import '../domain/equipment_resnap.dart';
 import '../domain/set_kinds.dart';
 import 'routine_repository.dart';
 
@@ -505,6 +506,30 @@ class SessionRepository {
         adjustReason: Value('You chose the lighter option (${formatKg(weight)} kg) after three sessions below the rep range at ${formatKg(set.adjustedFrom ?? set.weight)} kg.'),
       ));
     }
+  }
+
+  /// A Weight steps change (starting weight, step, load type, max load) in the middle of a workout: the one exception to the frozen plan.
+  /// The not-yet-completed sets of [ex] snap to the new [grid] and cap at the max load at once; completed sets stay as logged. Each changed set
+  /// is marked like any other changed target, with the reason. [newSuggested] is an optional replacement for the old suggestion (without it every set snaps to the nearest load).
+  Future<int> applyEquipmentChange(ActiveExercise ex, {required WeightGrid grid, double? newSuggested}) async {
+    final plan = planResnap(sets: ex.sets, grid: grid, oldSuggested: ex.row.suggestedWeight, newSuggested: newSuggested);
+    if (plan.isEmpty) return 0;
+    await _db.transaction(() async {
+      for (final r in plan) {
+        await (_db.update(_db.workoutSets)..where((t) => t.id.equals(r.setId))).write(WorkoutSetsCompanion(
+          weight: Value(r.weight),
+          suggestedWeight: r.suggested == null ? const Value.absent() : Value(r.suggested),
+          adjustedFrom: Value(r.from),
+          adjustReason: Value(r.reason),
+        ));
+      }
+      final old = ex.row.suggestedWeight;
+      final target = newSuggested ?? (old == null ? null : grid.snap(old));
+      if (target != null && old != null && (target - old).abs() >= 0.01) {
+        await (_db.update(_db.sessionExercises)..where((t) => t.id.equals(ex.row.id))).write(SessionExercisesCompanion(suggestedWeight: Value(target)));
+      }
+    });
+    return plan.length;
   }
 
   /// Mid-workout "Target reps": one range for every working set (drops and warm-ups keep theirs).

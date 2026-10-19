@@ -845,8 +845,13 @@ void _explainAdjustment(BuildContext context, WorkoutSet s) => showDialog<void>(
       builder: (ctx) => AlertDialog(
         key: ValueKey('adjusted-dialog-${s.id}'),
         title: const Text('Target changed'),
-        content: Text('${s.adjustReason}\n\nOnly later sets of the same exercise change, and only from how your earlier sets went. '
-            'The rest of today\'s plan stays as it was when you started.'),
+        content: Text(
+          (s.adjustReason ?? '').startsWith('Weight steps updated')
+              ? '${s.adjustReason}\n\nChanging an exercise\'s weight steps is the one thing that re-plans a running workout: only the sets you have not done yet move, '
+                  'and the ones you logged stay as they are.'
+              : '${s.adjustReason}\n\nOnly later sets of the same exercise change, and only from how your earlier sets went. '
+                  'The rest of today\'s plan stays as it was when you started.',
+        ),
         actions: [TextButton(onPressed: () => Navigator.of(ctx).pop(), child: const Text('OK'))],
       ),
     );
