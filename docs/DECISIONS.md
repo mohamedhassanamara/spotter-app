@@ -1786,3 +1786,25 @@ six facets shaded along the tier gradient. Iron is two flat planes, Bronze four,
 Silver / Gold / Platinum add 1 / 2 / 3 pairs of side shards; Platinum and up glow from inside; Diamond floats shards around the
 crystal; **Champion and Immortal have wings (3 / 4 feathers) and a crown (3 / 5 points)**, Immortal also a bright seam; **Radiant**
 adds a pulsing glow, turning rays and a shimmer. The division is **1–3 lit diamond marks** under the gem (unlit ones dimmed); Radiant has none.
+
+## 3. Walking Lunge, again
+
+**Root cause (found by reproducing it from the real export).** Last round's fix was correct for what it touched, and it did run:
+the 6 imported sessions went from 35 kg to 17.5 kg (stored 17.50002 because Liftoff keeps pounds). What it did **not** touch:
+1. **In-app Lower workouts logged after the import.** They had followed the total-load history, so the owner logged "35 kg per
+   dumbbell" and the suggestion before them said 37.5. The fix only converted `source = liftoff` rows, assuming the app's own sets
+   were already per dumbbell. Those 35 kg sets were then the newest history, so the next suggestion was 37.5 again.
+2. **A workout already started** keeps the plan it was started with (the plan freeze from last round), so its stored suggestion kept
+   saying 37.5 whatever the history said.
+Not the cause (checked): the migration not running (guarded by a setting, ran), a re-import (re-imports skip known sessions, and new
+ones are halved), a duplicate exercise (the import maps Liftoff's Walking Lunge to `sp_db_walking_lunge`, the same id the Lower routine
+uses), a suggestion cache (nothing caches suggestions except the per-workout plan above).
+**Fix** (`DataFixes.ensureLungeInAppSets`, once, setting `fix_lunge_per_dumbbell_v2`): any non-imported Walking Lunge set heavier than
+1.5 × the heaviest converted imported set (26.25 kg) is halved to a dumbbell step (35 → 17.5, 37.5 → 17.5), with its suggested weight, in
+finished sessions and in the active one; the stored suggestion of those exercise rows (weight and the "NN kg" figures in its text) too.
+Sets at or below the threshold, i.e. what was logged per dumbbell since, are left alone, and a second run changes nothing.
+**Result on the real data:** history max 17.5 kg; today's suggestion for the Lower routine is **17.5 kg × 11** (the 20 kg step is +14 %,
+so reps extend first).
+**Tests** (`walking_lunge_regression_test`, built from the real rows in `test/fixtures/walking_lunge_real.csv`): the stored history after
+the import; the suggestion after the import alone; the stuck case (in-app 35 / 37.5 sets and a stale 37.5 plan in an active workout)
+converted, idempotent; the suggestion afterwards, with a later per-dumbbell 17.5 set untouched.
