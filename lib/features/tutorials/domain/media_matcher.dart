@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 
+import 'gif_rule.dart';
 
 /// One ExerciseDB V1 entry (metadata only; the GIF is downloaded on demand).
 class EdbExercise {
@@ -119,6 +120,10 @@ class MediaMatcher {
     'skullcrusher': 'skull crusher',
     'pushdown': 'pushdown',
     'hamstring curl': 'leg curl',
+    'butterfly': 'machine seated fly',
+    'pec deck': 'machine seated fly',
+    'leverage': 'machine',
+    'lever': 'machine',
     'military press': 'shoulder press',
     'overhead press': 'shoulder press',
     'hip thrust': 'hip thrust',
@@ -154,7 +159,7 @@ class MediaMatcher {
     'kettlebells': 'kettlebell',
   };
 
-  static const _stop = {'the', 'a', 'an', 'with', 'on', 'of', 'to', 'and', 'version', 'medium', 'grip', 'v', 'exercise'};
+  static const _stop = {'the', 'a', 'an', 'with', 'on', 'of', 'to', 'and', 'version', 'medium', 'grip', 'v', 'exercise', 'iso'};
 
   static List<String> normalizeTokens(String name) {
     var s = name.toLowerCase();
@@ -291,6 +296,8 @@ class MediaMatcher {
     for (final e in pool.values) {
       final n = nameSimilarity(tokens, e);
       if (n < 0.2) continue;
+      // Strict rule: a GIF is shown only for the same movement on the same equipment.
+      if (gifVerdict(name: ex.name, equipment: ex.equipment, edb: e, matcher: this) != GifVerdict.ok) continue;
       final eq = equipmentScore(ex.equipment, e.equipments);
       final mu = muscleScore(ex.primaryMuscles, e.targets, ex.secondaryMuscles);
       scored.add(MediaCandidate(e, wName * n + wEquipment * eq + wMuscle * mu, n, eq, mu));

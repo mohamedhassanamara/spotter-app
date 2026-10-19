@@ -246,7 +246,8 @@ STANDARDS = {
     # --- core ---
     "Cable crunch": ("cable", False, "bench", 0.65, ["Cable_Crunch"]),
     "Standing cable crunch": ("cable", False, "bench", 0.55, ["liftoff_standing_cable_crunch"]),
-    "Crunch": ("bodyweight", False, (1.40, 1.60, 1.80, 2.10, 2.40), None, ["Crunches", "Decline_Crunch", "Reverse_Crunch", "Flat_Bench_Lying_Leg_Raise"]),
+    "Crunch": ("bodyweight", False, (1.40, 1.60, 1.80, 2.10, 2.40), None, ["Crunches", "Decline_Crunch", "Reverse_Crunch"]),
+    "Lying leg raise": ("bodyweight", False, (1.40, 1.60, 1.80, 2.10, 2.40), None, ["Flat_Bench_Lying_Leg_Raise"]),
     "Hanging leg raise": ("bodyweight", False, (1.07, 1.20, 1.33, 1.50, 1.67), None, ["Hanging_Leg_Raise"]),
     "Dragon flag": ("bodyweight", False, (1.07, 1.17, 1.27, 1.40, 1.55), None, ["liftoff_dragon_flag"]),
     "Russian twist": ("bodyweight", False, (1.40, 1.60, 1.80, 2.10, 2.40), None, ["Russian_Twist"]),

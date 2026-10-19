@@ -1934,3 +1934,47 @@ Signing needed no change: the existing extension target and the `NSSupportsLiveA
   its rest (item 10), therefore returns the activity to the working-set view instead of removing it.
 - **Known limit:** if the app is in the background when a rest ends, the activity still reads REST 0:00 until you return (the local notification
   fires at the end). Fixing that needs a push-driven update, which would need a server.
+
+## Round 2, item 9: exercise audit (names, GIFs, ranking entries)
+
+Full table: `docs/EXERCISE_AUDIT.md` (112 exercises from my routines and the Liftoff history; regenerate with
+`LIFTOFF_CSV=… flutter test test/tool/exercise_audit_report_test.dart`). The same check runs live in **Settings → Debug menu → Exercise audit**.
+
+**The strict rule, for GIFs too** (`tutorials/domain/gif_rule.dart`): a GIF is shown only for the *same movement on the same equipment*, otherwise the
+photos are shown. Equipment: our equipment against the GIF's (an EZ-bar exercise does not take a barbell GIF; "other" is not a reason to refuse).
+Movement: the movement-changing words must agree (incline/decline, reverse, walking, side, one-arm/one-leg incl. split squat and lunge,
+hammer, preacher, pendulum, stiff-leg, jump, …), the movement nouns must overlap (a curl is not a skull crusher), and the names must be similar enough.
+It filters the matcher's candidates, the exercise's own V1 GIF and the asset overrides alike (picks made by hand in the debug screens are never overwritten).
+`mediaMatchVersion` went 3 → 4 so everything is re-matched once. Cost: 74 % of the library keeps a demo (was > 85 %), the rest shows photos.
+
+**What the audit found in my 112 exercises**
+
+| Exercise | Was | Fix |
+|---|---|---|
+| Crunches | GIF "reverse crunch" | "crunch floor" |
+| Pallof Press | GIF "cable bench press" | no GIF |
+| EZ-Bar Skullcrusher (override) | barbell GIF | override removed, no GIF |
+| T-Bar Row with Handle (override) | machine T-bar GIF, ours is a barbell | override removed, no GIF |
+| Dumbbell Walking Lunge | "dumbbell lunge" (standing) | no GIF (the only walking lunge GIF is bodyweight) |
+| Pendulum Squat | "smith squat" | no GIF |
+| Single-Leg Leg Extension | two-leg machine GIF | no GIF |
+| Machine Single-Arm Reverse Fly, One Arm Cable Reverse Fly | two-arm / supine GIFs | no GIF |
+| One Arm Dumbbell Preacher Curl, One-Legged Cable Kickback | two-sided GIFs | no GIF |
+| Calf Press on the Leg Press Machine | single-leg sled GIF | no GIF |
+| Palms-Down Dumbbell Wrist Curl | palms-up GIF | no GIF |
+| Russian Twist (dumbbell), Lying Triceps Press (EZ bar) | bodyweight GIFs | no GIF |
+| Side Leg Raises, Side Lunge | seated leg raise, jump lunge | no GIF |
+| Flat Bench Lying Leg Raise | ranked as "Crunch" | own standard "Lying leg raise" (same numbers; no rank changes) |
+| Butterfly, Leverage Iso Row | (false alarms: different words for the same machine) | aliases in the matcher: butterfly/pec deck → machine seated fly, leverage → machine, "iso" ignored |
+
+Kept on purpose, shown as "variant" in the audit: Decline Crunch and Reverse Crunch ranked under "Crunch", Walking Lunge under "Dumbbell lunge",
+Preacher Hammer Curl under "Hammer curl": same movement family with a modifier, no standard of their own. If you want any of them out of ranks,
+the exercise page has the switch.
+
+Names: every library name in use matches the movement it logs; Liftoff names that differ are kept as "my name" (shown in the audit).
+No duplicates are left: the merge list (`assets/exercise_merges.json`) already covers the ones found earlier and the audit shows none new.
+
+**Debug screen:** the audit lists every exercise with its GIF, name source and ranking entry; the "To fix" tab shows what breaks the rule; tapping a row
+offers **Use "<best faithful GIF>"**, **No GIF: show the photos**, and for a ranking mismatch **Stop ranking this exercise**.
+Tests: `gif_rule_test` (my real mismatches, the matcher never offers one, every override obeys the rule), `exercise_audit_test`,
+integration `exercise_audit_flow_test` (a wrong GIF is listed, one tap removes it).

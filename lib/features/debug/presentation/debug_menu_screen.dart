@@ -162,6 +162,13 @@ class _DebugMenuScreenState extends ConsumerState<DebugMenuScreen> {
                 onTap: () => context.push(Routes.mediaMatching),
               ),
               ListTile(
+                key: const ValueKey('exercise-audit'),
+                leading: const Icon(Icons.fact_check_outlined),
+                title: const Text('Exercise audit'),
+                subtitle: const Text('Every exercise I use: GIF, name source, ranking entry, with one-tap fixes'),
+                onTap: () => context.push(Routes.exerciseAudit),
+              ),
+              ListTile(
                 leading: const Icon(Icons.shield_rounded),
                 title: const Text('Rank badges & rank-up preview'),
                 onTap: () => context.push(Routes.badgeGallery),

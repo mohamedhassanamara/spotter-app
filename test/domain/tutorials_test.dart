@@ -107,7 +107,8 @@ void main() {
       for (final k in lib.values) {
         if (matcher.match(k).confidence != MatchConfidence.none) usable++;
       }
-      expect(usable / lib.length, greaterThan(0.85));
+      // The strict rule (same movement and equipment, else no GIF) drops the loose matches that used to count: 74 % keep a demo.
+      expect(usable / lib.length, greaterThan(0.7));
     });
   });
 }

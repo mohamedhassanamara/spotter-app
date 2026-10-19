@@ -8,11 +8,12 @@ import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 
 import '../../../core/db/database.dart';
 import '../../library/domain/exercise_info.dart';
+import '../domain/gif_rule.dart';
 import '../domain/media_matcher.dart';
 
 /// Bump when the matcher or the ExerciseDB asset changes so matches are recomputed
 /// (manual picks are kept).
-const int mediaMatchVersion = 3; // v2: dead GIFs (HTTP 404) excluded; v3: exercises with their own V1 GIF
+const int mediaMatchVersion = 4; // v2: dead GIFs (HTTP 404) excluded; v3: exercises with their own V1 GIF; v4: strict rule (same movement and equipment)
 
 /// GIFs are downloaded on first view and kept for a year.
 final gifCacheManager = CacheManager(Config(
@@ -83,24 +84,33 @@ class MediaRepository {
     // Matching all 876 exercises takes a few hundred ms; keep it off the UI thread.
     final results = await _matchInIsolate(edb, keys);
     final byId = {for (final e in edb) e.id: e};
+    final rule = await matcher();
+    // The strict rule holds for the exercise's own V1 GIF and for the overrides too: same movement and same equipment, else no GIF.
+    bool faithful(String id, EdbExercise e) {
+      final info = catalog[id];
+      return info == null || gifVerdict(name: info.name, equipment: info.equipment, edb: e, matcher: rule) == GifVerdict.ok;
+    }
+
     await _db.batch((b) {
       for (final r in results) {
         final MediaMatchesCompanion row;
         final own = catalog[r.exerciseId]?.edbV1Id;
         if (!overrides.containsKey(r.exerciseId) && own != null && byId.containsKey(own)) {
-          // The exercise came from (or was merged with) this V1 entry: its own GIF, no guessing.
+          // The exercise came from (or was merged with) this V1 entry: its own GIF, no guessing (unless it breaks the strict rule).
           final e = byId[own]!;
+          final ok = faithful(r.exerciseId, e);
           row = MediaMatchesCompanion.insert(
             exerciseId: r.exerciseId,
-            edbId: Value(e.id),
-            edbName: Value(e.name),
-            gifUrl: Value(e.gifUrl),
+            edbId: Value(ok ? e.id : null),
+            edbName: Value(ok ? e.name : null),
+            gifUrl: Value(ok ? e.gifUrl : null),
             confidence: const Value(1),
             source: const Value('library'),
             updatedAt: now,
           );
         } else if (overrides.containsKey(r.exerciseId)) {
-          final e = byId[overrides[r.exerciseId]];
+          final picked = byId[overrides[r.exerciseId]];
+          final e = picked != null && faithful(r.exerciseId, picked) ? picked : null;
           row = MediaMatchesCompanion.insert(
             exerciseId: r.exerciseId,
             edbId: Value(e?.id),

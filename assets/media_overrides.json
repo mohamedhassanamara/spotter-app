@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "description": "Manual fixes for the ExerciseDB V1 matcher. Map a free-exercise-db id to an ExerciseDB exerciseId, or to null when V1 has no faithful demo (the app then shows the library photos). Overrides win over automatic matches; picks made in the debug 'Media matching' screen win over this file and can be exported from there to paste here.",
+  "description": "Manual fixes for the ExerciseDB V1 matcher. Map a free-exercise-db id to an ExerciseDB exerciseId, or to null when V1 has no faithful demo (the app then shows the library photos). Strict rule: a GIF is shown only for the same movement on the same equipment, otherwise null. Overrides win over automatic matches, but are still checked against that rule; picks made in the debug 'Media matching' screen win over this file and can be exported from there to paste here.",
   "overrides": {
     "Barbell_Squat": "qXTaZnJ",
     "Barbell_Full_Squat": "qXTaZnJ",
@@ -8,9 +8,9 @@
     "Machine_Bench_Press": "DOoWcnA",
     "Cable_Crunch": "WW95auq",
     "Standing_Military_Press": "Kyd9Rz5",
-    "T-Bar_Row_with_Handle": "aaXr7ld",
+    "T-Bar_Row_with_Handle": null,
     "Wide-Grip_Lat_Pulldown": "qdRxqCj",
-    "EZ-Bar_Skullcrusher": "h8LFzo9",
+    "EZ-Bar_Skullcrusher": null,
     "Triceps_Pushdown": "3ZflifB",
     "Pullups": "lBDjFxJ",
     "Barbell_Deadlift": "ila4NZS",

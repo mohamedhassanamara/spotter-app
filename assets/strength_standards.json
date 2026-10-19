@@ -1738,7 +1738,22 @@
    "exercise_ids": [
     "Crunches",
     "Decline_Crunch",
-    "Reverse_Crunch",
+    "Reverse_Crunch"
+   ],
+   "anchors": {
+    "beginner": 1.4,
+    "novice": 1.6,
+    "intermediate": 1.8,
+    "advanced": 2.1,
+    "elite": 2.4
+   }
+  },
+  {
+   "id": "lying_leg_raise",
+   "name": "Lying leg raise",
+   "kind": "bodyweight",
+   "per_hand": false,
+   "exercise_ids": [
     "Flat_Bench_Lying_Leg_Raise"
    ],
    "anchors": {
