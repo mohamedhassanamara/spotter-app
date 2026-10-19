@@ -28,6 +28,11 @@ IconData achievementIcon(String name) => switch (name) {
       'weight' => Icons.scale_rounded,
       'bolt' => Icons.bolt_rounded,
       'crown' => Icons.workspace_premium_rounded,
+      'compass' => Icons.explore_rounded,
+      'leaf' => Icons.eco_rounded,
+      'moon' => Icons.bedtime_rounded,
+      'calendar' => Icons.event_available_rounded,
+      'layers' => Icons.layers_rounded,
       _ => Icons.star_rounded,
     };
 
@@ -187,16 +192,29 @@ class ProfileScreen extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   SectionLabel('Achievements', trailing: Text('$unlocked/${list.length}',
+                      key: const ValueKey('achievements-count'),
                       style: AppType.bodyS.copyWith(fontFamily: AppType.display, fontWeight: FontWeight.w800, color: AppColors.textSecondary))),
-                  GridView.count(
-                    crossAxisCount: 3,
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    mainAxisSpacing: 10,
-                    crossAxisSpacing: 10,
-                    childAspectRatio: 0.74,
-                    children: [for (final a in list) _AchievementTile(a)],
-                  ),
+                  for (final cat in AchievementCategory.values)
+                    if (list.any((a) => a.def.category == cat)) ...[
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(4, 14, 4, 8),
+                        child: Row(children: [
+                          Text(cat.label.toUpperCase(), key: ValueKey('achievements-${cat.name}'), style: AppType.label.copyWith(color: AppColors.textSecondary)),
+                          const Spacer(),
+                          Text('${list.where((a) => a.def.category == cat && a.unlockedAt != null).length}/${list.where((a) => a.def.category == cat).length}',
+                              style: AppType.bodyS.copyWith(color: AppColors.textTertiary)),
+                        ]),
+                      ),
+                      GridView.count(
+                        crossAxisCount: 3,
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        mainAxisSpacing: 10,
+                        crossAxisSpacing: 10,
+                        childAspectRatio: 0.7,
+                        children: [for (final a in list.where((a) => a.def.category == cat)) _AchievementTile(a)],
+                      ),
+                    ],
                 ],
               );
             },
@@ -222,12 +240,12 @@ class _DisciplineCard extends StatelessWidget {
                 ? AppColors.yellow
                 : AppColors.red;
     final verdict = p == null
-        ? 'Log sets with the coach to measure it.'
+        ? 'Log sets with a suggestion to measure it.'
         : p >= 85
-            ? 'Disciplined. You lift what the coach prescribes.'
+            ? 'Mostly on the suggestion.'
             : p >= 70
-                ? 'Mostly on plan. Watch the overrides.'
-                : 'Lots of overrides. Ego is driving.';
+                ? 'Often a different weight than suggested.'
+                : 'Mostly your own weights.';
     return GameCard(
       accent: p == null ? null : color,
       child: Row(
@@ -247,7 +265,7 @@ class _DisciplineCard extends StatelessWidget {
                 Text('DISCIPLINE', style: AppType.label.copyWith(color: AppColors.textSecondary)),
                 const SizedBox(height: 2),
                 Text(p == null ? '—' : '${p.round()}%', style: AppType.displayL.copyWith(color: color)),
-                const Text('Working sets within ±5% of the suggestion, last 30 days',
+                const Text('Working sets within ±5% of the suggestion, last 30 days. Information only: it never earns or blocks anything.',
                     style: TextStyle(color: AppColors.textSecondary, fontSize: 13)),
                 const SizedBox(height: 4),
                 Text(verdict, style: const TextStyle(fontWeight: FontWeight.w700)),
@@ -260,16 +278,20 @@ class _DisciplineCard extends StatelessWidget {
   }
 }
 
-Color achievementColor(AchievementType type) => switch (type) {
-      AchievementType.sessions => AppColors.primary,
-      AchievementType.cleanSessionStreak => AppColors.accent,
-      AchievementType.comebacks => AppColors.green,
-      AchievementType.streakDays => AppColors.warning,
-      AchievementType.bestExerciseTier => tierColors[Tier.gold.index],
-      AchievementType.discipline => const Color(0xFF3FD5C0),
-      AchievementType.prs => const Color(0xFFFFC93C),
-      AchievementType.totalVolumeKg => const Color(0xFFFF7A45),
-      AchievementType.level => AppColors.xp,
+Color achievementColor(AchievementDef d) => switch (d.level) {
+      AchievementLevel.bronze => tierColors[Tier.bronze.index],
+      AchievementLevel.silver => tierColors[Tier.silver.index],
+      AchievementLevel.gold => tierColors[Tier.gold.index],
+      null => switch (d.category) {
+          AchievementCategory.consistency => AppColors.primary,
+          AchievementCategory.strength => d.type == AchievementType.bestExerciseTier || d.type == AchievementType.overallTier
+              ? tierColors[(d.threshold.toInt()).clamp(0, Tier.values.length - 1)]
+              : const Color(0xFFFFC93C),
+          AchievementCategory.volume => const Color(0xFFFF7A45),
+          AchievementCategory.exploration => AppColors.accent,
+          AchievementCategory.recovery => AppColors.green,
+          AchievementCategory.program => AppColors.xp,
+        },
     };
 
 class _AchievementTile extends StatelessWidget {
@@ -279,7 +301,7 @@ class _AchievementTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final unlocked = a.unlockedAt != null;
-    final color = achievementColor(a.def.type);
+    final color = achievementColor(a.def);
     return InkWell(
       borderRadius: BorderRadius.circular(Radii.card),
       onTap: () => showDialog<void>(
@@ -291,6 +313,10 @@ class _AchievementTile extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(a.def.description, textAlign: TextAlign.center),
+              if (a.def.family != null) ...[
+                const SizedBox(height: 6),
+                Text('${a.def.family} · ${a.def.level!.label}', style: AppType.bodyS.copyWith(color: AppColors.textSecondary)),
+              ],
               const SizedBox(height: 12),
               unlocked
                   ? Text('Unlocked ${DateFormat('d MMM yyyy').format(a.unlockedAt!)}',
@@ -321,6 +347,9 @@ class _AchievementTile extends StatelessWidget {
                 color: unlocked ? AppColors.textPrimary : AppColors.textTertiary,
               ),
             ),
+            if (a.def.level != null)
+              Text(a.def.level!.label.toUpperCase(),
+                  key: ValueKey('level-${a.def.key}'), style: AppType.label.copyWith(fontSize: 9, color: unlocked ? color : AppColors.textTertiary)),
             if (unlocked)
               Text(DateFormat('d MMM').format(a.unlockedAt!), style: AppType.bodyS.copyWith(fontSize: 11, color: AppColors.textSecondary)),
           ],

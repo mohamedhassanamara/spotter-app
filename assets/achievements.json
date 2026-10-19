@@ -1,166 +1,545 @@
 {
-  "schema_version": 1,
-  "description": "Achievement definitions. type is one of: sessions, cleanSessionStreak, comebacks, streakDays (longest day streak), bestExerciseTier (0=Iron, 1=Bronze, 2=Silver, 3=Gold, 4=Platinum, 5=Diamond, 6=Champion, 7=Immortal, 8=Radiant), discipline (% over 30 days, needs 50+ sets), prs, totalVolumeKg, level. Unlocked when the metric >= threshold.",
-  "achievements": [
-    {
-      "key": "first_workout",
-      "title": "First Rep",
-      "description": "Finish your first workout.",
-      "icon": "fitness",
-      "type": "sessions",
-      "threshold": 1
-    },
-    {
-      "key": "ten_workouts",
-      "title": "Habit Forming",
-      "description": "Finish 10 workouts.",
-      "icon": "fitness",
-      "type": "sessions",
-      "threshold": 10
-    },
-    {
-      "key": "fifty_workouts",
-      "title": "Regular",
-      "description": "Finish 50 workouts.",
-      "icon": "fitness",
-      "type": "sessions",
-      "threshold": 50
-    },
-    {
-      "key": "hundred_workouts",
-      "title": "Centurion",
-      "description": "Finish 100 workouts.",
-      "icon": "trophy",
-      "type": "sessions",
-      "threshold": 100
-    },
-    {
-      "key": "patience",
-      "title": "Patience",
-      "description": "10 sessions in a row with no overrides.",
-      "icon": "shield",
-      "type": "cleanSessionStreak",
-      "threshold": 10
-    },
-    {
-      "key": "monk_mode",
-      "title": "Monk Mode",
-      "description": "30 sessions in a row with no overrides.",
-      "icon": "shield",
-      "type": "cleanSessionStreak",
-      "threshold": 30
-    },
-    {
-      "key": "streak_14",
-      "title": "Two Weeks Unbroken",
-      "description": "Keep a 14-day streak (no more than two rest days in a row).",
-      "icon": "fire",
-      "type": "streakDays",
-      "threshold": 14
-    },
-    {
-      "key": "comeback",
-      "title": "Comeback",
-      "description": "Regain your best e1RM on a lift after a deload.",
-      "icon": "trending",
-      "type": "comebacks",
-      "threshold": 1
-    },
-    {
-      "key": "disciplined",
-      "title": "Disciplined",
-      "description": "Follow 90% of suggestions over 30 days (50+ sets).",
-      "icon": "target",
-      "type": "discipline",
-      "threshold": 90
-    },
-    {
-      "key": "streak_4",
-      "title": "On a Roll",
-      "description": "Keep a 28-day streak.",
-      "icon": "fire",
-      "type": "streakDays",
-      "threshold": 28
-    },
-    {
-      "key": "streak_12",
-      "title": "Unbreakable",
-      "description": "Keep an 84-day streak.",
-      "icon": "fire",
-      "type": "streakDays",
-      "threshold": 84
-    },
-    {
-      "key": "rank_silver",
-      "title": "Silver Lining",
-      "description": "Reach Silver on any ranked lift.",
-      "icon": "rank",
-      "type": "bestExerciseTier",
-      "threshold": 2
-    },
-    {
-      "key": "rank_gold",
-      "title": "Gold Standard",
-      "description": "Reach Gold on any ranked lift.",
-      "icon": "rank",
-      "type": "bestExerciseTier",
-      "threshold": 3
-    },
-    {
-      "key": "rank_platinum",
-      "title": "Platinum Plates",
-      "description": "Reach Platinum on any ranked lift.",
-      "icon": "rank",
-      "type": "bestExerciseTier",
-      "threshold": 4
-    },
-    {
-      "key": "rank_diamond",
-      "title": "Diamond Hands",
-      "description": "Reach Diamond on any ranked lift.",
-      "icon": "rank",
-      "type": "bestExerciseTier",
-      "threshold": 5
-    },
-    {
-      "key": "rank_master",
-      "title": "Apex Predator",
-      "description": "Reach Champion on any ranked lift.",
-      "icon": "crown",
-      "type": "bestExerciseTier",
-      "threshold": 6
-    },
-    {
-      "key": "first_pr",
-      "title": "New Personal Best",
-      "description": "Set your first valid PR.",
-      "icon": "star",
-      "type": "prs",
-      "threshold": 1
-    },
-    {
-      "key": "pr_25",
-      "title": "Record Breaker",
-      "description": "Set 25 valid PRs.",
-      "icon": "star",
-      "type": "prs",
-      "threshold": 25
-    },
-    {
-      "key": "volume_100t",
-      "title": "100 Tonnes",
-      "description": "Lift 100,000 kg of working volume.",
-      "icon": "weight",
-      "type": "totalVolumeKg",
-      "threshold": 100000
-    },
-    {
-      "key": "level_10",
-      "title": "Double Digits",
-      "description": "Reach level 10.",
-      "icon": "bolt",
-      "type": "level",
-      "threshold": 10
-    }
-  ]
+ "schema_version": 2,
+ "description": "Achievement definitions. type is one of: sessions, streakDays (longest day streak), prs, totalVolumeKg, totalSets, maxSessionVolumeKg, level, bestExerciseTier (index 0=Iron .. 8=Radiant), overallTier, musclesAtTier (param = tier index, counts muscles at or above), regionsAtTier (param = tier index, counts body regions at or above; 0 = ranked), musclesRanked, distinctExercises, greenSessions (workouts on a Green readiness day), sleepStreak (nights in a row of 7+ h from Health), fullProgramWeeks (weeks with a workout of every routine). Unlocked when the metric >= threshold. Nothing here may depend on following the coach's suggestions.",
+ "achievements": [
+  {
+   "key": "first_workout",
+   "title": "First Rep",
+   "description": "Finish your first workout.",
+   "icon": "fitness",
+   "type": "sessions",
+   "threshold": 1,
+   "category": "consistency"
+  },
+  {
+   "key": "sessions_25",
+   "title": "Regular",
+   "description": "Finish 25 workouts.",
+   "icon": "fitness",
+   "type": "sessions",
+   "threshold": 25,
+   "category": "consistency",
+   "family": "Workouts",
+   "level": "bronze"
+  },
+  {
+   "key": "sessions_100",
+   "title": "Centurion",
+   "description": "Finish 100 workouts.",
+   "icon": "fitness",
+   "type": "sessions",
+   "threshold": 100,
+   "category": "consistency",
+   "family": "Workouts",
+   "level": "silver"
+  },
+  {
+   "key": "sessions_250",
+   "title": "Iron Habit",
+   "description": "Finish 250 workouts.",
+   "icon": "trophy",
+   "type": "sessions",
+   "threshold": 250,
+   "category": "consistency",
+   "family": "Workouts",
+   "level": "gold"
+  },
+  {
+   "key": "streak_14",
+   "title": "Two Weeks Unbroken",
+   "description": "Keep a 14-day streak (no more than two rest days in a row).",
+   "icon": "fire",
+   "type": "streakDays",
+   "threshold": 14,
+   "category": "consistency",
+   "family": "Streak",
+   "level": "bronze"
+  },
+  {
+   "key": "streak_30",
+   "title": "Month of Iron",
+   "description": "Keep a 30-day streak (no more than two rest days in a row).",
+   "icon": "fire",
+   "type": "streakDays",
+   "threshold": 30,
+   "category": "consistency",
+   "family": "Streak",
+   "level": "silver"
+  },
+  {
+   "key": "streak_100",
+   "title": "Unbreakable",
+   "description": "Keep a 100-day streak (no more than two rest days in a row).",
+   "icon": "fire",
+   "type": "streakDays",
+   "threshold": 100,
+   "category": "consistency",
+   "family": "Streak",
+   "level": "gold"
+  },
+  {
+   "key": "first_pr",
+   "title": "New Personal Best",
+   "description": "Set your first valid PR.",
+   "icon": "star",
+   "type": "prs",
+   "threshold": 1,
+   "category": "strength"
+  },
+  {
+   "key": "pr_5",
+   "title": "Record Setter",
+   "description": "Set 5 valid PRs.",
+   "icon": "star",
+   "type": "prs",
+   "threshold": 5,
+   "category": "strength",
+   "family": "Personal records",
+   "level": "bronze"
+  },
+  {
+   "key": "pr_25",
+   "title": "Record Breaker",
+   "description": "Set 25 valid PRs.",
+   "icon": "star",
+   "type": "prs",
+   "threshold": 25,
+   "category": "strength",
+   "family": "Personal records",
+   "level": "silver"
+  },
+  {
+   "key": "pr_100",
+   "title": "Record Machine",
+   "description": "Set 100 valid PRs.",
+   "icon": "star",
+   "type": "prs",
+   "threshold": 100,
+   "category": "strength",
+   "family": "Personal records",
+   "level": "gold"
+  },
+  {
+   "key": "lift_silver",
+   "title": "Silver Lining",
+   "description": "Reach Silver on any ranked lift.",
+   "icon": "rank",
+   "type": "bestExerciseTier",
+   "threshold": 2,
+   "category": "strength"
+  },
+  {
+   "key": "lift_gold",
+   "title": "Gold Standard",
+   "description": "Reach Gold on any ranked lift.",
+   "icon": "rank",
+   "type": "bestExerciseTier",
+   "threshold": 3,
+   "category": "strength"
+  },
+  {
+   "key": "lift_platinum",
+   "title": "Platinum Plates",
+   "description": "Reach Platinum on any ranked lift.",
+   "icon": "rank",
+   "type": "bestExerciseTier",
+   "threshold": 4,
+   "category": "strength"
+  },
+  {
+   "key": "lift_diamond",
+   "title": "Diamond Hands",
+   "description": "Reach Diamond on any ranked lift.",
+   "icon": "rank",
+   "type": "bestExerciseTier",
+   "threshold": 5,
+   "category": "strength"
+  },
+  {
+   "key": "lift_champion",
+   "title": "Apex Predator",
+   "description": "Reach Champion on any ranked lift.",
+   "icon": "crown",
+   "type": "bestExerciseTier",
+   "threshold": 6,
+   "category": "strength"
+  },
+  {
+   "key": "lift_immortal",
+   "title": "Immortal Lift",
+   "description": "Reach Immortal on any ranked lift.",
+   "icon": "crown",
+   "type": "bestExerciseTier",
+   "threshold": 7,
+   "category": "strength"
+  },
+  {
+   "key": "lift_radiant",
+   "title": "Radiant Lift",
+   "description": "Reach Radiant on any ranked lift.",
+   "icon": "crown",
+   "type": "bestExerciseTier",
+   "threshold": 8,
+   "category": "strength"
+  },
+  {
+   "key": "overall_silver",
+   "title": "Rising",
+   "description": "Reach Silver overall.",
+   "icon": "rank",
+   "type": "overallTier",
+   "threshold": 2,
+   "category": "strength"
+  },
+  {
+   "key": "overall_gold",
+   "title": "Well Rounded",
+   "description": "Reach Gold overall.",
+   "icon": "rank",
+   "type": "overallTier",
+   "threshold": 3,
+   "category": "strength"
+  },
+  {
+   "key": "overall_platinum",
+   "title": "Proven",
+   "description": "Reach Platinum overall.",
+   "icon": "rank",
+   "type": "overallTier",
+   "threshold": 4,
+   "category": "strength"
+  },
+  {
+   "key": "overall_diamond",
+   "title": "Elite Body",
+   "description": "Reach Diamond overall.",
+   "icon": "crown",
+   "type": "overallTier",
+   "threshold": 5,
+   "category": "strength"
+  },
+  {
+   "key": "overall_champion",
+   "title": "Champion Body",
+   "description": "Reach Champion overall.",
+   "icon": "crown",
+   "type": "overallTier",
+   "threshold": 6,
+   "category": "strength"
+  },
+  {
+   "key": "muscles_gold_1",
+   "title": "First Gold Muscle",
+   "description": "Get 1 muscle to Gold or better.",
+   "icon": "target",
+   "type": "musclesAtTier",
+   "threshold": 1,
+   "category": "strength",
+   "family": "Strong muscles",
+   "level": "bronze",
+   "param": 3
+  },
+  {
+   "key": "muscles_gold_5",
+   "title": "Golden Five",
+   "description": "Get 5 muscles to Gold or better.",
+   "icon": "target",
+   "type": "musclesAtTier",
+   "threshold": 5,
+   "category": "strength",
+   "family": "Strong muscles",
+   "level": "silver",
+   "param": 3
+  },
+  {
+   "key": "muscles_gold_10",
+   "title": "Golden Ten",
+   "description": "Get 10 muscles to Gold or better.",
+   "icon": "target",
+   "type": "musclesAtTier",
+   "threshold": 10,
+   "category": "strength",
+   "family": "Strong muscles",
+   "level": "gold",
+   "param": 3
+  },
+  {
+   "key": "regions_ranked",
+   "title": "Whole Body",
+   "description": "Rank all 6 body regions.",
+   "icon": "layers",
+   "type": "regionsAtTier",
+   "threshold": 6,
+   "category": "strength",
+   "param": 0
+  },
+  {
+   "key": "regions_silver",
+   "title": "Silver Everywhere",
+   "description": "Get all 6 body regions to Silver or better.",
+   "icon": "layers",
+   "type": "regionsAtTier",
+   "threshold": 6,
+   "category": "strength",
+   "param": 2
+  },
+  {
+   "key": "volume_100t",
+   "title": "100 Tonnes",
+   "description": "Lift 100,000 kg of total working volume.",
+   "icon": "weight",
+   "type": "totalVolumeKg",
+   "threshold": 100000,
+   "category": "volume",
+   "family": "Lifetime volume",
+   "level": "bronze"
+  },
+  {
+   "key": "volume_500t",
+   "title": "Half a Kiloton",
+   "description": "Lift 500,000 kg of total working volume.",
+   "icon": "weight",
+   "type": "totalVolumeKg",
+   "threshold": 500000,
+   "category": "volume",
+   "family": "Lifetime volume",
+   "level": "silver"
+  },
+  {
+   "key": "volume_1000t",
+   "title": "Kiloton",
+   "description": "Lift 1,000,000 kg of total working volume.",
+   "icon": "weight",
+   "type": "totalVolumeKg",
+   "threshold": 1000000,
+   "category": "volume",
+   "family": "Lifetime volume",
+   "level": "gold"
+  },
+  {
+   "key": "sets_250",
+   "title": "Set Starter",
+   "description": "Complete 250 working sets.",
+   "icon": "weight",
+   "type": "totalSets",
+   "threshold": 250,
+   "category": "volume",
+   "family": "Lifetime sets",
+   "level": "bronze"
+  },
+  {
+   "key": "sets_1000",
+   "title": "Set Collector",
+   "description": "Complete 1,000 working sets.",
+   "icon": "weight",
+   "type": "totalSets",
+   "threshold": 1000,
+   "category": "volume",
+   "family": "Lifetime sets",
+   "level": "silver"
+  },
+  {
+   "key": "sets_5000",
+   "title": "Set Hoarder",
+   "description": "Complete 5,000 working sets.",
+   "icon": "weight",
+   "type": "totalSets",
+   "threshold": 5000,
+   "category": "volume",
+   "family": "Lifetime sets",
+   "level": "gold"
+  },
+  {
+   "key": "big_day",
+   "title": "Big Day",
+   "description": "Lift 10,000 kg of volume in one workout.",
+   "icon": "bolt",
+   "type": "maxSessionVolumeKg",
+   "threshold": 10000,
+   "category": "volume"
+  },
+  {
+   "key": "explore_10",
+   "title": "Curious",
+   "description": "Do 10 different exercises.",
+   "icon": "compass",
+   "type": "distinctExercises",
+   "threshold": 10,
+   "category": "exploration",
+   "family": "Exercises tried",
+   "level": "bronze"
+  },
+  {
+   "key": "explore_25",
+   "title": "Explorer",
+   "description": "Do 25 different exercises.",
+   "icon": "compass",
+   "type": "distinctExercises",
+   "threshold": 25,
+   "category": "exploration",
+   "family": "Exercises tried",
+   "level": "silver"
+  },
+  {
+   "key": "explore_50",
+   "title": "Collector",
+   "description": "Do 50 different exercises.",
+   "icon": "compass",
+   "type": "distinctExercises",
+   "threshold": 50,
+   "category": "exploration",
+   "family": "Exercises tried",
+   "level": "gold"
+  },
+  {
+   "key": "muscles_10",
+   "title": "Half the Map",
+   "description": "Rank 10 muscles.",
+   "icon": "compass",
+   "type": "musclesRanked",
+   "threshold": 10,
+   "category": "exploration"
+  },
+  {
+   "key": "muscles_all",
+   "title": "Every Muscle",
+   "description": "Rank all 20 muscles.",
+   "icon": "compass",
+   "type": "musclesRanked",
+   "threshold": 20,
+   "category": "exploration"
+  },
+  {
+   "key": "green_5",
+   "title": "Green Light",
+   "description": "Train on 5 Green readiness days.",
+   "icon": "leaf",
+   "type": "greenSessions",
+   "threshold": 5,
+   "category": "recovery",
+   "family": "Green-day workouts",
+   "level": "bronze"
+  },
+  {
+   "key": "green_25",
+   "title": "Ready to Lift",
+   "description": "Train on 25 Green readiness days.",
+   "icon": "leaf",
+   "type": "greenSessions",
+   "threshold": 25,
+   "category": "recovery",
+   "family": "Green-day workouts",
+   "level": "silver"
+  },
+  {
+   "key": "green_50",
+   "title": "Peak Condition",
+   "description": "Train on 50 Green readiness days.",
+   "icon": "leaf",
+   "type": "greenSessions",
+   "threshold": 50,
+   "category": "recovery",
+   "family": "Green-day workouts",
+   "level": "gold"
+  },
+  {
+   "key": "sleep_3",
+   "title": "Early Nights",
+   "description": "Sleep 7+ hours 3 nights in a row (Apple Health).",
+   "icon": "moon",
+   "type": "sleepStreak",
+   "threshold": 3,
+   "category": "recovery",
+   "family": "Sleep streak",
+   "level": "bronze"
+  },
+  {
+   "key": "sleep_7",
+   "title": "Sleep Week",
+   "description": "Sleep 7+ hours 7 nights in a row (Apple Health).",
+   "icon": "moon",
+   "type": "sleepStreak",
+   "threshold": 7,
+   "category": "recovery",
+   "family": "Sleep streak",
+   "level": "silver"
+  },
+  {
+   "key": "sleep_14",
+   "title": "Sleep Fortnight",
+   "description": "Sleep 7+ hours 14 nights in a row (Apple Health).",
+   "icon": "moon",
+   "type": "sleepStreak",
+   "threshold": 14,
+   "category": "recovery",
+   "family": "Sleep streak",
+   "level": "gold"
+  },
+  {
+   "key": "program_1",
+   "title": "Full Week",
+   "description": "Do all your routines in a week.",
+   "icon": "calendar",
+   "type": "fullProgramWeeks",
+   "threshold": 1,
+   "category": "program",
+   "family": "Complete weeks",
+   "level": "bronze"
+  },
+  {
+   "key": "program_4",
+   "title": "Full Month",
+   "description": "Do all your routines in a week, 4 times.",
+   "icon": "calendar",
+   "type": "fullProgramWeeks",
+   "threshold": 4,
+   "category": "program",
+   "family": "Complete weeks",
+   "level": "silver"
+  },
+  {
+   "key": "program_12",
+   "title": "Full Quarter",
+   "description": "Do all your routines in a week, 12 times.",
+   "icon": "calendar",
+   "type": "fullProgramWeeks",
+   "threshold": 12,
+   "category": "program",
+   "family": "Complete weeks",
+   "level": "gold"
+  },
+  {
+   "key": "level_5",
+   "title": "Level 5",
+   "description": "Reach level 5.",
+   "icon": "bolt",
+   "type": "level",
+   "threshold": 5,
+   "category": "program",
+   "family": "Level",
+   "level": "bronze"
+  },
+  {
+   "key": "level_10",
+   "title": "Double Digits",
+   "description": "Reach level 10.",
+   "icon": "bolt",
+   "type": "level",
+   "threshold": 10,
+   "category": "program",
+   "family": "Level",
+   "level": "silver"
+  },
+  {
+   "key": "level_25",
+   "title": "Level 25",
+   "description": "Reach level 25.",
+   "icon": "bolt",
+   "type": "level",
+   "threshold": 25,
+   "category": "program",
+   "family": "Level",
+   "level": "gold"
+  }
+ ]
 }

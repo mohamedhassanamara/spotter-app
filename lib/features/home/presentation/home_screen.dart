@@ -235,7 +235,7 @@ class _Quests extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const SectionLabel('Weekly quests',
+        const SectionLabel('Weekly challenges',
             trailing: Text('+40 XP each', style: TextStyle(color: AppColors.xp, fontWeight: FontWeight.w700))),
         quests.when(
           loading: () => const Skeleton(height: 170, radius: Radii.card),

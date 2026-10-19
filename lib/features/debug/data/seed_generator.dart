@@ -11,7 +11,6 @@ import '../../coach/data/coach_context.dart';
 import '../../coach/domain/guardrail.dart';
 import '../../gamification/data/gamification_repository.dart';
 import '../../gamification/domain/quests.dart';
-import '../../gamification/domain/stats.dart';
 import '../../library/domain/exercise_info.dart';
 import '../../readiness/data/readiness_repository.dart';
 import '../../readiness/domain/readiness.dart';
@@ -179,12 +178,10 @@ class SeedGenerator {
         bodyweight: bodyweight,
         bodyweightLoaded: _bodyweightLoaded,
       );
-      await gami.ensureQuests(start, () => const QuestEngine().generate(QuestGenInput(
-            sessionsPerWeek: sessionsPerWeekLast4([for (final s in history.sessions) s.startedAt], start),
-            groupSets4w: regionSetsLast4Weeks(history, start),
-            disciplinePct: disciplineLast30(history, start),
-            rpeLoggedPct: rpeLoggedPct(history, start),
-          )));
+      await gami.ensureQuests(
+        start,
+        (existing, missing) => const QuestEngine().generate(QuestGenInput(weekStart: weekStart(start), exclude: existing), count: missing),
+      );
 
       final sessionId = await sessionRepo.start(
         name: routine.routine.name,

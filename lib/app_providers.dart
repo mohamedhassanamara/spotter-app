@@ -346,20 +346,40 @@ class QuestProgress {
   bool get done => quest.row.completedAt != null || progress >= quest.def.target;
 }
 
-/// Generates this week's quests on first access, then streams them with live progress.
+/// Nights of 7+ hours of sleep, by day (yyyy-MM-dd), from the Health data synced so far.
+Map<String, double> sleepByDay(Iterable<DailyMetric> days) => sleepByDayRows(days);
+
+/// Generates this week's challenges on first access, then streams them with live progress.
 final questsProvider = StreamProvider<List<QuestProgress>>((ref) async* {
   final now = ref.watch(clockProvider)();
   final repo = ref.watch(gamificationRepositoryProvider);
   final history = await ref.watch(historyProvider.future);
-  await repo.ensureQuests(now, () => const QuestEngine().generate(QuestGenInput(
-        sessionsPerWeek: sessionsPerWeekLast4([for (final s in history.sessions) s.startedAt], now),
-        groupSets4w: regionSetsLast4Weeks(history, now),
-        disciplinePct: disciplineLast30(history, now),
-        rpeLoggedPct: rpeLoggedPct(history, now),
-      )));
-  final activity = weekActivity(history, now);
+  final days = ref.watch(dailyMetricsProvider).value ?? const <DailyMetric>[];
+  final recent = await repo.previousQuestIds(now);
+  await repo.ensureQuests(
+    now,
+    (existing, missing) => const QuestEngine().generate(
+      QuestGenInput(
+        weekStart: weekStart(now),
+        recentIds: recent,
+        exclude: existing,
+        hasSleepData: days.any((d) => d.sleepMinutes != null),
+        hasReadinessData: days.any((d) => d.readinessScore != null) || history.sessions.any((s) => s.readinessBand != null),
+      ),
+      count: missing,
+    ),
+  );
+  final sleep = sleepByDay(days);
+  final monday = weekStart(now);
+  var nights = 0;
+  for (var i = 0; i < 7; i++) {
+    final m = sleep[dayKey(addDays(monday, i))];
+    if (m != null && m >= 420) nights++;
+  }
+  final prs = findPrs(history, bodyweightLoaded: await ref.watch(bodyweightLoadedIdsProvider.future), bodyweight: ref.watch(latestBodyWeightProvider).value?.kg ?? 0);
+  final week = weekActivity(history, now, prs: prs, sleepNights: nights);
   yield* repo.watchQuests(now).map((qs) => [
-        for (final q in qs) QuestProgress(q, const QuestEngine().progress(q.def, activity)),
+        for (final q in qs) QuestProgress(q, const QuestEngine().progress(q.def, week)),
       ]);
 });
 
@@ -375,13 +395,15 @@ final achievementStatsProvider = FutureProvider<AchievementStats>((ref) async {
   final ranks = await ref.watch(ranksProvider.future);
   final bwIds = await ref.watch(bodyweightLoadedIdsProvider.future);
   final bw = ref.watch(latestBodyWeightProvider).value?.kg ?? 0;
+  final routines = await ref.watch(routinesProvider.future);
   return buildAchievementStats(
     history: history,
     longestStreakDays: ref.watch(dayStreakProvider)?.longestDays ?? 0,
-    now: ref.watch(clockProvider)(),
-    bestTierIndex: RanksRepository.bestTierIndex(ranks),
     totalXp: ref.watch(totalXpProvider).value ?? 0,
     prCount: findPrs(history, bodyweightLoaded: bwIds, bodyweight: bw).length,
+    ranks: ranks,
+    sleepMinutesByDay: sleepByDay(ref.watch(dailyMetricsProvider).value ?? const <DailyMetric>[]),
+    routineIds: {for (final r in routines) r.routine.id},
   );
 });
 

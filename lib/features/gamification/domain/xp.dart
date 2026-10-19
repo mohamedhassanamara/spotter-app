@@ -7,15 +7,12 @@ class XpRules {
   const XpRules();
 
   static const int perWorkingSet = 10;
-  static const int followBonus = 15;
   static const int perPr = 50;
   static const int perQuest = 40;
 
-  /// 0 XP for override sets; otherwise +10, +15 more when the suggestion was followed (±5 %).
-  int forSet(LoggedSet s) {
-    if (!s.isWorking || s.isOverride) return 0;
-    return perWorkingSet + (s.followedSuggestion ? followBonus : 0);
-  }
+  /// 10 XP per completed working set. Nothing here looks at the suggestion: following it, beating it or ignoring it
+  /// earns the same.
+  int forSet(LoggedSet s) => s.isWorking ? perWorkingSet : 0;
 
   int forSession({required Iterable<LoggedSet> sets, required int prCount}) =>
       sets.fold<int>(0, (sum, s) => sum + forSet(s)) + prCount * perPr;

@@ -8,6 +8,9 @@ import '../../../core/domain/dates.dart';
 import '../domain/achievements.dart';
 import '../domain/quests.dart';
 
+/// Minutes slept per night, by day (yyyy-MM-dd), from the Health data synced so far.
+Map<String, double> sleepByDayRows(Iterable<DailyMetric> days) => {for (final d in days) if (d.sleepMinutes != null) d.date: d.sleepMinutes!};
+
 class StoredQuest {
   const StoredQuest({required this.row, required this.def});
   final Quest row;
@@ -71,31 +74,42 @@ class GamificationRepository {
         }
       });
 
-  // ---- weekly quests ----
+  // ---- weekly challenges ----
 
   Stream<List<StoredQuest>> watchQuests(DateTime week) => (_db.select(_db.quests)
         ..where((t) => t.weekStart.equals(dayKey(weekStart(week))))
         ..orderBy([(t) => OrderingTerm.asc(t.id)]))
       .watch()
-      .map((rows) => rows.map(_toStored).toList());
+      .map(_toStoredList);
 
-  Future<List<StoredQuest>> quests(DateTime week) async => (await (_db.select(_db.quests)
-            ..where((t) => t.weekStart.equals(dayKey(weekStart(week))))
-            ..orderBy([(t) => OrderingTerm.asc(t.id)]))
-          .get())
-      .map(_toStored)
-      .toList();
+  Future<List<StoredQuest>> quests(DateTime week) async => _toStoredList(await (_db.select(_db.quests)
+        ..where((t) => t.weekStart.equals(dayKey(weekStart(week))))
+        ..orderBy([(t) => OrderingTerm.asc(t.id)]))
+      .get());
 
-  StoredQuest _toStored(Quest q) =>
-      StoredQuest(row: q, def: QuestDef.fromParams(q.key, jsonDecode(q.params) as Map<String, dynamic>));
+  /// Challenges whose kind this version no longer has (the retired "follow the coach" ones) are skipped.
+  List<StoredQuest> _toStoredList(List<Quest> rows) => [
+        for (final q in rows)
+          if (QuestDef.tryFromParams(q.key, jsonDecode(q.params) as Map<String, dynamic>) case final def?) StoredQuest(row: q, def: def),
+      ];
 
-  /// Creates this week's quests once (the first time the app looks at the week).
-  Future<void> ensureQuests(DateTime week, List<QuestDef> Function() generate) async {
+  /// [QuestDef.id]s of the week before [week]'s challenges, so they are not picked again.
+  Future<Set<String>> previousQuestIds(DateTime week) async =>
+      {for (final q in await quests(addDays(weekStart(week), -7))) q.def.id};
+
+  /// Removes the retired "follow every suggestion" challenges, from any week (they rewarded following the coach).
+  Future<int> retireSuggestionQuests() =>
+      (_db.delete(_db.quests)..where((t) => t.key.isIn(retiredQuestKeys))).go();
+
+  /// Makes sure this week has three challenges: creates them the first time the app looks at the week, and tops the
+  /// week up when retired ones were removed. [generate] gets the kinds already present.
+  Future<void> ensureQuests(DateTime week, List<QuestDef> Function(Set<QuestKey> existing, int missing) generate) async {
     final key = dayKey(weekStart(week));
     await _db.transaction(() async {
-      final existing = await (_db.select(_db.quests)..where((t) => t.weekStart.equals(key))).get();
-      if (existing.isNotEmpty) return;
-      for (final q in generate()) {
+      await retireSuggestionQuests();
+      final existing = _toStoredList(await (_db.select(_db.quests)..where((t) => t.weekStart.equals(key))).get());
+      if (existing.length >= 3) return;
+      for (final q in generate({for (final e in existing) e.def.key}, 3 - existing.length)) {
         await _db.into(_db.quests).insert(QuestsCompanion.insert(
               weekStart: key,
               key: q.key.name,

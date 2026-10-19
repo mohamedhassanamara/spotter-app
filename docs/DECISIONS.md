@@ -1808,3 +1808,31 @@ so reps extend first).
 **Tests** (`walking_lunge_regression_test`, built from the real rows in `test/fixtures/walking_lunge_real.csv`): the stored history after
 the import; the suggestion after the import alone; the stuck case (in-app 35 / 37.5 sets and a stale 37.5 plan in an active workout)
 converted, idempotent; the suggestion afterwards, with a later per-dumbbell 17.5 set untouched.
+
+## 4. Achievements and weekly challenges
+
+**Achievements: 52, in six categories** (`assets/achievements.json`, schema 2). Families have bronze / silver / gold steps (shown as a
+tag and in the detail); the rest are one-offs.
+| Category | Achievements |
+|---|---|
+| Consistency | First Rep; Workouts 25 / 100 / 250; Streak 14 / 30 / 100 days |
+| Strength | First PR; PRs 5 / 25 / 100; best lift reaches Silver … Radiant (7); overall Silver … Champion (5); muscles at Gold+: 1 / 5 / 10; every region ranked; every region Silver+ |
+| Volume | Lifetime kg 100 t / 500 t / 1,000 t; working sets 250 / 1,000 / 5,000; 10,000 kg in one workout |
+| Exploration | Exercises tried 10 / 25 / 50; 10 muscles ranked; all 20 muscles ranked |
+| Recovery & readiness | Workouts on a Green readiness day 5 / 25 / 50; sleeping 7+ h in a row (Apple Health) 3 / 7 / 14 nights |
+| Program | A week with every routine done: 1 / 4 / 12 weeks; level 5 / 10 / 25 |
+Removed because they depended on following suggestions: Patience, Monk Mode, Disciplined, and Comeback (it needed a coach-prescribed
+deload). Silently on the next start (ladder migration v7): retired ones disappear, ones the new definitions qualify for unlock without a
+notification, rank-based ones the new ladder doesn't support are revoked.
+**Weekly challenges.** Three per Monday from a pool of **24** (`weeklyChallengePool`): 3 or 4 workouts; train a region twice (6 regions); top of the
+rep range on 2 / 3 lifts; log effort on every working set in 3 workouts; try a never-logged exercise; set 1 / 2 PRs; 60 / 90 working sets;
+15,000 / 25,000 kg volume; warm up in 3 workouts; train on a Green day; 4 different regions; 5 sets to failure; 7+ h sleep on 5 nights; a
+workout in 75 minutes or less. The pick is deterministic per Monday, never two of a kind, never last week's, and skips the sleep and
+Green-day ones when there's no Health data. Challenges still on file from before ("follow every suggestion", "no override") are removed and the
+week is topped back up to three.
+
+## 6 (part). Suggestions are just suggestions: rewards
+
+No XP, challenge, achievement or badge looks at the suggestion any more. The per-set XP is a flat 10 for every completed working set (the
++15 "followed it" bonus is gone, and so is the 0 XP for override sets); PR XP and challenge XP are unchanged. The Discipline stat stays on
+Profile as information only and says so.

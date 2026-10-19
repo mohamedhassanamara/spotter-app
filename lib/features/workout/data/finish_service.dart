@@ -151,6 +151,24 @@ class FinishService {
         displayNames: RanksRepository.displayNamesFor(catalog, [for (final r in await _db.select(_db.routineExercises).get()) (exerciseId: r.exerciseId, displayName: r.displayName)]),
       );
 
+  /// The lifetime stats achievements are checked against (ranks, Health sleep, routines included).
+  Future<AchievementStats> _achievementStats({
+    required TrainingHistory history,
+    required RankSummary ranks,
+    required int totalXp,
+    required int prCount,
+    required DateTime now,
+  }) async =>
+      buildAchievementStats(
+        history: history,
+        longestStreakDays: await _longestStreak(history, now),
+        totalXp: totalXp,
+        prCount: prCount,
+        ranks: ranks,
+        sleepMinutesByDay: sleepByDayRows(await _db.select(_db.dailyMetrics).get()),
+        routineIds: {for (final r in await _db.select(_db.routines).get()) r.id},
+      );
+
   /// Unlocks achievements earned by sessions that didn't go through [finish] (the Liftoff import).
   /// Awards no XP.
   Future<List<AchievementDef>> reevaluateAchievements({
@@ -165,13 +183,12 @@ class FinishService {
     final excluded = await RankExclusions(_db).load();
     final history = await _history.load(catalog);
     final ranks = await _ranks(history, standards, catalog, now, excluded);
-    final stats = buildAchievementStats(
+    final stats = await _achievementStats(
       history: history,
-      longestStreakDays: await _longestStreak(history, now),
-      now: now,
-      bestTierIndex: RanksRepository.bestTierIndex(ranks),
+      ranks: ranks,
       totalXp: await _gami.totalXp(),
       prCount: findPrs(history, bodyweightLoaded: bwLoaded, bodyweight: bodyweight).length,
+      now: now,
     );
     final unlocked = const AchievementEvaluator().newlyUnlocked(defs, stats, await _gami.unlockedKeys());
     if (unlocked.isNotEmpty) await _gami.unlock(unlocked.map((d) => d.key), now);
@@ -222,7 +239,14 @@ class FinishService {
     // Quests.
     final week = weekStart(session.startedAt);
     final questsDone = <String>[];
-    final activity = weekActivity(after, session.startedAt);
+    final sleepRows = await _db.select(_db.dailyMetrics).get();
+    final sleep = sleepByDayRows(sleepRows);
+    var nights = 0;
+    for (var i = 0; i < 7; i++) {
+      final m = sleep[dayKey(addDays(week, i))];
+      if (m != null && m >= 420) nights++;
+    }
+    final activity = weekActivity(after, session.startedAt, prs: findPrs(after, bodyweightLoaded: bwLoaded, bodyweight: bodyweight), sleepNights: nights);
     for (final q in await _gami.quests(session.startedAt)) {
       if (q.row.completedAt != null) continue;
       if (_quests.progress(q.def, activity) >= q.def.target) {
@@ -258,16 +282,8 @@ class FinishService {
     final rankChanges = _rankChanges(await _ranks(before, standards, catalog, now, excluded), ranksAfter);
 
     // Achievements.
-    final bestTier = RanksRepository.bestTierIndex(ranksAfter);
     final allPrs = findPrs(after, bodyweightLoaded: bwLoaded, bodyweight: bodyweight).length;
-    final stats = buildAchievementStats(
-      history: after,
-      longestStreakDays: await _longestStreak(after, now),
-      now: now,
-      bestTierIndex: bestTier,
-      totalXp: xpBefore + xpSession + bonus,
-      prCount: allPrs,
-    );
+    final stats = await _achievementStats(history: after, ranks: ranksAfter, totalXp: xpBefore + xpSession + bonus, prCount: allPrs, now: now);
     final unlocked = await _gami.unlockedKeys();
     final newAchievements = const AchievementEvaluator().newlyUnlocked(defs, stats, unlocked);
     if (newAchievements.isNotEmpty) await _gami.unlock(newAchievements.map((d) => d.key), now);

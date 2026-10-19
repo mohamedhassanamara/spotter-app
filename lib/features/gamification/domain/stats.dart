@@ -4,6 +4,7 @@ import '../../../core/domain/dates.dart';
 import '../../../core/domain/history.dart';
 import '../../../core/domain/muscles.dart';
 import '../../coach/domain/guardrail.dart';
+import '../../ranks/domain/ranks.dart';
 import 'achievements.dart';
 import 'quests.dart';
 import 'xp.dart';
@@ -38,42 +39,82 @@ List<PrRecord> findPrs(TrainingHistory history, {Set<String> bodyweightLoaded = 
   return out;
 }
 
+/// Discipline is information only (Profile): it never earns or blocks a reward.
 double? disciplineLast30(TrainingHistory history, DateTime now) =>
     const Guardrail().disciplinePct(history.setsSince(addDays(dateOnly(now), -30)));
 
-int workingSetsLast30(TrainingHistory history, DateTime now) =>
-    history.setsSince(addDays(dateOnly(now), -30)).where((s) => s.suggestedWeight != null).length;
-
+/// Lifetime stats the achievements are checked against. Nothing in here depends on following suggestions.
+/// [sleepMinutesByDay] maps a yyyy-MM-dd day to minutes slept that night; [routineIds] are the current routines.
 AchievementStats buildAchievementStats({
   required TrainingHistory history,
   required int longestStreakDays,
-  required DateTime now,
-  required int bestTierIndex,
   required int totalXp,
   required int prCount,
+  RankSummary? ranks,
+  Map<String, double> sleepMinutesByDay = const {},
+  Set<int> routineIds = const {},
 }) {
+  int dayNumber(DateTime d) => DateTime.utc(d.year, d.month, d.day).millisecondsSinceEpoch ~/ Duration.millisecondsPerDay;
+  final distinct = <String>{
+    for (final s in history.sessions)
+      for (final e in s.exercises)
+        if (e.workingSets.isNotEmpty) e.exerciseId,
+  };
+  final bestLift = ranks == null ? -1 : ranks.exercises.fold<int>(-1, (m, r) => r.score.tier.index > m ? r.score.tier.index : m);
   return AchievementStats(
     sessions: history.sessions.length,
-    longestCleanSessionStreak: longestCleanStreak([for (final s in history.sessions) s.hasOverrides]),
-    comebacks: countComebacks(history.logsByExercise.values),
     longestStreakDays: longestStreakDays,
-    bestExerciseTierIndex: bestTierIndex,
-    disciplinePct30: disciplineLast30(history, now),
-    workingSets30: workingSetsLast30(history, now),
     prs: prCount,
     totalVolumeKg: history.sessions.fold<double>(0, (v, s) => v + s.volume),
+    totalSets: history.sessions.fold<int>(0, (n, s) => n + s.workingSets.length),
+    maxSessionVolumeKg: history.sessions.fold<double>(0, (m, s) => math.max(m, s.volume)),
     level: levelFor(totalXp).level,
+    bestExerciseTierIndex: bestLift,
+    overallTierIndex: ranks?.overall?.tier.index ?? -1,
+    muscleTierIndexes: [for (final m in ranks?.muscles.values ?? const <MuscleRank>[]) m.score.tier.index],
+    regionTierIndexes: [for (final r in ranks?.regions.values ?? const <RegionRank>[]) if (r.score != null) r.score!.tier.index],
+    distinctExercises: distinct.length,
+    greenSessions: history.sessions.where((s) => s.readinessBand == 'green' && s.workingSets.isNotEmpty).length,
+    longestSleepStreak: longestSleepStreak({for (final e in sleepMinutesByDay.entries) dayNumber(parseDayKey(e.key)): e.value}),
+    fullProgramWeeks: fullProgramWeeks(
+      [for (final s in history.sessions) (dayNumber(weekStart(dateOnly(s.startedAt))) ~/ 7, s.routineId)],
+      routineIds,
+    ),
   );
 }
 
-/// Sessions of one week in the shape the quest engine understands.
-List<SessionActivity> weekActivity(TrainingHistory history, DateTime anyDayInWeek) => [
+/// Sessions of one week in the shape the challenges understand. [prs] are the PRs of the whole history.
+QuestWeek weekActivity(TrainingHistory history, DateTime anyDayInWeek, {List<PrRecord> prs = const [], int sleepNights = 0}) {
+  final seen = <String>{};
+  final firstSeen = <(int, String)>{};
+  for (final s in history.sessions) {
+    for (final e in s.exercises) {
+      if (e.workingSets.isNotEmpty && seen.add(e.exerciseId)) firstSeen.add((s.id, e.exerciseId));
+    }
+  }
+  return QuestWeek(
+    sleepNights: sleepNights,
+    sessions: [
       for (final s in history.inWeek(anyDayInWeek))
-        SessionActivity(date: s.startedAt, exercises: [
-          for (final e in s.exercises)
-            ExerciseActivity(exerciseId: e.exerciseId, primaryRegions: e.targets.primaryRegions, repMax: e.range.max, sets: e.loggedSets),
-        ]),
-    ];
+        SessionActivity(
+          date: s.startedAt,
+          durationMinutes: s.endedAt?.difference(s.startedAt).inMinutes,
+          readinessBand: s.readinessBand,
+          prCount: prs.where((p) => p.sessionId == s.id).length,
+          exercises: [
+            for (final e in s.exercises)
+              ExerciseActivity(
+                exerciseId: e.exerciseId,
+                primaryRegions: e.targets.primaryRegions,
+                repMax: e.range.max,
+                sets: e.loggedSets,
+                isNew: firstSeen.contains((s.id, e.exerciseId)),
+              ),
+          ],
+        ),
+    ],
+  );
+}
 
 /// % of working sets in the last 30 days that had an RPE logged.
 double? rpeLoggedPct(TrainingHistory history, DateTime now) {

@@ -7,7 +7,8 @@ import '../../gamification/domain/achievements.dart';
 /// v4: allometric bodyweight scaling, accessories anchored to their base compound.
 /// v5: only exercises in your routines (or done in an in-app workout) count toward ranks.
 /// v6: Valorant ladder: 9 tiers (Iron … Immortal × 3 divisions, Radiant), RR instead of LP.
-const int rankLadderVersion = 6;
+/// v7: the achievement rework (≈ 50 achievements, none rewarding following suggestions).
+const int rankLadderVersion = 7;
 const String rankLadderVersionKey = 'rank_ladder_version';
 
 class LadderMigration {
@@ -39,14 +40,18 @@ Future<LadderMigration> migrateRankLadder({
   if (!ranksKnown) return const LadderMigration();
   final repo = GamificationRepository(db);
   final have = await repo.unlockedKeys();
-  final tierDefs = defs.where((d) => d.type == AchievementType.bestExerciseTier).toList();
-  final fresh = const AchievementEvaluator().newlyUnlocked(tierDefs, stats, have).map((d) => d.key).toList();
-  if (fresh.isNotEmpty) await repo.unlock(fresh, now);
+  const eval = AchievementEvaluator();
+  final known = {for (final d in defs) d.key};
+  // Silently: achievements this version no longer has (e.g. Patience, Disciplined, Comeback) go, earned ones that the
+  // new definitions also qualify for unlock, and rank-based ones the new ladder doesn't support are revoked.
+  final retired = [for (final k in have) if (!known.contains(k)) k];
+  final fresh = eval.newlyUnlocked(defs, stats, have).map((d) => d.key).toList();
   final revoked = [
-    for (final d in tierDefs)
-      if (have.contains(d.key) && stats.bestExerciseTierIndex < d.threshold) d.key,
+    for (final d in defs)
+      if (d.isRankBased && have.contains(d.key) && !eval.isMet(d, stats)) d.key,
   ];
-  if (revoked.isNotEmpty) await repo.revoke(revoked);
+  if (fresh.isNotEmpty) await repo.unlock(fresh, now);
+  if (retired.isNotEmpty || revoked.isNotEmpty) await repo.revoke([...retired, ...revoked]);
   await db.putSetting(rankLadderVersionKey, '$rankLadderVersion');
-  return LadderMigration(unlocked: fresh, revoked: revoked);
+  return LadderMigration(unlocked: fresh, revoked: [...retired, ...revoked]);
 }
