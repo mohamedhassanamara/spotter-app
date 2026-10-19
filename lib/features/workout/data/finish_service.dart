@@ -67,6 +67,7 @@ class SessionSummary {
     required this.healthSaved,
     this.rankGains = const [],
     this.disciplinePct,
+    this.avgEffort,
     this.streakBefore = 0,
     this.streakAfter = 0,
   });
@@ -92,6 +93,9 @@ class SessionSummary {
   final List<AchievementDef> achievements;
   final List<String> questsCompleted;
   final bool? healthSaved;
+
+  /// Average RPE of the working sets that have one (null when none was logged).
+  final double? avgEffort;
 
   /// % of this session's working sets within ±5 % of the suggestion (null without suggestions).
   final double? disciplinePct;
@@ -331,6 +335,10 @@ class FinishService {
       questsCompleted: questsDone,
       healthSaved: saved,
       disciplinePct: _guardrail.disciplinePct(session.workingSets),
+      avgEffort: () {
+        final r = [for (final x in session.workingSets) if (x.rpe != null) x.rpe!];
+        return r.isEmpty ? null : r.reduce((a, b) => a + b) / r.length;
+      }(),
       streakBefore: streakBefore,
       streakAfter: streakAfter,
     );

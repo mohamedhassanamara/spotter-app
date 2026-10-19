@@ -192,15 +192,8 @@ class _StatsRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final d = s.disciplinePct;
-    final dColor = d == null
-        ? AppColors.textSecondary
-        : d >= 90
-            ? AppColors.green
-            : d >= 70
-                ? AppColors.yellow
-                : AppColors.red;
-    Widget stat(String label, String value, {Color? color}) => Expanded(
+    Widget stat(String label, String value, {Color? color, required String key}) => Expanded(
+          key: ValueKey(key),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -220,17 +213,14 @@ class _StatsRow extends StatelessWidget {
         children: [
           // 2 × 2 so large values (1h 04m, 12,640 kg) never collide on narrow phones.
           Row(children: [
-            stat('Duration', formatDuration(s.duration)),
-            stat('Volume', formatVolume(s.volume)),
+            stat('Duration', formatDuration(s.duration), key: 'stat-duration'),
+            stat('Effort', s.avgEffort == null ? '—' : 'RPE ${s.avgEffort!.toStringAsFixed(1)}', key: 'stat-effort'),
           ]),
           const SizedBox(height: 14),
           Row(children: [
-            stat('Working sets', '${s.workingSets}'),
-            stat('Discipline', d == null ? '—' : '${d.round()}%', color: dColor),
+            stat('Volume', formatVolume(s.volume), key: 'stat-volume'),
+            stat('PRs', '${s.prs.length}', key: 'stat-prs', color: s.prs.isEmpty ? null : const Color(0xFFFFC93C)),
           ]),
-          const SizedBox(height: 8),
-          Text('Discipline: % of sets within ±5% of the coach',
-              style: AppType.bodyS.copyWith(fontSize: 12, color: AppColors.textTertiary)),
         ],
       ),
     );

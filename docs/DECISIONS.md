@@ -2007,3 +2007,17 @@ All in `lib/core/motion.dart`; every one of them is skipped when the system asks
 - **Sheets and dialogs:** the framework's bottom-sheet and dialog transitions are kept (they already animate and follow Reduce Motion); I did not restyle them.
 Tests: `motion_test` (count-up, stagger, tab fade and state, each with Reduce Motion), integration `motion_flow_test` (tab switches keep state, the hero flight to the
 exercise page and back, no logged errors).
+
+## Round 3, item 1: the after-workout flow, exact sequence
+
+Finish → **"Calculating your results…" loader** (`CalculatingResults`: spinning ring, pulsing dumbbell, filling bar; at least 1.8 s, the real work runs in parallel and is not slowed)
+→ **Congratulations** (duration, effort = average RPE of the working sets, volume, PR count, XP counting up, the level-up pop) → **Rank**
+→ **Streak** (only if it grew) → Home. Skip is on every screen.
+- **Rank screen:** the overall body rank first: when its division or tier changed, the full-screen "RANK UP" (big Valorant badge, tier name, "from X"); otherwise
+  the overall RR bar animating. Then each lift one by one with its RR bar (rank-ups pop and buzz). **Nothing auto-advances:** a tap fast-forwards the animation and a
+  Continue button appears only when everything has played. (Muscles and regions no longer play here; they are on the Progress tab.)
+- **Streak screen:** a large flame drawn in code (`FireStreak`, CustomPainter: five layered tongues that sway, a ground glow and 46 rising sparks), it flares up in the first half
+  while the number ticks, with a heavy haptic at the tick; Continue appears when it has burned. Reduce Motion shows the end state at once.
+  **Source and licence:** original code in this repository, no Lottie file or other asset, so there is nothing to attribute or to licence.
+Tests: `rank_sequence_test` and `after_visuals_test` (widget), integration `after_workout_flow_test` (loader, every stat, rank screens, flame, Continue only at the end, Skip from
+each screen), `rank_up_flow_test` and `streak_finish_flow_test` updated. Screenshots: `docs/screenshots/after/`.

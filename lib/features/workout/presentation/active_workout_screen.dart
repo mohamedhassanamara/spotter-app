@@ -28,6 +28,8 @@ import '../data/routine_sync.dart';
 import '../data/session_repository.dart';
 import '../domain/set_kinds.dart';
 import '../domain/superset_rounds.dart';
+import '../data/finish_service.dart';
+import 'calculating_results.dart';
 import 'exercise_block.dart';
 import 'keypad.dart';
 import '../../coach/domain/praise.dart';
@@ -87,6 +89,7 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> with 
     ref.watch(historyProvider);
     final active = ref.watch(activeSessionProvider);
     final catalog = ref.watch(catalogProvider).value ?? const <String, ExerciseInfo>{};
+    if (_finishing) return const CalculatingResults();
     return active.when(
       loading: () => const Scaffold(body: Center(child: CircularProgressIndicator())),
       error: (e, _) => Scaffold(appBar: AppBar(), body: Center(child: Text('$e'))),
@@ -979,13 +982,18 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> with 
     setState(() => _finishing = true);
     try {
       await ref.read(restTimerProvider).stop();
-      final summary = await ref.read(finishServiceProvider).finish(
-            sessionId: current.session.id,
-            now: ref.read(clockProvider)(),
-            catalog: catalog,
-            settings: ref.read(currentSettingsProvider),
-            health: ref.read(healthSourceProvider),
-          );
+      // The loader plays for a moment even though the work is fast: anticipation.
+      final results = await Future.wait([
+        ref.read(finishServiceProvider).finish(
+              sessionId: current.session.id,
+              now: ref.read(clockProvider)(),
+              catalog: catalog,
+              settings: ref.read(currentSettingsProvider),
+              health: ref.read(healthSourceProvider),
+            ),
+        Future<void>.delayed(CalculatingResults.minimum),
+      ]);
+      final summary = results.first as SessionSummary;
       ref.read(lastSummaryProvider.notifier).set(summary);
       if (mounted) context.pushReplacement(Routes.summary);
     } catch (e, st) {

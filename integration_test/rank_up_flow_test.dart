@@ -67,19 +67,24 @@ void main() {
     }
     await h.waitForSummary(reason: 'Congratulations is the first screen');
     await h.tap(find.byKey(const ValueKey('after-continue')));
+    // The overall rank may have moved a division: the full-screen rank-up shows first, a tap moves on.
     await h.waitFor(find.byKey(const ValueKey('rank-sequence')), timeout: const Duration(seconds: 30), scroll: false, reason: 'the Rank screen');
-    await h.waitFor(find.byKey(const ValueKey('gain-exercise-Chest Press')), scroll: false, reason: 'the lift animates first');
-    await h.shot('rank-sequence');
-    await tester.tap(find.byKey(const ValueKey('rank-sequence')));
-    await h.settle(8);
-    // The overall rank may have moved a division: the full-screen rank-up shows, a tap skips it.
     if (find.text('RANK UP').evaluate().isNotEmpty) {
       await h.shot('rank-up-overall');
       await tester.tapAt(const Offset(200, 400));
       await h.settle(6);
     }
+    await h.waitFor(find.byKey(const ValueKey('gain-exercise-Chest Press')), scroll: false, reason: 'the lift animates');
+    await h.shot('rank-sequence');
+    await tester.tap(find.byKey(const ValueKey('rank-sequence'))); // fast-forward
+    await h.waitFor(find.byKey(const ValueKey('after-continue')), scroll: false, reason: 'Continue once the animations are done');
+    await h.tap(find.byKey(const ValueKey('after-continue')));
     // Then the streak (today's workout grew it) or Home.
-    if (find.byKey(const ValueKey('after-continue')).evaluate().isNotEmpty) await h.tap(find.byKey(const ValueKey('after-continue')));
+    await h.settle(10);
+    if (find.byKey(const ValueKey('streak-celebration')).evaluate().isNotEmpty) {
+      await h.waitFor(find.byKey(const ValueKey('after-continue')), timeout: const Duration(seconds: 10), scroll: false);
+      await h.tap(find.byKey(const ValueKey('after-continue')));
+    }
     await h.waitFor(find.text('OVERALL RANK'), timeout: const Duration(seconds: 20), reason: 'back on Home', scroll: false);
     await h.expectNoLoggedErrors();
     await h.dispose();

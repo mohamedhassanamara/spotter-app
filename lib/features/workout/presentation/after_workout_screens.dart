@@ -6,7 +6,7 @@ import '../../../app_providers.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/common.dart';
 import '../../../router.dart';
-import '../../gamification/presentation/streak_celebration.dart';
+import '../../gamification/presentation/fire_streak.dart';
 import '../../ranks/presentation/rank_sequence_screen.dart';
 import '../../ranks/presentation/rank_up_screen.dart';
 import '../data/finish_service.dart';
@@ -39,7 +39,8 @@ class AfterSkipButton extends StatelessWidget {
       );
 }
 
-/// Screen 2: the rank sequence (every lift, muscle, region, then overall), then the full-screen rank-up when the overall rank changed.
+/// Screen 2: the overall body rank first (the full-screen rank-up when its division or tier changed, otherwise its RR bar
+/// animating), then each lift one by one. Nothing advances by itself: Continue appears when the animations are done.
 class RankStepScreen extends ConsumerStatefulWidget {
   const RankStepScreen({super.key});
 
@@ -48,27 +49,44 @@ class RankStepScreen extends ConsumerStatefulWidget {
 }
 
 class _RankStepScreenState extends ConsumerState<RankStepScreen> {
-  bool _overall = false;
+  late final SessionSummary? _summary = ref.read(lastSummaryProvider);
+  late bool _showRankUp = _summary?.overallRankUp != null;
 
   @override
   Widget build(BuildContext context) {
-    final summary = ref.read(lastSummaryProvider);
-    void next() => advanceAfterWorkout(context, summary, AfterStep.rank);
+    final summary = _summary;
     final up = summary?.overallRankUp;
-    if (_overall && up != null) return RankUpScreen(changes: [up], onDone: next);
+    if (_showRankUp && up != null) {
+      return RankUpScreen(changes: [up], onDone: () => setState(() => _showRankUp = false));
+    }
+    final gains = summary?.rankGains ?? const <RankChange>[];
+    final overall = gains.where((g) => g.scope == RankChangeScope.overall);
+    final lifts = gains.where((g) => g.scope == RankChangeScope.exercise);
     return Stack(children: [
-      RankSequenceScreen(gains: summary?.rankGains ?? const [], onDone: up == null ? next : () => setState(() => _overall = true)),
+      RankSequenceScreen(
+        title: 'RANK PROGRESS',
+        // The overall rank leads; after its rank-up screen only the lifts follow.
+        gains: [if (up == null) ...overall, ...lifts],
+        onDone: () => advanceAfterWorkout(context, summary, AfterStep.rank),
+      ),
       const SafeArea(child: Padding(padding: EdgeInsets.only(right: 8), child: AfterSkipButton())),
     ]);
   }
 }
 
-/// Screen 3: the streak, ticking up.
-class StreakStepScreen extends ConsumerWidget {
+/// Screen 3: the streak, a big flame flaring up as the number ticks. Continue appears when the show is over.
+class StreakStepScreen extends ConsumerStatefulWidget {
   const StreakStepScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<StreakStepScreen> createState() => _StreakStepScreenState();
+}
+
+class _StreakStepScreenState extends ConsumerState<StreakStepScreen> {
+  bool _over = false;
+
+  @override
+  Widget build(BuildContext context) {
     final s = ref.watch(lastSummaryProvider);
     return Scaffold(
       body: SafeArea(
@@ -78,10 +96,13 @@ class StreakStepScreen extends ConsumerWidget {
             const AfterSkipButton(),
             const Spacer(),
             Text('STREAK', textAlign: TextAlign.center, style: AppType.displayL.copyWith(letterSpacing: 4, fontSize: 24)),
-            const SizedBox(height: 16),
-            if (s != null) StreakCelebration(from: s.streakBefore, to: s.streakAfter),
+            const SizedBox(height: 28),
+            if (s != null) FireStreak(from: s.streakBefore, to: s.streakAfter, onDone: () => setState(() => _over = true)),
             const Spacer(),
-            BigButton(key: const ValueKey('after-continue'), label: 'Done', icon: Icons.check_rounded, onPressed: () => advanceAfterWorkout(context, s, AfterStep.streak)),
+            if (_over)
+              BigButton(key: const ValueKey('after-continue'), label: 'Continue', icon: Icons.arrow_forward_rounded, onPressed: () => advanceAfterWorkout(context, s, AfterStep.streak))
+            else
+              const SizedBox(height: 60),
           ]),
         ),
       ),

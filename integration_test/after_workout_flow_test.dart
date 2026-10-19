@@ -4,7 +4,7 @@ import 'package:integration_test/integration_test.dart';
 
 import 'harness.dart';
 import 'logger_helpers.dart';
-import 'streak_finish_flow_test.dart' show finishWorkout, onlyWorkout;
+import 'streak_finish_flow_test.dart' show onlyWorkout;
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
@@ -20,61 +20,101 @@ void main() {
     await h.settle(3);
   }
 
-  testWidgets('After a workout: Congratulations → Rank → Streak → Home; Skip leaves at any point; screens with nothing to show are not shown', (tester) async {
+  Future<void> tapFinish(AppHarness h) async {
+    await h.scrollToTop();
+    await h.tap(find.text('Finish'));
+    if (find.text('Finish workout?').evaluate().isNotEmpty) {
+      await h.tap(find.descendant(of: find.byType(AlertDialog), matching: find.text('Finish')));
+    }
+    await h.settle(6);
+    if (find.text('Update routine?').evaluate().isNotEmpty) await h.tap(find.byKey(const ValueKey('keep-routine')));
+  }
+
+  testWidgets('After a workout: loader → Congratulations → Rank (overall first, then lifts, Continue only at the end) → Streak (flame) → Home; Skip everywhere',
+      (tester) async {
     final h = AppHarness(tester);
     await h.launchFresh();
     await h.onboard();
     await tester.runAsync(() => onlyWorkout(h.db!, 1)); // trained yesterday: today's workout grows the streak
     await h.pumpApp();
 
-    debugPrint('STEP finish: Congratulations first, with no streak or rank block on it');
+    debugPrint('STEP Finish: the "Calculating your results…" loader first');
     await startUpperAndTick(h);
-    await finishWorkout(h);
-    expect(find.text('WORKOUT COMPLETE'), findsOneWidget);
-    expect(find.byKey(const ValueKey('streak-celebration')), findsNothing, reason: 'the streak has its own screen now');
-    expect(find.byKey(const ValueKey('after-skip')), findsOneWidget);
+    await h.scrollToTop();
+    await tester.tap(find.text('Finish'));
+    await tester.pump(const Duration(milliseconds: 400));
+    if (find.text('Finish workout?').evaluate().isNotEmpty) {
+      await tester.tap(find.descendant(of: find.byType(AlertDialog), matching: find.text('Finish')));
+      await tester.pump(const Duration(milliseconds: 400));
+    }
+    if (find.text('Update routine?').evaluate().isNotEmpty) {
+      await tester.tap(find.byKey(const ValueKey('keep-routine')));
+      await tester.pump(const Duration(milliseconds: 400));
+    }
+    expect(find.byKey(const ValueKey('calculating-results')), findsOneWidget, reason: 'the loader comes right after Finish');
+    expect(find.textContaining('Calculating your results'), findsOneWidget);
+    expect(find.text('WORKOUT COMPLETE'), findsNothing, reason: 'nothing else before the loader is done');
+    await h.shot('after-0-loader');
+
+    debugPrint('STEP Congratulations: duration, effort, volume, PRs, XP');
+    await h.waitForSummary(reason: 'Congratulations after the loader');
+    for (final k in ['stat-duration', 'stat-effort', 'stat-volume', 'stat-prs']) {
+      expect(find.byKey(ValueKey(k)), findsOneWidget, reason: k);
+    }
+    expect(find.textContaining(' XP'), findsWidgets);
+    expect(find.byKey(const ValueKey('streak-celebration')), findsNothing);
     await h.shot('after-1-congratulations');
 
-    debugPrint('STEP Continue → Rank (when a rank moved) → Streak');
+    debugPrint('STEP Continue → Rank: nothing auto-advances, Continue only after the animations');
     await h.tap(find.byKey(const ValueKey('after-continue')));
-    await h.settle(10);
-    if (find.byKey(const ValueKey('rank-sequence')).evaluate().isNotEmpty) {
-      await h.shot('after-2-rank');
-      await tester.tap(find.byKey(const ValueKey('rank-sequence')));
-      await h.settle(8);
-      if (find.text('RANK UP').evaluate().isNotEmpty) {
-        await tester.tapAt(const Offset(200, 400));
-        await h.settle(6);
-      }
+    await tester.pump(const Duration(seconds: 1)); // the page transition
+    await h.settle(4);
+    if (find.text('RANK UP').evaluate().isNotEmpty) {
+      await h.shot('after-2a-rank-up');
+      await tester.tapAt(const Offset(200, 400));
+      await tester.pump(const Duration(seconds: 1));
+      await h.settle(2);
     }
-    await h.waitFor(find.byKey(const ValueKey('streak-celebration')), scroll: false, reason: 'the Streak screen is last');
+    if (find.byKey(const ValueKey('rank-sequence')).evaluate().isNotEmpty) {
+      await h.shot('after-2b-rank');
+      await tester.tap(find.byKey(const ValueKey('rank-sequence'))); // fast-forward
+      await h.settle(6);
+      expect(find.byKey(const ValueKey('rank-sequence')), findsOneWidget, reason: 'a tap does not leave');
+      await h.tap(find.byKey(const ValueKey('after-continue')));
+    }
+
+    debugPrint('STEP Streak: the flame, then Continue → Home');
+    await h.waitFor(find.byKey(const ValueKey('streak-celebration')), scroll: false, reason: 'the Streak screen');
+    await tester.pump(const Duration(milliseconds: 900)); // transition done, the flame still burning
+    expect(find.byKey(const ValueKey('after-continue')), findsNothing, reason: 'Continue waits for the flame');
     await h.settle(10);
-    expect(find.text('2-day streak'), findsOneWidget);
     await h.shot('after-3-streak');
+    await h.waitFor(find.byKey(const ValueKey('after-continue')), timeout: const Duration(seconds: 10), scroll: false, reason: 'Continue after the flame');
+    expect(find.text('2-day streak'), findsOneWidget);
     await h.tap(find.byKey(const ValueKey('after-continue')));
     await h.waitFor(find.text('OVERALL RANK'), scroll: false, reason: 'Home after the last screen');
 
-    debugPrint('STEP second workout the same day: no streak screen; Skip on Congratulations goes straight Home');
+    debugPrint('STEP second workout the same day: no Streak screen; Skip on Congratulations goes straight Home');
     await startUpperAndTick(h, start: 1);
-    await finishWorkout(h);
-    if (find.byKey(const ValueKey('after-skip')).evaluate().isNotEmpty) {
-      expect(find.byKey(const ValueKey('after-continue')), findsOneWidget);
-      await h.tap(find.byKey(const ValueKey('after-skip')));
-    }
+    await tapFinish(h);
+    await h.waitForSummary();
+    await h.tap(find.byKey(const ValueKey('after-skip')));
     await h.waitFor(find.text('OVERALL RANK'), scroll: false, reason: 'Skip went straight Home');
-    expect(find.byKey(const ValueKey('streak-celebration')), findsNothing);
 
-    debugPrint('STEP skip from the Streak screen too');
+    debugPrint('STEP Skip from the Rank / Streak screen too');
     await tester.runAsync(() => onlyWorkout(h.db!, 1));
     await h.pumpApp();
     await startUpperAndTick(h, start: 2);
-    await finishWorkout(h);
+    await tapFinish(h);
+    await h.waitForSummary();
     await h.tap(find.byKey(const ValueKey('after-continue')));
     await h.settle(10);
-    if (find.byKey(const ValueKey('rank-sequence')).evaluate().isNotEmpty) {
+    if (find.byKey(const ValueKey('after-skip')).evaluate().isNotEmpty) {
       await h.tap(find.byKey(const ValueKey('after-skip')));
-    } else if (find.byKey(const ValueKey('streak-celebration')).evaluate().isNotEmpty) {
-      await h.tap(find.byKey(const ValueKey('after-skip')));
+    } else {
+      await tester.tapAt(const Offset(200, 400)); // the full-screen rank-up has no Skip: a tap moves on, then Skip
+      await h.settle(6);
+      if (find.byKey(const ValueKey('after-skip')).evaluate().isNotEmpty) await h.tap(find.byKey(const ValueKey('after-skip')));
     }
     await h.waitFor(find.text('OVERALL RANK'), scroll: false, reason: 'Skip from a later screen goes Home');
 

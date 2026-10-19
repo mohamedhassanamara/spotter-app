@@ -61,18 +61,15 @@ void main() {
     await h.settle(3);
     await finishWorkout(h);
     await h.tap(find.byKey(const ValueKey('after-continue')));
-    if (find.byKey(const ValueKey('rank-sequence')).evaluate().isNotEmpty) {
-      await tester.tap(find.byKey(const ValueKey('rank-sequence')));
-      await h.settle(6);
-      if (find.text('RANK UP').evaluate().isNotEmpty) await tester.tapAt(const Offset(200, 400));
-    }
+    await h.passRankScreens();
     await h.waitFor(find.byKey(const ValueKey('streak-celebration')), scroll: false, reason: 'the Streak screen');
     await h.settle(10);
     expect(find.text('2-day streak'), findsOneWidget);
     await h.shot('streak-celebration');
 
     debugPrint('STEP back on Home: 2-day streak, trained today');
-    await h.tap(find.text('Done'));
+    await h.waitFor(find.byKey(const ValueKey('after-continue')), timeout: const Duration(seconds: 10), scroll: false, reason: 'Continue after the flame');
+    await h.tap(find.byKey(const ValueKey('after-continue')));
     await h.waitFor(find.text('2-day streak'), scroll: false);
     expect(find.text('Safe: trained today'), findsOneWidget);
 

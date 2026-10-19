@@ -59,6 +59,26 @@ class AppHarness {
   Future<void> waitForSummary({String? reason}) =>
       waitFor(find.text('WORKOUT COMPLETE'), timeout: const Duration(seconds: 45), reason: reason ?? 'summary', scroll: false);
 
+  /// After Continue on Congratulations: gets through the Rank screen the way a person would (a tap skips the full-screen rank-up,
+  /// a tap fast-forwards the sequence, then Continue). Returns once the Streak screen or Home is showing.
+  Future<void> passRankScreens() async {
+    final end = DateTime.now().add(const Duration(seconds: 40));
+    while (DateTime.now().isBefore(end)) {
+      await settle(3);
+      if (find.byKey(const ValueKey('streak-celebration')).evaluate().isNotEmpty) return;
+      if (find.byType(NavigationBar).evaluate().isNotEmpty) return; // Home
+      if (find.text('RANK UP').evaluate().isNotEmpty) {
+        await tester.tapAt(const Offset(200, 400));
+      } else if (find.byKey(const ValueKey('rank-sequence')).evaluate().isNotEmpty) {
+        if (find.byKey(const ValueKey('after-continue')).evaluate().isNotEmpty) {
+          await tester.tap(find.byKey(const ValueKey('after-continue')));
+        } else {
+          await tester.tap(find.byKey(const ValueKey('rank-sequence')));
+        }
+      }
+    }
+  }
+
   /// Leaves the after-workout screens for Home the way a person would: Skip (top right) on the Congratulations screen.
   Future<void> leaveSummary() async {
     if (find.byKey(const ValueKey('after-skip')).evaluate().isNotEmpty) {

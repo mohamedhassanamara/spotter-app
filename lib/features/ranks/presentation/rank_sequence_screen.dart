@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -10,11 +9,13 @@ import '../../workout/data/finish_service.dart';
 import '../domain/ranks.dart';
 import 'rank_badge.dart';
 
-/// The Finish rank sequence: every lift's RR gain animates in turn (rank-ups pop and buzz), then the muscles and
-/// regions, then the overall body rank. Tap anywhere to skip. Calls [onDone] once, at the end or on the skip; the
-/// caller then shows the full-screen rank-up when the overall rank changed.
+/// The Finish rank sequence: the ranks in [gains] animate in turn, in the order given (rank-ups pop and buzz). Nothing
+/// advances by itself: a tap fast-forwards the animation and, once it is done, a Continue button appears. [onDone] is
+/// called once, by that button.
 class RankSequenceScreen extends StatefulWidget {
-  const RankSequenceScreen({super.key, required this.gains, required this.onDone});
+  const RankSequenceScreen({super.key, required this.gains, required this.onDone, this.title = 'RANK PROGRESS'});
+
+  final String title;
 
   /// [SessionSummary.rankGains]: lifts, muscles, regions, overall, in that order.
   final List<RankChange> gains;
@@ -41,7 +42,7 @@ class _RankSequenceScreenState extends State<RankSequenceScreen> with SingleTick
   late final AnimationController _c;
   final _buzzedRows = <int>{};
   bool _done = false;
-  Timer? _endTimer;
+  bool _complete = false;
 
   @override
   void initState() {
@@ -67,9 +68,11 @@ class _RankSequenceScreenState extends State<RankSequenceScreen> with SingleTick
     _c = AnimationController(vsync: this, duration: _rowTime * changes + const Duration(milliseconds: 700));
     _c.addListener(_haptics);
     if (changes == 0) {
-      WidgetsBinding.instance.addPostFrameCallback((_) => _finish());
+      _complete = true;
     } else {
-      _c.forward().whenComplete(() => _endTimer = Timer(const Duration(milliseconds: 500), _finish));
+      _c.forward().whenComplete(() {
+        if (mounted) setState(() => _complete = true);
+      });
     }
   }
 
@@ -96,16 +99,21 @@ class _RankSequenceScreenState extends State<RankSequenceScreen> with SingleTick
     }
   }
 
-  void _finish() {
+  /// A tap while it plays: jump to the end of the animation (the Continue button then shows).
+  void _fastForward() {
+    if (_complete) return;
+    _c.value = 1;
+    setState(() => _complete = true);
+  }
+
+  void _continue() {
     if (_done || !mounted) return;
     _done = true;
-    _endTimer?.cancel();
     widget.onDone();
   }
 
   @override
   void dispose() {
-    _endTimer?.cancel();
     _c.dispose();
     super.dispose();
   }
@@ -117,14 +125,14 @@ class _RankSequenceScreenState extends State<RankSequenceScreen> with SingleTick
       body: GestureDetector(
         key: const ValueKey('rank-sequence'),
         behavior: HitTestBehavior.opaque,
-        onTap: _finish,
+        onTap: _fastForward,
         child: SafeArea(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(16, 20, 16, 12),
             child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-              Text('RANK PROGRESS', textAlign: TextAlign.center, style: AppType.displayL.copyWith(letterSpacing: 4, fontSize: 24)),
+              Text(widget.title, textAlign: TextAlign.center, style: AppType.displayL.copyWith(letterSpacing: 4, fontSize: 24)),
               const SizedBox(height: 4),
-              Text('Tap to skip', textAlign: TextAlign.center, style: AppType.bodyS.copyWith(color: AppColors.textTertiary)),
+              Text(_complete ? ' ' : 'Tap to skip the animation', textAlign: TextAlign.center, style: AppType.bodyS.copyWith(color: AppColors.textTertiary)),
               const SizedBox(height: 14),
               Expanded(
                 child: AnimatedBuilder(
@@ -141,6 +149,11 @@ class _RankSequenceScreenState extends State<RankSequenceScreen> with SingleTick
                   },
                 ),
               ),
+              if (_complete) ...[
+                if (widget.gains.isEmpty)
+                  Padding(padding: const EdgeInsets.only(bottom: 12), child: Text('No rank moved in this workout.', textAlign: TextAlign.center, style: AppType.body.copyWith(color: AppColors.textSecondary))),
+                BigButton(key: const ValueKey('after-continue'), label: 'Continue', icon: Icons.arrow_forward_rounded, onPressed: _continue),
+              ],
             ]),
           ),
         ),
