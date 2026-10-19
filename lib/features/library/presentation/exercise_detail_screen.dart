@@ -136,7 +136,15 @@ class _DetailViewState extends ConsumerState<_DetailView> {
             ),
           ],
           const SizedBox(height: 16),
-          KeyedSubtree(key: const ValueKey('exercise-hero'), child: ExerciseDemo(exerciseId: info.id, targets: info.targets)),
+          // The library's thumbnail grows into the demo (the flight shows the thumbnail, not the animated GIF).
+          Hero(
+            tag: 'ex-hero-${info.id}',
+            flightShuttleBuilder: (_, _, direction, fromContext, toContext) {
+              final thumb = (direction == HeroFlightDirection.push ? fromContext : toContext).widget as Hero;
+              return thumb.child;
+            },
+            child: KeyedSubtree(key: const ValueKey('exercise-hero'), child: ExerciseDemo(exerciseId: info.id, targets: info.targets)),
+          ),
           if (video != null) ...[
             const SizedBox(height: 16),
             AppCard(

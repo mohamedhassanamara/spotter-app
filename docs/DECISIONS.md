@@ -1993,3 +1993,17 @@ Streak screen), `rank_up_flow_test` and `streak_finish_flow_test` updated to the
 Bug found on the way (root cause): `questsProvider` (my round-2 rewrite) called `ref.watch` after an `await`. When the provider rebuilt while it waited (a workout
 finishing changes the history), Riverpod threw `UnmountedRefException` and the challenges stopped updating. Fix: every watch is taken before the first
 await and `ref.mounted` is checked after each one.
+
+## Round 2, item 13: animations
+
+All in `lib/core/motion.dart`; every one of them is skipped when the system asks for less motion (iOS Reduce Motion → `MediaQuery.disableAnimations`).
+- **Page transitions:** the platform transitions (iOS slide with swipe-back, Android fade-forwards) are wrapped in `ReduceMotionTransitions`; the after-workout screens fade.
+- **Tab switches:** the five tabs are a `StatefulShellRoute` with `FadeBranches`: each tab keeps its state (scroll, search text), the tab you switch to fades in over 180 ms,
+  the other is not painted. (Before: an abrupt swap.)
+- **Hero from the thumbnail:** a library row's thumbnail is a `Hero` that grows into the exercise page's demo. The flight shows the still thumbnail, never the animated GIF.
+  Not in the exercise picker, where a tap returns the exercise instead of opening it.
+- **List items:** `FadeSlideIn` (fade + 14 px slide-up, 40 ms apart, capped at 10 rows) on library rows and routine cards; plays once, when the row is first built.
+- **Count-ups:** `CountUp` (XP, and the others that use it) jumps to the value under Reduce Motion.
+- **Sheets and dialogs:** the framework's bottom-sheet and dialog transitions are kept (they already animate and follow Reduce Motion); I did not restyle them.
+Tests: `motion_test` (count-up, stagger, tab fade and state, each with Reduce Motion), integration `motion_flow_test` (tab switches keep state, the hero flight to the
+exercise page and back, no logged errors).

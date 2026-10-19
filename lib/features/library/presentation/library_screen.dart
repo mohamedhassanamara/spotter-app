@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../../../core/motion.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -160,7 +162,10 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                     : ListView.builder(
                         padding: const EdgeInsets.only(bottom: 96),
                         itemCount: results.length,
-                        itemBuilder: (context, i) => ExerciseListTile(
+                        itemBuilder: (context, i) => FadeSlideIn(
+                          index: i,
+                          child: ExerciseListTile(
+                          heroTag: widget.pickMode ? null : 'ex-hero-${results[i].id}',
                           exercise: results[i],
                           onTap: () => widget.pickMode
                               ? context.pop(results[i].id)
@@ -168,7 +173,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                           onFavorite: () => ref
                               .read(exerciseRepositoryProvider)
                               .setFavorite(results[i].id, !results[i].isFavorite),
-                        ),
+                        )),
                       ),
               ),
             ],
@@ -181,9 +186,10 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
 
 /// One exercise row with thumbnail and favorite toggle.
 class ExerciseListTile extends StatelessWidget {
-  const ExerciseListTile({super.key, required this.exercise, required this.onTap, this.onFavorite, this.trailing});
+  const ExerciseListTile({super.key, required this.exercise, required this.onTap, this.onFavorite, this.trailing, this.heroTag});
 
   final ExerciseInfo exercise;
+  final String? heroTag;
   final VoidCallback onTap;
   final VoidCallback? onFavorite;
   final Widget? trailing;
@@ -197,7 +203,7 @@ class ExerciseListTile extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         child: Row(
           children: [
-            ExerciseThumb(exercise: e, size: 56),
+            heroTag == null ? ExerciseThumb(exercise: e, size: 56) : Hero(tag: heroTag!, child: ExerciseThumb(exercise: e, size: 56)),
             const SizedBox(width: 14),
             Expanded(
               child: Column(

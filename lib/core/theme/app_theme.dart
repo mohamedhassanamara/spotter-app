@@ -1,6 +1,8 @@
 import 'package:flutter/cupertino.dart' show CupertinoPageTransitionsBuilder;
 import 'package:flutter/material.dart';
 
+import '../motion.dart';
+
 /// Dark, layered, game-like palette. See docs/DESIGN.md.
 abstract final class AppColors {
   static const background = Color(0xFF090C12);
@@ -128,8 +130,8 @@ ThemeData buildAppTheme() {
       labelLarge: text.labelLarge?.copyWith(fontWeight: FontWeight.w700),
     ),
     pageTransitionsTheme: const PageTransitionsTheme(builders: {
-      TargetPlatform.iOS: CupertinoPageTransitionsBuilder(), // swipe-back for one-handed use
-      TargetPlatform.android: FadeForwardsPageTransitionsBuilder(),
+      TargetPlatform.iOS: ReduceMotionTransitions(CupertinoPageTransitionsBuilder()), // swipe-back for one-handed use
+      TargetPlatform.android: ReduceMotionTransitions(FadeForwardsPageTransitionsBuilder()),
     }),
     appBarTheme: const AppBarTheme(
       backgroundColor: AppColors.background,

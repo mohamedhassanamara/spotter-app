@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../../../core/motion.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -69,11 +71,14 @@ class TrainScreen extends ConsumerWidget {
                     Padding(
                       key: ValueKey(list[i].routine.id),
                       padding: const EdgeInsets.only(bottom: 12),
-                      child: _RoutineCard(
-                        routine: list[i],
+                      child: FadeSlideIn(
                         index: i,
-                        names: [for (final e in list[i].exercises) e.displayName ?? catalog[e.exerciseId]?.name ?? e.exerciseId],
-                        canStart: active == null,
+                        child: _RoutineCard(
+                          routine: list[i],
+                          index: i,
+                          names: [for (final e in list[i].exercises) e.displayName ?? catalog[e.exerciseId]?.name ?? e.exerciseId],
+                          canStart: active == null,
+                        ),
                       ),
                     ),
                 ],

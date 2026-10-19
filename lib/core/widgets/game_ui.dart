@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+
+import '../motion.dart';
 import 'package:flutter/services.dart';
 
 import '../../features/ranks/domain/ranks.dart' show Tier;
@@ -315,7 +317,7 @@ class CountUp extends StatelessWidget {
   Widget build(BuildContext context) {
     return TweenAnimationBuilder<double>(
       tween: Tween(begin: from.toDouble(), end: value.toDouble()),
-      duration: duration,
+      duration: motion(context, duration),
       curve: Curves.easeOutCubic,
       builder: (_, v, _) => Text('$prefix${v.round()}$suffix', style: style),
     );

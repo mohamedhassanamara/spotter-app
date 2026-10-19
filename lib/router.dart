@@ -1,10 +1,9 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import 'app_providers.dart';
 
+import 'core/motion.dart';
 import 'features/debug/presentation/badge_gallery_screen.dart';
 import 'features/debug/presentation/debug_menu_screen.dart';
 import 'features/debug/presentation/exercise_audit_screen.dart';
@@ -19,7 +18,6 @@ import 'features/library/presentation/exercise_detail_screen.dart';
 import 'features/library/presentation/library_screen.dart';
 import 'features/onboarding/presentation/onboarding_screen.dart';
 import 'features/profile/presentation/profile_screen.dart';
-import 'features/ranks/presentation/rank_sequence_screen.dart';
 import 'features/ranks/presentation/rank_up_screen.dart';
 import 'features/ranks/presentation/ladder_screen.dart';
 import 'features/ranks/presentation/progress_screen.dart';
@@ -76,8 +74,9 @@ GoRouter buildRouter(ValueListenable<bool> onboarded) {
     },
     routes: [
       GoRoute(path: Routes.onboarding, builder: (_, _) => const OnboardingScreen()),
-      StatefulShellRoute.indexedStack(
+      StatefulShellRoute(
         builder: (context, state, shell) => _Shell(shell: shell),
+        navigatorContainerBuilder: (context, shell, children) => FadeBranches(currentIndex: shell.currentIndex, children: children),
         branches: [
           StatefulShellBranch(routes: [GoRoute(path: Routes.home, builder: (_, _) => const HomeScreen())]),
           StatefulShellBranch(routes: [GoRoute(path: Routes.train, builder: (_, _) => const TrainScreen())]),
