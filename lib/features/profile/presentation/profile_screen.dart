@@ -265,7 +265,7 @@ class _DisciplineCard extends StatelessWidget {
                 Text('DISCIPLINE', style: AppType.label.copyWith(color: AppColors.textSecondary)),
                 const SizedBox(height: 2),
                 Text(p == null ? '—' : '${p.round()}%', style: AppType.displayL.copyWith(color: color)),
-                const Text('Working sets within ±5% of the suggestion, last 30 days. Information only: it never earns or blocks anything.',
+                const Text('Working sets within ±5% of the suggestion, or heavier and still inside the rep range, last 30 days. Information only: it never earns or blocks anything.',
                     style: TextStyle(color: AppColors.textSecondary, fontSize: 13)),
                 const SizedBox(height: 4),
                 Text(verdict, style: const TextStyle(fontWeight: FontWeight.w700)),

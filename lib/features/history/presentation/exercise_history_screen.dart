@@ -163,7 +163,7 @@ class ExerciseHistoryScreen extends ConsumerWidget {
                           style: const TextStyle(fontWeight: FontWeight.w700),
                         ),
                       ),
-                      if (l.hasOverrides)
+                      if (l.hasBadOverrides)
                         Tooltip(
                           message: 'Contains override sets',
                           child: Icon(Icons.warning_amber_rounded, color: l.hasEgoOverrides ? AppColors.danger : AppColors.warning),

@@ -68,7 +68,7 @@ class Guardrail {
     // overrides for this to count as ego lifting (see docs/DECISIONS.md).
     if (last3.length == 3) {
       final first = last3.first, latest = last3.last;
-      final selfImposed = last3.skip(1).any((l) => l.hasOverrides);
+      final selfImposed = last3.skip(1).any((l) => l.hasBadOverrides);
       if (selfImposed &&
           latest.topWeight > first.topWeight &&
           latest.bestE1rm(bodyweight: bodyweight) < first.bestE1rm(bodyweight: bodyweight)) {
@@ -80,14 +80,15 @@ class Guardrail {
 
   DateTime freezeUntil(DateTime start) => start.add(freezeDuration);
 
-  /// % of working sets (with a suggestion) within ±5 % of the suggested weight.
+  /// % of working sets (with a suggestion) within ±5 % of the suggested weight, or a good override (heavier, still in
+  /// the range at the prescribed effort). Information only.
   /// Returns null when there's nothing to measure.
   double? disciplinePct(Iterable<LoggedSet> sets) {
     var total = 0, followed = 0;
     for (final s in sets) {
       if (!s.isWorking || s.suggestedWeight == null) continue;
       total++;
-      if (s.followedSuggestion) followed++;
+      if (s.isDisciplined) followed++;
     }
     if (total == 0) return null;
     return followed / total * 100;

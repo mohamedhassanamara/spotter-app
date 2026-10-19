@@ -1872,3 +1872,17 @@ Cable Wrist Curl 40 → 36, Cable Reverse Wrist Curl 12 → 10, Cable Lateral Ra
 re-run before/after table (round-1 engine vs now): 17 of 37 slots change.
 **Tests:** `suggestion_engine_test` and `suggestion_rework_test` (rewritten to the new rules), `no_silent_decrease_test` (the two property tests and the notes),
 `no_silent_decrease_flow_test` (real taps: three bad sessions → weight held and the chip; the chip applies; an ego flag shows the inline note).
+
+## 7. Good overrides, praised in moderation
+
+A **good override** is a working set heavier than the suggestion (more than 5 %) that still lands **inside the rep range (or above it) at the
+prescribed effort** (`LoggedSet.isGoodOverride`; an effort that wasn't logged isn't held against it). It counts as **disciplined**
+(the Discipline stat on Profile: within ±5 % of the suggestion *or* a good override; information only), it is valid for ranks and PRs, the
+progression takes the new weight as last time's (it reads what you lifted), and it is **never an ego flag**: the "weight up, e1RM down" ego rule only
+looks at *bad* overrides now (`hasBadOverrides`), and history and the set list show it with a green "Good override" / "+N %" instead of the amber warning.
+Overrides that fall **below the range are still ego warnings**, as before (reason sheet, excluded from ranks, ego freeze rules).
+**Praise** (`PraisePolicy`): after a good override a short toast ("Beat the target and owned it.", five wordings, rotating per workout and per
+praise so the two in a workout differ), **at most once per exercise and twice per workout** (tracked per session, so closing and reopening the workout
+doesn't reset it). A set below the range or an ordinary set gets none.
+Tests: `good_override_test` (the definition, discipline %, ego flag, the praise rules), `good_override_flow_test` (real taps: praise #1 and #2,
+none for the same exercise or a third one, the ego reason sheet still appears below the range).

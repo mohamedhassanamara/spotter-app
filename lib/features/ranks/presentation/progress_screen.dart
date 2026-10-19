@@ -962,7 +962,7 @@ class _SessionTile extends StatelessWidget {
               ],
             ),
           ),
-          if (s.hasOverrides) const Icon(Icons.warning_amber_rounded, color: AppColors.warning, size: 20),
+          if (s.hasBadOverrides) const Icon(Icons.warning_amber_rounded, color: AppColors.warning, size: 20),
           const Icon(Icons.chevron_right_rounded, color: AppColors.textSecondary),
         ],
       ),

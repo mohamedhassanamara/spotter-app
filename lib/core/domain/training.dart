@@ -48,6 +48,7 @@ class LoggedSet {
     this.partials = false,
     this.targetMin,
     this.targetMax,
+    this.targetRir,
   });
 
   final double weight;
@@ -80,6 +81,9 @@ class LoggedSet {
   final int? targetMin;
   final int? targetMax;
 
+  /// Reps in reserve prescribed for this set (0 = to failure), when known.
+  final int? targetRir;
+
   /// Completed, not a warm-up (drop sets included: they count for volume).
   bool get isWorking => !isWarmup && completed;
 
@@ -91,13 +95,21 @@ class LoggedSet {
   /// i.e. it was too heavy. Going to failure inside the range is never ego lifting.
   bool get isEgoSet => isOverride && belowRange;
 
+  /// A good override: heavier than the suggestion (more than 5 %) and still inside the rep range (or above it) at the
+  /// prescribed effort. It counts as disciplined, progression accepts the weight, and it is never an ego flag.
+  bool get isGoodOverride =>
+      isOverride && isWorking && !isFollowUp && targetMin != null && !belowRange && (rpe == null || targetRir == null || rpe! <= 10 - targetRir! + 1e-9);
+
   /// Valid for ranks and PRs: a completed working set that isn't a drop set or an ego set.
   bool get isValidForRecords => isWorking && !isFollowUp && !isEgoSet;
 
   /// e1RM including [bodyweight] for bodyweight-loaded lifts.
   double e1rm({double bodyweight = 0}) => estimateOneRm(weight + bodyweight, reps, rpe);
 
-  /// Discipline (section 7): load within ±5 % of the suggestion and reps inside the prescribed range.
+  /// Discipline: load within ±5 % of the suggestion and reps inside the prescribed range, or a good override.
+  bool get isDisciplined => followedSuggestion || isGoodOverride;
+
+  /// Within ±5 % of the suggestion and reps inside the prescribed range.
   bool get followedSuggestion =>
       followsSuggestion(weight, suggestedWeight) && !belowRange && (targetMax == null || reps <= targetMax!);
 }
@@ -206,6 +218,9 @@ class ExerciseSessionLog {
   }
 
   bool get hasOverrides => workingSets.any((s) => s.isOverride);
+
+  /// Overrides that were not good ones (reps fell below the range, or beyond the prescribed effort).
+  bool get hasBadOverrides => workingSets.any((s) => s.isOverride && !s.isGoodOverride);
 
   bool get hasEgoOverrides => workingSets.any((s) => s.isEgoSet);
 

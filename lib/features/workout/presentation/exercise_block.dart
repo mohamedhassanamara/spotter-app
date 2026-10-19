@@ -17,6 +17,7 @@ import '../../program/data/program_repository.dart';
 import '../../ranks/domain/ranks.dart';
 import '../../ranks/presentation/rank_badge.dart';
 import '../../library/presentation/exercise_thumb.dart';
+import '../data/history_repository.dart' show loggedSetFromRow;
 import '../data/session_repository.dart';
 import '../domain/set_kinds.dart';
 import 'keypad.dart';
@@ -698,7 +699,8 @@ class _RankStripState extends ConsumerState<_RankStrip> with SingleTickerProvide
     var best = baseline?.score;
     if (standard == null || bodyweight <= 0) return best;
     for (final set in widget.sets) {
-      if (!set.completed || !set.isWorkingSet || set.isOverride || set.reps <= 0) continue;
+      // Only an ego set (heavier than suggested AND below the range) doesn't count; a good override does.
+      if (!set.completed || !set.isWorkingSet || set.reps <= 0 || (set.isOverride && set.reps < (set.targetRepMin ?? 0))) continue;
       final load = set.weight + (standard.bodyweightLoaded ? bodyweight : 0);
       final e = scoringE1rm(load: load, reps: set.reps, rpe: set.rpe);
       if (e <= 0) continue;
@@ -878,7 +880,8 @@ class _SetRow extends ConsumerWidget {
       final buffer = focused ? ctx.buffer : null;
       final text = buffer != null && !buffer.isEmpty ? buffer.text : value;
       final grey = buffer == null || buffer.isEmpty ? !entered : false;
-      final amber = f == KeypadField.kg && overridePct != null;
+      final good = s.completed && overridePct != null && loggedSetFromRow(s, rir: exerciseRir).isGoodOverride;
+      final amber = f == KeypadField.kg && overridePct != null && !good;
       return Expanded(
         flex: 3,
         child: GestureDetector(
@@ -922,6 +925,16 @@ class _SetRow extends ConsumerWidget {
                       padding: EdgeInsets.all(5),
                       child: SizedBox(width: 8, height: 8, child: DecoratedBox(decoration: BoxDecoration(color: AppColors.accent, shape: BoxShape.circle))),
                     ),
+                  ),
+                ),
+              if (good && f == KeypadField.kg)
+                Positioned(
+                  right: -4,
+                  top: -9,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                    decoration: BoxDecoration(color: AppColors.green, borderRadius: BorderRadius.circular(6)),
+                    child: Text('+$overridePct%', key: ValueKey('good-override-${s.id}'), style: AppType.label.copyWith(fontSize: 9, color: const Color(0xFF06210F), letterSpacing: 0)),
                   ),
                 ),
               if (amber)

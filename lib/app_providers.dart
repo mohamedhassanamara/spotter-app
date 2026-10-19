@@ -421,6 +421,26 @@ final achievementsProvider = FutureProvider<List<AchievementState>>((ref) async 
   ];
 });
 
+/// What praise a workout has had already (session id → exercises praised and how many in all): the moderate-rate rule needs it
+/// to survive the workout screen being closed and reopened.
+class PraiseState {
+  const PraiseState({this.exercises = const {}, this.count = 0});
+  final Set<int> exercises;
+  final int count;
+}
+
+class PraiseNotifier extends Notifier<Map<int, PraiseState>> {
+  @override
+  Map<int, PraiseState> build() => const {};
+
+  void record(int sessionId, int exerciseKey) {
+    final cur = state[sessionId] ?? const PraiseState();
+    state = {...state, sessionId: PraiseState(exercises: {...cur.exercises, exerciseKey}, count: cur.count + 1)};
+  }
+}
+
+final praiseProvider = NotifierProvider<PraiseNotifier, Map<int, PraiseState>>(PraiseNotifier.new);
+
 /// Result of the last finished session, shown on the summary screen.
 final lastSummaryProvider = NotifierProvider<LastSummaryNotifier, SessionSummary?>(LastSummaryNotifier.new);
 

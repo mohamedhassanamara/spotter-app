@@ -311,7 +311,7 @@ class _HistorySection extends ConsumerWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                if (l.hasOverrides) const Icon(Icons.warning_amber_rounded, size: 18, color: AppColors.warning),
+                if (l.hasBadOverrides) const Icon(Icons.warning_amber_rounded, size: 18, color: AppColors.warning),
               ]),
             ),
           const SizedBox(height: 4),

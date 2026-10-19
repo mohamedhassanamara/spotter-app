@@ -88,6 +88,8 @@ class HistSession {
   double get volume => workingSets.fold<double>(0, (v, s) => v + s.weight * s.reps);
 
   bool get hasOverrides => workingSets.any((s) => s.isOverride);
+
+  bool get hasBadOverrides => workingSets.any((s) => s.isOverride && !s.isGoodOverride);
 }
 
 /// All finished sessions, oldest first, with fast per-exercise access.

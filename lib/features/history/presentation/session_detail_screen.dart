@@ -246,7 +246,19 @@ class _SetRow extends ConsumerWidget {
                 padding: EdgeInsets.only(top: 2),
                 child: Text('= the suggestion · tap to correct', style: TextStyle(color: AppColors.warning, fontSize: 13, fontWeight: FontWeight.w600)),
               ),
-            if (s.isOverride)
+            if (s.isGoodOverride)
+              Padding(
+                padding: const EdgeInsets.only(top: 2),
+                child: Row(children: [
+                  const Icon(Icons.trending_up_rounded, size: 16, color: AppColors.green),
+                  const SizedBox(width: 4),
+                  Flexible(
+                    child: Text('Good override: heavier than suggested, inside the range',
+                        key: ValueKey('good-override-${set.id}'), style: const TextStyle(color: AppColors.green, fontSize: 13, fontWeight: FontWeight.w600)),
+                  ),
+                ]),
+              )
+            else if (s.isOverride)
               Padding(
                 padding: const EdgeInsets.only(top: 2),
                 child: Row(children: [

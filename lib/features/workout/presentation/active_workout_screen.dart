@@ -30,6 +30,8 @@ import '../domain/set_kinds.dart';
 import '../domain/superset_rounds.dart';
 import 'exercise_block.dart';
 import 'keypad.dart';
+import '../../coach/domain/praise.dart';
+import '../data/history_repository.dart' show loggedSetFromRow;
 import '../domain/rest_preview.dart';
 import 'rest_timer.dart';
 import 'superset_style.dart';
@@ -452,8 +454,40 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> with 
     // Missed reps change the later sets of this exercise (and only those).
     await repo.adaptLaterSets(s,
         grid: ref.read(exerciseGridProvider(ex.row.exerciseId)), exerciseRepMin: ex.row.repMin);
+    await _maybePraise(session, ex, s.id);
     await _startRest(session, ex, s);
     await _maybeOfferFormReset(ex, s);
+  }
+
+  /// A good override (heavier than suggested, inside the range at the prescribed effort): a short, varied word of praise,
+  /// at most once per exercise and twice per workout.
+  Future<void> _maybePraise(ActiveSession session, ActiveExercise ex, int setId) async {
+    final row = await ref.read(sessionRepositoryProvider).workoutSet(setId);
+    if (row == null || !mounted) return;
+    final logged = loggedSetFromRow(row, repMin: ex.row.repMin, repMax: ex.row.repMax, rir: ex.row.targetRir);
+    final state = ref.read(praiseProvider)[session.session.id] ?? const PraiseState();
+    final message = const PraisePolicy().next(
+      set: logged,
+      exerciseKey: ex.row.id,
+      praisedExercises: state.exercises,
+      given: state.count,
+      seed: session.session.id,
+    );
+    if (message == null) return;
+    ref.read(praiseProvider.notifier).record(session.session.id, ex.row.id);
+    HapticFeedback.mediumImpact();
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(
+        key: const ValueKey('praise-snackbar'),
+        duration: const Duration(seconds: 3),
+        persist: false,
+        content: Row(children: [
+          const Icon(Icons.trending_up_rounded, color: AppColors.green),
+          const SizedBox(width: 10),
+          Expanded(child: Text(message)),
+        ]),
+      ));
   }
 
   /// A working set clearly lighter than your recent best (at least one available step) done at the
