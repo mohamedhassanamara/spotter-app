@@ -2033,3 +2033,11 @@ program slots, the Liftoff names; list: `docs/SEARCH_ALIASES.md`). The search to
 word still matches, "hightolow" matches through the spaceless form) and matches each name on its own. A row found under another name says **"also known as …"**.
 Tests: `library_search_test` (tokens, aliases, every fragment of 4+ letters of the library name, the routine name and the program name of every exercise in my 5 routines finds
 it: ~10 000 checks), integration `library_search_flow_test` (real typing: "high-to", "high to low", "hightolow", "cable flye").
+
+## Round 3, item 3: tapping an exercise in a routine opens its page
+
+- **Routine preview (Train tab):** the exercise names on a routine card are separate tap targets that open the exercise page; the rest of the card still opens the routine editor
+  (the names used to be one text line, so there was nothing to tap).
+- **Routine editor:** tapping a row opens the exercise page. The row's sets/reps/rest sheet moved to a sliders button (`edit-<id>`) on the row, next to the link, remove and drag controls, which are unchanged.
+- Test harness bug found on the way: `scrollToTop` only scrolled the *last* vertical list, which on the Train tab is the shrink-wrapped inner routine list; it now resets every list.
+Tests: integration `routine_exercise_tap_flow_test`; `routine_edit_flow_test` uses the sliders button.

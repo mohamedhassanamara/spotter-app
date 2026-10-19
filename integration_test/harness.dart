@@ -131,8 +131,11 @@ class AppHarness {
     for (var i = 0; i < 6; i++) {
       await tester.drag(scrollables.last, const Offset(0, 900), warnIfMissed: false);
     }
-    final position = tester.state<ScrollableState>(scrollables.last).position;
-    if (position.pixels > 0) position.jumpTo(0); // same platform-view case as [_scrollDown]
+    // Every vertical list on the page (an outer list can hold a shrink-wrapped inner one): the drag may have missed a platform view.
+    for (final e in scrollables.evaluate()) {
+      final position = (e as StatefulElement).state is ScrollableState ? ((e.state) as ScrollableState).position : null;
+      if (position != null && position.pixels > 0) position.jumpTo(0);
+    }
     await settle(2);
   }
 

@@ -90,7 +90,7 @@ class RoutineEditorScreen extends ConsumerWidget {
                         padding: const EdgeInsets.only(bottom: 10),
                         child: AppCard(
                           padding: const EdgeInsets.fromLTRB(16, 12, 8, 12),
-                          onTap: () => _editTargets(context, ref, e),
+                          onTap: () => context.push(Routes.exercise(e.exerciseId)), // the exercise page; the sliders button edits targets
                           child: Row(
                             children: [
                               if (labels[e.id] case final l?) ...[
@@ -139,6 +139,12 @@ class RoutineEditorScreen extends ConsumerWidget {
                                   ),
                                   onPressed: () => repo.toggleSupersetWithNext(e, r.exercises[i + 1], r.exercises),
                                 ),
+                              IconButton(
+                                key: ValueKey('edit-${e.id}'),
+                                tooltip: 'Sets, reps and rest',
+                                icon: const Icon(Icons.tune_rounded),
+                                onPressed: () => _editTargets(context, ref, e),
+                              ),
                               IconButton(
                                 tooltip: 'Remove',
                                 icon: const Icon(Icons.close_rounded),

@@ -156,7 +156,7 @@ void main() {
     final editorName = target.displayName!;
     await h.waitFor(find.text(editorName));
     await h.waitFor(find.textContaining('your rep range'), reason: 'override shown on the row');
-    await h.tap(find.text(editorName));
+    await h.tap(find.byKey(ValueKey('edit-${target.id}'))); // the sliders button edits; tapping the row opens the exercise page
     await h.waitFor(find.byKey(const ValueKey('reset-to-program')), scroll: false);
     await h.shot('routine-override-sheet');
     await h.tap(find.descendant(of: find.byKey(const ValueKey('override-sets')), matching: find.byIcon(Icons.add_rounded)));
@@ -164,7 +164,7 @@ void main() {
     var row = (await tester.runAsync(() => _routineRows(h, push.id)))!.firstWhere((r) => r.id == target.id);
     expect(row.targetSets, target.targetSets + 1);
 
-    await h.tap(find.text(editorName));
+    await h.tap(find.byKey(ValueKey('edit-${target.id}')));
     await h.tap(find.byKey(const ValueKey('reset-to-program')));
     row = (await tester.runAsync(() => _routineRows(h, push.id)))!.firstWhere((r) => r.id == target.id);
     expect(row.overrideRepMin, isNull);

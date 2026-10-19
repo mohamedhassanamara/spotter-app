@@ -76,7 +76,7 @@ class TrainScreen extends ConsumerWidget {
                         child: _RoutineCard(
                           routine: list[i],
                           index: i,
-                          names: [for (final e in list[i].exercises) e.displayName ?? catalog[e.exerciseId]?.name ?? e.exerciseId],
+                          names: [for (final e in list[i].exercises) (id: e.exerciseId, name: e.displayName ?? catalog[e.exerciseId]?.name ?? e.exerciseId)],
                           canStart: active == null,
                         ),
                       ),
@@ -101,7 +101,7 @@ class _RoutineCard extends ConsumerWidget {
   const _RoutineCard({required this.routine, required this.index, required this.names, required this.canStart});
   final RoutineWithExercises routine;
   final int index;
-  final List<String> names;
+  final List<({String id, String name})> names;
   final bool canStart;
 
   @override
@@ -125,12 +125,24 @@ class _RoutineCard extends ConsumerWidget {
             ],
           ),
           const SizedBox(height: 8),
-          Text(
-            names.isEmpty ? 'No exercises yet — tap to edit.' : names.join(' · '),
-            maxLines: 3,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(color: AppColors.textSecondary),
-          ),
+          if (names.isEmpty)
+            const Text('No exercises yet — tap to edit.', style: TextStyle(color: AppColors.textSecondary))
+          else
+            // The preview: each exercise opens its page, the rest of the card opens the routine.
+            Wrap(
+              children: [
+                for (final (i, n) in names.indexed)
+                  InkWell(
+                    key: ValueKey('preview-${routine.routine.id}-${n.id}'),
+                    onTap: () => context.push(Routes.exercise(n.id)),
+                    borderRadius: BorderRadius.circular(6),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 3),
+                      child: Text(i + 1 < names.length ? '${n.name} · ' : n.name, style: const TextStyle(color: AppColors.textSecondary)),
+                    ),
+                  ),
+              ],
+            ),
           const SizedBox(height: 12),
           FilledButton.icon(
             onPressed: canStart && names.isNotEmpty ? () => startWorkout(context, ref, routine: routine) : null,
