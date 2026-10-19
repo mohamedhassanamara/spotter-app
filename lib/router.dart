@@ -18,6 +18,7 @@ import 'features/library/presentation/exercise_detail_screen.dart';
 import 'features/library/presentation/library_screen.dart';
 import 'features/onboarding/presentation/onboarding_screen.dart';
 import 'features/profile/presentation/profile_screen.dart';
+import 'features/ranks/presentation/rank_sequence_screen.dart';
 import 'features/ranks/presentation/rank_up_screen.dart';
 import 'features/ranks/presentation/ladder_screen.dart';
 import 'features/ranks/presentation/progress_screen.dart';
@@ -41,6 +42,7 @@ abstract final class Routes {
   static const workout = '/workout';
   static const summary = '/summary';
   static const rankUp = '/rank-up';
+  static const rankSequence = '/rank-sequence';
   static const badgeGallery = '/settings/debug/badges';
   static const mediaMatching = '/settings/debug/media';
   static const pickExercise = '/pick-exercise';
@@ -87,14 +89,34 @@ GoRouter buildRouter(ValueListenable<bool> onboarded) {
         builder: (_, _) => const ActiveWorkoutScreen(),
       ),
       GoRoute(
+        path: Routes.rankSequence,
+        parentNavigatorKey: rootNavigatorKey,
+        pageBuilder: (context, _) => CustomTransitionPage<void>(
+          child: Consumer(
+            builder: (context, ref, _) {
+              final summary = ref.read(lastSummaryProvider);
+              return RankSequenceScreen(
+                gains: summary?.rankGains ?? const [],
+                // Then the overall rank: the full-screen rank-up when it changed a division or tier.
+                onDone: () => context.pushReplacement(summary?.overallRankUp == null ? Routes.summary : Routes.rankUp),
+              );
+            },
+          ),
+          transitionsBuilder: (_, a, _, child) => FadeTransition(opacity: a, child: child),
+        ),
+      ),
+      GoRoute(
         path: Routes.rankUp,
         parentNavigatorKey: rootNavigatorKey,
         pageBuilder: (context, _) => CustomTransitionPage<void>(
           child: Consumer(
-            builder: (context, ref, _) => RankUpScreen(
-              changes: ref.read(lastSummaryProvider)?.rankUps ?? const [],
-              onDone: () => context.pushReplacement(Routes.summary),
-            ),
+            builder: (context, ref, _) {
+              final overall = ref.read(lastSummaryProvider)?.overallRankUp;
+              return RankUpScreen(
+                changes: [?overall],
+                onDone: () => context.pushReplacement(Routes.summary),
+              );
+            },
           ),
           transitionsBuilder: (_, a, _, child) => FadeTransition(opacity: a, child: child),
         ),

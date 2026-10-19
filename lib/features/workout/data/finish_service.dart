@@ -65,6 +65,7 @@ class SessionSummary {
     required this.achievements,
     required this.questsCompleted,
     required this.healthSaved,
+    this.rankGains = const [],
     this.disciplinePct,
     this.streakBefore = 0,
     this.streakAfter = 0,
@@ -81,6 +82,11 @@ class SessionSummary {
   final int levelBefore;
   final int levelAfter;
   final List<RankChange> rankChanges;
+
+  /// Every rank that moved up in this workout, LP-only gains included (rank changes are only the ones that
+  /// changed division or tier): lifts, then muscles, regions and the overall rank, in that order. Drives the
+  /// Finish animation sequence.
+  final List<RankChange> rankGains;
   final int overrideSets;
   final List<GuardrailFlag> flags;
   final List<AchievementDef> achievements;
@@ -99,6 +105,9 @@ class SessionSummary {
   int get xpTotal => xpSession + xpBonus;
 
   List<RankChange> get rankUps => rankChanges.where((r) => r.isRankUp).toList();
+
+  /// The overall rank went up a division or tier: worth the full-screen rank-up.
+  RankChange? get overallRankUp => rankChanges.where((r) => r.scope == RankChangeScope.overall && r.isRankUp).firstOrNull;
   List<RankChange> get rankDowns => rankChanges.where((r) => !r.up).toList();
 }
 
@@ -299,6 +308,7 @@ class FinishService {
       levelBefore: levelFor(xpBefore).level,
       levelAfter: levelFor(xpBefore + xpSession + bonus).level,
       rankChanges: rankChanges,
+      rankGains: rankGains(await _ranks(before, standards, catalog, now, excluded), ranksAfter),
       overrideSets: overrideSets,
       flags: flags,
       achievements: newAchievements,
@@ -308,6 +318,39 @@ class FinishService {
       streakBefore: streakBefore,
       streakAfter: streakAfter,
     );
+  }
+
+  /// Minimum gain (in points; 1 point = 100 LP) worth animating: half an LP.
+  static const _minGain = 0.005;
+
+  /// Every rank that rose between [before] and [after] (including a first placement), lifts first, then muscles,
+  /// regions, and the overall rank last. Order within a group: biggest gain first.
+  static List<RankChange> rankGains(RankSummary before, RankSummary after) {
+    bool rose(RankScore? from, RankScore to) => from == null || to.value - from.value > _minGain;
+    List<RankChange> sorted(List<RankChange> l) => l..sort((a, b) => (b.toScore.value - (b.fromScore?.value ?? 0)).compareTo(a.toScore.value - (a.fromScore?.value ?? 0)));
+    final beforeEx = {for (final r in before.exercises) r.exerciseId: r.score};
+    final lifts = sorted([
+      for (final r in after.exercises)
+        if (rose(beforeEx[r.exerciseId], r.score))
+          RankChange(name: r.name, fromScore: beforeEx[r.exerciseId], toScore: r.score, scope: RankChangeScope.exercise),
+    ]);
+    final muscles = sorted([
+      for (final m in after.muscles.values)
+        if (rose(before.muscles[m.muscle]?.score, m.score))
+          RankChange(name: m.muscle.label, fromScore: before.muscles[m.muscle]?.score, toScore: m.score, scope: RankChangeScope.muscle),
+    ]);
+    final regions = sorted([
+      for (final r in after.regions.values)
+        if (r.score != null && rose(before.regions[r.region]?.score, r.score!))
+          RankChange(name: r.region.label, fromScore: before.regions[r.region]?.score, toScore: r.score!, scope: RankChangeScope.region),
+    ]);
+    final overall = after.overall;
+    return [
+      ...lifts,
+      ...muscles,
+      ...regions,
+      if (overall != null && rose(before.overall, overall)) RankChange(name: 'Overall', fromScore: before.overall, toScore: overall, scope: RankChangeScope.overall),
+    ];
   }
 
   static List<RankChange> _rankChanges(RankSummary before, RankSummary after) {

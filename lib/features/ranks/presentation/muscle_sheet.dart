@@ -38,7 +38,7 @@ Future<void> showMuscleSheet(
       builder: (context, scroll) => Consumer(
         builder: (context, ref, _) => ListView(
           controller: scroll,
-          padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+          padding: EdgeInsets.fromLTRB(20, 0, 20, 24 + MediaQuery.viewPaddingOf(context).bottom),
           children: switch (mode) {
             BodyGraphMode.volume => _volumeContent(context, group, volume),
             BodyGraphMode.recovery => recoveryContent(context, group, recovery),

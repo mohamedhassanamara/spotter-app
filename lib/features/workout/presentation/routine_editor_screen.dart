@@ -164,7 +164,7 @@ class RoutineEditorScreen extends ConsumerWidget {
       isScrollControlled: true,
       useSafeArea: true,
       builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setState) => SingleChildScrollView(
+        builder: (ctx, setState) => SafeArea(top: false, child: SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -222,7 +222,7 @@ class RoutineEditorScreen extends ConsumerWidget {
               FilledButton(onPressed: () => Navigator.of(ctx).pop(true), child: const Text('Save')),
             ],
           ),
-        ),
+        )),
       ),
     );
     if (saved == true) {
@@ -251,7 +251,7 @@ Future<void> _editProgramRow(BuildContext context, WidgetRef ref, RoutineExercis
     isScrollControlled: true,
     useSafeArea: true,
     builder: (ctx) => StatefulBuilder(
-      builder: (ctx, setState) => SingleChildScrollView(
+      builder: (ctx, setState) => SafeArea(top: false, child: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -314,7 +314,7 @@ Future<void> _editProgramRow(BuildContext context, WidgetRef ref, RoutineExercis
             ),
           ],
         ),
-      ),
+      )),
     ),
   );
   final repo = ref.read(routineRepositoryProvider);

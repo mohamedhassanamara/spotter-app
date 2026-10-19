@@ -103,7 +103,7 @@ void main() {
     if (find.text('Finish workout?').evaluate().isNotEmpty) {
       await h.tap(find.descendant(of: find.byType(AlertDialog), matching: find.text('Finish')));
     }
-    await h.waitFor(find.text('WORKOUT COMPLETE'), timeout: const Duration(seconds: 30), reason: 'summary');
+    await h.waitForSummary(reason: 'summary');
 
     final saved = (await tester.runAsync(() => (h.db!.select(h.db!.workoutSets)..where((t) => t.completed.equals(true))).get()))!;
     final byId = {for (final s in saved) s.id: s};

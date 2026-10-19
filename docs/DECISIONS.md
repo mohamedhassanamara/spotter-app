@@ -1685,3 +1685,21 @@ Only an exercise you have never logged calibrates. ADD SET adds more, copying th
   at your current bodyweight (entry per division for the divisional tiers, from each standard's anchors), a "YOU ARE HERE"
   marker with LP on your overall tier, and a list of every ranked muscle positioned on a tier-colored ladder bar.
 - Tests: `rank_history_flow_test` (real taps: chart from imported history, region and muscle series, all ten tiers, marker, muscles).
+
+## 10. Rank-up animations
+
+- **During the workout.** The rank strip under each exercise is live: a completed working set of this workout counts at once
+  (the finished sessions are the baseline, an override set still doesn't count). When a set raises the lift's rank, the LP bar
+  fills from the old score to the new one (wrapping at a division), the badge follows the number and pops in when the
+  division or tier changed, with a heavy haptic (a light tick for an LP-only gain). Un-ticking a set lowers it again silently.
+- **At Finish.** `SessionSummary.rankGains` lists every rank that rose, LP-only gains and first placements included (the old
+  `rankChanges` only had division / tier changes). `RankSequenceScreen` plays them in turn: every lift (biggest gain first,
+  each a card with badge, "+N LP", the bar climbing, "from → to" on a rank-up with a pop and haptic), then muscles, regions, then
+  the overall rank. About 6.5 s in all (each row 0.4–1 s, fewer rows go slower). A tap anywhere skips. Then the full-screen
+  `RankUpScreen` plays only when the **overall** rank changed a division or tier (it used to show for any rank-up); then the
+  summary, which still lists the changes statically. No gains → straight to the summary.
+- Fixed on the way: the live strip's controller was created lazily inside `dispose` for exercises with no rank (a framework
+  assertion at Finish); it now exists from `initState`.
+- Tests: `rank_gains_test` (gains, order, placements, falls), `rank_sequence_test` (order, rank-up text, tap skip, ends once),
+  `rank_up_flow_test` (real taps: the strip's gap moves when the set is ticked; Finish plays the sequence; skip; summary).
+  Every flow that finishes a workout now waits through the sequence with `waitForSummary`.

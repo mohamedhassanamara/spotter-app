@@ -55,7 +55,7 @@ Future<void> _finish(AppHarness h) async {
   await h.settle(6);
   // Edited sessions offer to update the routine (covered by routine_edit_flow_test).
   if (find.text('Update routine?').evaluate().isNotEmpty) await h.tap(find.byKey(const ValueKey('keep-routine')));
-  await h.waitFor(find.text('WORKOUT COMPLETE'), timeout: const Duration(seconds: 30), reason: 'summary');
+  await h.waitForSummary(reason: 'summary');
 }
 
 /// A Push session a few days ago, so PREV has something to show.

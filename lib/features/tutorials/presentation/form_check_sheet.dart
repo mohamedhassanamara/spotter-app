@@ -20,7 +20,7 @@ Future<void> showFormCheckSheet(BuildContext context, String exerciseId) {
       builder: (ctx, ref, _) {
         final info = ref.watch(catalogProvider).value?[exerciseId];
         final video = ref.watch(programVideosProvider).value?[exerciseId];
-        return SingleChildScrollView(
+        return SafeArea(top: false, child: SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -57,7 +57,7 @@ Future<void> showFormCheckSheet(BuildContext context, String exerciseId) {
               ),
             ],
           ),
-        );
+        ));
       },
     ),
   );

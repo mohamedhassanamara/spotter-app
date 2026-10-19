@@ -200,7 +200,7 @@ void main() {
     if (find.text('Finish workout?').evaluate().isNotEmpty) {
       await h.tap(find.descendant(of: find.byType(AlertDialog), matching: find.text('Finish')));
     }
-    await h.waitFor(find.text('WORKOUT COMPLETE'), timeout: const Duration(seconds: 30));
+    await h.waitForSummary();
     await audit('23-summary');
     await go('/settings/debug/rank-up-preview');
     await audit('24-rank-up', bottom: false);

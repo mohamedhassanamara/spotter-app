@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/services.dart' show HapticFeedback;
 import 'package:go_router/go_router.dart';
 
 import '../../../app_providers.dart';
@@ -13,6 +14,7 @@ import '../../coach/domain/suggestion_engine.dart';
 import '../../library/domain/exercise_info.dart';
 import '../../library/domain/load_kinds.dart';
 import '../../program/data/program_repository.dart';
+import '../../ranks/domain/ranks.dart';
 import '../../ranks/presentation/rank_badge.dart';
 import '../../library/presentation/exercise_thumb.dart';
 import '../data/session_repository.dart';
@@ -30,6 +32,7 @@ class BlockContext {
     required this.onFocus,
     required this.onComplete,
     required this.onCommit,
+    required this.onTapOutside,
     required this.onCopyPrev,
     required this.hideWarmups,
     required this.onToggleWarmups,
@@ -48,6 +51,9 @@ class BlockContext {
 
   /// Writes whatever is typed on the keypad and closes it (before anything that hides or leaves a cell).
   final Future<void> Function() onCommit;
+
+  /// A tap outside the set table and the keypad: the keypad closes, keeping what was typed.
+  final Future<void> Function() onTapOutside;
 
   /// PREV tap: replaces the set's KG and REPS with the previous session's, discarding anything typed.
   final Future<void> Function(WorkoutSet set, LoggedSet prev) onCopyPrev;
@@ -157,7 +163,7 @@ class _ExerciseBlockState extends ConsumerState<ExerciseBlock> {
         _header(name),
         if (!_collapsed) ...[
           _restRow(),
-          _RankStrip(exerciseId: ex.row.exerciseId),
+          _RankStrip(exerciseId: ex.row.exerciseId, sets: ex.sets),
           _prescription(),
           if (ex.suggestion?.maxReached == true)
             Padding(
@@ -183,7 +189,7 @@ class _ExerciseBlockState extends ConsumerState<ExerciseBlock> {
           TapRegion(
             groupId: keypadTapGroup,
             onTapUpOutside: (_) {
-              if (ctx.focused != null) ctx.onCommit();
+              if (ctx.focused != null) ctx.onTapOutside();
             },
             child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
           const _TableHeader(),
@@ -640,21 +646,98 @@ class _MutedLine extends StatelessWidget {
 }
 
 /// Badge, division, LP to the next division and the real kg gap. Never "???".
-class _RankStrip extends ConsumerWidget {
-  const _RankStrip({required this.exerciseId});
+/// Live: a completed set of this workout counts at once (the finished sessions are the baseline), and when it
+/// raises the rank the LP bar fills, the badge pops in on a new division or tier, with a haptic.
+class _RankStrip extends ConsumerStatefulWidget {
+  const _RankStrip({required this.exerciseId, required this.sets});
   final String exerciseId;
+  final List<WorkoutSet> sets;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_RankStrip> createState() => _RankStripState();
+}
+
+class _RankStripState extends ConsumerState<_RankStrip> with SingleTickerProviderStateMixin {
+  late final AnimationController _c;
+  RankScore? _from, _to;
+  bool _labelChanged = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _c = AnimationController(vsync: this, duration: const Duration(milliseconds: 1100));
+  }
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  /// The best of the finished history and this workout's completed working sets.
+  RankScore? _live(ExerciseRank? baseline, StrengthStandard? standard, double bodyweight) {
+    var best = baseline?.score;
+    if (standard == null || bodyweight <= 0) return best;
+    for (final set in widget.sets) {
+      if (!set.completed || !set.isWorkingSet || set.isOverride || set.reps <= 0) continue;
+      final load = set.weight + (standard.bodyweightLoaded ? bodyweight : 0);
+      final e = scoringE1rm(load: load, reps: set.reps, rpe: set.rpe);
+      if (e <= 0) continue;
+      final score = standard.scoreForRatio(standard.ratioFor(e, bodyweight));
+      if (best == null || score.value > best.value) best = score;
+    }
+    return best;
+  }
+
+  void _follow(RankScore? live) {
+    if (live == null) return;
+    final to = _to;
+    if (to == null || (live.value - to.value).abs() < 0.0005) {
+      _to ??= live;
+      return;
+    }
+    final shown = _shownScore(live);
+    if (live.value > to.value) {
+      _from = shown;
+      _to = live;
+      _labelChanged = shown.label != live.label;
+      _c.forward(from: 0);
+      if (_labelChanged) {
+        HapticFeedback.heavyImpact();
+      } else {
+        HapticFeedback.selectionClick();
+      }
+    } else {
+      // A set was un-ticked: back down without ceremony.
+      _from = null;
+      _to = live;
+      _labelChanged = false;
+      _c.value = 1;
+    }
+  }
+
+  RankScore _shownScore(RankScore fallback) {
+    final to = _to, from = _from;
+    if (to == null) return fallback;
+    if (from == null || !_c.isAnimating) return to;
+    return RankScore(from.value + (to.value - from.value) * Curves.easeOutCubic.transform(_c.value));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final id = widget.exerciseId;
     final ranks = ref.watch(ranksProvider).value;
-    final hidden = (ref.watch(rankExclusionsProvider).value ?? const <String>{}).contains(exerciseId);
+    final hidden = (ref.watch(rankExclusionsProvider).value ?? const <String>{}).contains(id);
     final standards = ref.watch(standardsProvider).value ?? const [];
-    final rank = ranks?.exercises.where((r) => r.exerciseId == exerciseId).firstOrNull;
-    final hasStandard = standards.any((s) => s.exerciseIds.contains(exerciseId));
+    final bodyweight = ref.watch(latestBodyWeightProvider).value?.kg ?? 0;
+    final baseline = ranks?.exercises.where((r) => r.exerciseId == id).firstOrNull;
+    final standard = standards.where((s) => s.exerciseIds.contains(id)).firstOrNull;
+    final hasStandard = standard != null;
     final muted = AppType.bodyS.copyWith(fontSize: 12, color: AppColors.textTertiary);
     Widget line(Widget child) => Padding(padding: const EdgeInsets.symmetric(vertical: 4), child: child);
     if (hidden) return line(Text('Hidden from ranks', style: muted));
-    if (rank == null) {
+    final live = _live(baseline, standard, bodyweight);
+    if (live == null) {
       return line(Row(children: [
         const RankBadge(score: null, size: BadgeSize.small, width: 22, animate: false),
         const SizedBox(width: 8),
@@ -664,27 +747,46 @@ class _RankStrip extends ConsumerWidget {
         ),
       ]));
     }
-    final s = rank.score;
-    final color = tierColor(s.tier);
-    final gap = rank.nextThresholdKg == null ? null : (rank.nextThresholdKg! - rank.bestE1rm);
-    return line(Row(children: [
-      RankBadge(score: s, size: BadgeSize.small, width: 22, animate: false),
-      const SizedBox(width: 8),
-      Text(s.label, style: AppType.bodyS.copyWith(fontSize: 12, fontWeight: FontWeight.w800, color: color)),
-      const SizedBox(width: 8),
-      Expanded(flex: 2, child: LpBar(progress: s.divisionProgress, color: color, height: 5)),
-      const SizedBox(width: 8),
-      Flexible(
-        flex: 5,
-        child: Text(
-        gap == null ? 'top of the ladder' : '+${formatKg((gap.clamp(0, double.infinity) * 2).ceilToDouble() / 2)} kg e1RM to ${s.nextLabel}',
-        key: ValueKey('rank-gap-$exerciseId'),
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        style: muted,
-      ),
-      ),
-    ]));
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _follow(live);
+    });
+    return AnimatedBuilder(
+      animation: _c,
+      builder: (context, _) {
+        final s = _to == null ? live : _shownScore(live);
+        final color = tierColor(s.tier);
+        final t = _c.isAnimating ? _c.value : 1.0;
+        final pop = _labelChanged && _c.isAnimating && t > 0.6
+            ? 1 + 0.45 * Curves.elasticOut.transform(((t - 0.6) / 0.4).clamp(0.0, 1.0)).clamp(0.0, 1.0) * (1 - (t - 0.6) / 0.4)
+            : 1.0;
+        // The kg gap is to the division above the *target* rank (the one reached), at the baseline's bodyweight.
+        final target = _to ?? live;
+        final fromHistory = baseline != null && (target.value - baseline.score.value).abs() < 1e-9;
+        final next = fromHistory ? baseline.nextThresholdKg : standard?.nextThresholdKg(target, bodyweight > 0 ? bodyweight : (baseline?.bodyweight ?? 0));
+        final bestE1rm = fromHistory
+            ? baseline.bestE1rm
+            : (standard == null || bodyweight <= 0 ? 0.0 : standard.normalizer(bodyweight) * standard.ratioForPoints(target.value));
+        final gap = next == null ? null : next - bestE1rm;
+        return line(Row(children: [
+          Transform.scale(scale: pop, child: RankBadge(key: ValueKey('rank-strip-badge-$id'), score: s, size: BadgeSize.small, width: 22, animate: false)),
+          const SizedBox(width: 8),
+          Text(s.label, key: ValueKey('rank-strip-label-$id'), style: AppType.bodyS.copyWith(fontSize: 12, fontWeight: FontWeight.w800, color: color)),
+          const SizedBox(width: 8),
+          Expanded(flex: 2, child: LpBar(key: ValueKey('rank-strip-lp-$id'), progress: s.divisionProgress, color: color, height: 5)),
+          const SizedBox(width: 8),
+          Flexible(
+            flex: 5,
+            child: Text(
+              gap == null ? 'top of the ladder' : '+${formatKg((gap.clamp(0, double.infinity) * 2).ceilToDouble() / 2)} kg e1RM to ${s.nextLabel}',
+              key: ValueKey('rank-gap-$id'),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: muted,
+            ),
+          ),
+        ]));
+      },
+    );
   }
 }
 

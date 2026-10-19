@@ -161,7 +161,8 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> with 
             behavior: HitTestBehavior.translucent,
             onTap: () => FocusScope.of(context).unfocus(),
             child: ListView(
-              padding: const EdgeInsets.fromLTRB(10, 4, 10, 32),
+              // Clear of the home indicator at the end of the list (the keypad's own SafeArea covers it while open).
+              padding: EdgeInsets.fromLTRB(10, 4, 10, 32 + (target == null ? MediaQuery.viewPaddingOf(context).bottom : 0)),
               children: [
                 if (session.session.routineId != null && !_headsUpDismissed)
                   _FatigueHeadsUp(
@@ -183,6 +184,7 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> with 
                       onFocus: (t) => _focus(t),
                       onComplete: (s) => _complete(session, e, s),
                       onCommit: () => _closeKeypad(),
+                      onTapOutside: _tapOutsideKeypad,
                       onCopyPrev: _copyPrev,
                       hideWarmups: _hideWarmups,
                       onToggleWarmups: () => setState(() => _hideWarmups = !_hideWarmups),
@@ -285,6 +287,7 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> with 
   }
 
   Future<void> _focus(KeypadTarget t) async {
+    _pendingTypedSetId = null;
     // A snackbar would sit on top of the keypad's bottom row.
     ScaffoldMessenger.of(context).hideCurrentSnackBar();
     FocusScope.of(context).unfocus();
@@ -342,6 +345,16 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> with 
       ..add(KeypadTarget(s.id, KeypadField.kg))
       ..add(KeypadTarget(s.id, KeypadField.reps));
     if (mounted) setState(() {});
+  }
+
+  /// A set typed into, then the keypad closed by a tap outside the table: Finish still logs it (typing its numbers
+  /// means it was done), just as if the keypad had stayed open.
+  int? _pendingTypedSetId;
+
+  Future<void> _tapOutsideKeypad() async {
+    final id = await _commit();
+    if (id != null) _pendingTypedSetId = id;
+    await _closeKeypad(commit: false);
   }
 
   Future<void> _closeKeypad({bool commit = true}) async {
@@ -877,7 +890,7 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> with 
   Future<void> _finish(ActiveSession session, Map<String, ExerciseInfo> catalog) async {
     // Whatever is typed is saved first. A set that was typed into but never ✓'d is a set that was done
     // (you typed its numbers): it's logged as such rather than dropped with the untouched ones.
-    final typedSetId = await _commit();
+    final typedSetId = await _commit() ?? _pendingTypedSetId;
     await _closeKeypad(commit: false);
     await _saveNotes();
     final repo = ref.read(sessionRepositoryProvider);
@@ -919,7 +932,7 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> with 
             health: ref.read(healthSourceProvider),
           );
       ref.read(lastSummaryProvider.notifier).set(summary);
-      if (mounted) context.pushReplacement(summary.rankUps.isEmpty ? Routes.summary : Routes.rankUp);
+      if (mounted) context.pushReplacement(summary.rankGains.isEmpty ? Routes.summary : Routes.rankSequence);
     } catch (e, st) {
       ErrorLog.instance.recordCaught(e, st);
       if (mounted) {

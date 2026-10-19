@@ -52,7 +52,7 @@ void main() {
     if (find.text('Finish workout?').evaluate().isNotEmpty) {
       await h.tap(find.descendant(of: find.byType(AlertDialog), matching: find.text('Finish')));
     }
-    await h.waitFor(find.text('WORKOUT COMPLETE'), timeout: const Duration(seconds: 30), reason: 'summary');
+    await h.waitForSummary(reason: 'summary');
     expect(await active(), 0);
     await h.expectNoLoggedErrors();
     await h.dispose();

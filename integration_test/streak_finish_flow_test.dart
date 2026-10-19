@@ -30,7 +30,7 @@ Future<void> finishWorkout(AppHarness h) async {
   }
   await h.settle(6);
   if (find.text('Update routine?').evaluate().isNotEmpty) await h.tap(find.byKey(const ValueKey('keep-routine')));
-  await h.waitFor(find.text('WORKOUT COMPLETE'), timeout: const Duration(seconds: 30), reason: 'summary');
+  await h.waitForSummary(reason: 'summary');
 }
 
 void main() {

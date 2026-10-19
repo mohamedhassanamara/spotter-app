@@ -27,6 +27,7 @@ Future<List<RoutineExercise>> _routineRows(AppHarness h, int id) => (h.db!.selec
     .get();
 
 Future<void> _menu(AppHarness h, SessionExercise ex, String item) async {
+  await h.scrollToTop(); // lists build lazily: start from the top, waitFor scrolls down from there
   await h.tap(find.byKey(ValueKey('menu-${ex.id}')));
   await h.tap(find.text(item).last);
 }
@@ -66,7 +67,7 @@ Future<void> _finishTo(AppHarness h, {required bool expectRoutineDialog, bool up
   } else {
     expect(find.text('Update routine?'), findsNothing);
   }
-  await h.waitFor(find.text('WORKOUT COMPLETE'), timeout: const Duration(seconds: 30), reason: 'summary');
+  await h.waitForSummary(reason: 'summary');
   await h.tap(find.text('Done'));
 }
 

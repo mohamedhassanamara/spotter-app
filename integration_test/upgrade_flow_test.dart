@@ -85,7 +85,7 @@ void main() {
       if (find.text('Skip').evaluate().isNotEmpty) await h.tap(find.text('Skip'));
     }
     await h.tap(find.text('Finish'));
-    await h.waitFor(find.text('WORKOUT COMPLETE'), timeout: const Duration(seconds: 30), reason: 'summary after upgrade');
+    await h.waitForSummary(reason: 'summary after upgrade');
     await h.tap(find.text('Done'));
 
     // Train now shows my five routines and can start one.
