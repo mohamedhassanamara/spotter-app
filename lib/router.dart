@@ -28,6 +28,7 @@ import 'features/settings/presentation/settings_screen.dart';
 import 'core/diagnostics/error_log.dart';
 import 'features/workout/presentation/active_workout_screen.dart';
 import 'features/workout/presentation/routine_editor_screen.dart';
+import 'features/workout/presentation/after_workout_screens.dart';
 import 'features/workout/presentation/summary_screen.dart';
 import 'features/workout/presentation/train_screen.dart';
 
@@ -42,7 +43,7 @@ abstract final class Routes {
   static const profile = '/profile';
   static const workout = '/workout';
   static const summary = '/summary';
-  static const rankUp = '/rank-up';
+  static const streak = '/streak';
   static const rankSequence = '/rank-sequence';
   static const badgeGallery = '/settings/debug/badges';
   static const mediaMatching = '/settings/debug/media';
@@ -94,32 +95,15 @@ GoRouter buildRouter(ValueListenable<bool> onboarded) {
         path: Routes.rankSequence,
         parentNavigatorKey: rootNavigatorKey,
         pageBuilder: (context, _) => CustomTransitionPage<void>(
-          child: Consumer(
-            builder: (context, ref, _) {
-              final summary = ref.read(lastSummaryProvider);
-              return RankSequenceScreen(
-                gains: summary?.rankGains ?? const [],
-                // Then the overall rank: the full-screen rank-up when it changed a division or tier.
-                onDone: () => context.pushReplacement(summary?.overallRankUp == null ? Routes.summary : Routes.rankUp),
-              );
-            },
-          ),
+          child: const RankStepScreen(),
           transitionsBuilder: (_, a, _, child) => FadeTransition(opacity: a, child: child),
         ),
       ),
       GoRoute(
-        path: Routes.rankUp,
+        path: Routes.streak,
         parentNavigatorKey: rootNavigatorKey,
         pageBuilder: (context, _) => CustomTransitionPage<void>(
-          child: Consumer(
-            builder: (context, ref, _) {
-              final overall = ref.read(lastSummaryProvider)?.overallRankUp;
-              return RankUpScreen(
-                changes: [?overall],
-                onDone: () => context.pushReplacement(Routes.summary),
-              );
-            },
-          ),
+          child: const StreakStepScreen(),
           transitionsBuilder: (_, a, _, child) => FadeTransition(opacity: a, child: child),
         ),
       ),

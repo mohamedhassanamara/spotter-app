@@ -175,7 +175,7 @@ void main() {
     expect(pushSets.where((x) => x.setType == 'drop'), hasLength(1));
     expect(pushSets.where((x) => !x.completed), isEmpty);
     expect(pushSets.any((x) => x.rpe == effortRpe), isTrue, reason: 'cycled effort stored');
-    await h.tap(find.text('Done'));
+    await h.leaveSummary();
 
     await h.expectNoLoggedErrors();
     await h.dispose();
@@ -213,7 +213,7 @@ void main() {
     await _finish(h);
     final done = (await tester.runAsync(() => h.db!.select(h.db!.workoutSets).get()))!.where((s) => s.completed && !s.isWarmup);
     expect(done.every((s) => s.weight < 0), isTrue, reason: 'assistance stored as negative load');
-    await h.tap(find.text('Done'));
+    await h.leaveSummary();
     await h.expectNoLoggedErrors();
     await h.dispose();
   });
@@ -273,7 +273,7 @@ void main() {
     expect(done, chest.length, reason: 'logged sets survived the restart');
 
     await _finish(h);
-    await h.tap(find.text('Done'));
+    await h.leaveSummary();
 
     debugPrint('STEP history shows the session; Home starts Lower next');
     await h.goTab(Icons.insights_outlined);

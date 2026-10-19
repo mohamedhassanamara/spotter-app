@@ -353,9 +353,14 @@ Map<String, double> sleepByDay(Iterable<DailyMetric> days) => sleepByDayRows(day
 final questsProvider = StreamProvider<List<QuestProgress>>((ref) async* {
   final now = ref.watch(clockProvider)();
   final repo = ref.watch(gamificationRepositoryProvider);
-  final history = await ref.watch(historyProvider.future);
+  final bodyweight = ref.watch(latestBodyWeightProvider).value?.kg ?? 0;
+  final bwIdsFuture = ref.watch(bodyweightLoadedIdsProvider.future);
+  final historyFuture = ref.watch(historyProvider.future);
   final days = ref.watch(dailyMetricsProvider).value ?? const <DailyMetric>[];
+  final history = await historyFuture;
+  if (!ref.mounted) return; // rebuilt while waiting: the new build takes over
   final recent = await repo.previousQuestIds(now);
+  if (!ref.mounted) return;
   await repo.ensureQuests(
     now,
     (existing, missing) => const QuestEngine().generate(
@@ -376,7 +381,9 @@ final questsProvider = StreamProvider<List<QuestProgress>>((ref) async* {
     final m = sleep[dayKey(addDays(monday, i))];
     if (m != null && m >= 420) nights++;
   }
-  final prs = findPrs(history, bodyweightLoaded: await ref.watch(bodyweightLoadedIdsProvider.future), bodyweight: ref.watch(latestBodyWeightProvider).value?.kg ?? 0);
+  final bwIds = await bwIdsFuture;
+  if (!ref.mounted) return; // rebuilt while waiting
+  final prs = findPrs(history, bodyweightLoaded: bwIds, bodyweight: bodyweight);
   final week = weekActivity(history, now, prs: prs, sleepNights: nights);
   yield* repo.watchQuests(now).map((qs) => [
         for (final q in qs) QuestProgress(q, const QuestEngine().progress(q.def, week)),

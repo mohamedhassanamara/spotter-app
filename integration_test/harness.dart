@@ -55,20 +55,17 @@ class AppHarness {
     await db?.close();
   }
 
-  /// After Finish: waits for the summary, skipping the rank sequence and the full-screen rank-up on the way
-  /// (a tap each, like a person would).
-  Future<void> waitForSummary({String? reason}) async {
-    final end = DateTime.now().add(const Duration(seconds: 45));
-    while (DateTime.now().isBefore(end)) {
-      if (find.text('WORKOUT COMPLETE').evaluate().isNotEmpty) return;
-      if (find.byKey(const ValueKey('rank-sequence')).evaluate().isNotEmpty) {
-        await tester.tap(find.byKey(const ValueKey('rank-sequence')));
-      } else if (find.text('RANK UP').evaluate().isNotEmpty) {
-        await tester.tapAt(const Offset(200, 400));
-      }
-      await settle(3);
+  /// After Finish: waits for the first after-workout screen (Congratulations).
+  Future<void> waitForSummary({String? reason}) =>
+      waitFor(find.text('WORKOUT COMPLETE'), timeout: const Duration(seconds: 45), reason: reason ?? 'summary', scroll: false);
+
+  /// Leaves the after-workout screens for Home the way a person would: Skip (top right) on the Congratulations screen.
+  Future<void> leaveSummary() async {
+    if (find.byKey(const ValueKey('after-skip')).evaluate().isNotEmpty) {
+      await tap(find.byKey(const ValueKey('after-skip')));
+    } else {
+      await tap(find.text('Done'));
     }
-    await waitFor(find.text('WORKOUT COMPLETE'), timeout: const Duration(seconds: 1), reason: reason ?? 'summary');
   }
 
   /// Pumps frames (with real async gaps for DB work) without waiting for repeating animations.

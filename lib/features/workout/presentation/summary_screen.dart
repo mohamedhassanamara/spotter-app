@@ -9,8 +9,9 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/common.dart';
 import '../../../router.dart';
 import '../../gamification/domain/stats.dart';
-import '../../gamification/presentation/streak_celebration.dart';
 import '../../ranks/presentation/rank_badge.dart';
+import '../domain/after_workout.dart';
+import 'after_workout_screens.dart';
 import '../data/finish_service.dart';
 
 /// Celebration after finishing a workout: XP counts up, then PRs, rank changes, discipline and
@@ -36,10 +37,9 @@ class SummaryScreen extends ConsumerWidget {
     final sections = <Widget>[
       _Hero(s: s),
       _XpCard(s: s),
-      if (s.streakGrew) StreakCelebration(from: s.streakBefore, to: s.streakAfter),
       _StatsRow(s: s),
       if (s.prs.isNotEmpty) _PrSection(prs: s.prs),
-      if (s.rankChanges.any((r) => r.up) || s.rankDowns.isNotEmpty) _RankSection(s: s),
+      if (s.rankDowns.isNotEmpty) _RankSection(s: s),
       if (s.flags.isNotEmpty || s.overrideSets > 0) _GuardrailSection(s: s),
       if (s.achievements.isNotEmpty || s.questsCompleted.isNotEmpty) _UnlocksSection(s: s),
       _HealthLine(saved: s.healthSaved),
@@ -49,7 +49,12 @@ class SummaryScreen extends ConsumerWidget {
       bottomNavigationBar: SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-          child: BigButton(label: 'Done', icon: Icons.check_rounded, onPressed: () => context.go(Routes.home)),
+          child: BigButton(
+            key: const ValueKey('after-continue'),
+            label: stepAfter(s, AfterStep.congrats) == null ? 'Done' : 'Continue',
+            icon: stepAfter(s, AfterStep.congrats) == null ? Icons.check_rounded : Icons.arrow_forward_rounded,
+            onPressed: () => advanceAfterWorkout(context, s, AfterStep.congrats),
+          ),
         ),
       ),
       body: Stack(
@@ -73,8 +78,9 @@ class SummaryScreen extends ConsumerWidget {
           SafeArea(
             bottom: false,
             child: ListView(
-              padding: const EdgeInsets.fromLTRB(16, 24, 16, 24),
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
               children: [
+                if (stepAfter(s, AfterStep.congrats) != null) const AfterSkipButton(),
                 for (var i = 0; i < sections.length; i++)
                   _Stagger(
                     index: i,

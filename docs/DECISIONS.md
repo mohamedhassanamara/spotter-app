@@ -1978,3 +1978,18 @@ No duplicates are left: the merge list (`assets/exercise_merges.json`) already c
 offers **Use "<best faithful GIF>"**, **No GIF: show the photos**, and for a ranking mismatch **Stop ranking this exercise**.
 Tests: `gif_rule_test` (my real mismatches, the matcher never offers one, every override obeys the rule), `exercise_audit_test`,
 integration `exercise_audit_flow_test` (a wrong GIF is listed, one tap removes it).
+
+## Round 2, item 14: the after-workout flow (three screens)
+
+Finish → **1 Congratulations** (`/summary`: XP count-up, level-up, stats, PRs, achievements and challenges, guardrail notes, a quiet line for ranks that
+slipped) → **2 Rank** (`/rank-sequence`: every lift, muscle, region and the overall rank animate in turn, then the full-screen rank-up when the overall
+division or tier changed) → **3 Streak** (`/streak`: the flame and the counter ticking up) → Home.
+Screens with nothing to show are not shown: Rank only when a rank moved (`afterWorkoutSteps`), Streak only when today's workout grew the streak.
+Every screen has **Skip** (top right, straight to Home); Rank also skips its animation with a tap. The old chain (rank sequence → rank-up → summary with the
+streak card inside) and the `/rank-up` route are gone. The planner is `workout/domain/after_workout.dart`.
+Tests: `after_workout_flow_test` (order, no streak/rank block on the first screen, Skip on screen 1 and on a later screen, a same-day second workout has no
+Streak screen), `rank_up_flow_test` and `streak_finish_flow_test` updated to the new order.
+
+Bug found on the way (root cause): `questsProvider` (my round-2 rewrite) called `ref.watch` after an `await`. When the provider rebuilt while it waited (a workout
+finishing changes the history), Riverpod threw `UnmountedRefException` and the challenges stopped updating. Fix: every watch is taken before the first
+await and `ref.mounted` is checked after each one.

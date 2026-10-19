@@ -60,7 +60,13 @@ void main() {
     await checkSet(h, sets['Chest Press']![0]);
     await h.settle(3);
     await finishWorkout(h);
-    await h.waitFor(find.byKey(const ValueKey('streak-celebration')), scroll: false);
+    await h.tap(find.byKey(const ValueKey('after-continue')));
+    if (find.byKey(const ValueKey('rank-sequence')).evaluate().isNotEmpty) {
+      await tester.tap(find.byKey(const ValueKey('rank-sequence')));
+      await h.settle(6);
+      if (find.text('RANK UP').evaluate().isNotEmpty) await tester.tapAt(const Offset(200, 400));
+    }
+    await h.waitFor(find.byKey(const ValueKey('streak-celebration')), scroll: false, reason: 'the Streak screen');
     await h.settle(10);
     expect(find.text('2-day streak'), findsOneWidget);
     await h.shot('streak-celebration');

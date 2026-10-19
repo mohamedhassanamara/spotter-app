@@ -68,7 +68,7 @@ Future<void> _finishTo(AppHarness h, {required bool expectRoutineDialog, bool up
     expect(find.text('Update routine?'), findsNothing);
   }
   await h.waitForSummary(reason: 'summary');
-  await h.tap(find.text('Done'));
+  await h.leaveSummary();
 }
 
 void main() {

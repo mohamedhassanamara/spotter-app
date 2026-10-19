@@ -59,13 +59,15 @@ void main() {
     expect(tester.widget<Text>(gap).data, isNot(gapBefore), reason: 'the set raised the lift\'s rank, live: the kg gap to the next division moved');
     await h.shot('rank-strip-after-set');
 
-    debugPrint('STEP Finish: the rank sequence plays (lifts first), a tap skips it');
+    debugPrint('STEP Finish: Congratulations, then the Rank screen plays (lifts first), a tap skips it');
     await h.scrollToTop();
     await h.tap(find.text('Finish'));
     if (find.text('Finish workout?').evaluate().isNotEmpty) {
       await h.tap(find.descendant(of: find.byType(AlertDialog), matching: find.text('Finish')));
     }
-    await h.waitFor(find.byKey(const ValueKey('rank-sequence')), timeout: const Duration(seconds: 30), scroll: false, reason: 'rank sequence after Finish');
+    await h.waitForSummary(reason: 'Congratulations is the first screen');
+    await h.tap(find.byKey(const ValueKey('after-continue')));
+    await h.waitFor(find.byKey(const ValueKey('rank-sequence')), timeout: const Duration(seconds: 30), scroll: false, reason: 'the Rank screen');
     await h.waitFor(find.byKey(const ValueKey('gain-exercise-Chest Press')), scroll: false, reason: 'the lift animates first');
     await h.shot('rank-sequence');
     await tester.tap(find.byKey(const ValueKey('rank-sequence')));
@@ -76,7 +78,9 @@ void main() {
       await tester.tapAt(const Offset(200, 400));
       await h.settle(6);
     }
-    await h.waitFor(find.text('WORKOUT COMPLETE'), timeout: const Duration(seconds: 30), reason: 'summary after the sequence');
+    // Then the streak (today's workout grew it) or Home.
+    if (find.byKey(const ValueKey('after-continue')).evaluate().isNotEmpty) await h.tap(find.byKey(const ValueKey('after-continue')));
+    await h.waitFor(find.text('OVERALL RANK'), timeout: const Duration(seconds: 20), reason: 'back on Home', scroll: false);
     await h.expectNoLoggedErrors();
     await h.dispose();
   });

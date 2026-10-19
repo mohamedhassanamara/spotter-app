@@ -9,7 +9,7 @@ import 'logger_helpers.dart';
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
-  testWidgets('Live Activity: ✓ starts it, Skip ends it, the next ✓ restarts it, Finish removes it (native ActivityKit)', (tester) async {
+  testWidgets('Live Activity for the whole workout: it runs from the start (one activity, whatever the rest does) and Finish removes it (native ActivityKit)', (tester) async {
     final h = AppHarness(tester);
     await h.launchFresh();
     await h.onboard();
@@ -23,25 +23,26 @@ void main() {
     await h.waitFor(find.text('Chest Press'), reason: 'Upper opened');
     final sets = await activeSets(h);
     final chest = sets['Chest Press']!;
-    expect(await active(), 0);
+    await h.settle(10);
+    expect(await active(), 1, reason: 'the workout has its Live Activity from the start');
 
-    debugPrint('STEP ✓ on a working set: the rest starts and so does the Live Activity');
+    debugPrint('STEP ✓ on a working set: the rest joins the same activity');
     await checkSet(h, chest[0]);
     await h.waitFor(find.textContaining('REST '), scroll: false, reason: 'rest running');
     await h.settle(6);
-    expect(await active(), 1, reason: 'native Live Activity running');
+    expect(await active(), 1, reason: 'still the one activity');
 
     debugPrint('STEP the next ✓ replaces it (still one)');
     await checkSet(h, chest[1]);
     await h.settle(6);
     expect(await active(), 1);
 
-    debugPrint('STEP Skip in the rest sheet ends it');
+    debugPrint('STEP Skip in the rest sheet: back to the workout view, the activity stays');
     await h.tap(find.byKey(const ValueKey('workout-clock')));
     await h.waitFor(find.text('Skip'), scroll: false);
     await h.tap(find.text('Skip'));
     await h.settle(6);
-    expect(await active(), 0);
+    expect(await active(), 1, reason: 'skipping a rest does not end the workout\'s activity');
 
     debugPrint('STEP a new rest, then Finish removes it');
     await checkSet(h, chest[2]);
@@ -53,6 +54,7 @@ void main() {
       await h.tap(find.descendant(of: find.byType(AlertDialog), matching: find.text('Finish')));
     }
     await h.waitForSummary(reason: 'summary');
+    await h.settle(10);
     expect(await active(), 0);
     await h.expectNoLoggedErrors();
     await h.dispose();

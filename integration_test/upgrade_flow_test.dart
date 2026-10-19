@@ -86,7 +86,7 @@ void main() {
     }
     await h.tap(find.text('Finish'));
     await h.waitForSummary(reason: 'summary after upgrade');
-    await h.tap(find.text('Done'));
+    await h.leaveSummary();
 
     // Train now shows my five routines and can start one.
     await h.goTab(Icons.fitness_center_outlined);
