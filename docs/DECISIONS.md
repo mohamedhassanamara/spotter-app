@@ -1703,3 +1703,25 @@ Only an exercise you have never logged calibrates. ADD SET adds more, copying th
 - Tests: `rank_gains_test` (gains, order, placements, falls), `rank_sequence_test` (order, rank-up text, tap skip, ends once),
   `rank_up_flow_test` (real taps: the strip's gap moves when the set is ticked; Finish plays the sequence; skip; summary).
   Every flow that finishes a workout now waits through the sequence with `waitForSummary`.
+
+## 9. Safe area audit
+
+**Method.** `safe_area_flow_test` walks 25 screens and sheets on the iPhone 17 Pro simulator (onboarding, the five tabs and Progress'
+Ranks / Lifts tabs, Settings and its sub-screens, exercise detail / history / new / picker, routine editor, the workout, the
+keypad, rest sheet, mini bar, exercise menu, add-exercise search, summary, rank-up). On each it takes a full-screen screenshot
+(status bar, Dynamic Island and home indicator included, via `tool/device_shots.sh` answering `deviceShot` requests with
+`xcrun simctl io screenshot`) into `docs/screenshots/safearea/`, and asserts that at rest no text sits under the status bar /
+Dynamic Island, and with every list scrolled to its end none sits under the home indicator.
+**Fixed.**
+- Bottom sheets that used `useSafeArea: true` only avoid the top and sides, not the home indicator: the routine row editor, the
+  program-row editor and the form-check sheet now wrap their content in `SafeArea(top: false)`; the muscle sheet's list adds the
+  bottom inset to its padding.
+- The workout's list now ends clear of the home indicator (32 pt + the inset) when the keypad is closed; the keypad has its own
+  SafeArea.
+**Checked and fine:** NavigationBar and the mini workout bar (the bar pads itself), the AppBar screens, Summary / Rank-up /
+Onboarding (own SafeArea), the keypad, the rest sheet, dialogs.
+**Not verifiable here:** the simulator was running with the hardware keyboard, so the soft keyboard never appeared in the screenshots;
+every screen with a field is a Scaffold that resizes for the keyboard (`resizeToAvoidBottomInset` default) and the logger uses its
+own keypad, but look at the real keyboard on the phone once.
+Run it: `tool/device_shots.sh <sim-id> docs/screenshots/safearea &` then
+`flutter test integration_test/safe_area_flow_test.dart -d <sim-id> --dart-define=SHOTS_DIR=$PWD/docs/screenshots/safearea`.

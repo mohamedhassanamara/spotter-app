@@ -58,10 +58,13 @@ void main() {
         if (r.top < i.top - 1) problems.add('$name: "$t" is under the status bar / Dynamic Island (top ${r.top.toStringAsFixed(1)} < ${i.top.toStringAsFixed(1)})');
       }
       if (bottom) {
-        for (final p in verticalScrollables()) {
-          p.jumpTo(p.maxScrollExtent);
+        // Lazy lists learn their length as they build: jump to the end until it stops moving.
+        for (var k = 0; k < 6; k++) {
+          for (final p in verticalScrollables()) {
+            p.jumpTo(p.maxScrollExtent);
+          }
+          await h.settle(2);
         }
-        await h.settle(3);
         for (final (t, r) in texts()) {
           if (r.bottom > i.height - i.bottom + 1) {
             problems.add('$name: "$t" is under the home indicator (bottom ${r.bottom.toStringAsFixed(1)} > ${(i.height - i.bottom).toStringAsFixed(1)})');
