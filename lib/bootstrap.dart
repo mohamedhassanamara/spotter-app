@@ -3,6 +3,7 @@ import 'package:flutter/services.dart' show rootBundle;
 import 'core/db/data_fixes.dart';
 import 'core/db/database.dart';
 import 'features/coach/data/gym_repository.dart';
+import 'features/library/data/exercise_merger.dart';
 import 'features/library/data/exercise_repository.dart';
 import 'features/library/domain/muscle_mapping.dart';
 import 'features/program/data/program_repository.dart';
@@ -15,6 +16,7 @@ import 'features/workout/data/history_repository.dart';
 Future<void> bootstrapDatabase(AppDatabase db) async {
   if (!ExerciseMuscleTable.isLoaded) ExerciseMuscleTable.load(await rootBundle.loadString('assets/exercise_muscles.json'));
   await ExerciseRepository(db).ensureSeeded();
+  await ExerciseMerger(db).apply(); // duplicate library entries → one canonical exercise (history merged)
   await ProgramRepository.ensureMyRoutinesInstalled(db);
   await ProgramRepository.ensureCanonicalWeek(db);
   await ProgramRepository.ensureProgramSupersets(db);
@@ -25,5 +27,6 @@ Future<void> bootstrapDatabase(AppDatabase db) async {
   await GymRepository.ensureSmallestPlate(db);
   await RankExclusions.ensureMigrated(db);
   // ExerciseDB V2 mappings survive a reinstall through the bundled asset.
-  await EdbMappingRepository(db).seedFromAsset(await rootBundle.loadString(EdbMappingRepository.assetPath), now: DateTime.now());
+  await EdbMappingRepository(db).seedFromAsset(await rootBundle.loadString(EdbMappingRepository.assetPath),
+      now: DateTime.now(), skip: {for (final m in await ExerciseMerger.loadAsset()) m.duplicate});
 }

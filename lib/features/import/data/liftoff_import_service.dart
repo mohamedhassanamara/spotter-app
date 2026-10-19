@@ -9,6 +9,7 @@ import '../../../core/domain/training.dart';
 import '../../../core/settings/app_settings.dart';
 import '../../gamification/domain/achievements.dart';
 import '../../gamification/domain/streaks.dart';
+import '../../library/data/exercise_merger.dart';
 import '../../library/domain/exercise_info.dart';
 import '../../library/domain/load_kinds.dart';
 import '../../workout/data/finish_service.dart';
@@ -217,6 +218,8 @@ class LiftoffImportService {
         }
       }
     });
+    // Customs made by the import may duplicate library entries the owner already logged: merge them now.
+    await ExerciseMerger(_db).apply();
 
     final achievements = sessions == 0
         ? const <AchievementDef>[]

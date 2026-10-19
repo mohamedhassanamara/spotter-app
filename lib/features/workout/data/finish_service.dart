@@ -139,6 +139,7 @@ class FinishService {
         now: now,
         excluded: excluded,
         myExerciseIds: {for (final r in await _db.select(_db.routineExercises).get()) r.exerciseId},
+        displayNames: RanksRepository.displayNamesFor(catalog, [for (final r in await _db.select(_db.routineExercises).get()) (exerciseId: r.exerciseId, displayName: r.displayName)]),
       );
 
   /// Unlocks achievements earned by sessions that didn't go through [finish] (the Liftoff import).
@@ -192,6 +193,12 @@ class FinishService {
 
     final after = await _history.load(catalog);
     final session = after.sessions.firstWhere((s) => s.id == sessionId);
+    // Safety net for the rank rule: every exercise with a completed working set in this workout counts
+    // (unless switched off by hand), whichever path logged the set.
+    for (final e in session.exercises) {
+      if (e.workingSets.any((s) => s.reps > 0)) await RankExclusions(_db).autoEnable(e.exerciseId);
+    }
+    final excludedNow = await RankExclusions(_db).load();
 
     // PRs in this session.
     final prs = findPrs(after, bodyweightLoaded: bwLoaded, bodyweight: bodyweight)
@@ -238,7 +245,7 @@ class FinishService {
     final overrideSets = session.workingSets.where((s) => s.isOverride).length;
 
     // Rank changes.
-    final ranksAfter = await _ranks(after, standards, catalog, now, excluded);
+    final ranksAfter = await _ranks(after, standards, catalog, now, excludedNow);
     final rankChanges = _rankChanges(await _ranks(before, standards, catalog, now, excluded), ranksAfter);
 
     // Achievements.

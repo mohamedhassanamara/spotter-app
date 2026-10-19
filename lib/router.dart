@@ -19,6 +19,7 @@ import 'features/library/presentation/library_screen.dart';
 import 'features/onboarding/presentation/onboarding_screen.dart';
 import 'features/profile/presentation/profile_screen.dart';
 import 'features/ranks/presentation/rank_up_screen.dart';
+import 'features/ranks/presentation/ladder_screen.dart';
 import 'features/ranks/presentation/progress_screen.dart';
 import 'features/settings/presentation/error_log_screen.dart';
 import 'features/settings/presentation/settings_screen.dart';
@@ -43,6 +44,7 @@ abstract final class Routes {
   static const badgeGallery = '/settings/debug/badges';
   static const mediaMatching = '/settings/debug/media';
   static const pickExercise = '/pick-exercise';
+  static const ladder = '/ladder';
   static const newExercise = '/exercise-new';
   static const settings = '/settings';
   static const debug = '/settings/debug';
@@ -101,6 +103,11 @@ GoRouter buildRouter(ValueListenable<bool> onboarded) {
         path: Routes.summary,
         parentNavigatorKey: rootNavigatorKey,
         builder: (_, _) => const SummaryScreen(),
+      ),
+      GoRoute(
+        path: Routes.ladder,
+        parentNavigatorKey: rootNavigatorKey,
+        builder: (_, _) => const LadderScreen(),
       ),
       GoRoute(
         path: Routes.pickExercise,

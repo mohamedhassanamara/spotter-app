@@ -688,7 +688,6 @@ class _RankStrip extends ConsumerWidget {
   }
 }
 
-/// One compact set row.
 /// The ⓘ on a target that changed during the workout: what it was and why it moved.
 void _explainAdjustment(BuildContext context, WorkoutSet s) => showDialog<void>(
       context: context,
@@ -701,6 +700,7 @@ void _explainAdjustment(BuildContext context, WorkoutSet s) => showDialog<void>(
       ),
     );
 
+/// One compact set row.
 class _SetRow extends ConsumerWidget {
   const _SetRow({
     super.key,

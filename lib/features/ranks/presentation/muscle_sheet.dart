@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../../app_providers.dart';
@@ -7,6 +8,7 @@ import '../../../app_providers.dart';
 import '../../../core/domain/muscles.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/common.dart';
+import '../../../router.dart';
 import '../../coach/domain/suggestion_engine.dart';
 import '../domain/body_regions.dart';
 import '../domain/ranks.dart';
@@ -52,7 +54,12 @@ Future<void> showMuscleSheet(
 Widget _exerciseRow(ExerciseRank r, double weight, {required bool counted}) => Opacity(
       key: ValueKey('muscle-exercise-${r.exerciseId}'),
       opacity: counted ? 1 : 0.55,
-      child: ListTile(
+      child: Builder(builder: (context) => ListTile(
+        // Opens the exercise (the same name the logger shows).
+        onTap: () {
+          Navigator.of(context).pop();
+          context.push(Routes.exercise(r.exerciseId));
+        },
         contentPadding: EdgeInsets.zero,
         leading: RankBadge(score: r.score, size: BadgeSize.small, width: 36, animate: false),
         title: Text(r.name, style: const TextStyle(fontWeight: FontWeight.w700)),
@@ -60,7 +67,7 @@ Widget _exerciseRow(ExerciseRank r, double weight, {required bool counted}) => O
             ? '${r.score.labelWithLp} · ${r.strength} · ×${weight.toStringAsFixed(weight == weight.roundToDouble() ? 0 : 1)} · ${liftLine(r)}'
             : 'Not counted · ${r.score.label} · ${liftLine(r)}'),
         trailing: RankToggle(exerciseId: r.exerciseId),
-      ),
+      )),
     );
 
 List<Widget> _hiddenRows(RankSummary summary, Muscle muscle) => [

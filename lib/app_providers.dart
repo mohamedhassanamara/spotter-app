@@ -34,6 +34,7 @@ import 'features/ranks/data/ladder_migration.dart';
 import 'features/ranks/data/rank_exclusions.dart';
 import 'features/ranks/data/ranks_repository.dart';
 import 'features/ranks/domain/body_regions.dart';
+import 'features/ranks/domain/rank_history.dart';
 import 'features/ranks/domain/ranks.dart';
 import 'features/readiness/data/readiness_repository.dart';
 import 'features/readiness/domain/readiness.dart';
@@ -250,6 +251,23 @@ final ranksProvider = FutureProvider<RankSummary>((ref) async {
     now: ref.watch(clockProvider)(),
     excluded: await ref.watch(rankExclusionsProvider.future),
     myExerciseIds: {for (final r in routines) for (final e in r.exercises) e.exerciseId},
+    displayNames: RanksRepository.displayNamesFor(catalog, [for (final r in routines) for (final e in r.exercises) (exerciseId: e.exerciseId, displayName: e.displayName)]),
+  );
+});
+
+/// Overall, region and muscle rank over time (weekly), rebuilt from the whole history, Liftoff import included.
+final rankEvolutionProvider = FutureProvider<List<RankPoint>>((ref) async {
+  final history = await ref.watch(historyProvider.future);
+  final routines = await ref.watch(routinesProvider.future);
+  final catalog = await ref.watch(catalogProvider.future);
+  return rankEvolution(
+    history: history,
+    standards: await ref.watch(standardsProvider.future),
+    catalog: catalog,
+    bodyweights: await ref.watch(bodyweightTimelineProvider.future),
+    excluded: await ref.watch(rankExclusionsProvider.future),
+    now: ref.watch(clockProvider)(),
+    displayNames: RanksRepository.displayNamesFor(catalog, [for (final r in routines) for (final e in r.exercises) (exerciseId: e.exerciseId, displayName: e.displayName)]),
   );
 });
 

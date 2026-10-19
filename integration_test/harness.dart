@@ -158,6 +158,26 @@ class AppHarness {
     debugPrint('SHOT $name');
   }
 
+  /// A screenshot of the whole simulator screen (status bar, Dynamic Island, home indicator included), not
+  /// just Flutter's layer. Needs `--dart-define=SHOTS_DIR=<host folder>` and a host loop that answers
+  /// `.req-<name>` files with `xcrun simctl io <id> screenshot` (tool/device_shots.sh); without them it falls
+  /// back to [shot].
+  Future<void> deviceShot(String name) async {
+    const hostDir = String.fromEnvironment('SHOTS_DIR');
+    if (hostDir.isEmpty) return shot(name);
+    await settle(6);
+    final req = File('$hostDir/.req-$name');
+    await tester.runAsync(() async {
+      Directory(hostDir).createSync(recursive: true);
+      req.writeAsStringSync(name);
+      final end = DateTime.now().add(const Duration(seconds: 25));
+      while (req.existsSync() && DateTime.now().isBefore(end)) {
+        await Future<void>.delayed(const Duration(milliseconds: 150));
+      }
+    });
+    debugPrint('DEVICE SHOT $name');
+  }
+
   /// Fails the flow if anything was written to the in-app error log.
   Future<void> expectNoLoggedErrors() async {
     await ErrorLog.instance.flush();

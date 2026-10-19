@@ -95,7 +95,7 @@ void main() {
     expect((await policy()).sourceOf(flyId), RankSource.manualOn);
 
     debugPrint('STEP switch the imported Lat Pulldown on by hand: it stays on');
-    await h.tap(_switchOn('Lat Pulldown', 'lift-rank-'));
+    await h.tap(_switchOn('Wide-Grip Lat Pulldown', 'lift-rank-'));
     await h.settle();
     expect(find.textContaining('HIDDEN FROM RANKS'), findsNothing);
     expect((await policy()).sourceOf('Wide-Grip_Lat_Pulldown'), RankSource.manualOn);

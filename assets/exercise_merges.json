@@ -1,0 +1,28 @@
+{
+ "schema_version": 1,
+ "description": "Library entries that are the same exercise as another one. Each duplicate is merged into its canonical exercise at startup: history, routines, ranks settings, favourites and media move to the canonical id and the duplicate row is removed. The canonical is the one with a strength standard / muscle weights. Optional canonical_name renames it to the name used in the app.",
+ "merges": [
+  {"duplicate": "edbv1_oHsrypV", "canonical": "Thigh_Adductor", "canonical_name": "Machine Seated Hip Adduction", "reason": "Same machine: the import mapped Liftoff's Hip Adduction to Thigh Adductor, the workout used the ExerciseDB entry."},
+  {"duplicate": "wger_12", "canonical": "Thigh_Adductor", "reason": "Seated hip adduction (machine); wger lists it as body only."},
+  {"duplicate": "edbv1_CHpahtl", "canonical": "Thigh_Abductor", "canonical_name": "Machine Seated Hip Abduction", "reason": "Same machine, same split as adduction."},
+  {"duplicate": "wger_1748", "canonical": "Thigh_Abductor", "reason": "Machine hip abduction."},
+  {"duplicate": "wger_1672", "canonical": "Thigh_Abductor", "reason": "Seated hip abduction (machine); wger lists it as body only."},
+  {"duplicate": "edbv1_myfUsKf", "canonical": "Reverse_Machine_Flyes", "reason": "Machine seated reverse fly = reverse pec deck."},
+  {"duplicate": "edbv1_f4xtKBj", "canonical": "sp_assisted_pull_up_machine", "reason": "Assisted pull-up machine."},
+  {"duplicate": "wger_1527", "canonical": "sp_pendulum_squat", "reason": "Same name, pendulum squat machine."},
+  {"duplicate": "wger_1654", "canonical": "sp_standing_machine_lateral_raise", "reason": "Machine lateral raise."},
+  {"duplicate": "wger_173", "canonical": "Cable_Crunch", "reason": "Crunches with cable."},
+  {"duplicate": "edbv1_jpgqxiS", "canonical": "liftoff_standing_cable_crunch", "reason": "Cable standing crunch."},
+  {"duplicate": "wger_95", "canonical": "Standing_Biceps_Cable_Curl", "reason": "Biceps curl with cable."},
+  {"duplicate": "wger_46", "canonical": "Barbell_Lunge", "reason": "Barbell lunge, standing."},
+  {"duplicate": "wger_205", "canonical": "Dumbbell_Lunges", "reason": "Dumbbell lunge, standing."},
+  {"duplicate": "edbv1_6TG6x2w", "canonical": "EZ-Bar_Curl", "reason": "EZ-bar curl."},
+  {"duplicate": "wger_323", "canonical": "Cable_Crossover", "reason": "Cable cross-over."},
+  {"duplicate": "wger_158", "canonical": "Close-Grip_Front_Lat_Pulldown", "reason": "Close-grip lat pulldown."},
+  {"duplicate": "wger_222", "canonical": "Face_Pull", "reason": "Face pull."},
+  {"duplicate": "edbv1_1xHyxys", "canonical": "Cable_Rope_Overhead_Triceps_Extension", "reason": "Cable high pulley overhead triceps extension."},
+  {"duplicate": "wger_1409", "canonical": "liftoff_dragon_flag", "reason": "Dragon flag: the import made a custom exercise although the library has it."},
+  {"duplicate": "wger_1652", "canonical": "liftoff_dumbbell_romanian_deadlift", "reason": "Dumbbell Romanian deadlift: same name as the import's custom exercise."},
+  {"duplicate": "edbv1_c8f5cSY", "canonical": "liftoff_side_lying_hip_adduction", "reason": "Side-lying hip adduction."}
+ ]
+}

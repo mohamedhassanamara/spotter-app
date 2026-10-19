@@ -859,7 +859,7 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> with 
           sessionId: session.session.id,
           info: info,
           range: info.defaultRange(compound: settings.compoundRange, isolation: settings.isolationRange),
-          targetSets: 3,
+          targetSets: 1, // an added exercise starts with one working set; ADD SET adds more
           restSeconds: info.isCompound ? settings.defaultRestCompound : settings.defaultRestIsolation,
           targetRir: settings.defaultRir,
           coach: coach,

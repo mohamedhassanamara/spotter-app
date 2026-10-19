@@ -1607,3 +1607,68 @@ its own hide key.
   both commits and closes the keypad. Taps on other cells, ✓, NEXT or the keys are inside.
 - Test: `keyboard_dismiss_flow_test` (real taps: Library search field, tap outside, tap on a result, drag the list; workout keypad
   stays for another cell, closes on the page margin).
+
+## 8. Duplicate exercises, rank auto-enable, ranking names
+
+**Root cause (Machine Seated Hip Adduction).** The library holds the same machine several times: the old free-exercise-db
+entry `Thigh_Adductor`, the ExerciseDB entry `edbv1_oHsrypV` ("Machine Seated Hip Adduction") and wger's "Seated Hip
+Adduction". The Liftoff import (name map "Hip Adduction") and the strength standard point at `Thigh_Adductor`; the workout
+used `edbv1_oHsrypV`. So: (1) the workout's exercise had **no history** (Calibration) and **no strength standard**, so it
+could not rank, and (2) the Ranks tab showed the *other* id under Liftoff's stored name "Hip Adduction". Abduction had
+the same split. The auto-enable rule itself works for any in-app working set (`rank_policy_flow_test`, and now the
+exact case in `hip_adduction_flow_test`), but an exercise with no standard shows as hidden / unranked whatever its switch says.
+**Fix.**
+- `assets/exercise_merges.json` + `ExerciseMerger` (every start, after an import): each duplicate is merged into the
+  canonical exercise (the one with the standard / muscle weights). History and routine rows, ego freezes, media rows,
+  "counts toward rank" (manual / auto), gym overrides (type, stack, max load), form resets, favourite, extra images,
+  ExerciseDB id and instructions move over; sessions without their own name keep the duplicate's name ("what I logged");
+  the duplicate row is deleted (a library re-seed brings it back and the next start merges it again). The canonical may be
+  renamed (`canonical_name`): Thigh Adductor → **Machine Seated Hip Adduction**, Thigh Abductor → **Machine Seated Hip Abduction**.
+  What each merge did is kept in setting `exercise_merges_log`.
+- Ranking rows (and hints) use the name the logger shows: your routine's name for the exercise, else the library name, never a
+  per-session Liftoff name. Rows already opened the exercise; muscle-sheet rows now do too.
+- Auto-enable safety net: Finish switches on every exercise that has a completed working set in the workout (unless switched
+  off by hand), whichever path logged the set; the rank change summary is computed with it.
+- Tests: `exercise_merge_test` (merge, names, favourites/media, rank settings, idempotent, list consistency, ranks), `hip_adduction_flow_test` (real taps).
+
+**Dedupe audit.** Run over every exercise a routine, a strength standard or the Liftoff name map points at (111), against the
+whole library (2,373 entries) by normalised name and equipment, then curated by hand. I only have the Liftoff export, not the
+phone's in-app sessions, so in-app history ids could not be audited; the merges below also catch whatever you logged on
+them. Merges (duplicate → canonical):
+
+| Duplicate | Canonical | Why |
+|---|---|---|
+| edbv1_oHsrypV Machine Seated Hip Adduction | Thigh_Adductor (renamed Machine Seated Hip Adduction) | the reported case |
+| wger_12 Seated Hip Adduction | Thigh_Adductor | seated machine adduction |
+| edbv1_CHpahtl Machine Seated Hip Abduction | Thigh_Abductor (renamed Machine Seated Hip Abduction) | same split |
+| wger_1748 Machine Hip Abduction | Thigh_Abductor | |
+| wger_1672 Seated Hip Abduction | Thigh_Abductor | |
+| edbv1_myfUsKf Machine Seated Reverse Fly | Reverse_Machine_Flyes | reverse pec deck |
+| edbv1_f4xtKBj Assisted Standing Pull-up | sp_assisted_pull_up_machine | |
+| wger_1527 Pendulum Squat | sp_pendulum_squat | same name |
+| wger_1654 Machine Lateral Raise | sp_standing_machine_lateral_raise | |
+| wger_173 Crunches With Cable | Cable_Crunch | |
+| edbv1_jpgqxiS Cable Standing Crunch | liftoff_standing_cable_crunch | |
+| wger_95 Biceps Curl With Cable | Standing_Biceps_Cable_Curl | |
+| wger_46 Barbell Lunges Standing | Barbell_Lunge | |
+| wger_205 Dumbbell Lunges Standing | Dumbbell_Lunges | |
+| edbv1_6TG6x2w Ez-bar Curl | EZ-Bar_Curl | |
+| wger_323 Cable Cross-over | Cable_Crossover | |
+| wger_158 Close-grip Lat Pull Down | Close-Grip_Front_Lat_Pulldown | |
+| wger_222 Facepull | Face_Pull | |
+| edbv1_1xHyxys Cable High Pulley Overhead Triceps Extension | Cable_Rope_Overhead_Triceps_Extension | |
+| wger_1409 Dragon-flag | liftoff_dragon_flag | the import made a custom one |
+| wger_1652 Dumbbell Romanian Deadlift | liftoff_dumbbell_romanian_deadlift | same |
+| edbv1_c8f5cSY Side-lying Hip Adduction | liftoff_side_lying_hip_adduction | same |
+
+Looked at and **not** merged (different exercise or load type): Standing Calf Raises (machine) vs wger "Standing Calf Raises"
+(body only), Cable Crunch vs Cable Seated Crunch, Seated vs Standing Dumbbell Press, Russian Twist (body vs dumbbell),
+Reverse Flyes (dumbbell) vs the machine one, Low Cable Crossover, Machine Triceps Extension vs wger "Machine Dip or Triceps
+Extension", Incline T-raise vs Incline Y raise. The `liftoff_*` canonicals only exist after an import; until then their duplicates stay.
+
+## 11. Added exercises start with one working set
+
+"Add exercise" in a running workout creates the exercise with **one** working set (it used to be three), pre-filled with the
+coach's weight and reps from your history, not Calibration, whenever the exercise has history (merged history counts, see item 8).
+Only an exercise you have never logged calibrates. ADD SET adds more, copying the last set. Covered in `hip_adduction_flow_test`
+(one set, prefilled from the Liftoff history; ADD SET → two).

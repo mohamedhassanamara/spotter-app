@@ -54,6 +54,7 @@ class RanksRepository {
     required DateTime now,
     Set<String> excluded = const {},
     Set<String> myExerciseIds = const {},
+    Map<String, String> displayNames = const {},
   }) {
     if (bodyweights.isEmpty) return RankSummary.empty;
     final from = addDays(dateOnly(now), -RankCalculator.windowDays);
@@ -65,7 +66,7 @@ class RanksRepository {
               if (set.isValidForRecords)
                 RankedSet(
                   exerciseId: e.exerciseId,
-                  name: e.name,
+                  name: displayNames[e.exerciseId] ?? catalog[e.exerciseId]?.name ?? e.name,
                   weight: set.weight,
                   reps: set.reps,
                   rpe: set.rpe,
@@ -73,12 +74,11 @@ class RanksRepository {
                   bodyweight: bodyweights.at(s.startedAt),
                 ),
     ];
-    final names = <String, String>{};
-    for (final s in history.sessions) {
-      for (final e in s.exercises) {
-        names[e.exerciseId] = e.name;
-      }
-    }
+    // Ranks show the name the logger shows: your routine's name for it, else the library's.
+    final names = <String, String>{
+      for (final s in history.sessions)
+        for (final e in s.exercises) e.exerciseId: displayNames[e.exerciseId] ?? catalog[e.exerciseId]?.name ?? e.name,
+    };
     final mine = {...myExerciseIds, ...history.exerciseIds};
     return RankCalculator(standards).compute(
       sets: sets,
@@ -88,6 +88,12 @@ class RanksRepository {
       hintNames: {for (final id in mine) if (catalog[id] != null) id: names[id] ?? catalog[id]!.name},
     );
   }
+
+  /// The name the logger shows for each exercise: the routine's own name for it, else the library name.
+  static Map<String, String> displayNamesFor(Map<String, ExerciseInfo> catalog, Iterable<({String exerciseId, String? displayName})> routineRows) => {
+        for (final e in catalog.values) e.id: e.name,
+        for (final r in routineRows) if (r.displayName != null && r.displayName!.isNotEmpty) r.exerciseId: r.displayName!,
+      };
 
   /// Best tier index over all ranked exercises (achievements), -1 when nothing is ranked.
   static int bestTierIndex(RankSummary s) => s.exercises.fold<int>(-1, (m, r) => r.score.tier.index > m ? r.score.tier.index : m);

@@ -110,11 +110,12 @@ class EdbMappingRepository {
   }
 
   /// assets/edb_v2_map.json → rows that aren't in the DB yet (fresh install keeps the mappings).
-  Future<int> seedFromAsset(String json, {required DateTime now}) async {
+  Future<int> seedFromAsset(String json, {required DateTime now, Set<String> skip = const {}}) async {
     final j = jsonDecode(json) as Map<String, dynamic>;
     var n = 0;
     for (final e in (j['mappings'] as Map<String, dynamic>).entries) {
       if (await get(e.key) != null) continue;
+      if (skip.contains(e.key)) continue; // merged-away duplicates have no library row any more
       final v = e.value as Map<String, dynamic>;
       await _db.into(_db.edbV2Maps).insert(EdbV2MapsCompanion.insert(
             exerciseId: e.key,
