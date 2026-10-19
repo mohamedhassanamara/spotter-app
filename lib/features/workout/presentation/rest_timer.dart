@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app_providers.dart';
 import '../../../core/live_activity/live_activity_service.dart';
+import '../data/workout_activity_sync.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/common.dart';
 
@@ -41,6 +42,12 @@ class RestTimerController {
   /// background: iOS lets it run out on its own there).
   RestActivity? _activity;
 
+  /// The running rest, for the workout's Live Activity (null once it is over).
+  RestActivity? get running {
+    final a = _activity;
+    return a != null && a.endsAt.isAfter(_ref.read(clockProvider)()) ? a : null;
+  }
+
   /// No-op for 0 s (first exercise of a superset: go straight to the partner).
   Future<void> start(int seconds, {RestPreview? preview, int? setId}) async {
     if (seconds <= 0) return;
@@ -51,7 +58,7 @@ class RestTimerController {
     await _ref.read(notificationServiceProvider).scheduleRestDone(endsAt);
     if (preview == null) {
       _activity = null;
-      await _ref.read(liveActivityProvider).end();
+      _ref.read(workoutActivitySyncProvider).refresh();
       return;
     }
     _activity = RestActivity(
@@ -61,15 +68,11 @@ class RestTimerController {
       startsAt: now,
       endsAt: endsAt,
     );
-    await _ref.read(liveActivityProvider).startRest(_activity!);
+    _ref.read(workoutActivitySyncProvider).refresh();
   }
 
-  /// Back in the foreground with a rest still running: show the Live Activity again if iOS let it go.
-  Future<void> resync() async {
-    final a = _activity, endsAt = _ref.read(currentSettingsProvider).restEndsAt;
-    if (a == null || endsAt == null || !endsAt.isAfter(_ref.read(clockProvider)())) return;
-    await _ref.read(liveActivityProvider).startRest(a.withEnd(endsAt));
-  }
+  /// Back in the foreground: show the Live Activity again if iOS let it go.
+  Future<void> resync() async => _ref.read(workoutActivitySyncProvider).refresh(force: true);
 
   Future<void> adjust(int deltaSeconds) async {
     final s = _ref.read(currentSettingsProvider);
@@ -83,7 +86,7 @@ class RestTimerController {
     final a = _activity;
     if (a != null) {
       _activity = a.withEnd(next);
-      await _ref.read(liveActivityProvider).startRest(_activity!);
+      _ref.read(workoutActivitySyncProvider).refresh();
     }
   }
 
@@ -109,7 +112,7 @@ class RestTimerController {
     _restSetId = null;
     await _ref.read(settingsControllerProvider).setRestTimer(null, null);
     await _ref.read(notificationServiceProvider).cancelRest();
-    await _ref.read(liveActivityProvider).end();
+    _ref.read(workoutActivitySyncProvider).refresh();
   }
 }
 

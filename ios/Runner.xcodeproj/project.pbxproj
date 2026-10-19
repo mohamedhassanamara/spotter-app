@@ -19,14 +19,14 @@
 		78A318202AECB46A00862997 /* FlutterGeneratedPluginSwiftPackage in Frameworks */ = {isa = PBXBuildFile; productRef = 78A3181F2AECB46A00862997 /* FlutterGeneratedPluginSwiftPackage */; };
 		80D185D8A83E8CB33ED87FB0 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 93DF41D474DC4DE39B4C88C6 /* Foundation.framework */; };
 		830EA84C94F5D04213199EDE /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 41D0B47220417AB4D72012BF /* SwiftUI.framework */; };
-		9475172381AB739C47CC7DFB /* RestTimerLiveActivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 17059738E5BC96DC30B29B3B /* RestTimerLiveActivity.swift */; };
+		9475172381AB739C47CC7DFB /* WorkoutLiveActivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 17059738E5BC96DC30B29B3B /* WorkoutLiveActivity.swift */; };
 		97C146FC1CF9000F007C117D /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FA1CF9000F007C117D /* Main.storyboard */; };
 		97C146FE1CF9000F007C117D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FD1CF9000F007C117D /* Assets.xcassets */; };
 		97C147011CF9000F007C117D /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FF1CF9000F007C117D /* LaunchScreen.storyboard */; };
-		B0D5CB9B7838B2255148E5EF /* RestTimerAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44E67856AC614D2B86740FA1 /* RestTimerAttributes.swift */; };
+		B0D5CB9B7838B2255148E5EF /* WorkoutActivityAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44E67856AC614D2B86740FA1 /* WorkoutActivityAttributes.swift */; };
 		CC529BCCE5D715CC19422C2E /* LiveActivityBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2780BFA469E29CFA597A3DF1 /* LiveActivityBridge.swift */; };
 		FAC2058639327E03C1C83F8C /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D1A4CE0D88E50199DC587802 /* WidgetKit.framework */; };
-		FC24E45EA9A4BE8B684CBBB0 /* RestTimerAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44E67856AC614D2B86740FA1 /* RestTimerAttributes.swift */; };
+		FC24E45EA9A4BE8B684CBBB0 /* WorkoutActivityAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44E67856AC614D2B86740FA1 /* WorkoutActivityAttributes.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -74,14 +74,14 @@
 		08B5EED38E73019C9F87B094 /* SpotterLiveActivityBundle.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SpotterLiveActivityBundle.swift; sourceTree = "<group>"; };
 		1498D2321E8E86230040F4C2 /* GeneratedPluginRegistrant.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = GeneratedPluginRegistrant.h; sourceTree = "<group>"; };
 		1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = GeneratedPluginRegistrant.m; sourceTree = "<group>"; };
-		17059738E5BC96DC30B29B3B /* RestTimerLiveActivity.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = RestTimerLiveActivity.swift; sourceTree = "<group>"; };
+		17059738E5BC96DC30B29B3B /* WorkoutLiveActivity.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WorkoutLiveActivity.swift; sourceTree = "<group>"; };
 		25B473FBC8138BE012CB2555 /* ActivityKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = ActivityKit.framework; path = System/Library/Frameworks/ActivityKit.framework; sourceTree = SDKROOT; };
 		2780BFA469E29CFA597A3DF1 /* LiveActivityBridge.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = LiveActivityBridge.swift; sourceTree = "<group>"; };
 		331C807B294A618700263BE5 /* RunnerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunnerTests.swift; sourceTree = "<group>"; };
 		331C8081294A63A400263BE5 /* RunnerTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RunnerTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		3B3967151E833CAA004F5970 /* AppFrameworkInfo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = AppFrameworkInfo.plist; path = Flutter/AppFrameworkInfo.plist; sourceTree = "<group>"; };
 		41D0B47220417AB4D72012BF /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
-		44E67856AC614D2B86740FA1 /* RestTimerAttributes.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = RestTimerAttributes.swift; sourceTree = "<group>"; };
+		44E67856AC614D2B86740FA1 /* WorkoutActivityAttributes.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WorkoutActivityAttributes.swift; sourceTree = "<group>"; };
 		661C478D4C9849B2F928308D /* SpotterLiveActivity.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = SpotterLiveActivity.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		74858FAD1ED2DC5600515810 /* Runner-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "Runner-Bridging-Header.h"; sourceTree = "<group>"; };
 		74858FAE1ED2DC5600515810 /* AppDelegate.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
@@ -137,7 +137,7 @@
 			isa = PBXGroup;
 			children = (
 				08B5EED38E73019C9F87B094 /* SpotterLiveActivityBundle.swift */,
-				17059738E5BC96DC30B29B3B /* RestTimerLiveActivity.swift */,
+				17059738E5BC96DC30B29B3B /* WorkoutLiveActivity.swift */,
 				CA63960B5A2BF9710C19709D /* Info.plist */,
 			);
 			name = SpotterLiveActivity;
@@ -219,7 +219,7 @@
 		DFFA4E562B1635B366151B62 /* Shared */ = {
 			isa = PBXGroup;
 			children = (
-				44E67856AC614D2B86740FA1 /* RestTimerAttributes.swift */,
+				44E67856AC614D2B86740FA1 /* WorkoutActivityAttributes.swift */,
 			);
 			name = Shared;
 			path = Shared;
@@ -408,7 +408,7 @@
 				74858FAF1ED2DC5600515810 /* AppDelegate.swift in Sources */,
 				1498D2341E8E89220040F4C2 /* GeneratedPluginRegistrant.m in Sources */,
 				7884E8682EC3CC0700C636F2 /* SceneDelegate.swift in Sources */,
-				FC24E45EA9A4BE8B684CBBB0 /* RestTimerAttributes.swift in Sources */,
+				FC24E45EA9A4BE8B684CBBB0 /* WorkoutActivityAttributes.swift in Sources */,
 				CC529BCCE5D715CC19422C2E /* LiveActivityBridge.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -418,8 +418,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				63CD34D50C5BCDD3E31E2BE6 /* SpotterLiveActivityBundle.swift in Sources */,
-				9475172381AB739C47CC7DFB /* RestTimerLiveActivity.swift in Sources */,
-				B0D5CB9B7838B2255148E5EF /* RestTimerAttributes.swift in Sources */,
+				9475172381AB739C47CC7DFB /* WorkoutLiveActivity.swift in Sources */,
+				B0D5CB9B7838B2255148E5EF /* WorkoutActivityAttributes.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

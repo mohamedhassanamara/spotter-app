@@ -1915,3 +1915,22 @@ The warm-up protocol page (page 17) gives the pyramid (percent of the planned we
 - working sets keep the listed rest, and between exercises the previous exercise's listed rest still runs after its last set.
 The rest timer, its notification and the Live Activity follow these values (a warm-up ✓ now starts a rest, with the next set as the target; it used to start none).
 Tests: `warmup_rest_test` (the rule), `warmup_rest_flow_test` (real taps: 45 → … → 90 → the 3-minute chest-press rest).
+
+## Round 2, item 12: Live Activity for the whole workout
+
+**Status: built and compiles with the extension; verified by unit tests, not on a device.** The widget's look and the lock-screen timers
+can only be checked on a phone, and the simulator does not show Live Activities reliably, so I did not write a tap test for it.
+Signing needed no change: the existing extension target and the `NSSupportsLiveActivities` key from the rest-timer version are reused.
+
+- **One activity for the session** (`WorkoutActivityAttributes`, `WorkoutLiveActivity`; the rest-only types were renamed). It starts when a
+  workout is active and ends when it is finished or discarded.
+- **What it shows:** the exercise and the next set's target ("Set 2 · 80 kg × 8"), "Set 2 of 3" / "Warm-up 2 of 3", the workout's elapsed time,
+  and while resting a countdown plus a progress bar. The current exercise's warm-ups are listed (max 4, "+N more") and checked off as you tick them.
+  Phases: warm-up (amber), working set (green), rest (blue).
+- **Timers are drawn by the system** from dates (`Text(date, style: .timer)`, `Text(timerInterval:)`), so the clock and the rest countdown keep
+  running with the app suspended. The state itself only changes when something happens in the app (set ticked, rest started/skipped/adjusted).
+- **Single writer:** `WorkoutActivitySync` rebuilds the state from the active session and the running rest (`buildWorkoutActivity`, a pure
+  function) and sends it only when it differs. The rest timer no longer talks to ActivityKit; it just asks for a refresh. Un-ticking a set, which cancels
+  its rest (item 10), therefore returns the activity to the working-set view instead of removing it.
+- **Known limit:** if the app is in the background when a rest ends, the activity still reads REST 0:00 until you return (the local notification
+  fires at the end). Fixing that needs a push-driven update, which would need a server.

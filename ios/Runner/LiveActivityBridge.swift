@@ -2,25 +2,20 @@ import ActivityKit
 import Flutter
 import UIKit
 
-/// Flutter ↔ ActivityKit for the rest timer. Channel `spotter/live_activity`:
-/// - `start {workoutName, exerciseName, nextTarget, startMillis, endMillis}`: starts or replaces the rest activity;
-/// - `end`: removes it now.
-/// When the app goes to the background with a rest running, the activity is *ended with a dismissal date at
-/// the rest's end*: it stays on the lock screen counting down (system timer text) and removes itself at 0:00,
-/// with no app update needed. Coming back, Dart restarts it if the rest is still running.
+/// Flutter ↔ ActivityKit for the workout's Live Activity. Channel `spotter/live_activity`:
+/// - `sync {phase, workoutName, exerciseName, nextTarget, setLabel, workoutStartMillis, restStartMillis?, restEndMillis?,
+///   warmups: [{text, done}], warmupsMore}`: starts the activity or updates the running one;
+/// - `end`: removes it now (workout finished or discarded);
+/// - `activeCount`: running activities (integration tests).
+/// The elapsed time and the rest countdown are system timer texts drawn from dates, so they keep running with the app suspended.
 final class LiveActivityBridge: NSObject {
     private let channel: FlutterMethodChannel
-    private var current: Activity<RestTimerAttributes>?
-    private var observers: [NSObjectProtocol] = []
+    private var current: Activity<WorkoutActivityAttributes>?
 
     init(messenger: FlutterBinaryMessenger) {
         channel = FlutterMethodChannel(name: "spotter/live_activity", binaryMessenger: messenger)
         super.init()
         channel.setMethodCallHandler { [weak self] call, result in self?.handle(call, result) }
-        observers.append(NotificationCenter.default.addObserver(
-            forName: UIApplication.didEnterBackgroundNotification, object: nil, queue: .main) { [weak self] _ in
-            self?.finalizeForBackground()
-        })
     }
 
     private func handle(_ call: FlutterMethodCall, _ result: @escaping FlutterResult) {
@@ -28,29 +23,39 @@ final class LiveActivityBridge: NSObject {
         case "available":
             result(ActivityAuthorizationInfo().areActivitiesEnabled)
         case "activeCount":
-            // Running rest activities (used by the integration tests).
-            result(Activity<RestTimerAttributes>.activities.filter { $0.activityState == .active }.count)
-        case "start":
+            result(Activity<WorkoutActivityAttributes>.activities.filter { $0.activityState == .active }.count)
+        case "sync":
             guard let a = call.arguments as? [String: Any],
+                  let phase = a["phase"] as? String,
                   let exercise = a["exerciseName"] as? String,
                   let target = a["nextTarget"] as? String,
-                  let startMs = a["startMillis"] as? Double,
-                  let endMs = a["endMillis"] as? Double else {
+                  let startMs = a["workoutStartMillis"] as? Double else {
                 result(FlutterError(code: "args", message: "bad arguments", details: nil))
                 return
             }
-            let state = RestTimerAttributes.ContentState(
+            func date(_ key: String) -> Date? {
+                (a[key] as? Double).map { Date(timeIntervalSince1970: $0 / 1000) }
+            }
+            let warmups = ((a["warmups"] as? [[String: Any]]) ?? []).map {
+                WorkoutActivityAttributes.WarmupLine(text: ($0["text"] as? String) ?? "", done: ($0["done"] as? Bool) ?? false)
+            }
+            let state = WorkoutActivityAttributes.ContentState(
+                phase: phase,
                 exerciseName: exercise,
                 nextTarget: target,
-                startDate: Date(timeIntervalSince1970: startMs / 1000),
-                endDate: Date(timeIntervalSince1970: endMs / 1000))
+                setLabel: (a["setLabel"] as? String) ?? "",
+                workoutStart: Date(timeIntervalSince1970: startMs / 1000),
+                restStart: date("restStartMillis"),
+                restEnd: date("restEndMillis"),
+                warmups: warmups,
+                warmupsMore: (a["warmupsMore"] as? Int) ?? 0)
             Task {
                 await self.startOrUpdate(workoutName: (a["workoutName"] as? String) ?? "Workout", state: state)
                 result(self.current != nil)
             }
         case "end":
             Task {
-                await self.endAll(policy: .immediate)
+                await self.endAll()
                 result(nil)
             }
         default:
@@ -58,42 +63,26 @@ final class LiveActivityBridge: NSObject {
         }
     }
 
-    private func startOrUpdate(workoutName: String, state: RestTimerAttributes.ContentState) async {
+    private func startOrUpdate(workoutName: String, state: WorkoutActivityAttributes.ContentState) async {
         guard ActivityAuthorizationInfo().areActivitiesEnabled else { return }
-        let content = ActivityContent(state: state, staleDate: state.endDate)
-        if let live = current, live.activityState == .active {
+        let content = ActivityContent(state: state, staleDate: nil)
+        if let live = current ?? Activity<WorkoutActivityAttributes>.activities.first(where: { $0.activityState == .active }),
+           live.activityState == .active {
+            current = live
             await live.update(content)
             return
         }
-        await endAll(policy: .immediate) // anything left over from an earlier run
         do {
-            current = try Activity.request(attributes: RestTimerAttributes(workoutName: workoutName), content: content, pushType: nil)
+            current = try Activity.request(attributes: WorkoutActivityAttributes(workoutName: workoutName), content: content, pushType: nil)
         } catch {
             NSLog("Live Activity request failed: \(error)")
         }
     }
 
-    private func endAll(policy: ActivityUIDismissalPolicy) async {
-        for activity in Activity<RestTimerAttributes>.activities {
-            await activity.end(nil, dismissalPolicy: policy)
+    private func endAll() async {
+        for activity in Activity<WorkoutActivityAttributes>.activities {
+            await activity.end(nil, dismissalPolicy: .immediate)
         }
         current = nil
-    }
-
-    /// Backgrounded mid-rest: end the activity now but keep it visible until the rest's end.
-    private func finalizeForBackground() {
-        guard let live = current, live.activityState == .active else { return }
-        let state = live.content.state
-        guard state.endDate > Date() else {
-            Task { await self.endAll(policy: .immediate) }
-            return
-        }
-        var bg = UIBackgroundTaskIdentifier.invalid
-        bg = UIApplication.shared.beginBackgroundTask { UIApplication.shared.endBackgroundTask(bg) }
-        Task {
-            await live.end(ActivityContent(state: state, staleDate: nil), dismissalPolicy: .after(state.endDate))
-            self.current = nil
-            UIApplication.shared.endBackgroundTask(bg)
-        }
     }
 }

@@ -8,7 +8,10 @@ import 'package:spotter/core/db/database.dart';
 import 'package:spotter/core/live_activity/live_activity_service.dart';
 import 'package:spotter/core/notifications/notification_service.dart';
 import 'package:spotter/features/workout/data/session_repository.dart';
+import 'package:spotter/features/library/domain/exercise_info.dart';
+import 'package:spotter/features/workout/data/workout_activity_sync.dart';
 import 'package:spotter/features/workout/domain/rest_preview.dart';
+import 'package:spotter/features/workout/domain/workout_activity.dart';
 import 'package:spotter/features/workout/presentation/rest_timer.dart';
 
 class _Notifications extends NotificationService {
@@ -23,10 +26,10 @@ class _Notifications extends NotificationService {
 
 class _FakeActivity implements LiveActivityService {
   final calls = <String>[];
-  RestActivity? last;
+  WorkoutActivity? last;
   @override
-  Future<void> startRest(RestActivity a) async {
-    calls.add('start');
+  Future<void> sync(WorkoutActivity a) async {
+    calls.add('sync:${a.phase}');
     last = a;
   }
 
@@ -104,23 +107,98 @@ void main() {
     });
   });
 
-  group('the rest timer drives the Live Activity', () {
+  group('the workout activity', () {
+    ActiveSession twoExercises({bool warm1Done = false, bool allDone = false}) => _session([
+          ActiveExercise(row: _ex(1), sets: [
+            _set(1, 1, 0, warmup: true, kg: 40, done: warm1Done || allDone),
+            _set(2, 1, 1, warmup: true, kg: 60, done: allDone),
+            _set(3, 1, 2, done: allDone),
+            _set(4, 1, 3, done: allDone),
+          ], suggestion: null),
+          ActiveExercise(row: _ex(2), sets: [_set(5, 2, 0, kg: 55.5, reps: 12, done: allDone)], suggestion: null),
+        ]);
+    String name(ActiveExercise e) => 'Exercise ${e.row.id}';
+
+    test('warm-up phase: the first open set, its warm-ups listed and counted', () {
+      final a = buildWorkoutActivity(twoExercises(), nameOf: name)!;
+      expect(a.phase, 'warmup');
+      expect(a.exerciseName, 'Exercise 1');
+      expect(a.nextTarget, 'Warm-up · 40 kg × 8');
+      expect(a.setLabel, 'Warm-up 1 of 2');
+      expect(a.warmups.map((w) => (w.text, w.done)), [('40 kg × 8', false), ('60 kg × 8', false)]);
+      expect(a.warmupsMore, 0);
+      expect(a.workoutStart, DateTime(2026, 10, 12));
+      expect(a.restEnd, isNull);
+    });
+
+    test('a warm-up ticked shows checked; after the last one the working set is next', () {
+      final one = buildWorkoutActivity(twoExercises(warm1Done: true), nameOf: name)!;
+      expect(one.phase, 'warmup');
+      expect(one.setLabel, 'Warm-up 2 of 2');
+      expect(one.warmups.map((w) => w.done), [true, false]);
+      final both = _session([
+        ActiveExercise(row: _ex(1), sets: [_set(1, 1, 0, warmup: true, done: true), _set(2, 1, 1, warmup: true, done: true), _set(3, 1, 2)], suggestion: null),
+      ]);
+      final w = buildWorkoutActivity(both, nameOf: name)!;
+      expect(w.phase, 'working');
+      expect(w.nextTarget, 'Set 1 · 80 kg × 8');
+      expect(w.setLabel, 'Set 1 of 1');
+    });
+
+    test('more than four warm-ups: four shown from the one before the first open, the rest counted', () {
+      final e = ActiveExercise(row: _ex(1), sets: [for (var i = 0; i < 6; i++) _set(i + 1, 1, i, warmup: true, kg: 20.0 + i * 10, done: i < 2), _set(7, 1, 6)], suggestion: null);
+      final a = buildWorkoutActivity(_session([e]), nameOf: name)!;
+      expect(a.warmups.length, 4);
+      expect(a.warmups.first.done, isTrue, reason: 'the last one done stays visible');
+      expect(a.warmups.first.text, '30 kg × 8');
+      expect(a.warmupsMore, 1);
+    });
+
+    test('resting: the rest times and the next set, the workout clock keeps its start', () {
+      final rest = RestActivity(
+          workoutName: 'Upper', exerciseName: 'Exercise 1', nextTarget: 'Warm-up · 60 kg × 8', startsAt: DateTime(2026, 10, 12, 18), endsAt: DateTime(2026, 10, 12, 18, 0, 45));
+      final a = buildWorkoutActivity(twoExercises(warm1Done: true), nameOf: name, rest: rest)!;
+      expect(a.phase, 'rest');
+      expect(a.restStart, DateTime(2026, 10, 12, 18));
+      expect(a.restEnd, DateTime(2026, 10, 12, 18, 0, 45));
+      expect(a.nextTarget, 'Warm-up · 60 kg × 8');
+      expect(a.workoutStart, DateTime(2026, 10, 12));
+    });
+
+    test('everything done: "Finish when ready"; equal activities compare equal (no redundant updates)', () {
+      final a = buildWorkoutActivity(twoExercises(allDone: true), nameOf: name)!;
+      expect(a.phase, 'working');
+      expect(a.nextTarget, 'Last set done. Finish when ready');
+      expect(buildWorkoutActivity(twoExercises(allDone: true), nameOf: name), a);
+    });
+  });
+
+  group('the rest timer and the session drive the Live Activity', () {
     late AppDatabase db;
     late _FakeActivity activity;
     late ProviderContainer c;
     late _Notifications notes;
     final now = DateTime(2026, 10, 12, 18);
-    setUp(() {
+    ActiveSession? current;
+    setUp(() async {
       db = AppDatabase(NativeDatabase.memory());
       activity = _FakeActivity();
       notes = _Notifications();
+      current = _session([
+        ActiveExercise(row: _ex(1), sets: [_set(1, 1, 0, done: true), _set(2, 1, 1)], suggestion: null),
+      ]);
       c = ProviderContainer(overrides: [
         databaseProvider.overrideWithValue(db),
         liveActivityProvider.overrideWithValue(activity),
         notificationServiceProvider.overrideWithValue(notes),
         clockProvider.overrideWithValue(() => now),
+        activeSessionProvider.overrideWith((ref) => Stream.value(current)),
+        catalogProvider.overrideWith((ref) => Stream.value(const <String, ExerciseInfo>{})),
       ]);
       c.listen(settingsProvider, (_, _) {});
+      c.listen(activeSessionProvider, (_, _) {});
+      c.listen(catalogProvider, (_, _) {});
+      await Future<void>.delayed(const Duration(milliseconds: 50));
     });
     tearDown(() async {
       c.dispose();
@@ -129,36 +207,59 @@ void main() {
 
     const preview = RestPreview(workoutName: 'Upper', exerciseName: 'Chest Press', nextTarget: 'Set 2 · 80 kg × 8');
 
-    test('start: the activity carries the exercise, the target and the end time (a system timer shows the countdown)', () async {
-      await c.read(restTimerProvider).start(90, preview: preview);
-      expect(activity.calls, ['start']);
-      expect(activity.last!.exerciseName, 'Chest Press');
+    test('a session alone starts the activity; it is not re-sent when nothing changed', () {
+      final sync = c.read(workoutActivitySyncProvider);
+      sync.refresh();
+      sync.refresh();
+      expect(activity.calls, ['sync:working']);
       expect(activity.last!.nextTarget, 'Set 2 · 80 kg × 8');
-      expect(activity.last!.endsAt, now.add(const Duration(seconds: 90)));
-      expect(activity.last!.startsAt, now);
+      sync.refresh(force: true);
+      expect(activity.calls, ['sync:working', 'sync:working']);
     });
 
-    test('±15 s updates the end; skip, the next set, finishing or the end of the rest end it', () async {
+    test('start: the activity is in the rest phase with the exercise, the target and the end time', () async {
+      await c.read(restTimerProvider).start(90, preview: preview);
+      expect(activity.calls, ['sync:rest']);
+      expect(activity.last!.exerciseName, 'Chest Press');
+      expect(activity.last!.nextTarget, 'Set 2 · 80 kg × 8');
+      expect(activity.last!.restEnd, now.add(const Duration(seconds: 90)));
+      expect(activity.last!.restStart, now);
+    });
+
+    test('±15 s updates the end; stopping the rest returns to the workout, it does not end the activity', () async {
       final timer = c.read(restTimerProvider);
       await timer.start(90, preview: preview);
       await c.read(settingsProvider.future);
       await Future<void>.delayed(const Duration(milliseconds: 50));
       await timer.adjust(15);
-      expect(activity.last!.endsAt, now.add(const Duration(seconds: 105)));
-      expect(activity.calls, ['start', 'start']);
+      expect(activity.last!.restEnd, now.add(const Duration(seconds: 105)));
+      expect(activity.calls, ['sync:rest', 'sync:rest']);
       await timer.stop();
-      expect(activity.calls.last, 'end');
-      expect(activity.last!.endsAt, now.add(const Duration(seconds: 105)));
+      expect(activity.calls.last, 'sync:working');
+      expect(activity.calls, isNot(contains('end')));
+      expect(activity.last!.restEnd, isNull);
     });
 
-    test('a rest without a preview shows nothing; 0 s is a no-op', () async {
+    test('a rest without a preview shows the workout, not a rest; 0 s is a no-op', () async {
       await c.read(restTimerProvider).start(0, preview: preview);
       expect(activity.calls, isEmpty);
       await c.read(restTimerProvider).start(60);
-      expect(activity.calls, ['end']);
+      expect(activity.calls, ['sync:working']);
     });
 
-    test('un-ticking the set whose rest is running cancels it: timer, notification and Live Activity', () async {
+    test('no active session (finished, discarded, or nothing running at launch) ends the activity', () async {
+      final sync = c.read(workoutActivitySyncProvider);
+      sync.refresh();
+      current = null;
+      c.invalidate(activeSessionProvider);
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+      sync.refresh();
+      expect(activity.calls, ['sync:working', 'end']);
+      sync.refresh();
+      expect(activity.calls.length, 2, reason: 'ended once');
+    });
+
+    test('un-ticking the set whose rest is running cancels it: timer, notification, and the activity leaves the rest phase', () async {
       final timer = c.read(restTimerProvider);
       await timer.start(90, preview: preview, setId: 7);
       await c.read(settingsProvider.future);
@@ -169,7 +270,7 @@ void main() {
       expect(await timer.cancelIfFor(7), isTrue);
       await Future<void>.delayed(const Duration(milliseconds: 50));
       expect(c.read(currentSettingsProvider).restEndsAt, isNull, reason: 'the in-app timer is gone');
-      expect(activity.calls, ['end'], reason: 'the Live Activity ends');
+      expect(activity.calls, ['sync:working']);
       expect(notes.cancels, before + 1, reason: 'the pending "rest done" notification is cancelled');
     });
 
@@ -194,19 +295,17 @@ void main() {
       expect(await timer.cancelIfFor(9, latestDone: true), isTrue);
     });
 
-    test('back in the foreground mid-rest: the activity is shown again with the same end', () async {
+    test('back in the foreground mid-rest: the activity is sent again with the same end', () async {
       final timer = c.read(restTimerProvider);
       await timer.start(90, preview: preview);
-      await c.read(settingsProvider.future);
-      await Future<void>.delayed(const Duration(milliseconds: 50));
       activity.calls.clear();
       await timer.resync();
-      expect(activity.calls, ['start']);
-      expect(activity.last!.endsAt, now.add(const Duration(seconds: 90)));
+      expect(activity.calls, ['sync:rest']);
+      expect(activity.last!.restEnd, now.add(const Duration(seconds: 90)));
     });
   });
 
-  test('the platform channel: start arguments reach native; a missing plugin is harmless', () async {
+  test('the platform channel: sync arguments reach native; a missing plugin is harmless', () async {
     final seen = <MethodCall>[];
     const channel = MethodChannel('spotter/live_activity');
     TestWidgetsFlutterBinding.ensureInitialized();
@@ -216,11 +315,27 @@ void main() {
       seen.add(call);
       return true;
     });
-    await svc.startRest(RestActivity(
-        workoutName: 'Upper', exerciseName: 'Chest Press', nextTarget: 'Set 2', startsAt: DateTime.fromMillisecondsSinceEpoch(1000), endsAt: DateTime.fromMillisecondsSinceEpoch(91000)));
+    await svc.sync(WorkoutActivity(
+      phase: 'rest',
+      workoutName: 'Upper',
+      exerciseName: 'Chest Press',
+      nextTarget: 'Set 2',
+      setLabel: 'Set 2 of 3',
+      workoutStart: DateTime.fromMillisecondsSinceEpoch(500),
+      restStart: DateTime.fromMillisecondsSinceEpoch(1000),
+      restEnd: DateTime.fromMillisecondsSinceEpoch(91000),
+      warmups: const [ActivityWarmup('40 kg × 8', true)],
+      warmupsMore: 2,
+    ));
     await svc.end();
-    expect(seen.map((c) => c.method), ['start', 'end']);
-    expect((seen.first.arguments as Map)['endMillis'], 91000.0);
-    expect((seen.first.arguments as Map)['exerciseName'], 'Chest Press');
+    expect(seen.map((c) => c.method), ['sync', 'end']);
+    final args = seen.first.arguments as Map;
+    expect(args['restEndMillis'], 91000.0);
+    expect(args['workoutStartMillis'], 500.0);
+    expect(args['exerciseName'], 'Chest Press');
+    expect(args['warmups'], [
+      {'text': '40 kg × 8', 'done': true}
+    ]);
+    expect(args['warmupsMore'], 2);
   });
 }

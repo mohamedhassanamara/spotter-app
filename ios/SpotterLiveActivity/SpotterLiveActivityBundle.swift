@@ -4,6 +4,6 @@ import WidgetKit
 @main
 struct SpotterLiveActivityBundle: WidgetBundle {
     var body: some Widget {
-        RestTimerLiveActivity()
+        WorkoutLiveActivity()
     }
 }
