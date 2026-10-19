@@ -63,21 +63,34 @@ abstract final class Motion {
   static const pop = Curves.easeOutBack;
 }
 
-/// One colour per rank tier, Iron → Challenger: the dominant colour of each League of Legends ranked
-/// emblem (sampled with tool/tier_colors/sample_emblems.py; docs/DECISIONS.md has the table). Only colours;
-/// the badge artwork is original. Every tier keeps ≥ 3:1 contrast with [AppColors.bodyBase] and is lighter
-/// than [AppColors.unranked] (test/widget/tier_palette_test.dart).
+/// One colour per rank tier, Iron → Radiant: Valorant's own tier colours (the game's competitive-tier data, via
+/// valorant-api.com; docs/DECISIONS.md has the table and the gradients). Only colours: the badge artwork is
+/// original. Every tier keeps ≥ 3:1 contrast with [AppColors.bodyBase] and is lighter than [AppColors.unranked]
+/// (test/widget/tier_palette_test.dart).
 const List<Color> tierColors = [
-  Color(0xFFA38887), // Iron
-  Color(0xFFBE7F6D), // Bronze
-  Color(0xFF8296BB), // Silver
-  Color(0xFFC49258), // Gold
-  Color(0xFF2295BF), // Platinum
-  Color(0xFF3CD17C), // Emerald
-  Color(0xFF4280CD), // Diamond
-  Color(0xFFAE39E6), // Master
-  Color(0xFFEB663E), // Grandmaster
-  Color(0xFFB48E52), // Challenger
+  Color(0xFF868986), // Iron
+  Color(0xFFA5855D), // Bronze
+  Color(0xFFBBC2C2), // Silver
+  Color(0xFFECCF56), // Gold
+  Color(0xFF59A9B6), // Platinum
+  Color(0xFFB489C4), // Diamond
+  Color(0xFF6AE2AF), // Champion (Valorant's Ascendant)
+  Color(0xFFBB3D65), // Immortal
+  Color(0xFFFFFFAA), // Radiant
+];
+
+/// Each tier's two-colour gradient: a lighter and a deeper shade of its hue (top-left → bottom-right on badges,
+/// body-map fills, RR bars and legends).
+const List<(Color, Color)> tierGradients = [
+  (Color(0xFFB4B7B5), Color(0xFF5E6160)), // Iron: pale steel → dark steel
+  (Color(0xFFD1B085), Color(0xFF7C5522)), // Bronze: sand → deep bronze
+  (Color(0xFFE6EBEB), Color(0xFF8E9696)), // Silver: bright → slate
+  (Color(0xFFF7E9A2), Color(0xFFC98F1E)), // Gold: pale gold → deep amber
+  (Color(0xFF8FD8E0), Color(0xFF2B7F8C)), // Platinum: ice → deep teal
+  (Color(0xFFDDBDEB), Color(0xFF763BAF)), // Diamond: lilac → deep violet
+  (Color(0xFFA6F5CF), Color(0xFF1C7245)), // Champion: mint → deep green
+  (Color(0xFFFF6E8E), Color(0xFFA02D55)), // Immortal: rose → deep crimson
+  (Color(0xFFFFFFE6), Color(0xFFE0B040)), // Radiant: white-gold → gold
 ];
 
 ThemeData buildAppTheme() {

@@ -64,7 +64,7 @@ Widget _exerciseRow(ExerciseRank r, double weight, {required bool counted}) => O
         leading: RankBadge(score: r.score, size: BadgeSize.small, width: 36, animate: false),
         title: Text(r.name, style: const TextStyle(fontWeight: FontWeight.w700)),
         subtitle: Text(counted
-            ? '${r.score.labelWithLp} · ${r.strength} · ×${weight.toStringAsFixed(weight == weight.roundToDouble() ? 0 : 1)} · ${liftLine(r)}'
+            ? '${r.score.labelWithRr} · ${r.strength} · ×${weight.toStringAsFixed(weight == weight.roundToDouble() ? 0 : 1)} · ${liftLine(r)}'
             : 'Not counted · ${r.score.label} · ${liftLine(r)}'),
         trailing: RankToggle(exerciseId: r.exerciseId),
       )),
@@ -122,7 +122,7 @@ List<Widget> _rankContent(BuildContext context, Muscle muscle, RankSummary summa
               ProgressBar(value: g.score.divisionProgress, color: color),
               const SizedBox(height: 4),
               Text(
-                '${g.score.nextLabel == null ? '${g.score.lp} LP · top of the ladder' : '${g.score.lp} LP · next: ${g.score.nextLabel}'}'
+                '${g.score.nextLabel == null ? '${g.score.rr} RR · top of the ladder' : '${g.score.rr} RR · next: ${g.score.nextLabel}'}'
                 ' · strength ${g.score.strength}',
                 style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
               ),

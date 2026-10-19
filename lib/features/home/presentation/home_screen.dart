@@ -106,7 +106,7 @@ class _HeroCard extends ConsumerWidget {
                     ),
                     const SizedBox(height: 10),
                     if (overall != null)
-                      LpBar(progress: overall.divisionProgress, color: color, lp: overall.lp)
+                      RrBar(progress: overall.divisionProgress, color: color, tier: overall.tier, rr: overall.rr)
                     else
                       const Text('Log a ranked lift to place on the ladder.', style: TextStyle(color: AppColors.textSecondary)),
                   ],
@@ -273,7 +273,7 @@ class _Quests extends ConsumerWidget {
                                 ),
                               ),
                               const SizedBox(height: 6),
-                              LpBar(
+                              RrBar(
                                 progress: q.progress / q.quest.def.target,
                                 color: q.done ? AppColors.primary : AppColors.accent,
                                 height: 7,

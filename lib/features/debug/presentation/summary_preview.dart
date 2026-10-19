@@ -25,14 +25,14 @@ SessionSummary demoSummary() => SessionSummary(
       rankChanges: [
         RankChange(
           name: 'Bench press',
-          fromScore: RankScore.of(Tier.emerald, division: 2, lp: 80),
-          toScore: RankScore.of(Tier.emerald, division: 1, lp: 4),
+          fromScore: RankScore.of(Tier.platinum, division: 2, rr: 80),
+          toScore: RankScore.of(Tier.platinum, division: 3, rr: 4),
           scope: RankChangeScope.exercise,
         ),
         RankChange(
           name: 'Triceps',
-          fromScore: RankScore.of(Tier.gold, division: 3, lp: 10),
-          toScore: RankScore.of(Tier.gold, division: 4, lp: 92),
+          fromScore: RankScore.of(Tier.gold, division: 1, rr: 10),
+          toScore: RankScore.of(Tier.gold, division: 1, rr: 92),
           scope: RankChangeScope.muscle,
         ),
       ],

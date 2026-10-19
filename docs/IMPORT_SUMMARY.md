@@ -277,84 +277,84 @@ Every ranked exercise on the v4 standards, highest rank first: best valid set of
 
 | # | Exercise | Best set | Date | Bodyweight | e1RM | × BW | Scaled | Rank | Strength |
 |---|---|---|---|---|---|---|---|---|---|
-| 1 | Triceps Pushdown ⚑ | 72 kg × 12 | 27 Sep 2026 | 106.2 kg | 100.8 kg | 0.95 | 0.968 | Master | 769 |
-| 2 | Dumbbell Incline Y Raise ⚑ | 10 kg × 13 | 15 Sep 2026 | 106.3 kg | 14.3 kg | 0.13 | 0.138 | Platinum I | 499 |
-| 3 | Lying Leg Curls ⚑ | 85 kg × 7 | 7 Oct 2026 | 106.0 kg | 104.8 kg | 0.99 | 1.008 | Platinum II | 457 |
-| 4 | Calf Press On The Leg Press Machine ⚑ | 240 kg × 12 | 7 Oct 2026 | 106.0 kg | 336.0 kg | 3.17 | 3.231 | Platinum III | 430 |
-| 5 | Machine Single-Arm Reverse Fly ⚑ | 25 kg × 20 | 10 Oct 2026 | 106.0 kg | 41.7 kg | 0.39 | 0.401 | Platinum III | 426 |
-| 6 | Leg Extensions ⚑ | 110 kg × 10 | 7 Oct 2026 | 106.0 kg | 146.7 kg | 1.38 | 1.410 | Platinum IV | 411 |
-| 7 | Butterfly | 75 kg × 12 | 6 Oct 2026 | 106.1 kg | 105.0 kg | 0.99 | 1.009 | Gold I | 398 |
-| 8 | Standing Machine Lateral Raise | 34 kg × 12 | 9 Oct 2026 | 106.0 kg | 47.6 kg | 0.45 | 0.458 | Gold II | 368 |
-| 9 | EZ-Bar Curl | 45 kg × 4 | 20 Sep 2026 | 106.2 kg | 51.0 kg | 0.48 | 0.490 | Gold II | 359 |
-| 10 | One-Arm Dumbbell Row | 40 kg × 5 | 10 Oct 2026 | 106.0 kg | 46.7 kg | 0.44 | 0.449 | Gold II | 357 |
-| 11 | Preacher Hammer Dumbbell Curl | 15 kg × 9 | 11 Oct 2026 | 106.0 kg | 19.5 kg | 0.18 | 0.188 | Gold III | 328 |
-| 12 | Cable Rope Overhead Triceps Extension | 24 kg × 10 | 11 Oct 2026 | 106.0 kg | 32.0 kg | 0.30 | 0.308 | Gold IV | 324 |
-| 13 | Cable Wrist Curl | 40 kg × 12 | 11 Oct 2026 | 106.0 kg | 56.0 kg | 0.53 | 0.539 | Gold IV | 313 |
-| 14 | Close-Grip Front Lat Pulldown | 68 kg × 9 | 10 Oct 2026 | 106.0 kg | 88.4 kg | 0.83 | 0.850 | Silver I | 298 |
-| 15 | Stiff-Legged Barbell Deadlift | 90 kg × 8 | 10 Oct 2026 | 106.0 kg | 114.0 kg | 1.08 | 1.096 | Silver I | 289 |
-| 16 | Cable Crossover | 14 kg × 8 | 9 Oct 2026 | 106.0 kg | 17.7 kg | 0.17 | 0.171 | Silver I | 279 |
-| 17 | Hyperextensions (Back Extensions) | BW × 25 | 2 Sep 2026 | 106.4 kg | 177.4 kg | 1.67 | 1.667 | Silver II | 267 |
-| 18 | Cable Lateral Raise | 8 kg × 9 | 11 Oct 2026 | 106.0 kg | 10.4 kg | 0.10 | 0.100 | Silver II | 254 |
-| 19 | Single-Leg Leg Extension | 35 kg × 20 | 9 Oct 2026 | 106.0 kg | 58.3 kg | 0.55 | 0.561 | Silver III | 248 |
-| 20 | Dumbbell Walking Lunge | 17.5 kg × 10 | 7 Oct 2026 | 106.0 kg | 23.3 kg | 0.22 | 0.224 | Silver III | 241 |
-| 21 | Lying T-Bar Row | 57.5 kg × 8 | 6 Oct 2026 | 106.1 kg | 72.8 kg | 0.69 | 0.700 | Bronze I | 193 |
-| 22 | Straight-Arm Pulldown | 28 kg × 9 | 29 Sep 2026 | 106.1 kg | 36.4 kg | 0.34 | 0.350 | Bronze I | 193 |
-| 23 | Smith Machine Overhead Shoulder Press | 50 kg × 6 | 2 Oct 2026 | 106.1 kg | 60.0 kg | 0.57 | 0.577 | Bronze I | 185 |
-| 24 | Cable Reverse Wrist Curl | 20 kg × 9 | 27 Sep 2026 | 106.2 kg | 26.0 kg | 0.24 | 0.250 | Bronze I | 184 |
-| 25 | Decline Crunch | BW × 15 | 26 Sep 2026 | 106.2 kg | 159.3 kg | 1.50 | 1.500 | Bronze II | 150 |
-| 26 | Pendulum Squat | 40 kg × 6 | 7 Oct 2026 | 106.0 kg | 48.0 kg | 0.45 | 0.462 | Bronze III | 130 |
-| 27 | Leverage Chest Press | 65 kg × 6 | 6 Oct 2026 | 106.1 kg | 78.0 kg | 0.74 | 0.750 | Bronze IV | 120 |
-| 28 | Assisted Pull-Up (Machine) | 35 kg assist × 7 | 26 Sep 2026 | 106.2 kg | 87.8 kg | 0.83 | 0.827 | Bronze IV | 118 |
-| 29 | Smith Machine Bench Press | 55 kg × 10 | 2 Oct 2026 | 106.1 kg | 73.3 kg | 0.69 | 0.705 | Bronze IV | 104 |
+| 1 | Triceps Pushdown ⚑ | 72 kg × 12 | 27 Sep 2026 | 106.2 kg | 100.8 kg | 0.95 | 0.968 | Immortal 2 | 826 |
+| 2 | Dumbbell Incline Y Raise ⚑ | 10 kg × 13 | 15 Sep 2026 | 106.3 kg | 14.3 kg | 0.13 | 0.138 | Gold 3 | 449 |
+| 3 | Lying Leg Curls ⚑ | 85 kg × 7 | 7 Oct 2026 | 106.0 kg | 104.8 kg | 0.99 | 1.008 | Gold 2 | 401 |
+| 4 | Calf Press On The Leg Press Machine ⚑ | 240 kg × 12 | 7 Oct 2026 | 106.0 kg | 336.0 kg | 3.17 | 3.231 | Gold 1 | 372 |
+| 5 | Machine Single-Arm Reverse Fly ⚑ | 25 kg × 20 | 10 Oct 2026 | 106.0 kg | 41.7 kg | 0.39 | 0.401 | Gold 1 | 367 |
+| 6 | Leg Extensions ⚑ | 110 kg × 10 | 7 Oct 2026 | 106.0 kg | 146.7 kg | 1.38 | 1.410 | Gold 1 | 350 |
+| 7 | Butterfly | 75 kg × 12 | 6 Oct 2026 | 106.1 kg | 105.0 kg | 0.99 | 1.009 | Silver 3 | 336 |
+| 8 | Standing Machine Lateral Raise | 34 kg × 12 | 9 Oct 2026 | 106.0 kg | 47.6 kg | 0.45 | 0.458 | Silver 3 | 319 |
+| 9 | EZ-Bar Curl | 45 kg × 4 | 20 Sep 2026 | 106.2 kg | 51.0 kg | 0.48 | 0.490 | Silver 3 | 314 |
+| 10 | One-Arm Dumbbell Row | 40 kg × 5 | 10 Oct 2026 | 106.0 kg | 46.7 kg | 0.44 | 0.449 | Silver 3 | 314 |
+| 11 | Preacher Hammer Dumbbell Curl | 15 kg × 9 | 11 Oct 2026 | 106.0 kg | 19.5 kg | 0.18 | 0.188 | Silver 2 | 297 |
+| 12 | Cable Rope Overhead Triceps Extension | 24 kg × 10 | 11 Oct 2026 | 106.0 kg | 32.0 kg | 0.30 | 0.308 | Silver 2 | 295 |
+| 13 | Cable Wrist Curl | 40 kg × 12 | 11 Oct 2026 | 106.0 kg | 56.0 kg | 0.53 | 0.539 | Silver 2 | 289 |
+| 14 | Close-Grip Front Lat Pulldown | 68 kg × 9 | 10 Oct 2026 | 106.0 kg | 88.4 kg | 0.83 | 0.850 | Silver 2 | 280 |
+| 15 | Stiff-Legged Barbell Deadlift | 90 kg × 8 | 10 Oct 2026 | 106.0 kg | 114.0 kg | 1.08 | 1.096 | Silver 2 | 275 |
+| 16 | Cable Crossover | 14 kg × 8 | 9 Oct 2026 | 106.0 kg | 17.7 kg | 0.17 | 0.171 | Silver 2 | 270 |
+| 17 | Hyperextensions (Back Extensions) | BW × 25 | 2 Sep 2026 | 106.4 kg | 177.4 kg | 1.67 | 1.667 | Silver 2 | 262 |
+| 18 | Cable Lateral Raise | 8 kg × 9 | 11 Oct 2026 | 106.0 kg | 10.4 kg | 0.10 | 0.100 | Silver 1 | 255 |
+| 19 | Single-Leg Leg Extension | 35 kg × 20 | 9 Oct 2026 | 106.0 kg | 58.3 kg | 0.55 | 0.561 | Silver 1 | 252 |
+| 20 | Dumbbell Walking Lunge | 17.5 kg × 10 | 7 Oct 2026 | 106.0 kg | 23.3 kg | 0.22 | 0.224 | Silver 1 | 248 |
+| 21 | Lying T-Bar Row | 57.5 kg × 8 | 6 Oct 2026 | 106.1 kg | 72.8 kg | 0.69 | 0.700 | Bronze 3 | 217 |
+| 22 | Straight-Arm Pulldown | 28 kg × 9 | 29 Sep 2026 | 106.1 kg | 36.4 kg | 0.34 | 0.350 | Bronze 3 | 217 |
+| 23 | Smith Machine Overhead Shoulder Press | 50 kg × 6 | 2 Oct 2026 | 106.1 kg | 60.0 kg | 0.57 | 0.577 | Bronze 3 | 208 |
+| 24 | Cable Reverse Wrist Curl | 20 kg × 9 | 27 Sep 2026 | 106.2 kg | 26.0 kg | 0.24 | 0.250 | Bronze 3 | 207 |
+| 25 | Decline Crunch | BW × 15 | 26 Sep 2026 | 106.2 kg | 159.3 kg | 1.50 | 1.500 | Bronze 2 | 169 |
+| 26 | Pendulum Squat | 40 kg × 6 | 7 Oct 2026 | 106.0 kg | 48.0 kg | 0.45 | 0.462 | Bronze 1 | 146 |
+| 27 | Leverage Chest Press | 65 kg × 6 | 6 Oct 2026 | 106.1 kg | 78.0 kg | 0.74 | 0.750 | Bronze 1 | 135 |
+| 28 | Assisted Pull-Up (Machine) | 35 kg assist × 7 | 26 Sep 2026 | 106.2 kg | 87.8 kg | 0.83 | 0.827 | Bronze 1 | 133 |
+| 29 | Smith Machine Bench Press | 55 kg × 10 | 2 Oct 2026 | 106.1 kg | 73.3 kg | 0.69 | 0.705 | Bronze 1 | 117 |
 
-Tiers: Bronze 9 · Silver 7 · Gold 7 · Platinum 5 · Master 1. Without the ⚑ outliers: Bronze to Gold (2 tiers).
+Tiers: Bronze 9 · Silver 14 · Gold 5 · Immortal 1. Without the ⚑ outliers: Bronze to Silver (1 tiers).
 
 ## Ranks after import
 
-Overall: **Silver II · 39 LP** (strength 260).
+Overall: **Silver 1 · 74 RR** (strength 253).
 
 | Region | Rank | Ranked | Muscles |
 |---|---|---|---|
-| Arms | Gold IV · 62 LP | 3/3 | Biceps Silver I, Triceps Gold I, Forearms Silver I |
-| Legs | Silver I · 59 LP | 5/6 | Quadriceps Silver II, Hamstrings Gold III, Glutes Silver III, Calves Platinum III, Adductors Bronze I, Abductors — |
-| Core | Bronze II · 0 LP | 2/2 | Abdominals Bronze II, Obliques Bronze II |
-| Shoulders | Silver I · 84 LP | 3/3 | Front Delt Bronze I, Middle Delt Gold III, Rear Delt Gold III |
-| Chest | Silver IV · 90 LP | 2/2 | Upper Chest Silver IV, Lower Chest Silver III |
-| Back | Silver I · 43 LP | 4/4 | Lats Silver III, Upper Back Silver II, Traps Gold II, Lower Back Silver II |
+| Arms | Silver 3 · 25 RR | 3/3 | Biceps Silver 2, Triceps Gold 2, Forearms Silver 2 |
+| Legs | Silver 2 · 31 RR | 5/6 | Quadriceps Silver 1, Hamstrings Silver 3, Glutes Silver 1, Calves Gold 2, Adductors Bronze 3, Abductors — |
+| Core | Bronze 2 · 50 RR | 2/2 | Abdominals Bronze 2, Obliques Bronze 2 |
+| Shoulders | Silver 2 · 44 RR | 3/3 | Front Delt Bronze 3, Middle Delt Silver 3, Rear Delt Silver 3 |
+| Chest | Bronze 3 · 69 RR | 2/2 | Upper Chest Bronze 3, Lower Chest Bronze 3 |
+| Back | Silver 2 · 28 RR | 4/4 | Lats Silver 1, Upper Back Silver 1, Traps Silver 3, Lower Back Silver 2 |
 
 All ranked exercises:
 
 | Exercise | Standard | Best set | e1RM | × BW | Rank | Strength |
 |---|---|---|---|---|---|---|
-| Triceps Pushdown | Triceps pushdown (cable) | 72 kg × 12 | 100.8 kg | 0.95 | Master · 275 LP | 769 |
-| Dumbbell Incline Y Raise | Incline Y raise (free) | 10 kg × 13 | 14.3 kg | 0.13 | Platinum I · 97 LP | 499 |
-| Lying Leg Curls | Lying leg curl (machine) | 85 kg × 7 | 104.8 kg | 0.99 | Platinum II · 26 LP | 457 |
-| Calf Press On The Leg Press Machine | Leg press calf raise (machine) | 240 kg × 12 | 336.0 kg | 3.17 | Platinum III · 21 LP | 430 |
-| Machine Single-Arm Reverse Fly | One-arm reverse pec deck (machine) | 25 kg × 20 | 41.7 kg | 0.39 | Platinum III · 3 LP | 426 |
-| Leg Extensions | Leg extension (machine) | 110 kg × 10 | 146.7 kg | 1.38 | Platinum IV · 43 LP | 411 |
-| Butterfly | Pec deck (machine) | 75 kg × 12 | 105.0 kg | 0.99 | Gold I · 92 LP | 398 |
-| Standing Machine Lateral Raise | Machine lateral raise (machine) | 34 kg × 12 | 47.6 kg | 0.45 | Gold II · 71 LP | 368 |
-| EZ-Bar Curl | EZ-bar curl (free) | 45 kg × 4 | 51.0 kg | 0.48 | Gold II · 35 LP | 359 |
-| One-Arm Dumbbell Row | Dumbbell row (free) | 40 kg × 5 | 46.7 kg | 0.44 | Gold II · 29 LP | 357 |
-| Preacher Hammer Dumbbell Curl | Hammer curl (free) | 15 kg × 9 | 19.5 kg | 0.18 | Gold III · 11 LP | 328 |
-| Cable Rope Overhead Triceps Extension | Overhead cable triceps extension (cable) | 24 kg × 10 | 32.0 kg | 0.30 | Gold IV · 96 LP | 324 |
-| Cable Wrist Curl | Cable wrist curl (cable) | 40 kg × 12 | 56.0 kg | 0.53 | Gold IV · 53 LP | 313 |
-| Close-Grip Front Lat Pulldown | Close-grip lat pulldown (cable) | 68 kg × 9 | 88.4 kg | 0.83 | Silver I · 93 LP | 298 |
-| Stiff-Legged Barbell Deadlift | Stiff-leg deadlift (free) | 90 kg × 8 | 114.0 kg | 1.08 | Silver I · 55 LP | 289 |
-| Cable Crossover | Cable fly (cable) | 14 kg × 8 | 17.7 kg | 0.17 | Silver I · 17 LP | 279 |
-| Hyperextensions (Back Extensions) | Back extension (bodyweight) | BW × 25 | 177.4 kg | 1.67 | Silver II · 66 LP | 267 |
-| Cable Lateral Raise | Cable lateral raise (cable) | 8 kg × 9 | 10.4 kg | 0.10 | Silver II · 14 LP | 254 |
-| Single-Leg Leg Extension | Single-leg extension (machine) | 35 kg × 20 | 58.3 kg | 0.55 | Silver III · 90 LP | 248 |
-| Dumbbell Walking Lunge | Dumbbell lunge (free) | 17.5 kg × 10 | 23.3 kg | 0.22 | Silver III · 63 LP | 241 |
-| Lying T-Bar Row | Chest-supported T-bar row (machine) | 57.5 kg × 8 | 72.8 kg | 0.69 | Bronze I · 73 LP | 193 |
-| Straight-Arm Pulldown | Straight-arm pulldown (cable) | 28 kg × 9 | 36.4 kg | 0.34 | Bronze I · 71 LP | 193 |
-| Smith Machine Overhead Shoulder Press | Smith machine shoulder press (machine) | 50 kg × 6 | 60.0 kg | 0.57 | Bronze I · 40 LP | 185 |
-| Cable Reverse Wrist Curl | Cable reverse wrist curl (cable) | 20 kg × 9 | 26.0 kg | 0.24 | Bronze I · 37 LP | 184 |
-| Decline Crunch | Crunch (bodyweight) | BW × 15 | 159.3 kg | 1.50 | Bronze II · 0 LP | 150 |
-| Pendulum Squat | Pendulum squat (machine) | 40 kg × 6 | 48.0 kg | 0.45 | Bronze III · 18 LP | 130 |
-| Leverage Chest Press | Machine chest press (machine) | 65 kg × 6 | 78.0 kg | 0.74 | Bronze IV · 78 LP | 120 |
-| Assisted Pull-Up (Machine) | Assisted pull-up (bodyweight) | 35 kg assist × 7 | 87.8 kg | 0.83 | Bronze IV · 71 LP | 118 |
-| Smith Machine Bench Press | Smith machine bench press (machine) | 55 kg × 10 | 73.3 kg | 0.69 | Bronze IV · 16 LP | 104 |
+| Triceps Pushdown | Triceps pushdown (cable) | 72 kg × 12 | 100.8 kg | 0.95 | Immortal 2 · 3 RR | 826 |
+| Dumbbell Incline Y Raise | Incline Y raise (free) | 10 kg × 13 | 14.3 kg | 0.13 | Gold 3 · 98 RR | 449 |
+| Lying Leg Curls | Lying leg curl (machine) | 85 kg × 7 | 104.8 kg | 0.99 | Gold 2 · 69 RR | 401 |
+| Calf Press On The Leg Press Machine | Leg press calf raise (machine) | 240 kg × 12 | 336.0 kg | 3.17 | Gold 1 · 91 RR | 372 |
+| Machine Single-Arm Reverse Fly | One-arm reverse pec deck (machine) | 25 kg × 20 | 41.7 kg | 0.39 | Gold 1 · 77 RR | 367 |
+| Leg Extensions | Leg extension (machine) | 110 kg × 10 | 146.7 kg | 1.38 | Gold 1 · 32 RR | 350 |
+| Butterfly | Pec deck (machine) | 75 kg × 12 | 105.0 kg | 0.99 | Silver 3 · 97 RR | 336 |
+| Standing Machine Lateral Raise | Machine lateral raise (machine) | 34 kg × 12 | 47.6 kg | 0.45 | Silver 3 · 51 RR | 319 |
+| EZ-Bar Curl | EZ-bar curl (free) | 45 kg × 4 | 51.0 kg | 0.48 | Silver 3 · 38 RR | 314 |
+| One-Arm Dumbbell Row | Dumbbell row (free) | 40 kg × 5 | 46.7 kg | 0.44 | Silver 3 · 36 RR | 314 |
+| Preacher Hammer Dumbbell Curl | Hammer curl (free) | 15 kg × 9 | 19.5 kg | 0.18 | Silver 2 · 91 RR | 297 |
+| Cable Rope Overhead Triceps Extension | Overhead cable triceps extension (cable) | 24 kg × 10 | 32.0 kg | 0.30 | Silver 2 · 86 RR | 295 |
+| Cable Wrist Curl | Cable wrist curl (cable) | 40 kg × 12 | 56.0 kg | 0.53 | Silver 2 · 69 RR | 289 |
+| Close-Grip Front Lat Pulldown | Close-grip lat pulldown (cable) | 68 kg × 9 | 88.4 kg | 0.83 | Silver 2 · 47 RR | 280 |
+| Stiff-Legged Barbell Deadlift | Stiff-leg deadlift (free) | 90 kg × 8 | 114.0 kg | 1.08 | Silver 2 · 33 RR | 275 |
+| Cable Crossover | Cable fly (cable) | 14 kg × 8 | 17.7 kg | 0.17 | Silver 2 · 18 RR | 270 |
+| Hyperextensions (Back Extensions) | Back extension (bodyweight) | BW × 25 | 177.4 kg | 1.67 | Silver 2 · 0 RR | 262 |
+| Cable Lateral Raise | Cable lateral raise (cable) | 8 kg × 9 | 10.4 kg | 0.10 | Silver 1 · 80 RR | 255 |
+| Single-Leg Leg Extension | Single-leg extension (machine) | 35 kg × 20 | 58.3 kg | 0.55 | Silver 1 · 71 RR | 252 |
+| Dumbbell Walking Lunge | Dumbbell lunge (free) | 17.5 kg × 10 | 23.3 kg | 0.22 | Silver 1 · 61 RR | 248 |
+| Lying T-Bar Row | Chest-supported T-bar row (machine) | 57.5 kg × 8 | 72.8 kg | 0.69 | Bronze 3 · 79 RR | 217 |
+| Straight-Arm Pulldown | Straight-arm pulldown (cable) | 28 kg × 9 | 36.4 kg | 0.34 | Bronze 3 · 78 RR | 217 |
+| Smith Machine Overhead Shoulder Press | Smith machine shoulder press (machine) | 50 kg × 6 | 60.0 kg | 0.57 | Bronze 3 · 55 RR | 208 |
+| Cable Reverse Wrist Curl | Cable reverse wrist curl (cable) | 20 kg × 9 | 26.0 kg | 0.24 | Bronze 3 · 53 RR | 207 |
+| Decline Crunch | Crunch (bodyweight) | BW × 15 | 159.3 kg | 1.50 | Bronze 2 · 50 RR | 169 |
+| Pendulum Squat | Pendulum squat (machine) | 40 kg × 6 | 48.0 kg | 0.45 | Bronze 1 · 89 RR | 146 |
+| Leverage Chest Press | Machine chest press (machine) | 65 kg × 6 | 78.0 kg | 0.74 | Bronze 1 · 59 RR | 135 |
+| Assisted Pull-Up (Machine) | Assisted pull-up (bodyweight) | 35 kg assist × 7 | 87.8 kg | 0.83 | Bronze 1 · 53 RR | 133 |
+| Smith Machine Bench Press | Smith machine bench press (machine) | 55 kg × 10 | 73.3 kg | 0.69 | Bronze 1 · 12 RR | 117 |
 
 Unranked muscles: Abductors (no exercise of yours trains it as a main muscle).
 

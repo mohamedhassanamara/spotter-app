@@ -51,7 +51,7 @@ class BadgeGalleryScreen extends StatelessWidget {
           const SizedBox(height: 8),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [for (var d = 4; d >= 1; d--) RankBadge(score: RankScore.of(Tier.gold, division: d), width: 64)],
+            children: [for (var d = 1; d <= 3; d++) RankBadge(score: RankScore.of(Tier.gold, division: d), width: 64)],
           ),
           const SizedBox(height: 24),
           const Text('Sizes', style: TextStyle(color: AppColors.textSecondary)),
@@ -59,7 +59,7 @@ class BadgeGalleryScreen extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.end,
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              for (final s in BadgeSize.values) RankBadge(score: RankScore.of(Tier.challenger, lp: 340), size: s),
+              for (final s in BadgeSize.values) RankBadge(score: RankScore.of(Tier.radiant, rr: 340), size: s),
             ],
           ),
         ],

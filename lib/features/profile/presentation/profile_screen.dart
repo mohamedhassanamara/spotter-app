@@ -87,7 +87,7 @@ class ProfileScreen extends ConsumerWidget {
                     children: [
                       Text('Level ${level.level}', style: AppType.titleL),
                       const SizedBox(height: 10),
-                      LpBar(progress: level.progress, color: AppColors.xp, trailing: '${(level.progress * 100).round()}%'),
+                      RrBar(progress: level.progress, color: AppColors.xp, trailing: '${(level.progress * 100).round()}%'),
                       const SizedBox(height: 6),
                       Text('${level.xpIntoLevel} / ${level.xpForNext} XP to level ${level.level + 1}',
                           style: AppType.bodyS.copyWith(color: AppColors.textSecondary, fontFeatures: AppType.tabular)),
@@ -296,7 +296,7 @@ class _AchievementTile extends StatelessWidget {
                   ? Text('Unlocked ${DateFormat('d MMM yyyy').format(a.unlockedAt!)}',
                       style: AppType.bodyS.copyWith(color: color, fontWeight: FontWeight.w800))
                   : Column(children: [
-                      LpBar(progress: a.progress, color: color, trailing: '${(a.progress * 100).round()}%'),
+                      RrBar(progress: a.progress, color: color, trailing: '${(a.progress * 100).round()}%'),
                     ]),
             ],
           ),

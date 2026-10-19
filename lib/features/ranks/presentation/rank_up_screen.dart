@@ -247,20 +247,20 @@ class _BurstPainter extends CustomPainter {
 List<RankChange> demoRankUps() => [
       RankChange(
         name: 'Overall',
-        fromScore: RankScore.of(Tier.gold, division: 1, lp: 80),
-        toScore: RankScore.of(Tier.platinum, division: 4, lp: 5),
+        fromScore: RankScore.of(Tier.gold, division: 3, rr: 80),
+        toScore: RankScore.of(Tier.platinum, division: 1, rr: 5),
         scope: RankChangeScope.overall,
       ),
       RankChange(
         name: 'Bench press',
-        fromScore: RankScore.of(Tier.diamond, division: 1, lp: 90),
-        toScore: RankScore.of(Tier.master, lp: 12),
+        fromScore: RankScore.of(Tier.diamond, division: 3, rr: 90),
+        toScore: RankScore.of(Tier.champion, division: 1, rr: 12),
         scope: RankChangeScope.exercise,
       ),
       RankChange(
         name: 'Chest',
-        fromScore: RankScore.of(Tier.emerald, division: 2, lp: 70),
-        toScore: RankScore.of(Tier.emerald, division: 1, lp: 3),
+        fromScore: RankScore.of(Tier.platinum, division: 2, rr: 70),
+        toScore: RankScore.of(Tier.platinum, division: 3, rr: 3),
         scope: RankChangeScope.muscle,
       ),
     ];

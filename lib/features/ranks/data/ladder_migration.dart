@@ -6,7 +6,8 @@ import '../../gamification/domain/achievements.dart';
 /// v3: per-exercise standards (machines and cables stricter, apex tiers above "elite").
 /// v4: allometric bodyweight scaling, accessories anchored to their base compound.
 /// v5: only exercises in your routines (or done in an in-app workout) count toward ranks.
-const int rankLadderVersion = 5;
+/// v6: Valorant ladder: 9 tiers (Iron … Immortal × 3 divisions, Radiant), RR instead of LP.
+const int rankLadderVersion = 6;
 const String rankLadderVersionKey = 'rank_ladder_version';
 
 class LadderMigration {

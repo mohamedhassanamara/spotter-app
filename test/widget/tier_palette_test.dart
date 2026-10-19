@@ -12,14 +12,28 @@ double contrast(Color a, Color b) {
 }
 
 void main() {
-  test('one color per tier: the League of Legends emblem palette (docs/DECISIONS.md)', () {
+  test('one color per tier: Valorant\'s tier colors (docs/DECISIONS.md)', () {
     expect(tierColors.length, Tier.values.length);
+    expect(tierGradients.length, Tier.values.length);
     const hex = {
-      Tier.iron: 0xFFA38887, Tier.bronze: 0xFFBE7F6D, Tier.silver: 0xFF8296BB, Tier.gold: 0xFFC49258, Tier.platinum: 0xFF2295BF,
-      Tier.emerald: 0xFF3CD17C, Tier.diamond: 0xFF4280CD, Tier.master: 0xFFAE39E6, Tier.grandmaster: 0xFFEB663E, Tier.challenger: 0xFFB48E52,
+      Tier.iron: 0xFF868986, Tier.bronze: 0xFFA5855D, Tier.silver: 0xFFBBC2C2, Tier.gold: 0xFFECCF56, Tier.platinum: 0xFF59A9B6,
+      Tier.diamond: 0xFFB489C4, Tier.champion: 0xFF6AE2AF, Tier.immortal: 0xFFBB3D65, Tier.radiant: 0xFFFFFFAA,
     };
     for (final t in Tier.values) {
       expect(tierColors[t.index], Color(hex[t]!), reason: t.name);
+    }
+  });
+
+  test('every tier has a two-colour gradient, a lighter and a deeper shade of its hue', () {
+    for (final t in Tier.values) {
+      final (light, deep) = tierGradients[t.index];
+      expect(light.computeLuminance(), greaterThan(deep.computeLuminance()), reason: '${t.name}: first colour is the lighter one');
+      expect(contrast(light, AppColors.bodyBase), greaterThanOrEqualTo(3), reason: '${t.name} light end');
+      expect(contrast(deep, AppColors.bodyBase), greaterThanOrEqualTo(2), reason: '${t.name} deep end');
+      // Same family: the base colour sits between the two in lightness.
+      final base = tierColors[t.index].computeLuminance();
+      expect(base, lessThanOrEqualTo(light.computeLuminance() + 1e-6), reason: t.name);
+      expect(base, greaterThanOrEqualTo(deep.computeLuminance() - 1e-6), reason: t.name);
     }
   });
 

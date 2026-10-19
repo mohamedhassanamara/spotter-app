@@ -645,9 +645,9 @@ class _MutedLine extends StatelessWidget {
       );
 }
 
-/// Badge, division, LP to the next division and the real kg gap. Never "???".
+/// Badge, division, RR to the next division and the real kg gap. Never "???".
 /// Live: a completed set of this workout counts at once (the finished sessions are the baseline), and when it
-/// raises the rank the LP bar fills, the badge pops in on a new division or tier, with a haptic.
+/// raises the rank the RR bar fills, the badge pops in on a new division or tier, with a haptic.
 class _RankStrip extends ConsumerStatefulWidget {
   const _RankStrip({required this.exerciseId, required this.sets});
   final String exerciseId;
@@ -772,7 +772,7 @@ class _RankStripState extends ConsumerState<_RankStrip> with SingleTickerProvide
           const SizedBox(width: 8),
           Text(s.label, key: ValueKey('rank-strip-label-$id'), style: AppType.bodyS.copyWith(fontSize: 12, fontWeight: FontWeight.w800, color: color)),
           const SizedBox(width: 8),
-          Expanded(flex: 2, child: LpBar(key: ValueKey('rank-strip-lp-$id'), progress: s.divisionProgress, color: color, height: 5)),
+          Expanded(flex: 2, child: RrBar(key: ValueKey('rank-strip-lp-$id'), progress: s.divisionProgress, color: color, tier: s.tier, height: 5)),
           const SizedBox(width: 8),
           Flexible(
             flex: 5,

@@ -30,8 +30,8 @@ class LadderScreen extends ConsumerWidget {
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
         children: [
           Text(
-            'Ten tiers, Iron to Challenger. Iron to Diamond have four divisions (IV → I), each worth 25 strength; Master, Grandmaster and '
-            'Challenger have none, only LP. Every lift is scored from its best valid set in the last 90 days against a strength standard.',
+            'Nine tiers, Iron to Radiant. Iron to Immortal have three divisions each (1 → 3, 3 is the highest), each worth 37.5 strength; '
+            'Radiant has none, only RR. Every lift is scored from its best valid set in the last 90 days against a strength standard.',
             style: AppType.bodyS.copyWith(color: AppColors.textSecondary),
           ),
           const SizedBox(height: 14),
@@ -58,13 +58,13 @@ class _TierCard extends StatelessWidget {
   final List<StrengthStandard> standards;
   final double bodyweight;
 
-  /// Points at which each division of the tier starts (IV → I), or the single apex entry.
+  /// Points at which each division of the tier starts (1 → 3), or the single Radiant entry.
   List<double> get starts {
     if (tier.isApex) return [tierStart];
-    return [for (var d = 0; d < 4; d++) tier.index * 4.0 + d];
+    return [for (var d = 0; d < 3; d++) tier.index * 3.0 + d];
   }
 
-  double get tierStart => tier.isApex ? RankScore.masterPoints + (tier.index - Tier.master.index) * 4 : tier.index * 4.0;
+  double get tierStart => tier.isApex ? RankScore.radiantPoints : tier.index * 3.0;
 
   @override
   Widget build(BuildContext context) {
@@ -87,7 +87,7 @@ class _TierCard extends StatelessWidget {
               key: const ValueKey('ladder-you-are-here'),
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(Radii.chip)),
-              child: Text('YOU ARE HERE · ${overall!.label} · ${overall!.lp} LP',
+              child: Text('YOU ARE HERE · ${overall!.label} · ${overall!.rr} RR',
                   style: AppType.label.copyWith(fontSize: 11, color: const Color(0xFF10131A))),
             ),
         ]),
@@ -104,11 +104,11 @@ class _TierCard extends StatelessWidget {
         if (bodyweight <= 0)
           Text('Add your bodyweight to see what it takes.', style: AppType.bodyS.copyWith(color: AppColors.textSecondary))
         else ...[
-          Text('To enter ${tier.label}${tier.isApex ? '' : ' IV'} at ${formatKg(bodyweight)} kg (best set, e1RM):',
+          Text('To enter ${tier.label}${tier.isApex ? '' : ' 1'} at ${formatKg(bodyweight)} kg (best set, e1RM):',
               style: AppType.bodyS.copyWith(color: AppColors.textSecondary)),
           const SizedBox(height: 4),
           for (final s in lifts)
-            Text('${s.name}: ${_kg(s, tierStart)}${tier.isApex ? '' : '  ·  IV ${_kg(s, starts[0], bare: true)} · III ${_kg(s, starts[1], bare: true)} · II ${_kg(s, starts[2], bare: true)} · I ${_kg(s, starts[3], bare: true)}'}',
+            Text('${s.name}: ${_kg(s, tierStart)}${tier.isApex ? '' : '  ·  1 ${_kg(s, starts[0], bare: true)} · 2 ${_kg(s, starts[1], bare: true)} · 3 ${_kg(s, starts[2], bare: true)}'}',
                 style: AppType.bodyS.copyWith(fontFeatures: AppType.tabular)),
         ],
       ]),
@@ -128,7 +128,7 @@ class _MuscleOnLadder extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const top = RankScore.challengerPoints + 2;
+    const top = RankScore.radiantPoints + 2;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 5),
       child: Row(children: [
@@ -142,7 +142,7 @@ class _MuscleOnLadder extends StatelessWidget {
                 Row(children: [
                   for (final t in Tier.values)
                     Expanded(
-                      flex: t == Tier.challenger ? 2 : 4,
+                      flex: t == Tier.radiant ? 2 : 3,
                       child: Container(height: 8, margin: const EdgeInsets.only(top: 5, right: 1), color: tierColor(t).withValues(alpha: 0.45)),
                     ),
                 ]),

@@ -10,7 +10,7 @@ import '../../workout/data/finish_service.dart';
 import '../domain/ranks.dart';
 import 'rank_badge.dart';
 
-/// The Finish rank sequence: every lift's LP gain animates in turn (rank-ups pop and buzz), then the muscles and
+/// The Finish rank sequence: every lift's RR gain animates in turn (rank-ups pop and buzz), then the muscles and
 /// regions, then the overall body rank. Tap anywhere to skip. Calls [onDone] once, at the end or on the skip; the
 /// caller then shows the full-screen rank-up when the overall rank changed.
 class RankSequenceScreen extends StatefulWidget {
@@ -167,7 +167,7 @@ class _RankSequenceScreenState extends State<RankSequenceScreen> with SingleTick
   }
 }
 
-/// One rank climbing from its old score to its new one: the badge follows the number, the LP bar fills (and wraps at a
+/// One rank climbing from its old score to its new one: the badge follows the number, the RR bar fills (and wraps at a
 /// division), and the badge pops when the division or tier changed.
 class _GainRow extends StatelessWidget {
   const _GainRow({super.key, required this.change, required this.progress});
@@ -200,18 +200,18 @@ class _GainRow extends StatelessWidget {
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Row(children: [
                 Expanded(child: Text(change.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: AppType.title.copyWith(fontSize: 16))),
-                Text(from == null ? 'NEW' : '+$gainLp LP',
+                Text(from == null ? 'NEW' : '+$gainLp RR',
                     key: ValueKey('gain-lp-${change.name}'), style: AppType.bodyS.copyWith(fontWeight: FontWeight.w800, color: AppColors.primary)),
               ]),
               const SizedBox(height: 2),
               Text(
                 from == null
-                    ? 'Placed: ${to.labelWithLp}'
-                    : (labelChanged && progress >= 0.99 ? '${from.label} → ${to.label}' : shown.labelWithLp),
+                    ? 'Placed: ${to.labelWithRr}'
+                    : (labelChanged && progress >= 0.99 ? '${from.label} → ${to.label}' : shown.labelWithRr),
                 style: AppType.bodyS.copyWith(color: color, fontWeight: FontWeight.w700),
               ),
               const SizedBox(height: 6),
-              LpBar(progress: barProgress, color: color, height: 7),
+              RrBar(progress: barProgress, color: color, tier: shown.tier, height: 7),
             ]),
           ),
         ]),

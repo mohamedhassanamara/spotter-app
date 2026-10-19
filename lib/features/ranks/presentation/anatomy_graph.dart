@@ -80,6 +80,10 @@ class AnatomyGraph extends ConsumerWidget {
   final Widget? callout;
   final void Function(Muscle muscle, bool back) onTap;
 
+  /// The muscle's tier gradient (lighter, deeper) in rank mode when it is ranked; flat colours otherwise.
+  (Color, Color)? gradientFor(Muscle m) =>
+      mode == BodyGraphMode.ranks && scores[m] != null ? tierGradients[scores[m]!.tier.index] : null;
+
   Color colorFor(Muscle m) => switch (mode) {
         BodyGraphMode.ranks => scores[m] == null ? AppColors.unranked : tierColors[scores[m]!.tier.index],
         BodyGraphMode.volume => volumeColor(volumeLevel(volume[m])),
@@ -100,6 +104,7 @@ class AnatomyGraph extends ConsumerWidget {
                   key: ValueKey(key),
                   view: v,
                   color: colorFor,
+                  gradient: gradientFor,
                   selected: selected,
                   callout: selected != null && selectedOnBack == (key == 'body-back') ? callout : null,
                   onTap: (muscle) => onTap(muscle, key == 'body-back'),
@@ -119,10 +124,11 @@ class AnatomyGraph extends ConsumerWidget {
 }
 
 class _ViewCanvas extends StatelessWidget {
-  const _ViewCanvas({super.key, required this.view, required this.color, required this.selected, required this.onTap, this.callout});
+  const _ViewCanvas({super.key, required this.view, required this.color, this.gradient, required this.selected, required this.onTap, this.callout});
 
   final BodyView view;
   final Color Function(Muscle) color;
+  final (Color, Color)? Function(Muscle)? gradient;
   final Muscle? selected;
   final ValueChanged<Muscle> onTap;
   final Widget? callout;
@@ -134,7 +140,7 @@ class _ViewCanvas extends StatelessWidget {
       aspectRatio: b.width / b.height,
       child: LayoutBuilder(
         builder: (context, c) {
-          final painter = _AnatomyPainter(view: view, color: color, selected: selected);
+          final painter = _AnatomyPainter(view: view, color: color, gradient: gradient, selected: selected);
           final target = selected == null || callout == null ? null : view.boundsOf(selected!);
           final anchor = target == null ? null : MatrixUtils.transformPoint(painter._transform(c.biggest), target.topCenter);
           return Stack(clipBehavior: Clip.none, children: [
@@ -163,10 +169,11 @@ class _ViewCanvas extends StatelessWidget {
 }
 
 class _AnatomyPainter extends CustomPainter {
-  _AnatomyPainter({required this.view, required this.color, required this.selected});
+  _AnatomyPainter({required this.view, required this.color, this.gradient, required this.selected});
 
   final BodyView view;
   final Color Function(Muscle) color;
+  final (Color, Color)? Function(Muscle)? gradient;
   final Muscle? selected;
 
   static const _structure = AppColors.bodyBase;
@@ -223,7 +230,14 @@ class _AnatomyPainter extends CustomPainter {
         RegionRole.neutral => _neutral,
         RegionRole.muscle => g == null ? _neutral : color(g),
       };
-      canvas.drawPath(r.path, Paint()..color = fill);
+      final grad = r.role == RegionRole.muscle && g != null ? gradient?.call(g) : null;
+      canvas.drawPath(
+        r.path,
+        grad == null
+            ? (Paint()..color = fill)
+            : (Paint()
+              ..shader = LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [grad.$1, grad.$2]).createShader(r.path.getBounds())),
+      );
       // A subtle top highlight keeps the flat shapes from looking like stickers.
       if (g != null) {
         final bounds = r.path.getBounds();

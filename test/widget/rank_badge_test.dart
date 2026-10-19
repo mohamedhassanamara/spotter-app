@@ -23,8 +23,8 @@ void main() {
     expect(find.byType(RankBadge), findsNWidgets(Tier.values.length * BadgeSize.values.length + 1));
   });
 
-  testWidgets('apex badges animate, divisional ones are static', (tester) async {
-    await tester.pumpWidget(MaterialApp(home: RankBadge(score: RankScore.of(Tier.master))));
+  testWidgets('Radiant animates, divisional badges are static', (tester) async {
+    await tester.pumpWidget(MaterialApp(home: RankBadge(score: RankScore.of(Tier.radiant))));
     expect(find.byType(AnimatedBuilder), findsWidgets);
     await tester.pumpWidget(MaterialApp(home: RankBadge(score: RankScore.of(Tier.gold, division: 2))));
     expect(
@@ -45,7 +45,7 @@ void main() {
     var done = 0;
     await tester.pumpWidget(MaterialApp(home: RankUpScreen(changes: demoRankUps(), onDone: () => done++)));
     await tester.pump(const Duration(milliseconds: 1200));
-    expect(find.text('PLATINUM IV'), findsOneWidget, reason: 'overall is the hero');
+    expect(find.text('PLATINUM 1'), findsOneWidget, reason: 'overall is the hero');
     await tester.tap(find.byType(RankUpScreen));
     expect(done, 1);
     await tester.pump(const Duration(seconds: 3));

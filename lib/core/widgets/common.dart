@@ -95,6 +95,12 @@ Color bandColor(ReadinessBand? band) => switch (band) {
 
 Color tierColor(Tier tier) => tierColors[tier.index];
 
+/// The tier's two colours as a gradient (lighter → deeper).
+LinearGradient tierGradient(Tier tier, {AlignmentGeometry begin = Alignment.topLeft, AlignmentGeometry end = Alignment.bottomRight, double alpha = 1}) {
+  final g = tierGradients[tier.index];
+  return LinearGradient(begin: begin, end: end, colors: [g.$1.withValues(alpha: alpha), g.$2.withValues(alpha: alpha)]);
+}
+
 /// Pill showing a rank label in its tier colour.
 class TierBadge extends StatelessWidget {
   const TierBadge(this.score, {super.key, this.large = false});

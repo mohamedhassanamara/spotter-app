@@ -54,12 +54,8 @@ class MuscleSeries extends EvolutionSeries {
 
 /// The y range [low, high) of one tier in points, for the background bands.
 (double, double) tierBand(Tier t) {
-  if (t == Tier.challenger) return (RankScore.challengerPoints, RankScore.challengerPoints + 4);
-  if (t.isApex) {
-    final start = RankScore.masterPoints + (t.index - Tier.master.index) * 4;
-    return (start, start + 4);
-  }
-  return (t.index * 4.0, t.index * 4.0 + 4);
+  if (t == Tier.radiant) return (RankScore.radiantPoints, RankScore.radiantPoints + 3);
+  return (t.index * 3.0, t.index * 3.0 + 3);
 }
 
 /// Progress → Ranks: the rank over time with the tier bands behind it, the imported history included.
@@ -144,9 +140,9 @@ class _Chart extends StatelessWidget {
     final values = [for (final (_, s) in line) s.value];
     final lo = values.reduce(math.min), hi = values.reduce(math.max);
     // Whole tiers around the line, at least two, so the bands read as a ladder.
-    final minY = (lo / 4).floorToDouble() * 4;
-    var maxY = ((hi + 0.01) / 4).ceilToDouble() * 4;
-    if (maxY - minY < 8) maxY = minY + 8;
+    final minY = (lo / 3).floorToDouble() * 3;
+    var maxY = ((hi + 0.01) / 3).ceilToDouble() * 3;
+    if (maxY - minY < 6) maxY = minY + 6;
     final maxX = math.max(1.0, x(line.last.$1.date));
     final fmt = DateFormat('d MMM yy');
     final bands = <HorizontalRangeAnnotation>[
@@ -175,7 +171,7 @@ class _Chart extends StatelessWidget {
             sideTitles: SideTitles(
               showTitles: true,
               reservedSize: 44,
-              interval: 4,
+              interval: 3,
               getTitlesWidget: (v, meta) {
                 final t = RankScore(v + 0.001).tier;
                 // One label per tier band, at its middle.
@@ -203,7 +199,7 @@ class _Chart extends StatelessWidget {
             getTooltipItems: (touched) => [
               for (final s in touched)
                 LineTooltipItem(
-                  '${RankScore(s.y).labelWithLp}\n${fmt.format(origin.add(Duration(hours: (s.x * 24).round())))}',
+                  '${RankScore(s.y).labelWithRr}\n${fmt.format(origin.add(Duration(hours: (s.x * 24).round())))}',
                   const TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w700),
                 ),
             ],

@@ -1725,3 +1725,64 @@ every screen with a field is a Scaffold that resizes for the keyboard (`resizeTo
 own keypad, but look at the real keyboard on the phone once.
 Run it: `tool/device_shots.sh <sim-id> docs/screenshots/safearea &` then
 `flutter test integration_test/safe_area_flow_test.dart -d <sim-id> --dart-define=SHOTS_DIR=$PWD/docs/screenshots/safearea`.
+
+# Round 2
+
+## 1. Valorant rank system
+
+**Ladder.** Nine tiers: Iron, Bronze, Silver, Gold, Platinum, Diamond, **Champion** (Valorant's Ascendant, renamed), Immortal,
+Radiant. Iron to Immortal have **3 divisions** (1 → 3, 3 is the highest); Radiant has none. **LP is now RR** (rank rating, 0–100 per
+division; Radiant shows uncapped RR above its threshold, 100 RR per "division-sized" step of its slope).
+A rank is a number of points, one per division: tier *i* spans [3*i*, 3*i* + 3), Radiant starts at 24.
+
+**Recalibration.** Each standard still has five anchors (beginner … elite, unchanged). The nine tier entries are now:
+
+| Tier | Starts at | Points | Strength (37.5/pt) | Bench press ratio* | Back squat* | Deadlift* |
+|---|---|---|---|---|---|---|
+| Iron | 0 | 0 | 0 | 0 | 0 | 0 |
+| Bronze | beginner | 3 | 112 | 0.60 | 0.75 | 0.90 |
+| Silver | novice | 6 | 225 | 0.85 | 1.05 | 1.25 |
+| Gold | intermediate | 9 | 338 | 1.15 | 1.40 | 1.60 |
+| Platinum | (intermediate + advanced) / 2 | 12 | 450 | 1.325 | 1.625 | 1.85 |
+| Diamond | advanced | 15 | 563 | 1.50 | 1.85 | 2.10 |
+| Champion | (advanced + elite) / 2 | 18 | 675 | 1.70 | 2.10 | 2.35 |
+| Immortal | **elite** | 21 | 788 | 1.90 | 2.35 | 2.60 |
+| Radiant | **elite × 1.3** | 24 | 900 | 2.47 | 3.06 | 3.38 |
+
+\* e1RM ÷ (100 kg × (bodyweight ÷ 100)^0.67); machines and cables multiply the anchors by their strictness. The 0–1000 strength score
+keeps its cap at 1000 and Radiant at 900 as before, now 37.5 per division point (it was 25).
+Before: Iron … Challenger at 0, b, n, (n+i)/2, i, (i+a)/2, a, elite, elite×1.15, elite×1.3. The anchors that hold: elite = Immortal,
+elite × 1.3 = Radiant. **Your overall rank** on the real export stays where it was relative to the ladder: **Silver II · 39 LP → Silver 1 · 74 RR**
+(strength 260 → 253). The top lift (Walking Lunge) is Silver 3.
+- **Migration:** ranks are derived from logged sets, so everything re-ranks on the next frame with no stored rank to convert and no
+  rank-down animation (the Finish comparison uses the same model before and after). The ladder migration is v6: rank achievements are
+  re-checked silently against the new tiers (nothing is revoked loudly, nothing notifies). The tier achievements moved to the new
+  tier indices: "Diamond Hands" = Diamond, "Apex Predator" = Champion (it was Master); the full achievement rework is item 4.
+
+## 2. Valorant colors and badges
+
+**Colors.** The tier colors are Valorant's own: the competitive-tier data of the game (`valorant-api.com/v1/competitivetiers`, which
+publishes each tier's UI `color` and `backgroundColor`), cross-checked by sampling the official tier icons. The base color is the game's
+`color`; the gradient is a lighter and a deeper shade of the same hue (the game's `backgroundColor` is used for the deep end where it is
+deeper, e.g. Diamond and Champion; elsewhere the deep end is derived).
+
+| Tier | Base (official) | Gradient: lighter → deeper |
+|---|---|---|
+| Iron | #868986 | #B4B7B5 → #5E6160 |
+| Bronze | #A5855D | #D1B085 → #7C5522 |
+| Silver | #BBC2C2 | #E6EBEB → #8E9696 |
+| Gold | #ECCF56 | #F7E9A2 → #C98F1E (pale gold → deep amber) |
+| Platinum | #59A9B6 | #8FD8E0 → #2B7F8C |
+| Diamond | #B489C4 | #DDBDEB → #763BAF |
+| Champion (Ascendant) | #6AE2AF | #A6F5CF → #1C7245 |
+| Immortal | #BB3D65 | #FF6E8E → #A02D55 |
+| Radiant | #FFFFAA | #FFFFE6 → #E0B040 |
+
+Used for the badges, the body-map fills (per muscle, top-left → bottom-right), RR bars (deep → light) and the legend chips. The contrast
+test now checks the base and the light end at ≥ 3:1 and the deep end at ≥ 2:1 against the body map silhouette.
+
+**Badges.** New original artwork, a faceted-crystal style drawn in code (nothing traced from Riot's emblems): a kite-shaped gem cut into
+six facets shaded along the tier gradient. Iron is two flat planes, Bronze four, Silver and up are fully faceted with a catch-light;
+Silver / Gold / Platinum add 1 / 2 / 3 pairs of side shards; Platinum and up glow from inside; Diamond floats shards around the
+crystal; **Champion and Immortal have wings (3 / 4 feathers) and a crown (3 / 5 points)**, Immortal also a bright seam; **Radiant**
+adds a pulsing glow, turning rays and a shimmer. The division is **1–3 lit diamond marks** under the gem (unlit ones dimmed); Radiant has none.

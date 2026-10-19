@@ -36,7 +36,7 @@ class RankChange {
   /// A first placement counts as up.
   bool get up => fromScore == null || toScore.value > fromScore!.value;
 
-  /// Moved to a better division or tier (not just LP), i.e. worth a rank-up animation.
+  /// Moved to a better division or tier (not just RR), i.e. worth a rank-up animation.
   bool get isRankUp => fromScore != null && toScore.value > fromScore!.value;
 }
 
@@ -83,7 +83,7 @@ class SessionSummary {
   final int levelAfter;
   final List<RankChange> rankChanges;
 
-  /// Every rank that moved up in this workout, LP-only gains included (rank changes are only the ones that
+  /// Every rank that moved up in this workout, RR-only gains included (rank changes are only the ones that
   /// changed division or tier): lifts, then muscles, regions and the overall rank, in that order. Drives the
   /// Finish animation sequence.
   final List<RankChange> rankGains;
@@ -320,7 +320,7 @@ class FinishService {
     );
   }
 
-  /// Minimum gain (in points; 1 point = 100 LP) worth animating: half an LP.
+  /// Minimum gain (in points; 1 point = 100 RR) worth animating: half an RR.
   static const _minGain = 0.005;
 
   /// Every rank that rose between [before] and [after] (including a first placement), lifts first, then muscles,

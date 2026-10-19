@@ -4,6 +4,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../features/ranks/domain/ranks.dart' show Tier;
 import '../theme/app_theme.dart';
 
 /// Layered surface: subtle gradient, 1 px border, optional accent border + glow. See docs/DESIGN.md.
@@ -88,12 +89,15 @@ class SectionLabel extends StatelessWidget {
   }
 }
 
-/// Tier-coloured progress bar with an optional LP readout.
-class LpBar extends StatelessWidget {
-  const LpBar({super.key, required this.progress, required this.color, this.lp, this.height = 10, this.trailing});
+/// Tier-coloured progress bar with an optional RR readout.
+class RrBar extends StatelessWidget {
+  const RrBar({super.key, required this.progress, required this.color, this.tier, this.rr, this.height = 10, this.trailing});
   final double progress;
   final Color color;
-  final int? lp;
+
+  /// When set, the fill is this tier's two-colour gradient (deeper → lighter).
+  final Tier? tier;
+  final int? rr;
   final double height;
   final String? trailing;
 
@@ -108,19 +112,21 @@ class LpBar extends StatelessWidget {
           child: Container(
             height: height,
             decoration: BoxDecoration(
-              gradient: LinearGradient(colors: [Color.lerp(color, Colors.black, 0.25)!, color]),
+              gradient: tier == null
+                  ? LinearGradient(colors: [Color.lerp(color, Colors.black, 0.25)!, color])
+                  : LinearGradient(colors: [tierGradients[tier!.index].$2, tierGradients[tier!.index].$1]),
               boxShadow: [BoxShadow(color: color.withValues(alpha: 0.45), blurRadius: 8)],
             ),
           ),
         ),
       ]),
     );
-    if (lp == null && trailing == null) return bar;
+    if (rr == null && trailing == null) return bar;
     return Row(children: [
       Expanded(child: bar),
       const SizedBox(width: 10),
       Text(
-        trailing ?? '$lp LP',
+        trailing ?? '$rr RR',
         style: AppType.bodyS.copyWith(fontFamily: AppType.display, fontWeight: FontWeight.w700, color: color),
       ),
     ]);

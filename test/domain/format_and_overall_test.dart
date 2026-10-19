@@ -36,8 +36,8 @@ void main() {
     test('all muscles at the same tier/division → regions and overall are exactly that tier/division', () {
       const bw = 80.0;
       final points = <double>[
-        for (var p = 1; p < 28; p++) ...[p.toDouble(), p + 0.5], // every division, on and inside boundaries
-        28, 29.5, 32, 33.25, 36, 41, // apex
+        for (var p = 1; p < 24; p++) ...[p.toDouble(), p + 0.5], // every division, on and inside boundaries
+        24, 25.5, 28, 41, // Radiant
       ];
       for (final p in points) {
         // A 1-rep set at RPE 10 scores e1RM = load × (1 + 1/30).
@@ -55,7 +55,7 @@ void main() {
         expect(r.rankedRegions, 6);
         expect(r.regions.values.every((g) => g.score!.label == label), isTrue, reason: 'points $p');
         expect(r.overall!.label, label, reason: 'points $p');
-        expect(r.overall!.lp, r.muscles.values.first.score.lp, reason: 'points $p');
+        expect(r.overall!.rr, r.muscles.values.first.score.rr, reason: 'points $p');
       }
     });
 
@@ -64,8 +64,8 @@ void main() {
         if (t.isApex) {
           expect(RankScore.of(t).label, t.label);
         } else {
-          for (var d = 4; d >= 1; d--) {
-            expect(RankScore.of(t, division: d).label, '${t.label} ${const ['', 'I', 'II', 'III', 'IV'][d]}');
+          for (var d = 3; d >= 1; d--) {
+            expect(RankScore.of(t, division: d).label, '${t.label} $d');
           }
         }
       }
@@ -74,7 +74,7 @@ void main() {
     test('mixed groups average on the continuous scale', () {
       final s = averageScore([RankScore(13.2), RankScore(12.8)]);
       expect(s.value, closeTo(13.0, 1e-12));
-      expect(s.label, 'Gold III');
+      expect(s.label, 'Platinum 2');
     });
   });
 }

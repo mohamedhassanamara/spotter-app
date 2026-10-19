@@ -9,11 +9,11 @@ RankChange gain(String name, RankChangeScope scope, RankScore? from, RankScore t
 
 void main() {
   final gains = [
-    gain('Bench', RankChangeScope.exercise, RankScore.of(Tier.silver, division: 3, lp: 80), RankScore.of(Tier.gold, division: 4, lp: 10)),
-    gain('Squat', RankChangeScope.exercise, RankScore.of(Tier.gold, division: 2, lp: 10), RankScore.of(Tier.gold, division: 2, lp: 35)),
-    gain('Chest', RankChangeScope.muscle, RankScore.of(Tier.gold, division: 4, lp: 10), RankScore.of(Tier.gold, division: 3, lp: 5)),
-    gain('Arms', RankChangeScope.region, null, RankScore.of(Tier.bronze, division: 1, lp: 20)),
-    gain('Overall', RankChangeScope.overall, RankScore.of(Tier.gold, division: 4, lp: 90), RankScore.of(Tier.gold, division: 3, lp: 10)),
+    gain('Bench', RankChangeScope.exercise, RankScore.of(Tier.silver, division: 3, rr: 80), RankScore.of(Tier.gold, division: 1, rr: 10)),
+    gain('Squat', RankChangeScope.exercise, RankScore.of(Tier.gold, division: 2, rr: 10), RankScore.of(Tier.gold, division: 2, rr: 35)),
+    gain('Chest', RankChangeScope.muscle, RankScore.of(Tier.gold, division: 1, rr: 10), RankScore.of(Tier.gold, division: 2, rr: 5)),
+    gain('Arms', RankChangeScope.region, null, RankScore.of(Tier.bronze, division: 1, rr: 20)),
+    gain('Overall', RankChangeScope.overall, RankScore.of(Tier.gold, division: 1, rr: 90), RankScore.of(Tier.gold, division: 2, rr: 10)),
   ];
 
   Widget app(VoidCallback onDone) => MaterialApp(theme: buildAppTheme(), home: RankSequenceScreen(gains: gains, onDone: onDone));
@@ -43,14 +43,14 @@ void main() {
     expect(done, 1, reason: 'ends by itself, once');
   });
 
-  testWidgets('a rank-up reads "from → to" when it lands; an LP-only gain shows +LP; a placement says NEW', (tester) async {
+  testWidgets('a rank-up reads "from → to" when it lands; an RR-only gain shows +RR; a placement says NEW', (tester) async {
     await tester.pumpWidget(app(() {}));
     await tester.pump(const Duration(milliseconds: 1100));
-    expect(find.textContaining('Silver III → Gold IV'), findsOneWidget);
+    expect(find.textContaining('Silver 3 → Gold 1'), findsOneWidget);
     expect(find.byKey(const ValueKey('gain-lp-Bench')), findsOneWidget);
     await tester.pump(const Duration(milliseconds: 2400));
     expect(find.byKey(const ValueKey('gain-lp-Squat')), findsOneWidget);
-    expect(find.text('+25 LP'), findsOneWidget);
+    expect(find.text('+25 RR'), findsOneWidget);
     await tester.pump(const Duration(milliseconds: 1500));
     expect(find.text('NEW'), findsOneWidget);
     await tester.pump(const Duration(seconds: 5));

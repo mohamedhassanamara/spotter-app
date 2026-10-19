@@ -327,7 +327,7 @@ class _OverallCard extends StatelessWidget {
                 if (s == null)
                   Text('Log ranked lifts to place on the ladder.', style: AppType.bodyS.copyWith(color: AppColors.textSecondary))
                 else ...[
-                  LpBar(progress: s.divisionProgress, color: color, lp: s.lp),
+                  RrBar(progress: s.divisionProgress, color: color, tier: s.tier, rr: s.rr),
                   const SizedBox(height: 6),
                   Text(
                     '${next == null ? 'Top of the ladder' : 'Next: $next'} · strength ${s.strength} · $rankedRegions/6 regions',
@@ -348,10 +348,10 @@ class _TierLegend extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    Widget chip(String label, Color c) => Row(
+    Widget chip(String label, Color c, {Gradient? gradient}) => Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Container(width: 14, height: 14, decoration: BoxDecoration(color: c, borderRadius: BorderRadius.circular(4))),
+            Container(width: 14, height: 14, decoration: BoxDecoration(color: gradient == null ? c : null, gradient: gradient, borderRadius: BorderRadius.circular(4))),
             const SizedBox(width: 6),
             Text(label, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
           ],
@@ -362,7 +362,7 @@ class _TierLegend extends StatelessWidget {
       runSpacing: 10,
       alignment: WrapAlignment.center,
       children: [
-        for (final t in Tier.values) chip(t.label, tierColor(t)),
+        for (final t in Tier.values) chip(t.label, tierColor(t), gradient: tierGradient(t)),
         chip('Unranked', AppColors.unranked),
       ],
     );
@@ -483,7 +483,7 @@ class _RegionCardState extends State<_RegionCard> {
                     s?.label ?? 'Unranked',
                     style: AppType.bodyS.copyWith(fontFamily: AppType.display, fontWeight: FontWeight.w700, color: color),
                   ),
-                  if (s != null) ...[const SizedBox(height: 6), LpBar(progress: s.divisionProgress, color: color, lp: s.lp, height: 8)],
+                  if (s != null) ...[const SizedBox(height: 6), RrBar(progress: s.divisionProgress, color: color, tier: s.tier, rr: s.rr, height: 8)],
                 ]),
               ),
               Icon(_open ? Icons.expand_less_rounded : Icons.expand_more_rounded, color: AppColors.textSecondary),
@@ -499,7 +499,7 @@ class _RegionCardState extends State<_RegionCard> {
   }
 }
 
-/// One muscle: thumbnail with the muscle highlighted, badge, division and LP.
+/// One muscle: thumbnail with the muscle highlighted, badge, division and RR.
 class _MuscleRow extends StatelessWidget {
   const _MuscleRow({required this.muscle, required this.summary, required this.onTap});
   final Muscle muscle;
@@ -523,12 +523,12 @@ class _MuscleRow extends StatelessWidget {
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Row(children: [
                 Expanded(child: Text(muscle.label, style: AppType.body.copyWith(fontWeight: FontWeight.w700))),
-                Text(s == null ? 'Unranked' : '${s.label} · ${s.lp} LP',
+                Text(s == null ? 'Unranked' : '${s.label} · ${s.rr} RR',
                     style: AppType.bodyS.copyWith(fontFamily: AppType.display, fontWeight: FontWeight.w700, color: color)),
               ]),
               const SizedBox(height: 4),
               if (s != null)
-                LpBar(progress: s.divisionProgress, color: color, height: 6)
+                RrBar(progress: s.divisionProgress, color: color, tier: s.tier, height: 6)
               else
                 Text(
                   hints.isEmpty ? 'None of your exercises trains it as a main muscle' : 'Try ${hints.take(2).map((h) => h.name).join(' or ')}',
@@ -576,10 +576,10 @@ class _LiftRankCard extends StatelessWidget {
                   Text('${rank.strength}', style: AppType.number.copyWith(fontSize: 18, color: color)),
                 ]),
                 const SizedBox(height: 2),
-                Text(rank.score.labelWithLp,
+                Text(rank.score.labelWithRr,
                     style: AppType.bodyS.copyWith(fontFamily: AppType.display, fontWeight: FontWeight.w700, color: color)),
                 const SizedBox(height: 8),
-                LpBar(progress: rank.score.divisionProgress, color: color, height: 8),
+                RrBar(progress: rank.score.divisionProgress, color: color, tier: rank.score.tier, height: 8),
                 const SizedBox(height: 8),
                 Text(
                   '${liftLine(rank)} · e1RM ${rank.bestE1rm.toStringAsFixed(1)} kg · ×${rank.ratio.toStringAsFixed(2)} BW'

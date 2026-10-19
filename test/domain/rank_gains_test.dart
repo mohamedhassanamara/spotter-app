@@ -23,7 +23,7 @@ void main() {
 
   const bench = 'Barbell_Bench_Press_-_Medium_Grip';
 
-  test('an LP-only gain is a gain (but not a rank change); the order is lifts, muscles, regions, overall', () {
+  test('an RR-only gain is a gain (but not a rank change); the order is lifts, muscles, regions, overall', () {
     final before = summary([set(bench, 60)]);
     final after = summary([set(bench, 61)]);
     final gains = FinishService.rankGains(before, after);

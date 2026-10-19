@@ -225,7 +225,7 @@ void main() {
       ..writeln()
       ..writeln('## Ranks after import')
       ..writeln()
-      ..writeln('Overall: **${ranks.overall?.labelWithLp ?? 'unranked'}** (strength ${ranks.overall?.strength ?? 0}).')
+      ..writeln('Overall: **${ranks.overall?.labelWithRr ?? 'unranked'}** (strength ${ranks.overall?.strength ?? 0}).')
       ..writeln()
       ..writeln('| Region | Rank | Ranked | Muscles |')
       ..writeln('|---|---|---|---|');
@@ -233,7 +233,7 @@ void main() {
       final muscles = [
         for (final m in r.region.muscles) '${m.label} ${ranks.muscles[m]?.score.label ?? '—'}',
       ].join(', ');
-      out.writeln('| ${r.region.label} | ${r.score?.labelWithLp ?? 'Unranked'} | ${r.ranked}/${r.total} | $muscles |');
+      out.writeln('| ${r.region.label} | ${r.score?.labelWithRr ?? 'Unranked'} | ${r.ranked}/${r.total} | $muscles |');
     }
     out
       ..writeln()
@@ -243,7 +243,7 @@ void main() {
       ..writeln('|---|---|---|---|---|---|---|');
     for (final r in ranked) {
       out.writeln('| ${r.name} | ${r.standard.name} (${r.standard.kind.name}) | ${setText(r)} | ${r.bestE1rm.toStringAsFixed(1)} kg | '
-          '${r.ratio.toStringAsFixed(2)} | ${r.score.labelWithLp} | ${r.strength} |');
+          '${r.ratio.toStringAsFixed(2)} | ${r.score.labelWithRr} | ${r.strength} |');
     }
     final unranked = [for (final m in Muscle.values) if (!ranks.muscles.containsKey(m)) m];
     if (unranked.isNotEmpty) {

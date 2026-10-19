@@ -14,10 +14,11 @@ enum BadgeSize {
   final double width;
 }
 
-/// Original rank emblem (vector, drawn in code). Escalates with the tier:
-/// matte shields → metallic with rim → gem with side flares → crystal with wings →
-/// crowned, layered, animated glow and shimmer for the apex tiers.
-/// Divisional tiers carry their numeral (IV–I) on a banner under the emblem.
+/// Original rank emblem (vector, drawn in code, in a faceted-crystal style; nothing here is traced from anyone's
+/// artwork). Escalates with the tier: Iron and Bronze are plain flat gems; Silver and Gold are fully faceted with side
+/// shards and blades; Platinum glows; Diamond floats shards around the crystal; Champion and Immortal add wings and a
+/// crown; Radiant glows, throws rays and shimmers. Each tier is painted with its own two-colour gradient. The division
+/// (1–3) is shown as that many lit marks under the emblem; Radiant has none.
 class RankBadge extends StatefulWidget {
   const RankBadge({super.key, required this.score, this.size = BadgeSize.medium, this.animate = true, this.width});
 
@@ -75,7 +76,7 @@ class _RankBadgeState extends State<RankBadge> with SingleTickerProviderStateMix
     final label = s == null ? 'Unranked' : s.label;
     Widget paint(double phase) => CustomPaint(
           size: Size(w, w * RankBadge.aspect),
-          painter: EmblemPainter(tier: s?.tier, division: s?.divisionLabel ?? '', phase: phase),
+          painter: EmblemPainter(tier: s?.tier, division: s == null || s.isApex ? 0 : s.divisionIndex + 1, phase: phase),
         );
     return Semantics(
       label: '$label rank',
@@ -92,9 +93,11 @@ class EmblemPainter extends CustomPainter {
 
   /// Null = unranked.
   final Tier? tier;
-  final String division;
 
-  /// 0..1 loop for apex glow and shimmer.
+  /// 1–3 lit division marks; 0 = none (Radiant, unranked).
+  final int division;
+
+  /// 0..1 loop for Radiant's glow, rays and shimmer.
   final double phase;
 
   static const _w = 120.0, _h = 130.0;
@@ -110,438 +113,313 @@ class EmblemPainter extends CustomPainter {
       _unranked(canvas);
     } else {
       _emblem(canvas, t);
-      if (!t.isApex && division.isNotEmpty) _banner(canvas, t, division);
+      if (division > 0) _marks(canvas, t, division);
     }
     canvas.restore();
   }
 
   // ---- palette ----
 
-  static Color _base(Tier t) => tierColors[t.index];
+  static Color _light(Tier t) => tierGradients[t.index].$1;
+  static Color _deep(Tier t) => tierGradients[t.index].$2;
+
+  /// The tier's gradient at [f] (0 = lighter, 1 = deeper).
+  static Color _at(Tier t, double f) => Color.lerp(_light(t), _deep(t), f.clamp(0.0, 1.0))!;
+
   static Color _shade(Color c, double amount) {
     final h = HSLColor.fromColor(c);
     return h.withLightness((h.lightness + amount).clamp(0.0, 1.0)).toColor();
   }
 
-  // ---- shapes ----
+  // ---- geometry (the crystal) ----
 
-  /// Heater shield centred on x = 60.
-  static Path _shield({double top = 14, double bottom = 104, double half = 34}) {
-    const cx = 60.0;
-    final h = bottom - top;
-    return Path()
-      ..moveTo(cx, top)
-      ..quadraticBezierTo(cx + half * 0.55, top + h * 0.06, cx + half, top + h * 0.1)
-      ..cubicTo(cx + half, top + h * 0.52, cx + half * 0.62, top + h * 0.8, cx, bottom)
-      ..cubicTo(cx - half * 0.62, top + h * 0.8, cx - half, top + h * 0.52, cx - half, top + h * 0.1)
-      ..quadraticBezierTo(cx - half * 0.55, top + h * 0.06, cx, top)
-      ..close();
-  }
+  static const _top = Offset(60, 14), _ur = Offset(90, 36), _lr = Offset(80, 86), _bot = Offset(60, 106), _ll = Offset(40, 86), _ul = Offset(30, 36);
+  static const _t1 = Offset(60, 30), _t2 = Offset(77, 47), _t3 = Offset(60, 84), _t4 = Offset(43, 47);
 
-  static Path _scaled(Path p, double s, Offset about) {
-    final m = Matrix4.identity()
-      ..translateByDouble(about.dx, about.dy, 0, 1)
-      ..scaleByDouble(s, s, 1, 1)
-      ..translateByDouble(-about.dx, -about.dy, 0, 1);
-    return p.transform(m.storage);
-  }
+  /// Facets with where they sit on the gradient (0 lighter … 1 deeper).
+  static const List<(List<Offset>, double)> _facets = [
+    ([_ul, _top, _t1, _t4], 0.0),
+    ([_top, _ur, _t2, _t1], 0.22),
+    ([_t4, _t1, _t2, _t3], 0.1), // table
+    ([_ur, _lr, _t3, _t2], 0.72),
+    ([_ul, _t4, _t3, _ll], 0.45),
+    ([_ll, _bot, _lr, _t3], 1.0),
+  ];
+
+  static Path _poly(List<Offset> pts) => Path()..addPolygon(pts, true);
+
+  static Path _outline() => _poly([_top, _ur, _lr, _bot, _ll, _ul]);
 
   static Path _mirror(Path p) => p.transform((Matrix4.identity()
         ..translateByDouble(120, 0, 0, 1)
         ..scaleByDouble(-1, 1, 1, 1))
       .storage);
 
-  // ---- tiers ----
+  // ---- emblem ----
 
   void _emblem(Canvas canvas, Tier t) {
-    final base = _base(t);
-    final apex = t.isApex;
-    final shield = apex ? _shield(top: 30, bottom: 112, half: 30) : _shield();
-    final shieldBounds = shield.getBounds();
+    final i = t.index;
+    final ornate = i >= Tier.champion.index;
+    canvas.save();
+    // Small tiers are drawn a little smaller; crowned tiers make room for the crown.
+    final s = switch (t) {
+      Tier.iron => 0.82,
+      Tier.bronze => 0.88,
+      Tier.champion || Tier.immortal || Tier.radiant => 0.9,
+      _ => 1.0,
+    };
+    final cy = ornate ? 66.0 : 58.0;
+    canvas.translate(60, cy);
+    canvas.scale(s);
+    canvas.translate(-60, -58);
 
-    if (apex) _apexBackdrop(canvas, t, base);
-    if (t.index >= Tier.diamond.index) _wings(canvas, t, base, apex: apex);
-    if (t == Tier.platinum || t == Tier.emerald) _flares(canvas, base);
+    if (i >= Tier.platinum.index) _glow(canvas, t);
+    if (t == Tier.radiant) _rays(canvas, t);
+    if (ornate) _wings(canvas, t);
+    if (t == Tier.diamond) _floatingShards(canvas, t);
+    if (i == Tier.silver.index) _sideShards(canvas, t, 1);
+    if (i == Tier.gold.index) _sideShards(canvas, t, 2);
+    if (i == Tier.platinum.index) _sideShards(canvas, t, 3);
 
-    // Body.
-    final metallic = t.index >= Tier.silver.index;
-    final fill = Paint()
-      ..shader = metallic
-          ? LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [_shade(base, 0.22), base, _shade(base, -0.18), base, _shade(base, 0.12)],
-              stops: const [0, 0.3, 0.55, 0.78, 1],
-            ).createShader(shieldBounds)
-          : LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [_shade(base, 0.04), _shade(base, -0.12)],
-            ).createShader(shieldBounds);
-    canvas.drawPath(shield.shift(const Offset(0, 3)), Paint()..color = Colors.black.withValues(alpha: 0.35));
-
-    if (t == Tier.diamond || apex) {
-      _crystal(canvas, shield, base);
-    } else {
-      canvas.drawPath(shield, fill);
-    }
-
-    // Rim.
-    final rim = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = metallic ? 4 : 3
-      ..shader = LinearGradient(
-        begin: Alignment.topCenter,
-        end: Alignment.bottomCenter,
-        colors: metallic ? [_shade(base, 0.32), _shade(base, -0.25)] : [_shade(base, -0.1), _shade(base, -0.28)],
-      ).createShader(shieldBounds);
-    canvas.drawPath(shield, rim);
-    final inner = _scaled(shield, 0.8, shieldBounds.center);
-    canvas.drawPath(
-      inner,
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.6
-        ..color = _shade(base, metallic ? -0.3 : -0.22).withValues(alpha: 0.8),
-    );
-
-    // Centre mark.
-    final c = Offset(60, shieldBounds.top + shieldBounds.height * 0.46);
-    switch (t) {
-      case Tier.iron:
-        _bars(canvas, c, base, 1);
-      case Tier.bronze:
-        _bars(canvas, c, base, 2);
-      case Tier.silver:
-        _chevrons(canvas, c, base, 2);
-      case Tier.gold:
-        _chevrons(canvas, c, base, 3);
-      case Tier.platinum:
-      case Tier.emerald:
-        _gem(canvas, c, t == Tier.emerald ? const Color(0xFF34E39A) : const Color(0xFFBFFFF4), 15);
-      case Tier.diamond:
-        _gem(canvas, c, const Color(0xFFDDE8FF), 12);
-      case Tier.master:
-      case Tier.grandmaster:
-      case Tier.challenger:
-        _gem(canvas, c, _shade(base, 0.2), 13);
-    }
-
-    if (apex) {
-      _crown(canvas, t, base, shieldBounds.top);
-      _shimmer(canvas, shield);
-    }
+    canvas.drawPath(_outline().shift(const Offset(0, 3)), Paint()..color = Colors.black.withValues(alpha: 0.35));
+    _crystal(canvas, t);
+    if (ornate) _crown(canvas, t);
+    if (t == Tier.immortal) _beam(canvas, t);
+    if (t == Tier.radiant) _shimmer(canvas, _outline());
+    canvas.restore();
   }
 
-  void _bars(Canvas canvas, Offset c, Color base, int n) {
-    final p = Paint()..color = _shade(base, -0.3);
-    for (var i = 0; i < n; i++) {
-      final y = c.dy - (n - 1) * 7 + i * 14;
-      canvas.drawRRect(
-        RRect.fromRectAndRadius(Rect.fromCenter(center: Offset(c.dx, y), width: 30, height: 7), const Radius.circular(2)),
-        p,
+  /// The faceted body: Iron is three flat planes, Bronze four, the rest the full set with a lit table.
+  void _crystal(Canvas canvas, Tier t) {
+    final i = t.index;
+    final facets = i == 0
+        ? [(_poly([_ul, _top, _bot, _ll]), 0.15), (_poly([_top, _ur, _lr, _bot]), 0.85)]
+        : i == 1
+            ? [(_poly([_ul, _top, _t1, _t3, _ll]), 0.1), (_poly([_top, _ur, _t2, _t1]), 0.3), (_poly([_ur, _lr, _t3, _t2]), 0.7), (_poly([_ll, _bot, _lr, _t3]), 1.0)]
+            : [for (final (pts, f) in _facets) (_poly(pts), f)];
+    final stroke = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = i == 0 ? 1.0 : 1.2
+      ..strokeJoin = StrokeJoin.round
+      ..color = _deep(t).withValues(alpha: 0.85);
+    for (final (path, f) in facets) {
+      canvas.drawPath(path, Paint()..color = _at(t, f));
+      canvas.drawPath(path, stroke);
+    }
+    if (i >= Tier.silver.index) {
+      // A light catching the top-left edge.
+      canvas.drawPath(
+        Path()..moveTo(_ul.dx, _ul.dy)..lineTo(_top.dx, _top.dy)..lineTo(_ur.dx, _ur.dy),
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 2
+          ..strokeCap = StrokeCap.round
+          ..color = Colors.white.withValues(alpha: 0.6),
+      );
+    }
+    canvas.drawPath(
+      _outline(),
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = i <= 1 ? 2.2 : 3
+        ..strokeJoin = StrokeJoin.round
+        ..shader = LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [_shade(_light(t), 0.05), _shade(_deep(t), -0.12)])
+            .createShader(const Rect.fromLTWH(30, 14, 60, 92)),
+    );
+    if (i >= Tier.platinum.index) {
+      // The table lights up from inside.
+      canvas.drawPath(
+        _poly([_t1, _t2, _t3, _t4]),
+        Paint()
+          ..shader = RadialGradient(colors: [Colors.white.withValues(alpha: 0.75), Colors.white.withValues(alpha: 0)]).createShader(const Rect.fromLTWH(43, 30, 34, 54)),
       );
     }
   }
 
-  void _chevrons(Canvas canvas, Offset c, Color base, int n) {
-    final stroke = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 6
-      ..strokeCap = StrokeCap.round
-      ..strokeJoin = StrokeJoin.round
-      ..color = _shade(base, -0.32);
-    final hi = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2
-      ..strokeCap = StrokeCap.round
-      ..color = _shade(base, 0.3).withValues(alpha: 0.7);
-    for (var i = 0; i < n; i++) {
-      final y = c.dy + 8 - i * 11 + (n - 2) * 5;
-      final path = Path()
-        ..moveTo(c.dx - 15, y + 7)
-        ..lineTo(c.dx, y - 4)
-        ..lineTo(c.dx + 15, y + 7);
-      canvas.drawPath(path, stroke);
-      canvas.drawPath(path.shift(const Offset(0, -2)), hi);
-    }
+  void _glow(Canvas canvas, Tier t) {
+    final a = t == Tier.radiant ? 0.35 + 0.2 * math.sin(phase * math.pi * 2) : (t.index >= Tier.champion.index ? 0.3 : 0.2);
+    canvas.drawCircle(const Offset(60, 58), 46, Paint()
+      ..color = _light(t).withValues(alpha: a)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 16));
   }
 
-  /// Faceted hexagonal gem.
-  void _gem(Canvas canvas, Offset c, Color color, double r) {
-    final pts = [for (var i = 0; i < 6; i++) c + Offset(math.cos(math.pi / 3 * i - math.pi / 2), math.sin(math.pi / 3 * i - math.pi / 2)) * r];
-    final gem = Path()..addPolygon(pts, true);
-    canvas.drawPath(
-      gem,
-      Paint()
-        ..shader = RadialGradient(
-          center: const Alignment(-0.3, -0.4),
-          colors: [Colors.white, color, _shade(color, -0.35)],
-          stops: const [0, 0.45, 1],
-        ).createShader(Rect.fromCircle(center: c, radius: r)),
-    );
-    final facet = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 0.9
-      ..color = Colors.white.withValues(alpha: 0.55);
-    final innerPts = [for (final p in pts) Offset.lerp(c, p, 0.5)!];
-    canvas.drawPath(Path()..addPolygon(innerPts, true), facet);
-    for (var i = 0; i < 6; i++) {
-      canvas.drawLine(innerPts[i], pts[i], facet);
-    }
-    canvas.drawPath(
-      gem,
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.6
-        ..color = _shade(color, -0.45),
-    );
-  }
-
-  /// Platinum / Emerald: angular blades on both sides.
-  void _flares(Canvas canvas, Color base) {
-    final left = Path()
-      ..moveTo(28, 30)
-      ..lineTo(6, 22)
-      ..quadraticBezierTo(14, 40, 26, 50)
-      ..lineTo(10, 54)
-      ..quadraticBezierTo(20, 66, 32, 68)
-      ..close();
-    final paint = Paint()
-      ..shader = LinearGradient(colors: [_shade(base, -0.25), _shade(base, 0.15)])
-          .createShader(const Rect.fromLTWH(6, 22, 26, 46));
-    final edge = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.2
-      ..color = _shade(base, -0.4);
-    for (final p in [left, _mirror(left)]) {
-      canvas.drawPath(p, paint);
-      canvas.drawPath(p, edge);
-    }
-  }
-
-  /// Diamond and apex: feathered wings, three layered feathers per side.
-  void _wings(Canvas canvas, Tier t, Color base, {required bool apex}) {
-    final top = apex ? 44.0 : 30.0;
-    for (var i = 0; i < 3; i++) {
-      final y = top + i * 12;
-      final reach = 4.0 + i * 7;
-      final feather = Path()
-        ..moveTo(34, y)
-        ..quadraticBezierTo(14, y - 10 + i * 2, reach, y - 4 + i * 3)
-        ..quadraticBezierTo(16, y + 8, 34, y + 14)
+  /// Silver 1 / Gold 2 / Platinum 3 pairs of angular shards at the sides.
+  void _sideShards(Canvas canvas, Tier t, int pairs) {
+    for (var k = 0; k < pairs; k++) {
+      final y = 38.0 + k * 15;
+      final reach = 16.0 + (pairs - k) * 3;
+      final shard = Path()
+        ..moveTo(33, y)
+        ..lineTo(33 - reach, y - 10)
+        ..lineTo(33 - reach + 7, y + 4)
+        ..lineTo(34, y + 12)
         ..close();
-      final paint = Paint()
-        ..shader = LinearGradient(
-          begin: Alignment.centerRight,
-          end: Alignment.centerLeft,
-          colors: [_shade(base, 0.1 - i * 0.08), _shade(base, 0.32 - i * 0.08)],
-        ).createShader(Rect.fromLTWH(reach, y - 10, 34 - reach, 26));
-      final edge = Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.1
-        ..color = _shade(base, -0.35);
-      for (final p in [feather, _mirror(feather)]) {
-        canvas.drawPath(p, paint);
-        canvas.drawPath(p, edge);
+      for (final p in [shard, _mirror(shard)]) {
+        canvas.drawPath(p, Paint()..shader = LinearGradient(colors: [_light(t), _deep(t)]).createShader(p.getBounds()));
+        canvas.drawPath(
+          p,
+          Paint()
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = 1.1
+            ..strokeJoin = StrokeJoin.round
+            ..color = _shade(_deep(t), -0.12),
+        );
       }
     }
   }
 
-  /// Crystal body: the shield split into lit and shaded facets.
-  void _crystal(Canvas canvas, Path shield, Color base) {
-    final b = shield.getBounds();
-    final c = Offset(b.center.dx, b.top + b.height * 0.46);
-    canvas.drawPath(
-      shield,
-      Paint()
-        ..shader = LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [_shade(base, 0.25), base, _shade(base, -0.2)],
-        ).createShader(b),
-    );
-    canvas.save();
-    canvas.clipPath(shield);
-    final corners = [
-      Offset(b.left, b.top),
-      Offset(b.center.dx, b.top),
-      Offset(b.right, b.top),
-      Offset(b.right, b.top + b.height * 0.5),
-      Offset(b.center.dx, b.bottom),
-      Offset(b.left, b.top + b.height * 0.5),
-    ];
-    for (var i = 0; i < corners.length; i++) {
-      final a = corners[i], z = corners[(i + 1) % corners.length];
-      final tri = Path()..addPolygon([c, a, z], true);
-      final light = (i % 2 == 0) ? 0.14 : -0.1;
-      canvas.drawPath(tri, Paint()..color = _shade(base, light).withValues(alpha: 0.55));
+  void _floatingShards(Canvas canvas, Tier t) {
+    for (final (c, r) in const [(Offset(22, 30), 7.0), (Offset(14, 62), 5.0), (Offset(20, 90), 6.0)]) {
+      final d = Path()..addPolygon([c + Offset(0, -r * 1.5), c + Offset(r, 0), c + Offset(0, r * 1.5), c + Offset(-r, 0)], true);
+      for (final p in [d, _mirror(d)]) {
+        canvas.drawPath(p, Paint()..shader = LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [_light(t), _deep(t)]).createShader(p.getBounds()));
+        canvas.drawPath(
+          p,
+          Paint()
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = 1
+            ..color = Colors.white.withValues(alpha: 0.55),
+        );
+      }
     }
-    final line = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 0.8
-      ..color = Colors.white.withValues(alpha: 0.35);
-    for (final p in corners) {
-      canvas.drawLine(c, p, line);
+  }
+
+  /// Champion 3, Immortal 4, Radiant 5 angular feathers on each side.
+  void _wings(Canvas canvas, Tier t) {
+    final n = switch (t) {
+      Tier.champion => 3,
+      Tier.immortal => 4,
+      _ => 5,
+    };
+    for (var k = 0; k < n; k++) {
+      final y = 30.0 + k * 11;
+      final reach = 20.0 + (n - k) * 5.5;
+      final f = Path()
+        ..moveTo(35, y)
+        ..lineTo(35 - reach, y - 16 - (n - k) * 1.5)
+        ..lineTo(35 - reach + 11, y - 2)
+        ..lineTo(35 - reach + 6, y + 9)
+        ..lineTo(37, y + 9)
+        ..close();
+      for (final p in [f, _mirror(f)]) {
+        canvas.drawPath(p, Paint()..shader = LinearGradient(colors: [_at(t, 0.1 + k * 0.12), _deep(t)]).createShader(p.getBounds()));
+        canvas.drawPath(
+          p,
+          Paint()
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = 1.1
+            ..strokeJoin = StrokeJoin.round
+            ..color = _shade(_deep(t), -0.15),
+        );
+      }
+    }
+  }
+
+  /// A crown above the crystal: 3 points (Champion), 5 (Immortal, Radiant).
+  void _crown(Canvas canvas, Tier t) {
+    final points = t == Tier.champion ? 3 : 5;
+    const left = 44.0, right = 76.0, base = 20.0;
+    final w = right - left;
+    final crown = Path()..moveTo(left, base);
+    for (var k = 0; k < points; k++) {
+      final x = left + w * (k + 0.5) / points;
+      final mid = k == points ~/ 2;
+      crown
+        ..lineTo(left + w * k / points + (k == 0 ? 0 : 0), k == 0 ? base : base - 6)
+        ..lineTo(x, base - (mid ? 17 : 12));
+    }
+    crown
+      ..lineTo(right, base - 6)
+      ..lineTo(right, base)
+      ..close();
+    canvas.drawPath(crown, Paint()..shader = LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [_light(t), _deep(t)]).createShader(crown.getBounds()));
+    canvas.drawPath(
+      crown,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.2
+        ..strokeJoin = StrokeJoin.round
+        ..color = _shade(_deep(t), -0.18),
+    );
+    canvas.drawCircle(const Offset(60, 12), 2.2, Paint()..color = Colors.white.withValues(alpha: 0.9));
+  }
+
+  /// Immortal: a bright seam down the middle of the crystal.
+  void _beam(Canvas canvas, Tier t) {
+    final p = Path()..addPolygon([const Offset(60, 18), const Offset(66, 56), const Offset(60, 100), const Offset(54, 56)], true);
+    canvas.drawPath(p, Paint()..color = Colors.white.withValues(alpha: 0.22));
+    canvas.drawPath(p, Paint()..color = _light(t).withValues(alpha: 0.35)..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3));
+  }
+
+  /// Radiant: thin rays turning slowly behind the emblem.
+  void _rays(Canvas canvas, Tier t) {
+    canvas.save();
+    canvas.translate(60, 58);
+    canvas.rotate(phase * math.pi * 2 * 0.25);
+    final ray = Paint()..color = _light(t).withValues(alpha: 0.22);
+    for (var k = 0; k < 10; k++) {
+      canvas.save();
+      canvas.rotate(k * math.pi * 2 / 10);
+      canvas.drawPath(Path()..moveTo(-3, -30)..lineTo(0, -62)..lineTo(3, -30)..close(), ray);
+      canvas.restore();
     }
     canvas.restore();
   }
 
-  /// Apex: pulsing glow and a halo ring behind the emblem.
-  void _apexBackdrop(Canvas canvas, Tier t, Color base) {
-    final pulse = 0.5 + 0.5 * math.sin(phase * 2 * math.pi);
-    const centre = Offset(60, 66);
-    canvas.drawCircle(
-      centre,
-      58,
-      Paint()
-        ..shader = RadialGradient(colors: [base.withValues(alpha: 0.35 + 0.25 * pulse), base.withValues(alpha: 0)])
-            .createShader(Rect.fromCircle(center: centre, radius: 58)),
-    );
-    if (t == Tier.challenger) {
-      final ray = Paint()
-        ..strokeWidth = 2
-        ..strokeCap = StrokeCap.round
-        ..color = const Color(0xFFFFF3B0).withValues(alpha: 0.35 + 0.3 * pulse);
-      for (var i = 0; i < 12; i++) {
-        final a = i * math.pi / 6 + phase * math.pi / 6;
-        canvas.drawLine(centre + Offset(math.cos(a), math.sin(a)) * 46, centre + Offset(math.cos(a), math.sin(a)) * 58, ray);
-      }
-    }
-    canvas.drawCircle(
-      centre,
-      44,
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = t == Tier.master ? 2 : 3
-        ..color = _shade(base, 0.25).withValues(alpha: 0.7),
-    );
-    if (t != Tier.master) {
-      canvas.drawCircle(
-        centre,
-        49,
-        Paint()
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 1.2
-          ..color = _shade(base, 0.1).withValues(alpha: 0.5),
-      );
-    }
-  }
-
-  void _crown(Canvas canvas, Tier t, Color base, double shieldTop) {
-    final points = t == Tier.master ? 3 : 5;
-    const left = 36.0, right = 84.0;
-    final bottom = shieldTop + 6;
-    final top = bottom - (t == Tier.challenger ? 26 : 22);
-    // Evenly spaced peaks (the centre one tallest), valleys halfway between them.
-    final crown = Path()..moveTo(left, bottom);
-    final gap = (right - left) / (points - 1);
-    for (var k = 0; k < points; k++) {
-      final x = left + gap * k;
-      final centre = k == points ~/ 2;
-      if (k > 0) crown.lineTo(x - gap / 2, bottom - 8);
-      crown.lineTo(x, centre ? top - 4 : top);
-    }
-    crown
-      ..lineTo(right, bottom)
-      ..close();
-    final gold = t == Tier.grandmaster ? const Color(0xFFFFD27A) : const Color(0xFFFFE27A);
-    final b = crown.getBounds();
-    canvas.drawPath(
-      crown,
-      Paint()
-        ..shader = LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [_shade(gold, 0.15), gold, _shade(gold, -0.25)],
-        ).createShader(b),
-    );
-    canvas.drawPath(
-      crown,
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.4
-        ..color = _shade(gold, -0.45),
-    );
-    final jewel = Paint()..color = _shade(base, 0.05);
-    canvas.drawCircle(Offset(60, bottom - 4), 3, jewel);
-    if (points == 5) {
-      canvas.drawCircle(Offset(48, bottom - 4), 2.2, jewel);
-      canvas.drawCircle(Offset(72, bottom - 4), 2.2, jewel);
-    }
-  }
-
-  /// A bright diagonal band sweeping across the emblem.
+  /// A bright diagonal band sweeping across the crystal.
   void _shimmer(Canvas canvas, Path clip) {
     final b = clip.getBounds();
     final x = b.left - 40 + (b.width + 80) * phase;
     canvas.save();
     canvas.clipPath(clip);
-    final band = Path()..addPolygon([Offset(x, b.top), Offset(x + 14, b.top), Offset(x - 16, b.bottom), Offset(x - 30, b.bottom)], true);
-    canvas.drawPath(band, Paint()..color = Colors.white.withValues(alpha: 0.28));
+    canvas.drawPath(Path()..addPolygon([Offset(x, b.top), Offset(x + 12, b.top), Offset(x - 18, b.bottom), Offset(x - 30, b.bottom)], true), Paint()..color = Colors.white.withValues(alpha: 0.32));
     canvas.restore();
   }
 
-  void _banner(Canvas canvas, Tier t, String numeral) {
-    final base = _base(t);
-    const top = 104.0, bottom = 126.0, left = 30.0, right = 90.0;
-    final ribbon = Path()
-      ..moveTo(left - 8, top + 2)
-      ..lineTo(right + 8, top + 2)
-      ..lineTo(right + 2, (top + bottom) / 2 + 1)
-      ..lineTo(right + 8, bottom)
-      ..lineTo(left - 8, bottom)
-      ..lineTo(left - 2, (top + bottom) / 2 + 1)
-      ..close();
-    canvas.drawPath(ribbon.shift(const Offset(0, 2)), Paint()..color = Colors.black.withValues(alpha: 0.35));
-    canvas.drawPath(
-      ribbon,
-      Paint()
-        ..shader = LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [_shade(base, -0.18), _shade(base, -0.34)],
-        ).createShader(const Rect.fromLTRB(left, top, right, bottom)),
-    );
-    canvas.drawPath(
-      ribbon,
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.2
-        ..color = _shade(base, 0.2).withValues(alpha: 0.8),
-    );
-    final tp = TextPainter(
-      text: TextSpan(
-        text: numeral,
-        style: const TextStyle(
-          fontFamily: 'Oxanium',
-          fontSize: 16,
-          fontWeight: FontWeight.w800,
-          color: Colors.white,
-          letterSpacing: 1.5,
-          height: 1,
-        ),
-      ),
-      textDirection: TextDirection.ltr,
-    )..layout();
-    tp.paint(canvas, Offset(60 - tp.width / 2, (top + bottom) / 2 - tp.height / 2 + 1));
+  /// The division: 1–3 diamond marks under the crystal, lit up to the division.
+  void _marks(Canvas canvas, Tier t, int lit) {
+    const y = 118.0;
+    for (var k = 0; k < 3; k++) {
+      final x = 60 + (k - 1) * 13.0;
+      final d = Path()..addPolygon([Offset(x, y - 6), Offset(x + 5, y), Offset(x, y + 6), Offset(x - 5, y)], true);
+      if (k < lit) {
+        canvas.drawPath(d, Paint()..shader = LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [_light(t), _deep(t)]).createShader(d.getBounds()));
+        canvas.drawPath(
+          d,
+          Paint()
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = 1
+            ..color = Colors.white.withValues(alpha: 0.7),
+        );
+      } else {
+        canvas.drawPath(d, Paint()..color = Colors.black.withValues(alpha: 0.35));
+        canvas.drawPath(
+          d,
+          Paint()
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = 1
+            ..color = _deep(t).withValues(alpha: 0.7),
+        );
+      }
+    }
   }
 
   void _unranked(Canvas canvas) {
-    final shield = _shield();
+    final gem = _outline().shift(const Offset(0, 2));
+    canvas.drawPath(gem, Paint()..color = AppColors.unranked.withValues(alpha: 0.25));
     canvas.drawPath(
-      shield,
+      gem,
       Paint()
         ..style = PaintingStyle.stroke
         ..strokeWidth = 3
+        ..strokeJoin = StrokeJoin.round
         ..color = AppColors.unranked,
     );
-    canvas.drawPath(shield, Paint()..color = AppColors.unranked.withValues(alpha: 0.25));
     final tp = TextPainter(
       text: const TextSpan(text: '?', style: TextStyle(fontSize: 38, fontWeight: FontWeight.w900, color: AppColors.textSecondary)),
       textDirection: TextDirection.ltr,
     )..layout();
-    tp.paint(canvas, Offset(60 - tp.width / 2, 52 - tp.height / 2));
+    tp.paint(canvas, Offset(60 - tp.width / 2, 58 - tp.height / 2));
   }
 
   @override
