@@ -25,7 +25,7 @@ String _csv() {
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
-  testWidgets('Rest after warm-ups: 45 s between warm-ups, 1:30 before the first working set, then the program\'s rest', (tester) async {
+  testWidgets('Rest after warm-ups: none between warm-ups, 1:30 after the last one before the first working set, then the program\'s rest', (tester) async {
     final h = AppHarness(tester);
     await h.launchFresh();
     await h.onboard();
@@ -53,16 +53,17 @@ void main() {
     final working = all.where((s) => !s.isWarmup).toList();
     expect(warmups.length, greaterThanOrEqualTo(2), reason: 'the program lists 2–3 warm-ups for the chest press');
 
-    debugPrint('STEP ✓ warm-up 1 → 0:45 rest');
-    await checkSet(h, warmups[0]);
-    await h.waitFor(find.textContaining('REST '), scroll: false);
-    expect(restTotal(), 45);
-    debugPrint('STEP ✓ the next warm-up → 0:45 again, unless it was the last one');
-    for (var i = 1; i < warmups.length; i++) {
+    debugPrint('STEP ✓ a warm-up that is followed by another: no rest timer');
+    for (var i = 0; i < warmups.length - 1; i++) {
       await checkSet(h, warmups[i]);
       await h.settle(4);
-      expect(restTotal(), i == warmups.length - 1 ? 90 : 45, reason: 'warm-up ${i + 1} of ${warmups.length}');
+      expect(restTotal(), isNull, reason: 'warm-up ${i + 1} of ${warmups.length}: no timer between warm-ups');
+      expect(find.textContaining('REST '), findsNothing);
     }
+    debugPrint('STEP ✓ the last warm-up → 1:30 before the first working set');
+    await checkSet(h, warmups.last);
+    await h.waitFor(find.textContaining('REST '), scroll: false);
+    expect(restTotal(), 90, reason: 'after the last warm-up');
     debugPrint('STEP ✓ the first working set → the program\'s own rest (Chest Press: 3 min)');
     await checkSet(h, working[0]);
     await h.settle(4);

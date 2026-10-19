@@ -556,7 +556,7 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> with 
     // Live Activity with it), whether or not this set starts a rest of its own.
     if (!ex.row.restEnabled) return timer.stop();
     if (s.isWarmup) {
-      // Warm-ups: 45 s before the next warm-up, 1:30 before the first working set (the program: 0–60 s between warm-ups).
+      // Warm-ups: no timer between them; one 1:30 rest after the last one, before the first working set.
       final rest = WarmupRest.after(ex.sets, s);
       return rest == null ? timer.stop() : timer.start(rest, preview: _restPreview(session, ex, s), setId: s.id);
     }
@@ -583,7 +583,7 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> with 
     return RestPreview(
       workoutName: session.session.name,
       exerciseName: next == null ? 'Workout' : nameOf(next.exercise),
-      nextTarget: next == null ? 'Last set done. Finish when ready' : setTarget(next.exercise, next.set),
+      nextTarget: next == null ? 'Last set done. Finish when ready.' : nextLabel(next.exercise, next.set),
     );
   }
 

@@ -16,12 +16,11 @@ WorkoutSet set(int id, {bool warmup = false, String? type}) => WorkoutSet(
     );
 
 void main() {
-  test('between warm-ups 45 s (the program says 0–60), before the first working set 1:30 (the program is silent)', () {
+  test('no rest between warm-ups; one 1:30 rest after the last warm-up, before the first working set', () {
     final sets = [set(1, warmup: true), set(2, warmup: true), set(3, warmup: true), set(4), set(5)];
-    expect(WarmupRest.after(sets, sets[0]), 45);
-    expect(WarmupRest.after(sets, sets[1]), 45);
+    expect(WarmupRest.after(sets, sets[0]), isNull, reason: 'warm-up → warm-up: no timer');
+    expect(WarmupRest.after(sets, sets[1]), isNull);
     expect(WarmupRest.after(sets, sets[2]), 90, reason: 'last warm-up → first working set');
-    expect(WarmupRest.betweenWarmups, inInclusiveRange(0, 60));
   });
 
   test('one warm-up goes straight to the working set after 1:30; a lone warm-up with nothing after it has no rest', () {

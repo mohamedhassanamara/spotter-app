@@ -11,7 +11,6 @@ import '../../../core/domain/training.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/common.dart';
 import '../../../router.dart';
-import '../../../core/domain/history.dart';
 import '../../coach/domain/suggestion_engine.dart';
 
 class _BestSet {

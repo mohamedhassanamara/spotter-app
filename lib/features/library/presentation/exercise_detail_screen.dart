@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 
 import '../../../app_providers.dart';
 import '../../../core/domain/gym.dart';
-import '../../../core/domain/load_types.dart';
 import '../../../core/domain/muscles.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/common.dart';
@@ -538,4 +537,3 @@ String _creditLine(ExerciseInfo info) {
   return 'Sources: ${parts.toSet().join(' · ')}';
 }
 
-String _cap(String s) => s.isEmpty ? s : s[0].toUpperCase() + s.substring(1);

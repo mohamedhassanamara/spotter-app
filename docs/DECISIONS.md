@@ -2058,3 +2058,23 @@ Tabs **About · Rank · Stats · History** (`/exercise/:id`; the old `/exercise/
 - **Stats:** best e1RM, sessions, best set, volume, the e1RM chart, the best sets (the old history page's top half). **History:** every session, newest first.
 Tests: `log_guide_test`, `exercise_page_flow_test` (tabs, hero, Jeff chip, How to log sheets for a plate-loaded machine and a dumbbell, figures + legend, a muscle tile opens the rank sheet, equipment,
 instructions, Rank/Stats/History), `exercise_media_flow_test` and `library_media_flow_test` updated for the corner chip. Screenshots: `docs/screenshots/exercise-page/`.
+
+## Round 3, item 5: Live Activity redesign
+
+**Root cause of the overflow:** the first layout was a tall vertical stack (header, a vertical warm-up list of up to four lines, a target line, a set line, a progress bar) in a 36 pt timer
+beside an unconstrained name; a lock-screen activity gets about 160 pt, so the timer was pushed off the top and the last warm-up line off the bottom.
+**Layout now** (`ios/Shared/WorkoutActivityViews.swift`, shared by the extension and the app): header row, one row of warm-up chips, one "Next:" line.
+- Left column: phase label (WARM-UP / WORKING / REST, with its colour and icon), the exercise name (one line, scales to 70 %), "Set X of Y" (or "Warm-up X of Y"). Right column: **one large timer** (44 pt): the rest
+  countdown while resting, otherwise the workout's elapsed time (system timers).
+- Bottom line: "Next: 50 kg × 3" (a warm-up), "Next: working set 65 kg × 6", "Next: drop set 52.5 kg × 12".
+- Warm-ups: **one row of compact chips** ("25×6 ✓ 40×4 50×3", a "+2" when there are more than four), only while a warm-up is still to do. Never a vertical list.
+- Rest: a thin system-timer progress bar under the line.
+- Dynamic Island: compact = phase icon + timer; expanded = the same three rows (phase/exercise/set, big timer, chips and Next line).
+**Checked on a real lock-screen-sized render:** the native view is rendered at 361 pt wide (a 6.3" iPhone's activity width) through `ImageRenderer`, with the height it asks for.
+`live_activity_layout_test` renders eight cases (warm-up, working, rest, rest after the last warm-up, rest with chips, "last set done", and long names of 80 characters with four warm-ups) and fails if any asks for
+more than 160 pt: they measure 102–142 pt. PNGs: `docs/screenshots/live-activity/`. (The Dynamic Island cannot be rendered this way, so it is not in the screenshots; the same pieces feed it.)
+
+## Round 3, item 6: warm-up rest
+
+No rest timer between warm-up sets. One rest, **1:30**, after the last warm-up and before the first working set (`WarmupRest.after`); the Live Activity shows it as a rest with the chips all checked and
+"Next: working set …". This replaces last round's 45 s between warm-ups. Tests: `warmup_rest_test`, integration `warmup_rest_flow_test` (no `REST` between warm-ups, 90 s after the last, then the exercise's own rest).

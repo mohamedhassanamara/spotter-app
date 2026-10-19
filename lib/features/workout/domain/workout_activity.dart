@@ -1,7 +1,8 @@
 import '../../../core/live_activity/live_activity_service.dart';
 import '../../../core/db/database.dart';
+import '../../coach/domain/suggestion_engine.dart' show formatKg;
 import '../data/session_repository.dart';
-import 'rest_preview.dart' show setTarget;
+import 'rest_preview.dart' show nextLabel;
 import 'set_kinds.dart';
 
 const _maxWarmupLines = 4;
@@ -42,7 +43,7 @@ WorkoutActivity? buildWorkoutActivity(
       phase: 'working',
       workoutName: name,
       exerciseName: 'Workout',
-      nextTarget: 'Last set done. Finish when ready',
+      nextTarget: 'Last set done. Finish when ready.',
       setLabel: '',
       workoutStart: start,
     );
@@ -52,7 +53,7 @@ WorkoutActivity? buildWorkoutActivity(
     phase: next.set.isWarmup ? 'warmup' : 'working',
     workoutName: name,
     exerciseName: nameOf(next.exercise),
-    nextTarget: setTarget(next.exercise, next.set),
+    nextTarget: nextLabel(next.exercise, next.set),
     setLabel: _label(next.exercise, next.set),
     workoutStart: start,
     warmups: lines,
@@ -81,7 +82,8 @@ String _label(ActiveExercise e, WorkoutSet s) {
   final from = firstOpen < 0 ? (all.length - _maxWarmupLines).clamp(0, all.length) : (firstOpen > 0 ? firstOpen - 1 : 0);
   final shown = all.skip(from).take(_maxWarmupLines).toList();
   final more = all.length - from - shown.length;
-  return ([for (final s in shown) ActivityWarmup(_warmupText(e, s), s.completed)], more);
+  return ([for (final s in shown) ActivityWarmup(_warmupText(s), s.completed)], more);
 }
 
-String _warmupText(ActiveExercise e, WorkoutSet s) => setTarget(e, s).replaceFirst('Warm-up · ', '');
+/// Compact chip text: "25×6", "BW×8".
+String _warmupText(WorkoutSet s) => s.weight == 0 ? 'BW×${s.reps}' : '${formatKg(s.weight.abs())}×${s.reps}';

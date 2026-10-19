@@ -105,8 +105,7 @@ class ChannelLiveActivityService implements LiveActivityService {
   ChannelLiveActivityService([MethodChannel? channel]) : _channel = channel ?? const MethodChannel('spotter/live_activity');
   final MethodChannel _channel;
 
-  @override
-  Future<void> sync(WorkoutActivity a) => _call('sync', {
+  static Map<String, Object?> _args(WorkoutActivity a) => {
         'phase': a.phase,
         'workoutName': a.workoutName,
         'exerciseName': a.exerciseName,
@@ -117,7 +116,18 @@ class ChannelLiveActivityService implements LiveActivityService {
         'restEndMillis': a.restEnd?.millisecondsSinceEpoch.toDouble(),
         'warmups': [for (final w in a.warmups) {'text': w.text, 'done': w.done}],
         'warmupsMore': a.warmupsMore,
-      });
+      };
+
+  @override
+  Future<void> sync(WorkoutActivity a) => _call('sync', _args(a));
+
+  /// Renders the native lock-screen view for [a] at [width] pt (361 on a 6.3" iPhone): PNG bytes and the height the layout asks for
+  /// (a Live Activity has about 160 pt). Used by the integration tests to check and screenshot the layout.
+  Future<({Uint8List png, double height})?> renderPreview(WorkoutActivity a, {double width = 361, double restFraction = 0.4}) async {
+    final r = await _call('renderPreview', {..._args(a), 'width': width, 'restFraction': restFraction}) as Map<Object?, Object?>?;
+    if (r == null) return null;
+    return (png: r['png']! as Uint8List, height: (r['height']! as num).toDouble());
+  }
 
   @override
   Future<void> end() => _call('end');

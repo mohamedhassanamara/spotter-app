@@ -38,6 +38,25 @@ import 'set_kinds.dart';
   return null;
 }
 
+/// "80 kg × 8", "25 kg assist × 8", "30 s" for a hold, "8" for plain bodyweight reps.
+String loadReps(WorkoutSet s) {
+  final load = s.weight == 0 ? '' : (s.weight < 0 ? '${formatKg(-s.weight)} kg assist' : '${formatKg(s.weight)} kg');
+  final reps = s.kind == SetKind.hold ? '${s.reps} s' : '${s.reps}';
+  final parts = [if (load.isNotEmpty) load, if (s.reps > 0) reps];
+  return parts.join(' × ');
+}
+
+/// The line at the bottom of the Live Activity: "Next: 50 kg × 3" for a warm-up, "Next: working set 65 kg × 6", "Next: drop set 60 kg × 8".
+String nextLabel(ActiveExercise e, WorkoutSet s) {
+  final kind = s.kind;
+  final what = switch (kind) {
+    SetKind.warmup => '',
+    SetKind.working => 'working set ',
+    _ => '${kind.label.toLowerCase()} ',
+  };
+  return 'Next: $what${loadReps(s)}'.trimRight();
+}
+
 /// "Set 3 · 80 kg × 8", "Warm-up · 40 kg × 8", "Drop set · 60 kg × 8".
 String setTarget(ActiveExercise e, WorkoutSet s) {
   final kind = s.kind;
@@ -45,8 +64,6 @@ String setTarget(ActiveExercise e, WorkoutSet s) {
     SetKind.working => 'Set ${e.sets.where((x) => x.isWorkingSet).toList().indexWhere((x) => x.id == s.id) + 1}',
     _ => kind.label,
   };
-  final load = s.weight == 0 ? '' : (s.weight < 0 ? '${formatKg(-s.weight)} kg assist' : '${formatKg(s.weight)} kg');
-  final reps = kind == SetKind.hold ? '${s.reps} s' : '${s.reps} reps';
-  final parts = [if (load.isNotEmpty) load, if (s.reps > 0) reps];
-  return parts.isEmpty ? label : '$label · ${parts.join(' × ').replaceFirst(' reps', '')}';
+  final lr = loadReps(s);
+  return lr.isEmpty ? label : '$label · $lr';
 }

@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		1498D2341E8E89220040F4C2 /* GeneratedPluginRegistrant.m in Sources */ = {isa = PBXBuildFile; fileRef = 1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */; };
 		1B82E438250E65E9D61E54D5 /* ActivityKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 839D52FD3FA344A8AADAA252 /* ActivityKit.framework */; };
+		1C29D484D9C2F70779BA9A1B /* WorkoutActivityViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57FFFD60B006203018C39821 /* WorkoutActivityViews.swift */; };
 		331C808B294A63AB00263BE5 /* RunnerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 331C807B294A618700263BE5 /* RunnerTests.swift */; };
 		3B3967161E833CAA004F5970 /* AppFrameworkInfo.plist in Resources */ = {isa = PBXBuildFile; fileRef = 3B3967151E833CAA004F5970 /* AppFrameworkInfo.plist */; };
 		542849C5138ED4B5033188D0 /* SpotterLiveActivity.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 661C478D4C9849B2F928308D /* SpotterLiveActivity.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
@@ -25,6 +26,7 @@
 		97C147011CF9000F007C117D /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FF1CF9000F007C117D /* LaunchScreen.storyboard */; };
 		B0D5CB9B7838B2255148E5EF /* WorkoutActivityAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44E67856AC614D2B86740FA1 /* WorkoutActivityAttributes.swift */; };
 		CC529BCCE5D715CC19422C2E /* LiveActivityBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2780BFA469E29CFA597A3DF1 /* LiveActivityBridge.swift */; };
+		D3110497FDEE3EE2CF93C554 /* WorkoutActivityViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57FFFD60B006203018C39821 /* WorkoutActivityViews.swift */; };
 		FAC2058639327E03C1C83F8C /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D1A4CE0D88E50199DC587802 /* WidgetKit.framework */; };
 		FC24E45EA9A4BE8B684CBBB0 /* WorkoutActivityAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44E67856AC614D2B86740FA1 /* WorkoutActivityAttributes.swift */; };
 /* End PBXBuildFile section */
@@ -82,6 +84,7 @@
 		3B3967151E833CAA004F5970 /* AppFrameworkInfo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = AppFrameworkInfo.plist; path = Flutter/AppFrameworkInfo.plist; sourceTree = "<group>"; };
 		41D0B47220417AB4D72012BF /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 		44E67856AC614D2B86740FA1 /* WorkoutActivityAttributes.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WorkoutActivityAttributes.swift; sourceTree = "<group>"; };
+		57FFFD60B006203018C39821 /* WorkoutActivityViews.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WorkoutActivityViews.swift; sourceTree = "<group>"; };
 		661C478D4C9849B2F928308D /* SpotterLiveActivity.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = SpotterLiveActivity.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		74858FAD1ED2DC5600515810 /* Runner-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "Runner-Bridging-Header.h"; sourceTree = "<group>"; };
 		74858FAE1ED2DC5600515810 /* AppDelegate.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
@@ -220,6 +223,7 @@
 			isa = PBXGroup;
 			children = (
 				44E67856AC614D2B86740FA1 /* WorkoutActivityAttributes.swift */,
+				57FFFD60B006203018C39821 /* WorkoutActivityViews.swift */,
 			);
 			name = Shared;
 			path = Shared;
@@ -410,6 +414,7 @@
 				7884E8682EC3CC0700C636F2 /* SceneDelegate.swift in Sources */,
 				FC24E45EA9A4BE8B684CBBB0 /* WorkoutActivityAttributes.swift in Sources */,
 				CC529BCCE5D715CC19422C2E /* LiveActivityBridge.swift in Sources */,
+				D3110497FDEE3EE2CF93C554 /* WorkoutActivityViews.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -420,6 +425,7 @@
 				63CD34D50C5BCDD3E31E2BE6 /* SpotterLiveActivityBundle.swift in Sources */,
 				9475172381AB739C47CC7DFB /* WorkoutLiveActivity.swift in Sources */,
 				B0D5CB9B7838B2255148E5EF /* WorkoutActivityAttributes.swift in Sources */,
+				1C29D484D9C2F70779BA9A1B /* WorkoutActivityViews.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

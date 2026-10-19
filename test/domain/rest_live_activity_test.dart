@@ -100,6 +100,13 @@ void main() {
       expect(nextSetAfter(_session([last]), last, last.sets.first), isNull);
     });
 
+    test('the "Next:" line: a warm-up is just its load, a working set says so, other kinds name themselves', () {
+      final e = ActiveExercise(row: _ex(1), sets: [_set(1, 1, 0, warmup: true, kg: 40), _set(2, 1, 1, kg: 65, reps: 6), _set(3, 1, 2, kg: 52.5, reps: 12, type: 'drop')], suggestion: null);
+      expect(nextLabel(e, e.sets[0]), 'Next: 40 kg × 8');
+      expect(nextLabel(e, e.sets[1]), 'Next: working set 65 kg × 6');
+      expect(nextLabel(e, e.sets[2]), 'Next: drop set 52.5 kg × 12');
+    });
+
     test('drop sets and assisted loads read naturally', () {
       final e = ActiveExercise(row: _ex(1), sets: [_set(1, 1, 0), _set(2, 1, 1, kg: 60, type: 'drop'), _set(3, 1, 2, kg: -25)], suggestion: null);
       expect(setTarget(e, e.sets[1]), 'Drop set · 60 kg × 8');
@@ -123,9 +130,9 @@ void main() {
       final a = buildWorkoutActivity(twoExercises(), nameOf: name)!;
       expect(a.phase, 'warmup');
       expect(a.exerciseName, 'Exercise 1');
-      expect(a.nextTarget, 'Warm-up · 40 kg × 8');
+      expect(a.nextTarget, 'Next: 40 kg × 8');
       expect(a.setLabel, 'Warm-up 1 of 2');
-      expect(a.warmups.map((w) => (w.text, w.done)), [('40 kg × 8', false), ('60 kg × 8', false)]);
+      expect(a.warmups.map((w) => (w.text, w.done)), [('40×8', false), ('60×8', false)], reason: 'compact chips');
       expect(a.warmupsMore, 0);
       expect(a.workoutStart, DateTime(2026, 10, 12));
       expect(a.restEnd, isNull);
@@ -141,7 +148,7 @@ void main() {
       ]);
       final w = buildWorkoutActivity(both, nameOf: name)!;
       expect(w.phase, 'working');
-      expect(w.nextTarget, 'Set 1 · 80 kg × 8');
+      expect(w.nextTarget, 'Next: working set 80 kg × 8');
       expect(w.setLabel, 'Set 1 of 1');
     });
 
@@ -150,25 +157,25 @@ void main() {
       final a = buildWorkoutActivity(_session([e]), nameOf: name)!;
       expect(a.warmups.length, 4);
       expect(a.warmups.first.done, isTrue, reason: 'the last one done stays visible');
-      expect(a.warmups.first.text, '30 kg × 8');
+      expect(a.warmups.first.text, '30×8');
       expect(a.warmupsMore, 1);
     });
 
     test('resting: the rest times and the next set, the workout clock keeps its start', () {
       final rest = RestActivity(
-          workoutName: 'Upper', exerciseName: 'Exercise 1', nextTarget: 'Warm-up · 60 kg × 8', startsAt: DateTime(2026, 10, 12, 18), endsAt: DateTime(2026, 10, 12, 18, 0, 45));
+          workoutName: 'Upper', exerciseName: 'Exercise 1', nextTarget: 'Next: 60 kg × 8', startsAt: DateTime(2026, 10, 12, 18), endsAt: DateTime(2026, 10, 12, 18, 0, 45));
       final a = buildWorkoutActivity(twoExercises(warm1Done: true), nameOf: name, rest: rest)!;
       expect(a.phase, 'rest');
       expect(a.restStart, DateTime(2026, 10, 12, 18));
       expect(a.restEnd, DateTime(2026, 10, 12, 18, 0, 45));
-      expect(a.nextTarget, 'Warm-up · 60 kg × 8');
+      expect(a.nextTarget, 'Next: 60 kg × 8');
       expect(a.workoutStart, DateTime(2026, 10, 12));
     });
 
     test('everything done: "Finish when ready"; equal activities compare equal (no redundant updates)', () {
       final a = buildWorkoutActivity(twoExercises(allDone: true), nameOf: name)!;
       expect(a.phase, 'working');
-      expect(a.nextTarget, 'Last set done. Finish when ready');
+      expect(a.nextTarget, 'Last set done. Finish when ready.');
       expect(buildWorkoutActivity(twoExercises(allDone: true), nameOf: name), a);
     });
   });
@@ -205,14 +212,14 @@ void main() {
       await db.close();
     });
 
-    const preview = RestPreview(workoutName: 'Upper', exerciseName: 'Chest Press', nextTarget: 'Set 2 · 80 kg × 8');
+    const preview = RestPreview(workoutName: 'Upper', exerciseName: 'Chest Press', nextTarget: 'Next: working set 80 kg × 8');
 
     test('a session alone starts the activity; it is not re-sent when nothing changed', () {
       final sync = c.read(workoutActivitySyncProvider);
       sync.refresh();
       sync.refresh();
       expect(activity.calls, ['sync:working']);
-      expect(activity.last!.nextTarget, 'Set 2 · 80 kg × 8');
+      expect(activity.last!.nextTarget, 'Next: working set 80 kg × 8');
       sync.refresh(force: true);
       expect(activity.calls, ['sync:working', 'sync:working']);
     });
@@ -221,7 +228,7 @@ void main() {
       await c.read(restTimerProvider).start(90, preview: preview);
       expect(activity.calls, ['sync:rest']);
       expect(activity.last!.exerciseName, 'Chest Press');
-      expect(activity.last!.nextTarget, 'Set 2 · 80 kg × 8');
+      expect(activity.last!.nextTarget, 'Next: working set 80 kg × 8');
       expect(activity.last!.restEnd, now.add(const Duration(seconds: 90)));
       expect(activity.last!.restStart, now);
     });
