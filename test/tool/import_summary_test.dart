@@ -299,7 +299,9 @@ void main() {
     for (final id in justified.keys) {
       final r = ranked.where((x) => x.exerciseId == id).firstOrNull;
       if (r == null) continue;
-      expect(decisions, contains(r.name), reason: '${r.name} must be justified in DECISIONS.md');
+      // Ranks now show the library / routine name; the justification names the exercise as Liftoff did.
+      final liftoffNames = {for (final se in history.sessions) for (final e in se.exercises) if (e.exerciseId == id) e.name};
+      expect(decisions.contains(r.name) || liftoffNames.any(decisions.contains), isTrue, reason: '${r.name} must be justified in DECISIONS.md');
     }
     // ignore: avoid_print
     print('Wrote docs/IMPORT_SUMMARY.md: ${result.sessions} sessions, ${result.sets} sets');

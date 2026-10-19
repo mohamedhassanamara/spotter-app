@@ -26,7 +26,7 @@ Wrong for your gym? Open the exercise in a workout → ⋮ → **Weight steps…
 | Pull | Stiff-Leg Deadlift | Stiff-Legged Barbell Deadlift | barbell | Barbell | 5 kg | barbell |
 | Pull | Close-Grip Lat Pulldown | Close-Grip Front Lat Pulldown | cable | Stack / cable | 5 kg | cable |
 | Pull | Dumbbell Row | One-Arm Dumbbell Row | dumbbell | Dumbbell | list | dumbbell |
-| Pull | Machine Reverse Fly | Reverse Machine Flyes | machine | Stack / cable | 5 kg | machine with no plate-loaded name: assumed pin stack |
+| Pull | Machine Single-Arm Reverse Fly | Machine Single-Arm Reverse Fly | machine | Stack / cable | 5 kg | machine with no plate-loaded name: assumed pin stack |
 | Pull | Decline Crunch | Decline Crunch | body only | Bodyweight | 2.5 kg | bodyweight |
 | Arms | EZ Bar Curl | EZ-Bar Curl | e-z curl bar | Barbell | 5 kg | barbell |
 | Arms | Cable Overhead Triceps Extension | Cable Rope Overhead Triceps Extension | cable | Stack / cable | 5 kg | cable |
