@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import 'core/motion.dart';
 import 'features/debug/presentation/badge_gallery_screen.dart';
+import 'features/debug/presentation/badge_sheet_screen.dart';
 import 'features/debug/presentation/debug_menu_screen.dart';
 import 'features/debug/presentation/exercise_audit_screen.dart';
 import 'features/debug/presentation/media_matching_screen.dart';
@@ -43,6 +44,7 @@ abstract final class Routes {
   static const streak = '/streak';
   static const rankSequence = '/rank-sequence';
   static const badgeGallery = '/settings/debug/badges';
+  static const badgeSheet = '/settings/debug/badge-sheet';
   static const mediaMatching = '/settings/debug/media';
   static const exerciseAudit = '/settings/debug/audit';
   static const pickExercise = '/pick-exercise';
@@ -167,6 +169,7 @@ GoRouter buildRouter(ValueListenable<bool> onboarded) {
               builder: (_, _) => const DebugMenuScreen(),
               routes: [
                 GoRoute(path: 'badges', parentNavigatorKey: rootNavigatorKey, builder: (_, _) => const BadgeGalleryScreen()),
+                GoRoute(path: 'badge-sheet', parentNavigatorKey: rootNavigatorKey, builder: (_, _) => const BadgeSheetScreen()),
                 GoRoute(path: 'media', parentNavigatorKey: rootNavigatorKey, builder: (_, _) => const MediaMatchingScreen()),
                 GoRoute(path: 'audit', parentNavigatorKey: rootNavigatorKey, builder: (_, _) => const ExerciseAuditScreen()),
                 GoRoute(path: 'summary-preview', parentNavigatorKey: rootNavigatorKey, builder: (_, _) => const SummaryPreviewScreen()),

@@ -2078,3 +2078,14 @@ more than 160 pt: they measure 102–142 pt. PNGs: `docs/screenshots/live-activi
 
 No rest timer between warm-up sets. One rest, **1:30**, after the last warm-up and before the first working set (`WarmupRest.after`); the Live Activity shows it as a rest with the chips all checked and
 "Next: working set …". This replaces last round's 45 s between warm-ups. Tests: `warmup_rest_test`, integration `warmup_rest_flow_test` (no `REST` between warm-ups, 90 s after the last, then the exercise's own rest).
+
+## Round 3, item 7: detail between divisions
+
+The emblem itself now climbs with the division (`EmblemPainter`, `division` 1–3), besides the lit pips:
+- **Division 1:** the tier's base emblem.
+- **Division 2:** an inlay line (a smaller outline inside the crystal) and a stud (small faceted diamond) on each shoulder.
+- **Division 3:** everything of division 2, plus a bright white edge, a soft glow along the whole edge, and a crest facet at the top of the crystal.
+Each tier keeps its shape, wings, crown and colours across its divisions (Radiant has no divisions). Settings → Debug menu → **Badge sheet** shows every tier with its three divisions side by side:
+`docs/screenshots/badges/badge-sheet.png`.
+Tests: `badge_divisions_test` (the crystal's pixels differ between 1→2 and 2→3 for every divisional tier, division 3 is further from 1 than 2 is; the mean hue and lightness stay the same across divisions so the tier is recognizable),
+integration `badge_sheet_flow_test`.

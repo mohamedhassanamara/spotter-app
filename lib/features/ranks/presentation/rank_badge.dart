@@ -18,7 +18,9 @@ enum BadgeSize {
 /// artwork). Escalates with the tier: Iron and Bronze are plain flat gems; Silver and Gold are fully faceted with side
 /// shards and blades; Platinum glows; Diamond floats shards around the crystal; Champion and Immortal add wings and a
 /// crown; Radiant glows, throws rays and shimmers. Each tier is painted with its own two-colour gradient. The division
-/// (1–3) is shown as that many lit marks under the emblem; Radiant has none.
+/// (1–3) is shown as that many lit marks under the emblem and in the emblem itself: division 2 adds an inlay line inside the crystal and two
+/// studs at its shoulders, division 3 adds a bright edge, an edge glow and a crest facet on top, so a tier stays recognizable across its divisions
+/// while climbing it is visible. Radiant has no divisions.
 class RankBadge extends StatefulWidget {
   const RankBadge({super.key, required this.score, this.size = BadgeSize.medium, this.animate = true, this.width});
 
@@ -182,11 +184,77 @@ class EmblemPainter extends CustomPainter {
     if (i == Tier.platinum.index) _sideShards(canvas, t, 3);
 
     canvas.drawPath(_outline().shift(const Offset(0, 3)), Paint()..color = Colors.black.withValues(alpha: 0.35));
+    if (division >= 3) _edgeGlow(canvas, t);
     _crystal(canvas, t);
+    if (division >= 2) _inlay(canvas, t);
+    if (division >= 3) _crest(canvas, t);
     if (ornate) _crown(canvas, t);
     if (t == Tier.immortal) _beam(canvas, t);
     if (t == Tier.radiant) _shimmer(canvas, _outline());
     canvas.restore();
+  }
+
+  /// Division 2: a thin inlay line inside the crystal and a stud on each shoulder.
+  void _inlay(Canvas canvas, Tier t) {
+    const c = Offset(60, 60);
+    final inner = _outline().transform((Matrix4.identity()
+          ..translateByDouble(c.dx, c.dy, 0, 1)
+          ..scaleByDouble(0.74, 0.74, 1, 1)
+          ..translateByDouble(-c.dx, -c.dy, 0, 1))
+        .storage);
+    canvas.drawPath(
+      inner,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.3
+        ..strokeJoin = StrokeJoin.round
+        ..color = Colors.white.withValues(alpha: 0.55),
+    );
+    for (final x in const [27.0, 93.0]) {
+      final stud = Path()..addPolygon([Offset(x, 31), Offset(x + 4.5, 37), Offset(x, 43), Offset(x - 4.5, 37)], true);
+      canvas.drawPath(stud, Paint()..shader = LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [_shade(_light(t), 0.12), _deep(t)]).createShader(stud.getBounds()));
+      canvas.drawPath(
+        stud,
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1
+          ..color = Colors.white.withValues(alpha: 0.8),
+      );
+    }
+  }
+
+  /// Division 3 (under the crystal): the edge glows.
+  void _edgeGlow(Canvas canvas, Tier t) {
+    canvas.drawPath(
+      _outline(),
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 9
+        ..strokeJoin = StrokeJoin.round
+        ..color = _light(t).withValues(alpha: 0.6)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 5),
+    );
+  }
+
+  /// Division 3 (over the crystal): a bright edge and a crest facet at the top.
+  void _crest(Canvas canvas, Tier t) {
+    canvas.drawPath(
+      _outline(),
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.5
+        ..strokeJoin = StrokeJoin.round
+        ..color = Colors.white.withValues(alpha: 0.85),
+    );
+    final crest = Path()..addPolygon([const Offset(60, 17), const Offset(68, 30), const Offset(60, 34), const Offset(52, 30)], true);
+    canvas.drawPath(crest, Paint()..color = Colors.white.withValues(alpha: 0.8));
+    canvas.drawPath(
+      crest,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 0.9
+        ..color = _deep(t).withValues(alpha: 0.7),
+    );
   }
 
   /// The faceted body: Iron is three flat planes, Bronze four, the rest the full set with a lit table.

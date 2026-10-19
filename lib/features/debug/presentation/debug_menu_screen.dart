@@ -173,6 +173,13 @@ class _DebugMenuScreenState extends ConsumerState<DebugMenuScreen> {
                 title: const Text('Rank badges & rank-up preview'),
                 onTap: () => context.push(Routes.badgeGallery),
               ),
+              ListTile(
+                key: const ValueKey('badge-sheet-tile'),
+                leading: const Icon(Icons.grid_view_rounded),
+                title: const Text('Badge sheet'),
+                subtitle: const Text('Every tier with its three divisions side by side'),
+                onTap: () => context.push(Routes.badgeSheet),
+              ),
             ]),
           ),
           const SectionHeader('ExerciseDB V2'),
