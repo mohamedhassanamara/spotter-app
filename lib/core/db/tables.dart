@@ -167,6 +167,10 @@ class WorkoutSets extends Table {
   /// changed it; null = the plan is untouched. [adjustReason] says why, for the marker's explanation.
   RealColumn get adjustedFrom => real().nullable()();
   TextColumn get adjustReason => text().nullable()();
+
+  /// v12: the rest actually taken before this set, in seconds: from the previous set's ✓ to this ✓, or to the moment the rest
+  /// timer was skipped. Null for a first set, warm-ups after nothing, or an unticked set.
+  IntColumn get restSeconds => integer().nullable()();
 }
 
 /// One row per calendar day: raw Health metrics and the readiness computed from them.

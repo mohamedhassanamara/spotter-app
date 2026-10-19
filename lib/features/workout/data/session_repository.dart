@@ -620,10 +620,23 @@ class SessionRepository {
     OverrideReason? reason,
     required DateTime now,
     int? exerciseRepMin,
+    DateTime? restEndedAt,
   }) async {
     final override = wouldOverride(set, weight, isWarmup: isWarmup);
     if (exerciseRepMin != null && needsReason(set, weight: weight, reps: reps, exerciseRepMin: exerciseRepMin) && reason == null) {
       throw StateError('A set that was too heavy (override below the rep range) needs a reason');
+    }
+    // The rest actually taken before this set: from the previous done set of the exercise to this ✓, or to the moment the
+    // rest timer was skipped (then it is over, whatever came after).
+    int? rest;
+    if (set.setType == null) {
+      final before = (await _setsOf(set.sessionExerciseId))
+          .where((x) => x.completed && x.completedAt != null && x.setType == null && x.position < set.position)
+          .lastOrNull;
+      if (before != null) {
+        final end = restEndedAt != null && restEndedAt.isAfter(before.completedAt!) && !restEndedAt.isAfter(now) ? restEndedAt : now;
+        rest = end.difference(before.completedAt!).inSeconds.clamp(0, 3 * 3600);
+      }
     }
     await (_db.update(_db.workoutSets)..where((t) => t.id.equals(set.id))).write(WorkoutSetsCompanion(
       weight: Value(weight),
@@ -634,6 +647,7 @@ class SessionRepository {
       completedAt: Value(now),
       isOverride: Value(override),
       overrideReason: Value(override ? reason?.name : null),
+      restSeconds: Value(rest),
     ));
     // A real working set (not a warm-up, a drop / myo / hold, or an empty one) switches the exercise on for ranks.
     if (!isWarmup && reps > 0 && set.setType == null) {
@@ -788,6 +802,7 @@ class SessionRepository {
           completedAt: Value(null),
           isOverride: Value(false),
           overrideReason: Value(null),
+          restSeconds: Value(null),
         ),
       );
 

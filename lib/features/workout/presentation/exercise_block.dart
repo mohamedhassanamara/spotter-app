@@ -216,6 +216,7 @@ class _ExerciseBlockState extends ConsumerState<ExerciseBlock> {
           if (ctx.hideWarmups && warmups > 0)
             _MutedLine(text: '$warmups warm-up${warmups == 1 ? '' : 's'} hidden', onTap: ctx.onToggleWarmups),
           for (final (i, s) in visible.indexed) ...[
+            if (s.completed && s.restSeconds != null && i > 0) _RestMarker(set: s),
             _SetRow(
               key: ValueKey('set-${s.id}'),
               set: s,
@@ -807,6 +808,33 @@ class _RankStripState extends ConsumerState<_RankStrip> with SingleTickerProvide
           ),
         ]));
       },
+    );
+  }
+}
+
+/// Between two sets: the rest actually taken before the second one, e.g. "⏱ 2:14".
+class _RestMarker extends StatelessWidget {
+  const _RestMarker({required this.set});
+  final WorkoutSet set;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = Duration(seconds: set.restSeconds ?? 0);
+    return Padding(
+      key: ValueKey('rest-marker-${set.id}'),
+      padding: const EdgeInsets.symmetric(vertical: 1),
+      child: Row(children: [
+        const Expanded(child: Divider(height: 1, color: AppColors.outline)),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8),
+          child: Row(mainAxisSize: MainAxisSize.min, children: [
+            const Icon(Icons.timer_outlined, size: 13, color: AppColors.textTertiary),
+            const SizedBox(width: 3),
+            Text(formatClock(t), style: AppType.bodyS.copyWith(fontSize: 11, color: AppColors.textTertiary, fontFeatures: AppType.tabular)),
+          ]),
+        ),
+        const Expanded(child: Divider(height: 1, color: AppColors.outline)),
+      ]),
     );
   }
 }

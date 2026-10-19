@@ -1886,3 +1886,11 @@ praise so the two in a workout differ), **at most once per exercise and twice pe
 doesn't reset it). A set below the range or an ordinary set gets none.
 Tests: `good_override_test` (the definition, discipline %, ego flag, the praise rules), `good_override_flow_test` (real taps: praise #1 and #2,
 none for the same exercise or a third one, the ego reason sheet still appears below the range).
+
+## 8. Rest marker between sets
+
+Each completed set stores the **rest actually taken before it** (`workout_sets.rest_seconds`, schema v12, also in the export): from the previous done set
+of the exercise to this ✓; when the rest timer was **skipped**, to the moment of the skip (you decided the rest was over, whatever came after). A
+small row between the two sets shows it: a timer icon and the time, e.g. "⏱ 2:14". The first set of an exercise has none, a drop / myo / hold set has none (it follows its
+set with no rest), and unticking a set clears it. Tests: `rest_taken_test` (✓ to ✓, the skip, an old skip ignored, un-tick, drops), migration v11 → v12,
+`rest_marker_flow_test` (real taps: skip then ✓ much later shows the rest to the skip, ✓ to ✓, un-tick removes it).

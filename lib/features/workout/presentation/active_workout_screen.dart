@@ -449,6 +449,7 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> with 
       reason: reason,
       now: ref.read(clockProvider)(),
       exerciseRepMin: ex.row.repMin,
+      restEndedAt: _skippedRestEnd(ex, s),
     );
     if (quiet) return;
     // Missed reps change the later sets of this exercise (and only those).
@@ -457,6 +458,12 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> with 
     await _maybePraise(session, ex, s.id);
     await _startRest(session, ex, s);
     await _maybeOfferFormReset(ex, s);
+  }
+
+  /// When the rest before [s] was skipped, if it was: the previous done set of the exercise is where that rest started.
+  DateTime? _skippedRestEnd(ActiveExercise ex, WorkoutSet s) {
+    final before = ex.sets.where((x) => x.completed && x.completedAt != null && x.setType == null && x.position < s.position).lastOrNull;
+    return before == null ? null : ref.read(restTimerProvider).takeSkip(before.completedAt!);
   }
 
   /// A good override (heavier than suggested, inside the range at the prescribed effort): a short, varied word of praise,

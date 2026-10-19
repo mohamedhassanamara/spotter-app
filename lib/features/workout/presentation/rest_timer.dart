@@ -74,6 +74,22 @@ class RestTimerController {
     }
   }
 
+  /// When the running rest was skipped (null if it wasn't): the rest taken ends there, not at the next ✓.
+  DateTime? _skippedAt;
+
+  /// The skip time, once, if it came after [since] (the previous set's ✓).
+  DateTime? takeSkip(DateTime since) {
+    final at = _skippedAt;
+    _skippedAt = null;
+    return at != null && at.isAfter(since) ? at : null;
+  }
+
+  /// Skip: ends the rest now and remembers when, for the rest marker between sets.
+  Future<void> skip() async {
+    _skippedAt = _ref.read(clockProvider)();
+    await stop();
+  }
+
   /// Rest over, skipped, the next set started or the workout finished: timer, notification and Live Activity go.
   Future<void> stop() async {
     _activity = null;
@@ -213,7 +229,7 @@ class _RestSheetState extends ConsumerState<_RestSheet> {
                 const SizedBox(width: 8),
                 _TimerButton(label: '+15', onTap: () => controller.adjust(15)),
                 const SizedBox(width: 8),
-                _TimerButton(label: 'Skip', filled: true, onTap: controller.stop),
+                _TimerButton(label: 'Skip', filled: true, onTap: controller.skip),
               ]),
             ),
           ],

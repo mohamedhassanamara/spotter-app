@@ -29,7 +29,7 @@ void main() {
     await old.close();
 
     final db = AppDatabase(schema.newConnection());
-    await verifier.migrateAndValidate(db, 11);
+    await verifier.migrateAndValidate(db, 12);
     expect((await db.select(db.sessions).get()).single.name, 'Push A');
     expect(await db.getSetting('weekly_goal'), '5');
     expect(await db.select(db.mediaMatches).get(), isEmpty);
@@ -42,7 +42,7 @@ void main() {
     await old.customStatement("INSERT INTO routines (name, position, created_at) VALUES ('Push A', 0, 1760000000)");
     await old.close();
     final db = AppDatabase(schema.newConnection());
-    await verifier.migrateAndValidate(db, 11);
+    await verifier.migrateAndValidate(db, 12);
     final r = (await db.select(db.routines).get()).single;
     expect(r.name, 'Push A');
     expect(r.programDay, isNull);
@@ -55,7 +55,7 @@ void main() {
     await old.customStatement("INSERT INTO sessions (name, started_at, status) VALUES ('Upper', 1760000000, 'finished')");
     await old.close();
     final db = AppDatabase(schema.newConnection());
-    await verifier.migrateAndValidate(db, 11);
+    await verifier.migrateAndValidate(db, 12);
     final s = (await db.select(db.sessions).get()).single;
     expect(s.source, 'app');
     expect(s.externalId, isNull);
@@ -76,7 +76,7 @@ void main() {
     await old.customStatement('INSERT INTO workout_sets (session_exercise_id, position, weight, reps) VALUES (1, 0, 60, 8)');
     await old.close();
     final db = AppDatabase(schema.newConnection());
-    await verifier.migrateAndValidate(db, 11);
+    await verifier.migrateAndValidate(db, 12);
     final e = (await db.select(db.sessionExercises).get()).single;
     expect(e.restEnabled, isTrue);
     expect(e.supersetGroup, isNull);
@@ -87,7 +87,7 @@ void main() {
   test('v5 → v6 adds the ExerciseDB V2 mapping table', () async {
     final schema = await verifier.schemaAt(5);
     final db = AppDatabase(schema.newConnection());
-    await verifier.migrateAndValidate(db, 11);
+    await verifier.migrateAndValidate(db, 12);
     expect(await db.select(db.edbV2Maps).get(), isEmpty);
     await db.close();
   });
@@ -102,7 +102,7 @@ void main() {
     await old.customStatement("INSERT INTO app_settings (key, value) VALUES ('exercise_dataset_version', '3')");
     await old.close();
     final db = AppDatabase(schema.newConnection());
-    await verifier.migrateAndValidate(db, 11);
+    await verifier.migrateAndValidate(db, 12);
     await ExerciseRepository(db).ensureSeeded(
       jsonOverride: File('assets/exercises.json').readAsStringSync(),
       extraJsonOverride: File('assets/extra_exercises.json').readAsStringSync(),
@@ -122,35 +122,42 @@ void main() {
   test('v7 → v8 adds routine overrides, routine supersets and the session→routine link', () async {
     final schema = await verifier.schemaAt(7);
     final db = AppDatabase(schema.newConnection());
-    await verifier.migrateAndValidate(db, 11);
+    await verifier.migrateAndValidate(db, 12);
     await db.close();
   });
 
   test('v8 → v9 adds the partials flag (false for existing sets)', () async {
     final schema = await verifier.schemaAt(8);
     final db = AppDatabase(schema.newConnection());
-    await verifier.migrateAndValidate(db, 11);
+    await verifier.migrateAndValidate(db, 12);
     await db.close();
   });
 
   test('v9 → v10 adds daily food energy and protein', () async {
     final schema = await verifier.schemaAt(9);
     final db = AppDatabase(schema.newConnection());
-    await verifier.migrateAndValidate(db, 11);
+    await verifier.migrateAndValidate(db, 12);
     await db.close();
   });
 
   test('v10 → v11 adds the set plan-adjustment columns', () async {
     final schema = await verifier.schemaAt(10);
     final db = AppDatabase(schema.newConnection());
-    await verifier.migrateAndValidate(db, 11);
+    await verifier.migrateAndValidate(db, 12);
     await db.close();
   });
 
-  test('v1 → v11 in one go', () async {
+  test('v11 → v12 adds the actual rest taken per set (null for existing sets)', () async {
+    final schema = await verifier.schemaAt(11);
+    final db = AppDatabase(schema.newConnection());
+    await verifier.migrateAndValidate(db, 12);
+    await db.close();
+  });
+
+  test('v1 → v12 in one go', () async {
     final schema = await verifier.schemaAt(1);
     final db = AppDatabase(schema.newConnection());
-    await verifier.migrateAndValidate(db, 11);
+    await verifier.migrateAndValidate(db, 12);
     await db.close();
   });
 }

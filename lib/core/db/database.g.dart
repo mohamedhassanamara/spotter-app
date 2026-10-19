@@ -4560,6 +4560,17 @@ class $WorkoutSetsTable extends WorkoutSets
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _restSecondsMeta = const VerificationMeta(
+    'restSeconds',
+  );
+  @override
+  late final GeneratedColumn<int> restSeconds = GeneratedColumn<int>(
+    'rest_seconds',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -4583,6 +4594,7 @@ class $WorkoutSetsTable extends WorkoutSets
     partials,
     adjustedFrom,
     adjustReason,
+    restSeconds,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -4750,6 +4762,15 @@ class $WorkoutSetsTable extends WorkoutSets
         ),
       );
     }
+    if (data.containsKey('rest_seconds')) {
+      context.handle(
+        _restSecondsMeta,
+        restSeconds.isAcceptableOrUnknown(
+          data['rest_seconds']!,
+          _restSecondsMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -4843,6 +4864,10 @@ class $WorkoutSetsTable extends WorkoutSets
         DriftSqlType.string,
         data['${effectivePrefix}adjust_reason'],
       ),
+      restSeconds: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}rest_seconds'],
+      ),
     );
   }
 
@@ -4887,6 +4912,10 @@ class WorkoutSet extends DataClass implements Insertable<WorkoutSet> {
   /// changed it; null = the plan is untouched. [adjustReason] says why, for the marker's explanation.
   final double? adjustedFrom;
   final String? adjustReason;
+
+  /// v12: the rest actually taken before this set, in seconds: from the previous set's ✓ to this ✓, or to the moment the rest
+  /// timer was skipped. Null for a first set, warm-ups after nothing, or an unticked set.
+  final int? restSeconds;
   const WorkoutSet({
     required this.id,
     required this.sessionExerciseId,
@@ -4909,6 +4938,7 @@ class WorkoutSet extends DataClass implements Insertable<WorkoutSet> {
     required this.partials,
     this.adjustedFrom,
     this.adjustReason,
+    this.restSeconds,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -4958,6 +4988,9 @@ class WorkoutSet extends DataClass implements Insertable<WorkoutSet> {
     if (!nullToAbsent || adjustReason != null) {
       map['adjust_reason'] = Variable<String>(adjustReason);
     }
+    if (!nullToAbsent || restSeconds != null) {
+      map['rest_seconds'] = Variable<int>(restSeconds);
+    }
     return map;
   }
 
@@ -5006,6 +5039,9 @@ class WorkoutSet extends DataClass implements Insertable<WorkoutSet> {
       adjustReason: adjustReason == null && nullToAbsent
           ? const Value.absent()
           : Value(adjustReason),
+      restSeconds: restSeconds == null && nullToAbsent
+          ? const Value.absent()
+          : Value(restSeconds),
     );
   }
 
@@ -5036,6 +5072,7 @@ class WorkoutSet extends DataClass implements Insertable<WorkoutSet> {
       partials: serializer.fromJson<bool>(json['partials']),
       adjustedFrom: serializer.fromJson<double?>(json['adjustedFrom']),
       adjustReason: serializer.fromJson<String?>(json['adjustReason']),
+      restSeconds: serializer.fromJson<int?>(json['restSeconds']),
     );
   }
   @override
@@ -5063,6 +5100,7 @@ class WorkoutSet extends DataClass implements Insertable<WorkoutSet> {
       'partials': serializer.toJson<bool>(partials),
       'adjustedFrom': serializer.toJson<double?>(adjustedFrom),
       'adjustReason': serializer.toJson<String?>(adjustReason),
+      'restSeconds': serializer.toJson<int?>(restSeconds),
     };
   }
 
@@ -5088,6 +5126,7 @@ class WorkoutSet extends DataClass implements Insertable<WorkoutSet> {
     bool? partials,
     Value<double?> adjustedFrom = const Value.absent(),
     Value<String?> adjustReason = const Value.absent(),
+    Value<int?> restSeconds = const Value.absent(),
   }) => WorkoutSet(
     id: id ?? this.id,
     sessionExerciseId: sessionExerciseId ?? this.sessionExerciseId,
@@ -5116,6 +5155,7 @@ class WorkoutSet extends DataClass implements Insertable<WorkoutSet> {
     partials: partials ?? this.partials,
     adjustedFrom: adjustedFrom.present ? adjustedFrom.value : this.adjustedFrom,
     adjustReason: adjustReason.present ? adjustReason.value : this.adjustReason,
+    restSeconds: restSeconds.present ? restSeconds.value : this.restSeconds,
   );
   WorkoutSet copyWithCompanion(WorkoutSetsCompanion data) {
     return WorkoutSet(
@@ -5160,6 +5200,9 @@ class WorkoutSet extends DataClass implements Insertable<WorkoutSet> {
       adjustReason: data.adjustReason.present
           ? data.adjustReason.value
           : this.adjustReason,
+      restSeconds: data.restSeconds.present
+          ? data.restSeconds.value
+          : this.restSeconds,
     );
   }
 
@@ -5186,7 +5229,8 @@ class WorkoutSet extends DataClass implements Insertable<WorkoutSet> {
           ..write('setType: $setType, ')
           ..write('partials: $partials, ')
           ..write('adjustedFrom: $adjustedFrom, ')
-          ..write('adjustReason: $adjustReason')
+          ..write('adjustReason: $adjustReason, ')
+          ..write('restSeconds: $restSeconds')
           ..write(')'))
         .toString();
   }
@@ -5214,6 +5258,7 @@ class WorkoutSet extends DataClass implements Insertable<WorkoutSet> {
     partials,
     adjustedFrom,
     adjustReason,
+    restSeconds,
   ]);
   @override
   bool operator ==(Object other) =>
@@ -5239,7 +5284,8 @@ class WorkoutSet extends DataClass implements Insertable<WorkoutSet> {
           other.setType == this.setType &&
           other.partials == this.partials &&
           other.adjustedFrom == this.adjustedFrom &&
-          other.adjustReason == this.adjustReason);
+          other.adjustReason == this.adjustReason &&
+          other.restSeconds == this.restSeconds);
 }
 
 class WorkoutSetsCompanion extends UpdateCompanion<WorkoutSet> {
@@ -5264,6 +5310,7 @@ class WorkoutSetsCompanion extends UpdateCompanion<WorkoutSet> {
   final Value<bool> partials;
   final Value<double?> adjustedFrom;
   final Value<String?> adjustReason;
+  final Value<int?> restSeconds;
   const WorkoutSetsCompanion({
     this.id = const Value.absent(),
     this.sessionExerciseId = const Value.absent(),
@@ -5286,6 +5333,7 @@ class WorkoutSetsCompanion extends UpdateCompanion<WorkoutSet> {
     this.partials = const Value.absent(),
     this.adjustedFrom = const Value.absent(),
     this.adjustReason = const Value.absent(),
+    this.restSeconds = const Value.absent(),
   });
   WorkoutSetsCompanion.insert({
     this.id = const Value.absent(),
@@ -5309,6 +5357,7 @@ class WorkoutSetsCompanion extends UpdateCompanion<WorkoutSet> {
     this.partials = const Value.absent(),
     this.adjustedFrom = const Value.absent(),
     this.adjustReason = const Value.absent(),
+    this.restSeconds = const Value.absent(),
   }) : sessionExerciseId = Value(sessionExerciseId),
        position = Value(position);
   static Insertable<WorkoutSet> custom({
@@ -5333,6 +5382,7 @@ class WorkoutSetsCompanion extends UpdateCompanion<WorkoutSet> {
     Expression<bool>? partials,
     Expression<double>? adjustedFrom,
     Expression<String>? adjustReason,
+    Expression<int>? restSeconds,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -5356,6 +5406,7 @@ class WorkoutSetsCompanion extends UpdateCompanion<WorkoutSet> {
       if (partials != null) 'partials': partials,
       if (adjustedFrom != null) 'adjusted_from': adjustedFrom,
       if (adjustReason != null) 'adjust_reason': adjustReason,
+      if (restSeconds != null) 'rest_seconds': restSeconds,
     });
   }
 
@@ -5381,6 +5432,7 @@ class WorkoutSetsCompanion extends UpdateCompanion<WorkoutSet> {
     Value<bool>? partials,
     Value<double?>? adjustedFrom,
     Value<String?>? adjustReason,
+    Value<int?>? restSeconds,
   }) {
     return WorkoutSetsCompanion(
       id: id ?? this.id,
@@ -5404,6 +5456,7 @@ class WorkoutSetsCompanion extends UpdateCompanion<WorkoutSet> {
       partials: partials ?? this.partials,
       adjustedFrom: adjustedFrom ?? this.adjustedFrom,
       adjustReason: adjustReason ?? this.adjustReason,
+      restSeconds: restSeconds ?? this.restSeconds,
     );
   }
 
@@ -5473,6 +5526,9 @@ class WorkoutSetsCompanion extends UpdateCompanion<WorkoutSet> {
     if (adjustReason.present) {
       map['adjust_reason'] = Variable<String>(adjustReason.value);
     }
+    if (restSeconds.present) {
+      map['rest_seconds'] = Variable<int>(restSeconds.value);
+    }
     return map;
   }
 
@@ -5499,7 +5555,8 @@ class WorkoutSetsCompanion extends UpdateCompanion<WorkoutSet> {
           ..write('setType: $setType, ')
           ..write('partials: $partials, ')
           ..write('adjustedFrom: $adjustedFrom, ')
-          ..write('adjustReason: $adjustReason')
+          ..write('adjustReason: $adjustReason, ')
+          ..write('restSeconds: $restSeconds')
           ..write(')'))
         .toString();
   }
@@ -12528,6 +12585,7 @@ typedef $$WorkoutSetsTableCreateCompanionBuilder =
       Value<bool> partials,
       Value<double?> adjustedFrom,
       Value<String?> adjustReason,
+      Value<int?> restSeconds,
     });
 typedef $$WorkoutSetsTableUpdateCompanionBuilder =
     WorkoutSetsCompanion Function({
@@ -12552,6 +12610,7 @@ typedef $$WorkoutSetsTableUpdateCompanionBuilder =
       Value<bool> partials,
       Value<double?> adjustedFrom,
       Value<String?> adjustReason,
+      Value<int?> restSeconds,
     });
 
 final class $$WorkoutSetsTableReferences
@@ -12683,6 +12742,11 @@ class $$WorkoutSetsTableFilterComposer
 
   ColumnFilters<String> get adjustReason => $composableBuilder(
     column: $table.adjustReason,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get restSeconds => $composableBuilder(
+    column: $table.restSeconds,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -12819,6 +12883,11 @@ class $$WorkoutSetsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get restSeconds => $composableBuilder(
+    column: $table.restSeconds,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   $$SessionExercisesTableOrderingComposer get sessionExerciseId {
     final $$SessionExercisesTableOrderingComposer composer = $composerBuilder(
       composer: this,
@@ -12930,6 +12999,11 @@ class $$WorkoutSetsTableAnnotationComposer
     builder: (column) => column,
   );
 
+  GeneratedColumn<int> get restSeconds => $composableBuilder(
+    column: $table.restSeconds,
+    builder: (column) => column,
+  );
+
   $$SessionExercisesTableAnnotationComposer get sessionExerciseId {
     final $$SessionExercisesTableAnnotationComposer composer = $composerBuilder(
       composer: this,
@@ -13003,6 +13077,7 @@ class $$WorkoutSetsTableTableManager
                 Value<bool> partials = const Value.absent(),
                 Value<double?> adjustedFrom = const Value.absent(),
                 Value<String?> adjustReason = const Value.absent(),
+                Value<int?> restSeconds = const Value.absent(),
               }) => WorkoutSetsCompanion(
                 id: id,
                 sessionExerciseId: sessionExerciseId,
@@ -13025,6 +13100,7 @@ class $$WorkoutSetsTableTableManager
                 partials: partials,
                 adjustedFrom: adjustedFrom,
                 adjustReason: adjustReason,
+                restSeconds: restSeconds,
               ),
           createCompanionCallback:
               ({
@@ -13049,6 +13125,7 @@ class $$WorkoutSetsTableTableManager
                 Value<bool> partials = const Value.absent(),
                 Value<double?> adjustedFrom = const Value.absent(),
                 Value<String?> adjustReason = const Value.absent(),
+                Value<int?> restSeconds = const Value.absent(),
               }) => WorkoutSetsCompanion.insert(
                 id: id,
                 sessionExerciseId: sessionExerciseId,
@@ -13071,6 +13148,7 @@ class $$WorkoutSetsTableTableManager
                 partials: partials,
                 adjustedFrom: adjustedFrom,
                 adjustReason: adjustReason,
+                restSeconds: restSeconds,
               ),
           withReferenceMapper: (p0) => p0
               .map(

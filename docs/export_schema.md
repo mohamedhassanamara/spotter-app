@@ -110,6 +110,7 @@ Start an export from **Settings → Export**. The files go to the iOS share shee
 | `override_reason` | string | yes | `feltStrong`, `testingMax` or `justDidIt` |
 | `e1rm_kg` | number | yes | Epley on effective reps, `weight × (1 + (reps + RIR)/30)`, with RPE 9 assumed when it's missing. Working sets only. External load only, so bodyweight is not added. |
 | `set_type` | string | no | `warmup`, `working` or `drop` (drop sets count for volume, never for e1RM, ranks or PRs). |
+| `rest_seconds` | int | yes | rest actually taken before this set: previous set's ✓ to this ✓, or to the moment the rest timer was skipped. Null for a first set or a set not done. |
 | `is_ego_set` | bool | no | override (load > 5 % above the suggestion) whose reps fell below the set's target range. Excluded from ranks and PRs. |
 
 ### `readiness_days[]`
