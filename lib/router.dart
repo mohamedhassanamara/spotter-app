@@ -9,7 +9,6 @@ import 'features/debug/presentation/debug_menu_screen.dart';
 import 'features/debug/presentation/exercise_audit_screen.dart';
 import 'features/debug/presentation/media_matching_screen.dart';
 import 'features/debug/presentation/summary_preview.dart';
-import 'features/history/presentation/exercise_history_screen.dart';
 import 'features/import/presentation/liftoff_import_screen.dart';
 import 'features/history/presentation/session_detail_screen.dart';
 import 'features/home/presentation/home_screen.dart';
@@ -139,7 +138,7 @@ GoRouter buildRouter(ValueListenable<bool> onboarded) {
           GoRoute(
             path: 'history',
             parentNavigatorKey: rootNavigatorKey,
-            builder: (_, s) => ExerciseHistoryScreen(exerciseId: s.pathParameters['id']!),
+            builder: (_, s) => ExerciseDetailScreen(exerciseId: s.pathParameters['id']!, initialTab: ExerciseTab.stats),
           ),
           GoRoute(
             path: 'edit',

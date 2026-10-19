@@ -423,3 +423,54 @@ class _ExerciseThumbPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant _ExerciseThumbPainter old) => old.targets != targets;
 }
+
+/// Front and back figures of one exercise: the prime movers in a strong colour, the helpers in a lighter one (legend underneath).
+class ExerciseBodyFigures extends ConsumerWidget {
+  const ExerciseBodyFigures({super.key, required this.targets});
+  final MuscleTargets targets;
+
+  static const primaryColor = AppColors.accent;
+  static final secondaryColor = Color.alphaBlend(AppColors.accent.withValues(alpha: 0.42), AppColors.unranked);
+
+  Color colorFor(Muscle m) {
+    final w = targets.weightFor(m);
+    return w >= MuscleTargets.primaryThreshold ? primaryColor : (w > 0 ? secondaryColor : AppColors.unranked);
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final map = ref.watch(bodyMapProvider);
+    final label = AppType.label.copyWith(fontSize: 11, color: AppColors.textTertiary, letterSpacing: 2);
+    return map.when(
+      loading: () => const AspectRatio(aspectRatio: 1.4, child: SizedBox()),
+      error: (e, _) => Text('Body map failed to load: $e'),
+      data: (m) {
+        Widget side(BodyView v, String key, String title) => Expanded(
+              child: Column(children: [
+                _ViewCanvas(key: ValueKey(key), view: v, color: colorFor, selected: null, onTap: (_) {}),
+                const SizedBox(height: 6),
+                Text(title, style: label),
+              ]),
+            );
+        Widget dot(Color c, String text) => Row(mainAxisSize: MainAxisSize.min, children: [
+              Container(width: 12, height: 12, decoration: BoxDecoration(color: c, shape: BoxShape.circle)),
+              const SizedBox(width: 6),
+              Text(text, style: AppType.bodyS.copyWith(color: AppColors.textSecondary)),
+            ]);
+        return Column(children: [
+          Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            side(m.front, 'exercise-body-front', 'FRONT'),
+            const SizedBox(width: 12),
+            side(m.back, 'exercise-body-back', 'BACK'),
+          ]),
+          const SizedBox(height: 10),
+          Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+            dot(primaryColor, 'Primary'),
+            const SizedBox(width: 20),
+            dot(secondaryColor, 'Secondary'),
+          ]),
+        ]);
+      },
+    );
+  }
+}

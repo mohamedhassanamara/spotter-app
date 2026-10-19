@@ -24,8 +24,12 @@ void main() {
     await tester.enterText(find.byType(TextField).first, 'Leverage Chest Press');
     await h.settle(6);
     await h.tap(find.text('Leverage Chest Press').last);
+    await h.waitFor(find.byKey(const ValueKey('jeff-video-card')), reason: 'Jeff thumbnail in the corner of the demo', scroll: false);
+    await h.tap(find.byKey(const ValueKey('watch-jeff-corner')));
     await h.waitFor(find.byKey(const ValueKey('program-video')), reason: 'embedded program video', scroll: false);
     expect(find.textContaining('Jeff Nippard · Machine Chest Press'), findsOneWidget);
+    await tester.tapAt(const Offset(200, 60)); // close the video sheet
+    await h.settle(8);
     await tester.pageBack();
     await h.settle();
 

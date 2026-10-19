@@ -2041,3 +2041,20 @@ it: ~10 000 checks), integration `library_search_flow_test` (real typing: "high-
 - **Routine editor:** tapping a row opens the exercise page. The row's sets/reps/rest sheet moved to a sliders button (`edit-<id>`) on the row, next to the link, remove and drag controls, which are unchanged.
 - Test harness bug found on the way: `scrollToTop` only scrolled the *last* vertical list, which on the Train tab is the shrink-wrapped inner routine list; it now resets every list.
 Tests: integration `routine_exercise_tap_flow_test`; `routine_edit_flow_test` uses the sliders button.
+
+## Round 3, item 4: exercise page redesign
+
+Tabs **About · Rank · Stats · History** (`/exercise/:id`; the old `/exercise/:id/history` route opens the same page on Stats).
+- **About**, top to bottom: the 3D demo as the hero (the library thumbnail still flies into it); if Jeff has a video, a small "Jeff's demo" chip in the top-right corner of the hero (the demo's own speed
+  and pause controls are bottom-right) that opens the video in a sheet; **How to log?**; **Muscles worked** (front and back figures, primary in the accent colour, secondary in a lighter one, legend);
+  **Primary muscle** and **Secondary muscles** tiles (mini body thumbnail with the muscle lit, its name; a tap opens that muscle's rank sheet); **Equipment** icon tiles (dataset equipment plus what the
+  name implies: bench, Smith machine, rope, pull-up bar); **Instructions** (numbered); credits; photos of real people (only here).
+- **How to log?** (`log_guide.dart`): the rule follows the load type in effect (your override from the logger's Weight steps…, else the classification), with a line on whether the bar / sled / carriage counts.
+  Dumbbell: ONE dumbbell. Plate-loaded both sides: total plates on both sides (sled not counted). Single sleeve: total plates on the sleeve. Stack: the stack weight. Assisted: negative. One-arm/one-leg on a
+  machine or cable: the weight for one side. Barbell: total on the bar, bar (20 kg) included. Kettlebell, bodyweight (only the weight you add) and "no equipment listed" have rules too.
+  Every exercise in the library gets a complete rule (test); my routine exercises are all classified, none falls back to "no equipment listed" (table: `docs/LOG_GUIDE.md`).
+  Hyperextensions has no dataset equipment but is bodyweight-loaded, so it is treated as bodyweight.
+- **Rank:** the exercise's badge, RR bar, best e1RM and the kg for the next division, the nine-tier ladder with the current tier lit, "Count toward ranks", or "Unranked" with the reason (no standard / not placed yet).
+- **Stats:** best e1RM, sessions, best set, volume, the e1RM chart, the best sets (the old history page's top half). **History:** every session, newest first.
+Tests: `log_guide_test`, `exercise_page_flow_test` (tabs, hero, Jeff chip, How to log sheets for a plate-loaded machine and a dumbbell, figures + legend, a muscle tile opens the rank sheet, equipment,
+instructions, Rank/Stats/History), `exercise_media_flow_test` and `library_media_flow_test` updated for the corner chip. Screenshots: `docs/screenshots/exercise-page/`.

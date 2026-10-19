@@ -24,11 +24,17 @@ void main() {
     await h.tap(find.text('Leverage Chest Press').last);
     await h.waitFor(find.byKey(const ValueKey('exercise-hero')), scroll: false);
     await h.waitFor(find.textContaining('3D demo: ExerciseDB'), timeout: const Duration(seconds: 30), reason: 'the GIF is the hero', scroll: false);
-    await h.waitFor(find.byKey(const ValueKey('jeff-video-card')), reason: 'Jeff card as well');
-    expect(find.byKey(const ValueKey('program-video')), findsOneWidget);
+    await h.waitFor(find.byKey(const ValueKey('jeff-video-card')), reason: 'Jeff thumbnail in the corner of the demo', scroll: false);
     final hero = tester.getRect(find.byKey(const ValueKey('exercise-hero')));
     final card = tester.getRect(find.byKey(const ValueKey('jeff-video-card')));
-    expect(card.top, greaterThan(hero.top), reason: 'GIF first, video below');
+    expect(hero.inflate(2).contains(card.center), isTrue, reason: 'the video thumbnail sits on the demo, in its top-right corner');
+    expect(card.right, greaterThan(hero.center.dx));
+    expect(card.top, lessThan(hero.center.dy), reason: 'top corner: the demo has its own controls bottom-right');
+    expect(find.byKey(const ValueKey('program-video')), findsNothing, reason: 'the video opens on a tap');
+    await h.tap(find.byKey(const ValueKey('watch-jeff-corner')));
+    await h.waitFor(find.byKey(const ValueKey('program-video')), reason: 'video sheet', scroll: false);
+    await tester.tapAt(const Offset(200, 60)); // dismiss
+    await h.settle(8);
     await h.scrollToTop();
     await h.settle(10);
     await h.shot('exercise-gif-and-jeff');
