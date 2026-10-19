@@ -1,6 +1,8 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'core/db/database.dart';
@@ -26,6 +28,7 @@ import 'features/gamification/domain/quests.dart';
 import 'features/gamification/domain/stats.dart';
 import 'features/gamification/domain/streaks.dart';
 import 'features/gamification/domain/xp.dart';
+import 'features/library/domain/exercise_aliases.dart';
 import 'features/library/data/exercise_repository.dart';
 import 'features/library/domain/exercise_info.dart';
 import 'features/program/data/program_repository.dart';
@@ -94,6 +97,31 @@ final historyProvider = FutureProvider<TrainingHistory>((ref) async {
   ref.watch(_historyVersionProvider);
   final catalog = await ref.watch(catalogProvider.future);
   return ref.watch(historyRepositoryProvider).load(catalog);
+});
+
+/// Other names of each exercise, for the library search: the names in my routines and sessions, the program's names and substitutions, Liftoff names.
+final exerciseAliasesProvider = FutureProvider<Map<String, Set<String>>>((ref) async {
+  ref.watch(routinesProvider);
+  ref.watch(activeSessionProvider);
+  final db = ref.watch(databaseProvider);
+  Future<Map<String, dynamic>?> asset(String path) async {
+    try {
+      return jsonDecode(await rootBundle.loadString(path)) as Map<String, dynamic>;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  final used = [
+    for (final r in await db.select(db.routineExercises).get()) (exerciseId: r.exerciseId, displayName: r.displayName),
+    for (final r in await db.select(db.sessionExercises).get()) (exerciseId: r.exerciseId, displayName: r.displayName),
+  ];
+  return buildAliases(
+    usedNames: used,
+    myRoutines: await asset('assets/programs/my_routines.json'),
+    canonicalProgram: await asset('assets/programs/min_max_canonical.json'),
+    liftoffMap: await asset('assets/liftoff_name_map.json'),
+  );
 });
 
 final routinesProvider = StreamProvider<List<RoutineWithExercises>>(

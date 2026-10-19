@@ -2021,3 +2021,15 @@ Finish → **"Calculating your results…" loader** (`CalculatingResults`: spinn
   **Source and licence:** original code in this repository, no Lottie file or other asset, so there is nothing to attribute or to licence.
 Tests: `rank_sequence_test` and `after_visuals_test` (widget), integration `after_workout_flow_test` (loader, every stat, rank screens, flame, Continue only at the end, Skip from
 each screen), `rank_up_flow_test` and `streak_finish_flow_test` updated. Screenshots: `docs/screenshots/after/`.
+
+## Round 3, item 2: High-to-Low Cable Fly was "missing" from the library, and search
+
+**Root cause:** the exercise was never missing. "High-to-Low Cable Fly" is the name in my Push routine; the library entry behind it is **Cable Crossover** (`Cable_Crossover`),
+and the library search compared the query only with the library's own name, as a raw substring: no routine names, no program names ("Cable Flye"), no Liftoff names,
+and "high-to" had to match letter for letter (hyphens, spacing and plurals broke it). Every routine, history and custom exercise is a row of the catalogue, and the test
+below checks that all of my routine exercises are.
+**Fix:** `exerciseAliasesProvider` collects the other names of each exercise (routine and session names, the program's names and its substitutions mapped through the
+program slots, the Liftoff names; list: `docs/SEARCH_ALIASES.md`). The search tokenizes both sides (case, punctuation and hyphens as spaces, plurals stemmed, a half-typed
+word still matches, "hightolow" matches through the spaceless form) and matches each name on its own. A row found under another name says **"also known as …"**.
+Tests: `library_search_test` (tokens, aliases, every fragment of 4+ letters of the library name, the routine name and the program name of every exercise in my 5 routines finds
+it: ~10 000 checks), integration `library_search_flow_test` (real typing: "high-to", "high to low", "hightolow", "cable flye").

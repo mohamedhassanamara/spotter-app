@@ -76,7 +76,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
       body: AsyncBody<Map<String, ExerciseInfo>>(
         value: catalog,
         builder: (all) {
-          final results = _filter.apply(all.values);
+          final results = _filter.apply(all.values, aliases: ref.watch(exerciseAliasesProvider).value ?? const {});
           return Column(
             children: [
               Padding(
@@ -166,6 +166,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                           index: i,
                           child: ExerciseListTile(
                           heroTag: widget.pickMode ? null : 'ex-hero-${results[i].id}',
+                          alsoKnownAs: _filter.matchedAlias(results[i], ref.watch(exerciseAliasesProvider).value ?? const {}),
                           exercise: results[i],
                           onTap: () => widget.pickMode
                               ? context.pop(results[i].id)
@@ -186,10 +187,13 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
 
 /// One exercise row with thumbnail and favorite toggle.
 class ExerciseListTile extends StatelessWidget {
-  const ExerciseListTile({super.key, required this.exercise, required this.onTap, this.onFavorite, this.trailing, this.heroTag});
+  const ExerciseListTile({super.key, required this.exercise, required this.onTap, this.onFavorite, this.trailing, this.heroTag, this.alsoKnownAs});
 
   final ExerciseInfo exercise;
   final String? heroTag;
+
+  /// Another name the search matched ("also known as").
+  final String? alsoKnownAs;
   final VoidCallback onTap;
   final VoidCallback? onFavorite;
   final Widget? trailing;
@@ -210,6 +214,7 @@ class ExerciseListTile extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(e.name, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700), maxLines: 2, overflow: TextOverflow.ellipsis),
+                  if (alsoKnownAs != null) Text('also known as $alsoKnownAs', key: ValueKey('aka-${e.id}'), style: const TextStyle(color: AppColors.primary, fontSize: 12, fontWeight: FontWeight.w700)),
                   const SizedBox(height: 3),
                   Text(
                     [_cap(e.muscleSummary), if (e.equipment != null) _cap(e.equipment!), if (e.isCustom) 'Custom'].join(' · '),
