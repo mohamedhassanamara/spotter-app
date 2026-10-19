@@ -1902,3 +1902,16 @@ pending "Rest done" notification and the Live Activity ran on for a set that no 
 (`RestTimerController.cancelIfFor`): un-ticking that set while its rest runs cancels all three; un-ticking another set leaves the running rest alone; a
 rest from before the app process (set unknown) is cancelled when the latest set done is un-ticked. Tests: `rest_live_activity_test` (timer cleared, "Rest done" notification cancelled,
 Live Activity ended; other set; nothing running), `uncheck_rest_flow_test` (real taps with the native Live Activity count).
+
+## 11. Rest after warm-ups
+
+**What the program PDF says** (re-read from both of the owner's copies, "How to Run this Program", the Rest section; Phase 2 page 19, the 5-day program page 18):
+"**Between working sets:** follow the listed rest time. **Between warm-up sets: rest 0–60 seconds.** **Between exercises:** rest 1–2 minutes as needed"
+(the 5-day PDF: "between exercises 1 to 5 minutes depending on how demanding"; heavy compounds 3–5 min, lighter compounds and isolations 1–2 min between sets).
+The warm-up protocol page (page 17) gives the pyramid (percent of the planned weight and reps for 1–4 warm-ups) and no rest times.
+**It says nothing about the rest between the last warm-up and the first working set**, so by the fallback rule:
+- between warm-up sets: **45 s** (inside the program's 0–60 s);
+- last warm-up → first working set: **1:30** (this app's choice, documented here);
+- working sets keep the listed rest, and between exercises the previous exercise's listed rest still runs after its last set.
+The rest timer, its notification and the Live Activity follow these values (a warm-up ✓ now starts a rest, with the next set as the target; it used to start none).
+Tests: `warmup_rest_test` (the rule), `warmup_rest_flow_test` (real taps: 45 → … → 90 → the 3-minute chest-press rest).

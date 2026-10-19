@@ -33,6 +33,7 @@ import 'keypad.dart';
 import '../../coach/domain/praise.dart';
 import '../data/history_repository.dart' show loggedSetFromRow;
 import '../domain/rest_preview.dart';
+import '../domain/rest_rules.dart';
 import 'rest_timer.dart';
 import 'superset_style.dart';
 
@@ -550,7 +551,12 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> with 
     final timer = ref.read(restTimerProvider);
     // Completing a set means the next one started: a rest still running from the one before is over (its
     // Live Activity with it), whether or not this set starts a rest of its own.
-    if (s.isWarmup || !ex.row.restEnabled) return timer.stop();
+    if (!ex.row.restEnabled) return timer.stop();
+    if (s.isWarmup) {
+      // Warm-ups: 45 s before the next warm-up, 1:30 before the first working set (the program: 0–60 s between warm-ups).
+      final rest = WarmupRest.after(ex.sets, s);
+      return rest == null ? timer.stop() : timer.start(rest, preview: _restPreview(session, ex, s), setId: s.id);
+    }
     final idx = ex.sets.indexWhere((x) => x.id == s.id);
     final nextSet = idx >= 0 && idx + 1 < ex.sets.length ? ex.sets[idx + 1] : null;
     if (nextSet != null && nextSet.isFollowUp) {
