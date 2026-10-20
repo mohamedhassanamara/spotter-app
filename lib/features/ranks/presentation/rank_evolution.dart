@@ -54,7 +54,7 @@ class MuscleSeries extends EvolutionSeries {
 
 /// The y range [low, high) of one tier in points, for the background bands.
 (double, double) tierBand(Tier t) {
-  if (t == Tier.radiant) return (RankScore.radiantPoints, RankScore.radiantPoints + 3);
+  if (t == Tier.immortal) return (RankScore.apexPoints, RankScore.apexPoints + 3);
   return (t.index * 3.0, t.index * 3.0 + 3);
 }
 

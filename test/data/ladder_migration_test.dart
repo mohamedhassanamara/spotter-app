@@ -55,4 +55,18 @@ void main() {
     expect(await repo.unlockedKeys(), {'rank_master', 'patience'});
     expect(await db.getSetting(rankLadderVersionKey), isNull);
   });
+
+  test('v8 renames the top lift achievements silently: old Immortal is Olympian, old Radiant is Immortal, once', () async {
+    final db = AppDatabase(NativeDatabase.memory());
+    addTearDown(db.close);
+    await db.putSetting(rankLadderVersionKey, '7');
+    final repo = GamificationRepository(db);
+    final defs = await GamificationRepository.loadAchievementDefs();
+    await repo.unlock(['lift_immortal', 'lift_radiant'], DateTime(2026, 10, 1));
+    // Pending without a bodyweight: the rename still happens, exactly once.
+    await migrateRankLadder(db: db, stats: const AchievementStats(bestExerciseTierIndex: -1), defs: defs, now: now, ranksKnown: false);
+    await migrateRankLadder(db: db, stats: const AchievementStats(bestExerciseTierIndex: -1), defs: defs, now: now, ranksKnown: false);
+    expect(await repo.unlockedKeys(), {'lift_olympian', 'lift_immortal'});
+    expect((await repo.watchUnlocked().first)['lift_immortal'], DateTime(2026, 10, 1), reason: 'keeps the date');
+  });
 }

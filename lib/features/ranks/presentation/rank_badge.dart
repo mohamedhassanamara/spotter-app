@@ -16,11 +16,11 @@ enum BadgeSize {
 
 /// Original rank emblem (vector, drawn in code, in a faceted-crystal style; nothing here is traced from anyone's
 /// artwork). Escalates with the tier: Iron and Bronze are plain flat gems; Silver and Gold are fully faceted with side
-/// shards and blades; Platinum glows; Diamond floats shards around the crystal; Champion and Immortal add wings and a
-/// crown; Radiant glows, throws rays and shimmers. Each tier is painted with its own two-colour gradient. The division
+/// shards and blades; Platinum glows; Diamond floats shards around the crystal; Champion and Olympian add wings and a
+/// crown (Olympian in royal blue with gold accents); Immortal, the top tier, is bigger, darker (black facets, edges and crest) and glows, throws rays and shimmers. Each tier is painted with its own two-colour gradient. The division
 /// (1–3) is shown as that many lit marks under the emblem and in the emblem itself: division 2 adds an inlay line inside the crystal and two
 /// studs at its shoulders, division 3 adds a bright edge, an edge glow and a crest facet on top, so a tier stays recognizable across its divisions
-/// while climbing it is visible. Radiant has no divisions.
+/// while climbing it is visible. Immortal has no divisions.
 class RankBadge extends StatefulWidget {
   const RankBadge({super.key, required this.score, this.size = BadgeSize.medium, this.animate = true, this.width});
 
@@ -96,10 +96,10 @@ class EmblemPainter extends CustomPainter {
   /// Null = unranked.
   final Tier? tier;
 
-  /// 1–3 lit division marks; 0 = none (Radiant, unranked).
+  /// 1–3 lit division marks; 0 = none (Immortal, unranked).
   final int division;
 
-  /// 0..1 loop for Radiant's glow, rays and shimmer.
+  /// 0..1 loop for Immortal's glow, rays and shimmer.
   final double phase;
 
   static const _w = 120.0, _h = 130.0;
@@ -127,6 +127,18 @@ class EmblemPainter extends CustomPainter {
 
   /// The tier's gradient at [f] (0 = lighter, 1 = deeper).
   static Color _at(Tier t, double f) => Color.lerp(_light(t), _deep(t), f.clamp(0.0, 1.0))!;
+
+  /// The crystal body's colour at [f]. Olympian's body is blue (a gradient through gold would turn grey); the
+  /// gold stays in the accents ([_light]).
+  static Color _body(Tier t, double f) =>
+      t == Tier.olympian ? Color.lerp(const Color(0xFF5C86F0), _deep(t), f.clamp(0.0, 1.0))! : _at(t, f);
+
+  /// Edges and strokes around shapes: a darker shade of the hue, gold for Olympian, near-black for Immortal.
+  static Color _edge(Tier t, double shade) => switch (t) {
+        Tier.olympian => _shade(_light(t), -0.12),
+        Tier.immortal => const Color(0xFF14070C),
+        _ => _shade(_deep(t), shade),
+      };
 
   static Color _shade(Color c, double amount) {
     final h = HSLColor.fromColor(c);
@@ -167,7 +179,8 @@ class EmblemPainter extends CustomPainter {
     final s = switch (t) {
       Tier.iron => 0.82,
       Tier.bronze => 0.88,
-      Tier.champion || Tier.immortal || Tier.radiant => 0.9,
+      Tier.champion || Tier.olympian => 0.9,
+      Tier.immortal => 0.96,
       _ => 1.0,
     };
     final cy = ornate ? 66.0 : 58.0;
@@ -176,7 +189,7 @@ class EmblemPainter extends CustomPainter {
     canvas.translate(-60, -58);
 
     if (i >= Tier.platinum.index) _glow(canvas, t);
-    if (t == Tier.radiant) _rays(canvas, t);
+    if (t == Tier.immortal) _rays(canvas, t);
     if (ornate) _wings(canvas, t);
     if (t == Tier.diamond) _floatingShards(canvas, t);
     if (i == Tier.silver.index) _sideShards(canvas, t, 1);
@@ -189,8 +202,11 @@ class EmblemPainter extends CustomPainter {
     if (division >= 2) _inlay(canvas, t);
     if (division >= 3) _crest(canvas, t);
     if (ornate) _crown(canvas, t);
-    if (t == Tier.immortal) _beam(canvas, t);
-    if (t == Tier.radiant) _shimmer(canvas, _outline());
+    if (t == Tier.olympian || t == Tier.immortal) _beam(canvas, t);
+    if (t == Tier.immortal) {
+      _darkFacets(canvas);
+      _shimmer(canvas, _outline());
+    }
     canvas.restore();
   }
 
@@ -269,9 +285,9 @@ class EmblemPainter extends CustomPainter {
       ..style = PaintingStyle.stroke
       ..strokeWidth = i == 0 ? 1.0 : 1.2
       ..strokeJoin = StrokeJoin.round
-      ..color = _deep(t).withValues(alpha: 0.85);
+      ..color = (t == Tier.immortal ? _edge(t, 0) : _deep(t)).withValues(alpha: 0.85);
     for (final (path, f) in facets) {
-      canvas.drawPath(path, Paint()..color = _at(t, f));
+      canvas.drawPath(path, Paint()..color = _body(t, f));
       canvas.drawPath(path, stroke);
     }
     if (i >= Tier.silver.index) {
@@ -305,10 +321,17 @@ class EmblemPainter extends CustomPainter {
   }
 
   void _glow(Canvas canvas, Tier t) {
-    final a = t == Tier.radiant ? 0.35 + 0.2 * math.sin(phase * math.pi * 2) : (t.index >= Tier.champion.index ? 0.3 : 0.2);
-    canvas.drawCircle(const Offset(60, 58), 46, Paint()
+    final apex = t == Tier.immortal;
+    final a = apex ? 0.5 + 0.25 * math.sin(phase * math.pi * 2) : (t.index >= Tier.champion.index ? 0.3 : 0.2);
+    canvas.drawCircle(const Offset(60, 58), apex ? 56 : 46, Paint()
       ..color = _light(t).withValues(alpha: a)
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 16));
+      ..maskFilter = MaskFilter.blur(BlurStyle.normal, apex ? 20 : 16));
+    if (apex) {
+      // A second, tighter halo in the deep tone so the glow reads as a hot core.
+      canvas.drawCircle(const Offset(60, 58), 34, Paint()
+        ..color = _deep(t).withValues(alpha: 0.55)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 12));
+    }
   }
 
   /// Silver 1 / Gold 2 / Platinum 3 pairs of angular shards at the sides.
@@ -352,11 +375,11 @@ class EmblemPainter extends CustomPainter {
     }
   }
 
-  /// Champion 3, Immortal 4, Radiant 5 angular feathers on each side.
+  /// Champion 3, Olympian 4, Immortal 5 angular feathers on each side.
   void _wings(Canvas canvas, Tier t) {
     final n = switch (t) {
       Tier.champion => 3,
-      Tier.immortal => 4,
+      Tier.olympian => 4,
       _ => 5,
     };
     for (var k = 0; k < n; k++) {
@@ -375,15 +398,15 @@ class EmblemPainter extends CustomPainter {
           p,
           Paint()
             ..style = PaintingStyle.stroke
-            ..strokeWidth = 1.1
+            ..strokeWidth = t == Tier.immortal ? 1.6 : 1.1
             ..strokeJoin = StrokeJoin.round
-            ..color = _shade(_deep(t), -0.15),
+            ..color = _edge(t, -0.15),
         );
       }
     }
   }
 
-  /// A crown above the crystal: 3 points (Champion), 5 (Immortal, Radiant).
+  /// A crown above the crystal: 3 points (Champion), 5 (Olympian, Immortal; Immortal's has a black rim).
   void _crown(Canvas canvas, Tier t) {
     final points = t == Tier.champion ? 3 : 5;
     const left = 44.0, right = 76.0, base = 20.0;
@@ -405,21 +428,21 @@ class EmblemPainter extends CustomPainter {
       crown,
       Paint()
         ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.2
+        ..strokeWidth = t == Tier.immortal ? 1.8 : 1.2
         ..strokeJoin = StrokeJoin.round
-        ..color = _shade(_deep(t), -0.18),
+        ..color = _edge(t, -0.18),
     );
     canvas.drawCircle(const Offset(60, 12), 2.2, Paint()..color = Colors.white.withValues(alpha: 0.9));
   }
 
-  /// Immortal: a bright seam down the middle of the crystal.
+  /// Olympian and Immortal: a bright seam down the middle of the crystal.
   void _beam(Canvas canvas, Tier t) {
     final p = Path()..addPolygon([const Offset(60, 18), const Offset(66, 56), const Offset(60, 100), const Offset(54, 56)], true);
     canvas.drawPath(p, Paint()..color = Colors.white.withValues(alpha: 0.22));
     canvas.drawPath(p, Paint()..color = _light(t).withValues(alpha: 0.35)..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3));
   }
 
-  /// Radiant: thin rays turning slowly behind the emblem.
+  /// Immortal: thin rays turning slowly behind the emblem.
   void _rays(Canvas canvas, Tier t) {
     canvas.save();
     canvas.translate(60, 58);
@@ -432,6 +455,26 @@ class EmblemPainter extends CustomPainter {
       canvas.restore();
     }
     canvas.restore();
+  }
+
+  /// Immortal: the lower facets and the table's rim go black, so the red reads against a dark core.
+  void _darkFacets(Canvas canvas) {
+    for (final pts in [
+      [_ll, _bot, _lr, _t3],
+      [_ur, _lr, _t3, _t2],
+    ]) {
+      canvas.drawPath(_poly(pts), Paint()..color = Colors.black.withValues(alpha: 0.55));
+    }
+    canvas.drawPath(
+      _poly([_t1, _t2, _t3, _t4]),
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.6
+        ..strokeJoin = StrokeJoin.round
+        ..color = Colors.black.withValues(alpha: 0.7),
+    );
+    // A black crest facet at the top, above the table.
+    canvas.drawPath(_poly([const Offset(60, 17), const Offset(68, 30), const Offset(60, 34), const Offset(52, 30)]), Paint()..color = Colors.black.withValues(alpha: 0.6));
   }
 
   /// A bright diagonal band sweeping across the crystal.

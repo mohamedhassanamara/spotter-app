@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 
+import 'package:spotter/core/widgets/common.dart';
+
 import 'harness.dart';
 
 void main() {
@@ -16,13 +18,16 @@ void main() {
     final rows = (await tester.runAsync(() => (h.db!.select(h.db!.routineExercises)..where((t) => t.routineId.equals(push.id))).get()))!;
     final first = rows.first;
 
-    debugPrint('STEP routine preview on the Train tab: tap an exercise name');
+    debugPrint('STEP Train tab preview: the name is plain text, a tap opens the routine, not the exercise page');
     await h.goTab(Icons.fitness_center_outlined);
     await h.scrollToTop();
-    await h.waitFor(find.byKey(ValueKey('preview-${push.id}-${first.exerciseId}')), reason: 'preview entry');
-    await h.tap(find.byKey(ValueKey('preview-${push.id}-${first.exerciseId}')));
-    await h.waitFor(find.byKey(const ValueKey('exercise-hero')), scroll: false, reason: 'the exercise page');
-    await h.shot('routine-preview-tap');
+    final previewName = find.byKey(ValueKey('preview-${push.id}-${first.exerciseId}'));
+    await h.waitFor(previewName, reason: 'preview entry');
+    expect(find.descendant(of: previewName, matching: find.byType(InkWell)), findsNothing, reason: 'no tap target of its own');
+    await h.tap(previewName);
+    await h.settle(8);
+    expect(find.byKey(const ValueKey('exercise-hero')), findsNothing, reason: 'the exercise page stays closed');
+    await h.waitFor(find.byKey(ValueKey('edit-${first.id}')), scroll: false, reason: 'the routine details opened instead');
     await tester.pageBack();
     await h.settle(8);
 
@@ -49,6 +54,19 @@ void main() {
     }
     expect(find.byIcon(Icons.drag_handle_rounded), findsWidgets, reason: 'drag handles stay');
     expect(find.byTooltip('Remove'), findsWidgets);
+
+    debugPrint('STEP active workout: the exercise name is not tappable');
+    await tester.pageBack();
+    await h.settle(8);
+    await h.scrollToTop();
+    final card = find.ancestor(of: find.byKey(ValueKey('preview-${push.id}-${first.exerciseId}')), matching: find.byType(AppCard)).first;
+    await h.tap(find.descendant(of: card, matching: find.text('Start')));
+    final workoutName = find.byWidgetPredicate((w) => w.key is ValueKey<String> && (w.key! as ValueKey<String>).value.startsWith('exercise-name-')).first;
+    await h.waitFor(workoutName, scroll: false, reason: 'the workout is open');
+    await h.tap(workoutName);
+    await h.settle(8);
+    expect(find.byKey(const ValueKey('exercise-hero')), findsNothing, reason: 'tapping the name does not open the exercise page');
+    await h.shot('workout-name-not-tappable');
 
     await h.expectNoLoggedErrors();
     await h.dispose();

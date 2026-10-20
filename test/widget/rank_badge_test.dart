@@ -23,8 +23,8 @@ void main() {
     expect(find.byType(RankBadge), findsNWidgets(Tier.values.length * BadgeSize.values.length + 1));
   });
 
-  testWidgets('Radiant animates, divisional badges are static', (tester) async {
-    await tester.pumpWidget(MaterialApp(home: RankBadge(score: RankScore.of(Tier.radiant))));
+  testWidgets('Immortal animates, divisional badges are static', (tester) async {
+    await tester.pumpWidget(MaterialApp(home: RankBadge(score: RankScore.of(Tier.immortal))));
     expect(find.byType(AnimatedBuilder), findsWidgets);
     await tester.pumpWidget(MaterialApp(home: RankBadge(score: RankScore.of(Tier.gold, division: 2))));
     expect(

@@ -2112,3 +2112,20 @@ integration `badge_sheet_flow_test`.
 - The new values always apply: a suggestion above the max load or off the grid is a bug; the property test checks 4000 random histories, starts, steps and max loads.
 Tests: `weight_steps_change_test` (grid shift 7, 12, 17…; logged weights vs an explicit setting; max cap; the suggestion follows a changed step and start; the off-grid / above-max property; mid-workout max load caps the open sets and leaves the done one;
 untouched vs typed weights), integration `weight_steps_flow_test` (real taps through the Weight steps dialog: first plate 7 / step 5, then max 50; the done set stays, the open sets move, the marker and its dialog).
+
+## Round 3 quick fixes: Olympian, Immortal on top, readable ladder, plain exercise names
+
+**Ladder.** Iron → Bronze → Silver → Gold → Platinum → Diamond → Champion → **Olympian** → **Immortal**. Radiant is gone.
+Olympian takes the old Immortal's place (3 divisions, same thresholds: elite anchor; badge with wings, crown and seam, now royal blue
+with gold accents, #4F7DFF, gradient #FFD25E → #2F58D0). Immortal is the top tier, no divisions, uncapped RR from the old Radiant
+threshold (elite × 1.3, 24 points, strength 900); its badge keeps the red (#BB3D65, #FF6E8E → #A02D55) with five wings, a bigger
+emblem, black facets, black wing/crown edges, a black crest facet and a stronger two-layer glow. Ranks are derived from sets, so
+nothing stored shifts except the lift achievements: migration v8 silently renames `lift_immortal` → `lift_olympian` and
+`lift_radiant` → `lift_immortal` (keeping their dates, once), with no rank-up or rank-down animation.
+
+**Ladder screen.** Each tier shows "At 107 kg bodyweight (best set, e1RM)" once, then a table: columns are the divisions (mini badge
+and "1/2/3"; one column for Immortal), rows are the lifts, cells are just the weight. The cell for the division I am in, per lift, is
+highlighted; under the table each lift shows "You: 78 kg" (my best e1RM).
+
+**Exercise names.** Plain text on the Train tab (the routine card preview opens the routine) and in the active workout. Only the routine
+details (editor) rows open the exercise page.

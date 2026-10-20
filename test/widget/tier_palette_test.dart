@@ -17,7 +17,7 @@ void main() {
     expect(tierGradients.length, Tier.values.length);
     const hex = {
       Tier.iron: 0xFF868986, Tier.bronze: 0xFFA5855D, Tier.silver: 0xFFBBC2C2, Tier.gold: 0xFFECCF56, Tier.platinum: 0xFF59A9B6,
-      Tier.diamond: 0xFFB489C4, Tier.champion: 0xFF6AE2AF, Tier.immortal: 0xFFBB3D65, Tier.radiant: 0xFFFFFFAA,
+      Tier.diamond: 0xFFB489C4, Tier.champion: 0xFF6AE2AF, Tier.olympian: 0xFF4F7DFF, Tier.immortal: 0xFFBB3D65,
     };
     for (final t in Tier.values) {
       expect(tierColors[t.index], Color(hex[t]!), reason: t.name);

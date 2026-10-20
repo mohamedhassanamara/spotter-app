@@ -10,7 +10,7 @@ import 'harness.dart';
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
-  testWidgets('Valorant ladder: nine tiers with their colors and badges, three divisions, Radiant without divisions', (tester) async {
+  testWidgets('Valorant ladder: nine tiers with their colors and badges, three divisions, Immortal without divisions', (tester) async {
     final h = AppHarness(tester);
     await h.launchFresh();
     await h.onboard();
@@ -21,7 +21,7 @@ void main() {
     await h.tap(find.text('Debug menu'));
     await h.waitFor(find.text('Rank badges & rank-up preview'));
     await h.tap(find.text('Rank badges & rank-up preview'));
-    await h.waitFor(find.text('Radiant'), scroll: false);
+    await h.waitFor(find.text('Immortal'), scroll: false);
     for (final t in Tier.values) {
       expect(find.text(t.label), findsWidgets, reason: '${t.label} in the gallery');
     }

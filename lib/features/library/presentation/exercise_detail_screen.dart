@@ -521,7 +521,7 @@ class _LadderPosition extends StatelessWidget {
           ),
       ]),
       const SizedBox(height: 10),
-      Text('You are ${score.label}${score.tier == Tier.radiant ? '' : ' of ${Tier.values.length} tiers, ${Tier.values.length - 1 - score.tier.index} to go'}',
+      Text('You are ${score.label}${score.tier == Tier.immortal ? '' : ' of ${Tier.values.length} tiers, ${Tier.values.length - 1 - score.tier.index} to go'}',
           style: const TextStyle(color: AppColors.textSecondary)),
     ]);
   }

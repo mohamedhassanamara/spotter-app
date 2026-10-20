@@ -37,7 +37,7 @@ void main() {
       const bw = 80.0;
       final points = <double>[
         for (var p = 1; p < 24; p++) ...[p.toDouble(), p + 0.5], // every division, on and inside boundaries
-        24, 25.5, 28, 41, // Radiant
+        24, 25.5, 28, 41, // Immortal
       ];
       for (final p in points) {
         // A 1-rep set at RPE 10 scores e1RM = load × (1 + 1/30).

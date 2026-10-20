@@ -2,7 +2,7 @@ import 'dart:math' as math;
 
 import '../../../core/domain/muscles.dart';
 
-/// Valorant-style ladder: 8 divisional tiers (1 → 3, 3 is the highest) and Radiant on top, without divisions.
+/// Valorant-style ladder: 8 divisional tiers (1 → 3, 3 is the highest) and Immortal on top, without divisions.
 enum Tier {
   iron('Iron'),
   bronze('Bronze'),
@@ -11,13 +11,13 @@ enum Tier {
   platinum('Platinum'),
   diamond('Diamond'),
   champion('Champion'),
-  immortal('Immortal'),
-  radiant('Radiant');
+  olympian('Olympian'),
+  immortal('Immortal');
 
   const Tier(this.label);
   final String label;
 
-  bool get isApex => this == Tier.radiant;
+  bool get isApex => this == Tier.immortal;
 
   static const int divisionalTiers = 8;
   static const int divisionsPerTier = 3;
@@ -26,7 +26,7 @@ enum Tier {
 /// A position on the ladder as a continuous number of **points**: one point per division.
 ///
 /// - Divisional tiers: tier i spans points [3i, 3i + 3); division 1 = 3i, 2 = 3i + 1, 3 = 3i + 2.
-/// - Radiant starts at 24 (uncapped).
+/// - Immortal starts at 24 (uncapped).
 ///
 /// Groups and the overall rank average points directly, so the mean of identical ranks maps back
 /// to exactly that rank.
@@ -34,15 +34,15 @@ class RankScore {
   RankScore(double value) : value = value < 0 ? 0 : value;
 
   /// Builds the score for a given tier, division (1 = lowest … 3 = highest) and RR (0–100), mainly for tests.
-  /// Radiant has no divisions: [rr] is the rank rating above its threshold (uncapped).
+  /// Immortal has no divisions: [rr] is the rank rating above its threshold (uncapped).
   factory RankScore.of(Tier tier, {int division = 1, double rr = 0}) {
-    if (tier.isApex) return RankScore(radiantPoints + rr / 100);
+    if (tier.isApex) return RankScore(apexPoints + rr / 100);
     return RankScore(tier.index * 3.0 + (division - 1) + rr / 100);
   }
 
   final double value;
 
-  static const double radiantPoints = 24;
+  static const double apexPoints = 24;
 
   // Floors use a small epsilon so a score on a boundary (or an average of identical scores that
   // lost an ulp) never drops into the previous division.
@@ -51,40 +51,40 @@ class RankScore {
   int get _point => (value + _eps).floor();
 
   Tier get tier {
-    if (value + _eps >= radiantPoints) return Tier.radiant;
+    if (value + _eps >= apexPoints) return Tier.immortal;
     return Tier.values[(_point ~/ 3).clamp(0, Tier.divisionalTiers - 1)];
   }
 
   bool get isApex => tier.isApex;
 
-  /// 0 = division 1 (lowest) … 2 = division 3 (highest); −1 for Radiant.
+  /// 0 = division 1 (lowest) … 2 = division 3 (highest); −1 for Immortal.
   int get divisionIndex => isApex ? -1 : _point % 3;
 
-  /// "1".."3", empty for Radiant.
+  /// "1".."3", empty for Immortal.
   String get divisionLabel => isApex ? '' : '${divisionIndex + 1}';
 
   String get label => isApex ? tier.label : '${tier.label} $divisionLabel';
 
-  /// Rank rating: 0–100 within a division; for Radiant, RR above the Radiant threshold (uncapped).
+  /// Rank rating: 0–100 within a division; for Immortal, RR above its threshold (uncapped).
   int get rr {
-    if (isApex) return ((value - radiantPoints) * 100 + _eps).floor();
+    if (isApex) return ((value - apexPoints) * 100 + _eps).floor();
     return (((value - _point) * 100) + _eps).floor().clamp(0, 99);
   }
 
-  /// 0..1 progress to the next division (Radiant: per 100 RR).
+  /// 0..1 progress to the next division (Immortal: per 100 RR).
   double get divisionProgress {
-    if (isApex) return ((value - radiantPoints) % 1).clamp(0.0, 1.0);
+    if (isApex) return ((value - apexPoints) % 1).clamp(0.0, 1.0);
     return (value - _point).clamp(0.0, 1.0);
   }
 
-  /// Label of the next step up, or null at Radiant.
+  /// Label of the next step up, or null at Immortal.
   String? get nextLabel {
     if (isApex) return null;
     if (divisionIndex < 2) return '${tier.label} ${divisionIndex + 2}';
-    return tier == Tier.immortal ? Tier.radiant.label : '${Tier.values[tier.index + 1].label} 1';
+    return tier == Tier.olympian ? Tier.immortal.label : '${Tier.values[tier.index + 1].label} 1';
   }
 
-  /// "Gold 2 · 42 RR", "Radiant · 135 RR".
+  /// "Gold 2 · 42 RR", "Immortal · 135 RR".
   String get labelWithRr => '$label · $rr RR';
 
   @override
@@ -92,7 +92,7 @@ class RankScore {
 }
 
 
-/// Strength score 0–1000: 37.5 per division point, so Iron 1 = 0, each division = 37.5, Immortal = 787, Radiant = 900,
+/// Strength score 0–1000: 37.5 per division point, so Iron 1 = 0, each division = 37.5, Olympian = 787, Immortal = 900,
 /// and 1000 is the cap.
 const double strengthPerPoint = 37.5;
 
@@ -162,14 +162,14 @@ class StrengthStandard {
   final List<double> anchors;
   final bool perHand;
 
-  /// 9 ascending values: the bodyweight multiple at which each tier (Iron..Radiant) starts.
+  /// 9 ascending values: the bodyweight multiple at which each tier (Iron..Immortal) starts.
   final List<double> thresholds;
 
   bool get bodyweightLoaded => kind == StandardKind.bodyweight;
 
-  /// The thresholds derive from the anchors; the multiple at which each tier (Iron..Radiant) starts.
+  /// The thresholds derive from the anchors; the multiple at which each tier (Iron..Immortal) starts.
   /// Iron 0, Bronze = beginner, Silver = novice, Gold = intermediate, Platinum = midpoint intermediate–advanced,
-  /// Diamond = advanced, Champion = midpoint advanced–elite, Immortal = elite, Radiant = elite × 1.3.
+  /// Diamond = advanced, Champion = midpoint advanced–elite, Olympian = elite, Immortal = elite × 1.3.
   /// (docs/DECISIONS.md, "Valorant ladder")
   static List<double> thresholdsFromAnchors(List<double> a) {
     if (a.length != 5) throw const FormatException('A standard needs 5 anchors');
@@ -194,13 +194,13 @@ class StrengthStandard {
     );
   }
 
+  double get _olympian => thresholds[Tier.olympian.index];
   double get _immortal => thresholds[Tier.immortal.index];
-  double get _radiant => thresholds[Tier.radiant.index];
 
-  /// Linear in ratio within every division; Radiant continues with the Immortal slope (uncapped).
+  /// Linear in ratio within every division; Immortal continues with the Olympian slope (uncapped).
   RankScore scoreForRatio(double ratio) {
-    if (ratio >= _radiant) {
-      return RankScore(RankScore.radiantPoints + (ratio - _radiant) / (_radiant - _immortal) * Tier.divisionsPerTier);
+    if (ratio >= _immortal) {
+      return RankScore(RankScore.apexPoints + (ratio - _immortal) / (_immortal - _olympian) * Tier.divisionsPerTier);
     }
     var i = 0;
     while (i + 1 < Tier.divisionalTiers && ratio >= thresholds[i + 1]) {
@@ -213,8 +213,8 @@ class StrengthStandard {
 
   /// Bodyweight multiple at which a point value is reached (inverse of [scoreForRatio]).
   double ratioForPoints(double points) {
-    if (points >= RankScore.radiantPoints) {
-      return _radiant + (points - RankScore.radiantPoints) / Tier.divisionsPerTier * (_radiant - _immortal);
+    if (points >= RankScore.apexPoints) {
+      return _immortal + (points - RankScore.apexPoints) / Tier.divisionsPerTier * (_immortal - _olympian);
     }
     final i = (points ~/ 3).clamp(0, Tier.divisionalTiers - 1);
     final f = (points - i * 3) / 3;
@@ -223,7 +223,7 @@ class StrengthStandard {
 
   /// e1RM (kg, bodyweight included for bodyweight lifts) needed for the next division, or null at Challenger.
   double? nextThresholdKg(RankScore current, double bodyweight) {
-    if (current.tier == Tier.radiant) return null;
+    if (current.tier == Tier.immortal) return null;
     final target = (current.value + 1e-9).floorToDouble() + 1;
     return ratioForPoints(target) * normalizer(bodyweight);
   }

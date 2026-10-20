@@ -8,8 +8,11 @@ import '../../gamification/domain/achievements.dart';
 /// v5: only exercises in your routines (or done in an in-app workout) count toward ranks.
 /// v6: Valorant ladder: 9 tiers (Iron … Immortal × 3 divisions, Radiant), RR instead of LP.
 /// v7: the achievement rework (≈ 50 achievements, none rewarding following suggestions).
-const int rankLadderVersion = 7;
+/// v8: Olympian joins above Champion (old Immortal's place) and Immortal becomes the top tier (old Radiant's): ranks are
+/// derived so they shift by themselves; stored lift achievements are renamed (immortal → olympian, radiant → immortal).
+const int rankLadderVersion = 8;
 const String rankLadderVersionKey = 'rank_ladder_version';
+const String _tierRenameKey = 'rank_tier_rename_v8';
 
 class LadderMigration {
   const LadderMigration({this.unlocked = const [], this.revoked = const []});
@@ -37,8 +40,17 @@ Future<LadderMigration> migrateRankLadder({
 }) async {
   final current = int.tryParse(await db.getSetting(rankLadderVersionKey) ?? '') ?? 1;
   if (current >= rankLadderVersion) return const LadderMigration();
-  if (!ranksKnown) return const LadderMigration();
   final repo = GamificationRepository(db);
+  // Silent rename, once (the migration itself can stay pending without bodyweight): old Immortal is Olympian now, old
+  // Radiant is Immortal. Order matters, and nothing is announced.
+  if (current < 8 && await db.getSetting(_tierRenameKey) == null) {
+    final old = await repo.watchUnlocked().first;
+    await repo.revoke(['lift_immortal', 'lift_radiant']);
+    if (old['lift_immortal'] != null) await repo.unlock(['lift_olympian'], old['lift_immortal']!);
+    if (old['lift_radiant'] != null) await repo.unlock(['lift_immortal'], old['lift_radiant']!);
+    await db.putSetting(_tierRenameKey, '1');
+  }
+  if (!ranksKnown) return const LadderMigration();
   final have = await repo.unlockedKeys();
   const eval = AchievementEvaluator();
   final known = {for (final d in defs) d.key};

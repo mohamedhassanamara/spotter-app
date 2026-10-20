@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart' show HapticFeedback;
-import 'package:go_router/go_router.dart';
 
 import '../../../app_providers.dart';
 import '../../../core/db/database.dart';
@@ -9,7 +8,6 @@ import '../../../core/domain/equipment.dart';
 import '../../../core/domain/training.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/common.dart';
-import '../../../router.dart';
 import '../../coach/domain/suggestion_engine.dart';
 import '../../library/domain/exercise_info.dart';
 import '../../library/domain/load_kinds.dart';
@@ -289,10 +287,7 @@ class _ExerciseBlockState extends ConsumerState<ExerciseBlock> {
           child: Text(ctx.supersetLabel!, key: ValueKey('superset-label-${ex.row.id}'), style: AppType.label.copyWith(color: ctx.supersetColor, letterSpacing: 0.5)),
         ),
       Expanded(
-        child: InkWell(
-          onTap: () => context.push(Routes.exercise(ex.row.exerciseId)),
-          child: Text(name, maxLines: 2, overflow: TextOverflow.ellipsis, style: AppType.title.copyWith(fontSize: 17, color: AppColors.accent)),
-        ),
+        child: Text(name, key: ValueKey('exercise-name-${ex.row.id}'), maxLines: 2, overflow: TextOverflow.ellipsis, style: AppType.title.copyWith(fontSize: 17)),
       ),
       IconButton(
         tooltip: _collapsed ? 'Expand' : 'Collapse',

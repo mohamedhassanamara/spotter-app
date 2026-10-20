@@ -1,6 +1,6 @@
 {
  "schema_version": 2,
- "description": "Achievement definitions. type is one of: sessions, streakDays (longest day streak), prs, totalVolumeKg, totalSets, maxSessionVolumeKg, level, bestExerciseTier (index 0=Iron .. 8=Radiant), overallTier, musclesAtTier (param = tier index, counts muscles at or above), regionsAtTier (param = tier index, counts body regions at or above; 0 = ranked), musclesRanked, distinctExercises, greenSessions (workouts on a Green readiness day), sleepStreak (nights in a row of 7+ h from Health), fullProgramWeeks (weeks with a workout of every routine). Unlocked when the metric >= threshold. Nothing here may depend on following the coach's suggestions.",
+ "description": "Achievement definitions. type is one of: sessions, streakDays (longest day streak), prs, totalVolumeKg, totalSets, maxSessionVolumeKg, level, bestExerciseTier (index 0=Iron .. 8=Immortal), overallTier, musclesAtTier (param = tier index, counts muscles at or above), regionsAtTier (param = tier index, counts body regions at or above; 0 = ranked), musclesRanked, distinctExercises, greenSessions (workouts on a Green readiness day), sleepStreak (nights in a row of 7+ h from Health), fullProgramWeeks (weeks with a workout of every routine). Unlocked when the metric >= threshold. Nothing here may depend on following the coach's suggestions.",
  "achievements": [
   {
    "key": "first_workout",
@@ -165,18 +165,18 @@
    "category": "strength"
   },
   {
-   "key": "lift_immortal",
-   "title": "Immortal Lift",
-   "description": "Reach Immortal on any ranked lift.",
+   "key": "lift_olympian",
+   "title": "Olympian Lift",
+   "description": "Reach Olympian on any ranked lift.",
    "icon": "crown",
    "type": "bestExerciseTier",
    "threshold": 7,
    "category": "strength"
   },
   {
-   "key": "lift_radiant",
-   "title": "Radiant Lift",
-   "description": "Reach Radiant on any ranked lift.",
+   "key": "lift_immortal",
+   "title": "Immortal Lift",
+   "description": "Reach Immortal on any ranked lift.",
    "icon": "crown",
    "type": "bestExerciseTier",
    "threshold": 8,

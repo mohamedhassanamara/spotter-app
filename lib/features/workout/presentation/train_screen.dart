@@ -128,18 +128,14 @@ class _RoutineCard extends ConsumerWidget {
           if (names.isEmpty)
             const Text('No exercises yet — tap to edit.', style: TextStyle(color: AppColors.textSecondary))
           else
-            // The preview: each exercise opens its page, the rest of the card opens the routine.
+            // The preview is plain text: the whole card opens the routine, whose details page opens each exercise.
             Wrap(
               children: [
                 for (final (i, n) in names.indexed)
-                  InkWell(
+                  Padding(
                     key: ValueKey('preview-${routine.routine.id}-${n.id}'),
-                    onTap: () => context.push(Routes.exercise(n.id)),
-                    borderRadius: BorderRadius.circular(6),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 3),
-                      child: Text(i + 1 < names.length ? '${n.name} · ' : n.name, style: const TextStyle(color: AppColors.textSecondary)),
-                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 3),
+                    child: Text(i + 1 < names.length ? '${n.name} · ' : n.name, style: const TextStyle(color: AppColors.textSecondary)),
                   ),
               ],
             ),

@@ -11,7 +11,7 @@ enum AchievementType {
   maxSessionVolumeKg,
   level,
 
-  /// Best ranked lift, as a tier index (0 = Iron … 8 = Radiant).
+  /// Best ranked lift, as a tier index (0 = Iron … 8 = Immortal).
   bestExerciseTier,
   overallTier,
 

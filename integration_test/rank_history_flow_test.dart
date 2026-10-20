@@ -79,18 +79,19 @@ void _flow() {
 
     debugPrint('STEP the ladder: every tier, every division, where I sit, each muscle');
     await h.tap(find.byKey(const ValueKey('open-ladder')));
-    await h.waitFor(find.byKey(const ValueKey('ladder-tier-radiant')), scroll: false);
-    expect(find.byKey(const ValueKey('ladder-you-are-here')), findsNothing, reason: 'Radiant is not where I am');
+    await h.waitFor(find.byKey(const ValueKey('ladder-tier-immortal')), scroll: false);
+    expect(find.byKey(const ValueKey('ladder-you-are-here')), findsNothing, reason: 'Immortal is not where I am');
     final list = find.descendant(of: find.byKey(const ValueKey('ladder-list')), matching: find.byType(Scrollable)).first;
     var sawYouAreHere = false;
-    for (final t in ['radiant', 'immortal', 'champion', 'diamond', 'platinum', 'gold', 'silver', 'bronze', 'iron']) {
+    for (final t in ['immortal', 'olympian', 'champion', 'diamond', 'platinum', 'gold', 'silver', 'bronze', 'iron']) {
       await tester.scrollUntilVisible(find.byKey(ValueKey('ladder-tier-$t')), 200, scrollable: list);
       await h.settle(2);
       expect(find.byKey(ValueKey('ladder-tier-$t')), findsOneWidget, reason: 'tier $t on the ladder');
       sawYouAreHere = sawYouAreHere || find.byKey(const ValueKey('ladder-you-are-here')).evaluate().isNotEmpty;
     }
     expect(sawYouAreHere, isTrue, reason: 'my tier is marked');
-    expect(find.textContaining('Bench press: '), findsWidgets, reason: 'what each tier asks for');
+    expect(find.byType(Table), findsWidgets, reason: 'what each tier asks for, as a table');
+    expect(find.textContaining('Bench press: You:'), findsWidgets, reason: 'my e1RM under each table');
     await tester.scrollUntilVisible(find.byKey(const ValueKey('ladder-muscle-quadriceps')), 200, scrollable: list);
     await h.shot('ladder');
     await h.expectNoLoggedErrors();

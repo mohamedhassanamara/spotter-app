@@ -30,13 +30,13 @@ class LadderScreen extends ConsumerWidget {
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
         children: [
           Text(
-            'Nine tiers, Iron to Radiant. Iron to Immortal have three divisions each (1 → 3, 3 is the highest), each worth 37.5 strength; '
-            'Radiant has none, only RR. Every lift is scored from its best valid set in the last 90 days against a strength standard.',
+            'Nine tiers, Iron to Immortal. Iron to Olympian have three divisions each (1 → 3, 3 is the highest), each worth 37.5 strength; '
+            'Immortal has none, only RR. Every lift is scored from its best valid set in the last 90 days against a strength standard.',
             style: AppType.bodyS.copyWith(color: AppColors.textSecondary),
           ),
           const SizedBox(height: 14),
           for (final t in Tier.values.reversed) ...[
-            _TierCard(tier: t, overall: overall, standards: standards, bodyweight: bw),
+            _TierCard(tier: t, overall: overall, standards: standards, bodyweight: bw, exercises: summary?.exercises ?? const []),
             const SizedBox(height: 10),
           ],
           const SectionLabel('Where each muscle sits'),
@@ -52,19 +52,20 @@ class LadderScreen extends ConsumerWidget {
 }
 
 class _TierCard extends StatelessWidget {
-  const _TierCard({required this.tier, required this.overall, required this.standards, required this.bodyweight});
+  const _TierCard({required this.tier, required this.overall, required this.standards, required this.bodyweight, required this.exercises});
   final Tier tier;
+  final List<ExerciseRank> exercises;
   final RankScore? overall;
   final List<StrengthStandard> standards;
   final double bodyweight;
 
-  /// Points at which each division of the tier starts (1 → 3), or the single Radiant entry.
+  /// Points at which each division of the tier starts (1 → 3), or the single Immortal entry.
   List<double> get starts {
     if (tier.isApex) return [tierStart];
     return [for (var d = 0; d < 3; d++) tier.index * 3.0 + d];
   }
 
-  double get tierStart => tier.isApex ? RankScore.radiantPoints : tier.index * 3.0;
+  double get tierStart => tier.isApex ? RankScore.apexPoints : tier.index * 3.0;
 
   @override
   Widget build(BuildContext context) {
@@ -92,33 +93,73 @@ class _TierCard extends StatelessWidget {
             ),
         ]),
         const SizedBox(height: 10),
-        Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-          for (final p in starts)
-            Column(children: [
-              RankBadge(score: RankScore(p), size: BadgeSize.small, width: tier.isApex ? 64 : 52, animate: false),
-              const SizedBox(height: 2),
-              Text(tier.isApex ? '' : RankScore(p).divisionLabel, style: AppType.label.copyWith(fontSize: 11, color: AppColors.textSecondary)),
-            ]),
-        ]),
-        const SizedBox(height: 10),
         if (bodyweight <= 0)
           Text('Add your bodyweight to see what it takes.', style: AppType.bodyS.copyWith(color: AppColors.textSecondary))
         else ...[
-          Text('To enter ${tier.label}${tier.isApex ? '' : ' 1'} at ${formatKg(bodyweight)} kg (best set, e1RM):',
-              style: AppType.bodyS.copyWith(color: AppColors.textSecondary)),
-          const SizedBox(height: 4),
+          Text('At ${formatKg(bodyweight)} kg bodyweight (best set, e1RM)', style: AppType.bodyS.copyWith(color: AppColors.textSecondary)),
+          const SizedBox(height: 8),
+          Table(
+            key: ValueKey('ladder-table-${tier.name}'),
+            columnWidths: {0: const FlexColumnWidth(1.6), for (var c = 1; c <= starts.length; c++) c: const FlexColumnWidth(1)},
+            defaultVerticalAlignment: TableCellVerticalAlignment.middle,
+            children: [
+              TableRow(children: [
+                const SizedBox.shrink(),
+                for (final p in starts)
+                  Column(children: [
+                    RankBadge(score: RankScore(p), size: BadgeSize.small, width: 34, animate: false),
+                    Text(tier.isApex ? '' : RankScore(p).divisionLabel, style: AppType.label.copyWith(fontSize: 11, color: AppColors.textSecondary)),
+                  ]),
+              ]),
+              for (final s in lifts)
+                TableRow(children: [
+                  Padding(padding: const EdgeInsets.symmetric(vertical: 6), child: Text(s.name, style: AppType.bodyS)),
+                  for (final p in starts) _cell(s, p, color),
+                ]),
+            ],
+          ),
+          const SizedBox(height: 6),
           for (final s in lifts)
-            Text('${s.name}: ${_kg(s, tierStart)}${tier.isApex ? '' : '  ·  1 ${_kg(s, starts[0], bare: true)} · 2 ${_kg(s, starts[1], bare: true)} · 3 ${_kg(s, starts[2], bare: true)}'}',
-                style: AppType.bodyS.copyWith(fontFeatures: AppType.tabular)),
+            Text('${s.name}: ${_mine(s)}', style: AppType.bodyS.copyWith(color: AppColors.textSecondary, fontFeatures: AppType.tabular)),
         ],
       ]),
     );
   }
 
-  String _kg(StrengthStandard s, double points, {bool bare = false}) {
-    final kg = s.ratioForPoints(points) * s.normalizer(bodyweight);
-    return bare ? '${kg.round()}' : '${kg.round()} kg';
+  /// My best e1RM on a standard's lifts, null when there is none.
+  double? _e1rm(StrengthStandard s) {
+    final mine = [for (final e in exercises) if (e.standard.id == s.id) e.bestE1rm];
+    return mine.isEmpty ? null : mine.reduce((a, b) => a > b ? a : b);
   }
+
+  /// "You: 78 kg" (kg from the same e1RM the thresholds are quoted in).
+  String _mine(StrengthStandard s) {
+    final e = _e1rm(s);
+    return e == null ? 'You: –' : 'You: ${formatKg(e)} kg';
+  }
+
+  /// The division cell I am in on this lift is lit.
+  Widget _cell(StrengthStandard s, double points, Color color) {
+    final e = _e1rm(s);
+    final next = tier.isApex ? double.infinity : points + 1;
+    final mine = e != null && bodyweight > 0 && (() {
+      final v = s.scoreForRatio(e / s.normalizer(bodyweight)).value;
+      return v + 1e-9 >= points && v < next;
+    })();
+    return Container(
+      key: mine ? ValueKey('ladder-me-${tier.name}-${s.id}') : null,
+      margin: const EdgeInsets.all(2),
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      decoration: BoxDecoration(
+        color: mine ? color.withValues(alpha: 0.25) : null,
+        border: mine ? Border.all(color: color, width: 1.5) : null,
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Text(_kg(s, points), textAlign: TextAlign.center, style: AppType.bodyS.copyWith(fontFeatures: AppType.tabular, fontWeight: mine ? FontWeight.w800 : null)),
+    );
+  }
+
+  String _kg(StrengthStandard s, double points) => '${(s.ratioForPoints(points) * s.normalizer(bodyweight)).round()} kg';
 }
 
 class _MuscleOnLadder extends StatelessWidget {
@@ -128,7 +169,7 @@ class _MuscleOnLadder extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const top = RankScore.radiantPoints + 2;
+    const top = RankScore.apexPoints + 2;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 5),
       child: Row(children: [
@@ -142,7 +183,7 @@ class _MuscleOnLadder extends StatelessWidget {
                 Row(children: [
                   for (final t in Tier.values)
                     Expanded(
-                      flex: t == Tier.radiant ? 2 : 3,
+                      flex: t == Tier.immortal ? 2 : 3,
                       child: Container(height: 8, margin: const EdgeInsets.only(top: 5, right: 1), color: tierColor(t).withValues(alpha: 0.45)),
                     ),
                 ]),

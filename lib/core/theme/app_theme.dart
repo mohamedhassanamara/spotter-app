@@ -65,7 +65,7 @@ abstract final class Motion {
   static const pop = Curves.easeOutBack;
 }
 
-/// One colour per rank tier, Iron → Radiant: Valorant's own tier colours (the game's competitive-tier data, via
+/// One colour per rank tier, Iron → Immortal: Valorant's own tier colours (the game's competitive-tier data, via
 /// valorant-api.com; docs/DECISIONS.md has the table and the gradients). Only colours: the badge artwork is
 /// original. Every tier keeps ≥ 3:1 contrast with [AppColors.bodyBase] and is lighter than [AppColors.unranked]
 /// (test/widget/tier_palette_test.dart).
@@ -77,8 +77,8 @@ const List<Color> tierColors = [
   Color(0xFF59A9B6), // Platinum
   Color(0xFFB489C4), // Diamond
   Color(0xFF6AE2AF), // Champion (Valorant's Ascendant)
+  Color(0xFF4F7DFF), // Olympian (royal blue and gold)
   Color(0xFFBB3D65), // Immortal
-  Color(0xFFFFFFAA), // Radiant
 ];
 
 /// Each tier's two-colour gradient: a lighter and a deeper shade of its hue (top-left → bottom-right on badges,
@@ -91,8 +91,8 @@ const List<(Color, Color)> tierGradients = [
   (Color(0xFF8FD8E0), Color(0xFF2B7F8C)), // Platinum: ice → deep teal
   (Color(0xFFDDBDEB), Color(0xFF763BAF)), // Diamond: lilac → deep violet
   (Color(0xFFA6F5CF), Color(0xFF1C7245)), // Champion: mint → deep green
+  (Color(0xFFFFD25E), Color(0xFF2F58D0)), // Olympian: bright gold → deep royal blue
   (Color(0xFFFF6E8E), Color(0xFFA02D55)), // Immortal: rose → deep crimson
-  (Color(0xFFFFFFE6), Color(0xFFE0B040)), // Radiant: white-gold → gold
 ];
 
 ThemeData buildAppTheme() {

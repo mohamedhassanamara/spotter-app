@@ -24,7 +24,7 @@ void main() {
         expect(find.byKey(ValueKey('sheet-${t.name}-$d')), findsOneWidget, reason: '${t.label} division $d');
       }
     }
-    expect(find.text('Radiant'), findsOneWidget);
+    expect(find.text('Immortal'), findsOneWidget);
     await h.shot('badge-sheet');
     await h.expectNoLoggedErrors();
     await h.dispose();

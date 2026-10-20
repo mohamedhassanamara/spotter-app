@@ -59,7 +59,7 @@ class BadgeGalleryScreen extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.end,
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              for (final s in BadgeSize.values) RankBadge(score: RankScore.of(Tier.radiant, rr: 340), size: s),
+              for (final s in BadgeSize.values) RankBadge(score: RankScore.of(Tier.immortal, rr: 340), size: s),
             ],
           ),
         ],

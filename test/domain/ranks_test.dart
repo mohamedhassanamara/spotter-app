@@ -7,8 +7,8 @@ import 'package:spotter/core/domain/muscles.dart';
 import 'package:spotter/features/ranks/data/ranks_repository.dart';
 import 'package:spotter/features/ranks/domain/ranks.dart';
 
-// Thresholds: Iron 0, Bronze .5, Silver .75, Gold 1.0, Platinum 1.2, Diamond 1.4, Champion 1.5, Immortal 1.6,
-// Radiant 2.08.
+// Thresholds: Iron 0, Bronze .5, Silver .75, Gold 1.0, Platinum 1.2, Diamond 1.4, Champion 1.5, Olympian 1.6,
+// Immortal 2.08.
 final bench = StrengthStandard(
   id: 'bench',
   name: 'Bench press',
@@ -41,7 +41,7 @@ RankedSet set(String id, double w, int reps, {double bw = 80, double rpe = 10, D
 
 void main() {
   group('ladder: tiers, divisions and RR', () {
-    test('thresholds come from the anchors: elite is Immortal, Radiant sits 30 % above', () {
+    test('thresholds come from the anchors: elite is Olympian, Immortal sits 30 % above', () {
       expect(bench.thresholds, [0, 0.5, 0.75, 1.0, 1.2, 1.4, 1.5, 1.6, closeTo(2.08, 1e-9)]);
     });
 
@@ -59,36 +59,36 @@ void main() {
       expect(bench.scoreForRatio(1.4).label, 'Diamond 1');
     });
 
-    test('Immortal needs the elite anchor, Radiant 30 % more', () {
+    test('Olympian needs the elite anchor, Immortal 30 % more', () {
       expect(bench.scoreForRatio(1.59).tier, Tier.champion);
-      expect(bench.scoreForRatio(1.6).labelWithRr, 'Immortal 1 · 0 RR');
-      expect(bench.scoreForRatio(2.08).tier, Tier.radiant);
-      expect(bench.scoreForRatio(2.08).label, 'Radiant');
-      expect(bench.scoreForRatio(2.08 + (2.08 - 1.6) / 3 * 0.5).rr, 50, reason: 'Radiant RR is uncapped');
+      expect(bench.scoreForRatio(1.6).labelWithRr, 'Olympian 1 · 0 RR');
+      expect(bench.scoreForRatio(2.08).tier, Tier.immortal);
+      expect(bench.scoreForRatio(2.08).label, 'Immortal');
+      expect(bench.scoreForRatio(2.08 + (2.08 - 1.6) / 3 * 0.5).rr, 50, reason: 'Immortal RR is uncapped');
       expect(bench.scoreForRatio(4).rr, greaterThan(100));
     });
 
-    test('three divisions per tier, 1 lowest, 3 highest; Radiant has none', () {
+    test('three divisions per tier, 1 lowest, 3 highest; Immortal has none', () {
       expect([for (var d = 1; d <= 3; d++) RankScore.of(Tier.silver, division: d).label], ['Silver 1', 'Silver 2', 'Silver 3']);
       expect(RankScore.of(Tier.iron).value, 0);
-      expect(RankScore.of(Tier.immortal, division: 3).value, closeTo(23, 1e-9));
-      expect(RankScore.of(Tier.radiant, rr: 40).value, closeTo(24.4, 1e-9));
-      expect(RankScore.of(Tier.radiant, rr: 40).label, 'Radiant');
+      expect(RankScore.of(Tier.olympian, division: 3).value, closeTo(23, 1e-9));
+      expect(RankScore.of(Tier.immortal, rr: 40).value, closeTo(24.4, 1e-9));
+      expect(RankScore.of(Tier.immortal, rr: 40).label, 'Immortal');
       expect(RankScore(24.4).divisionLabel, '');
-      expect(Tier.values.map((t) => t.label), ['Iron', 'Bronze', 'Silver', 'Gold', 'Platinum', 'Diamond', 'Champion', 'Immortal', 'Radiant']);
+      expect(Tier.values.map((t) => t.label), ['Iron', 'Bronze', 'Silver', 'Gold', 'Platinum', 'Diamond', 'Champion', 'Olympian', 'Immortal']);
     });
 
     test('next labels walk up the ladder', () {
       expect(RankScore.of(Tier.gold, division: 1).nextLabel, 'Gold 2');
       expect(RankScore.of(Tier.gold, division: 3).nextLabel, 'Platinum 1');
-      expect(RankScore.of(Tier.immortal, division: 3).nextLabel, 'Radiant');
-      expect(RankScore.of(Tier.radiant).nextLabel, isNull);
+      expect(RankScore.of(Tier.olympian, division: 3).nextLabel, 'Immortal');
+      expect(RankScore.of(Tier.immortal).nextLabel, isNull);
     });
 
     test('next threshold in kg', () {
       // Gold 2 (10.5 points) → Gold 3 at 11 points = 1.0 + (2/3) × 0.2 = 1.1333 → 90.67 kg at 80 kg.
       expect(bench.nextThresholdKg(bench.scoreForRatio(1.1), 80), closeTo((1.0 + 2 / 3 * 0.2) * 80, 1e-9));
-      expect(bench.nextThresholdKg(bench.scoreForRatio(1.59), 80), closeTo(128, 1e-9)); // Immortal 1.6 × 80
+      expect(bench.nextThresholdKg(bench.scoreForRatio(1.59), 80), closeTo(128, 1e-9)); // Olympian 1.6 × 80
       expect(bench.nextThresholdKg(bench.scoreForRatio(3), 80), isNull);
     });
 
@@ -100,8 +100,8 @@ void main() {
 
     test('strength score is 37.5 per point, 0–1000', () {
       expect(RankScore(12).strength, 450);
-      expect(RankScore(21).strength, 788); // Immortal
-      expect(RankScore(24).strength, 900); // Radiant
+      expect(RankScore(21).strength, 788); // Olympian
+      expect(RankScore(24).strength, 900); // Immortal
       expect(RankScore(55).strength, 1000);
       expect(scoreFromStrength(450).value, 12);
     });
@@ -116,7 +116,7 @@ void main() {
       }, machineStrictness: 1.1);
       expect(m.thresholds[Tier.gold.index], closeTo(1.1, 1e-9));
       expect(m.thresholds[Tier.platinum.index], closeTo(1.32, 1e-9));
-      expect(m.thresholds[Tier.immortal.index], closeTo(1.76, 1e-9));
+      expect(m.thresholds[Tier.olympian.index], closeTo(1.76, 1e-9));
     });
   });
 
@@ -272,7 +272,7 @@ void main() {
       }
     }
     for (final s in standards) {
-      expect(s.thresholds[Tier.radiant.index], greaterThan(s.thresholds[Tier.immortal.index] * 1.29), reason: s.name);
+      expect(s.thresholds[Tier.immortal.index], greaterThan(s.thresholds[Tier.olympian.index] * 1.29), reason: s.name);
       expect(s.scaling.exponent, 0.67);
     }
     final machine = standards.firstWhere((s) => s.id == 'machine_chest_press');
