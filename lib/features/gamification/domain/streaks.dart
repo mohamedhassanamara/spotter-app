@@ -180,6 +180,43 @@ class DayStreakCalculator {
   }
 }
 
+/// How a calendar day shows against the streak.
+enum StreakDayMark {
+  /// A workout was finished that day.
+  workout,
+
+  /// No workout, but it was the 1st or 2nd rest day in a row inside a running streak (it kept the streak alive).
+  rest,
+}
+
+/// The calendar's marks: [StreakDayMark.workout] on every workout day, [StreakDayMark.rest] on the rest days that kept the streak alive
+/// (between two workouts at most [DayStreakCalculator.maxRestDays] days apart, or the days right after the last workout that have already
+/// ended). Days that broke the streak, days before it started and today (not earned yet) have no mark.
+/// Stays consistent with [DayStreakCalculator.compute], including the offset (the offset day stands in for a workout).
+Map<DateTime, StreakDayMark> streakDayMarks({required Iterable<DateTime> workoutStarts, required DateTime now, StreakOffset? offset}) {
+  final today = _dayIndex(now.toLocal());
+  final offsetDay = offset == null ? null : _dayIndex(offset.date);
+  final workouts = <int>{
+    for (final s in workoutStarts)
+      if (_dayIndex(s.toLocal()) <= today && (offsetDay == null || _dayIndex(s.toLocal()) > offsetDay)) _dayIndex(s.toLocal()),
+  };
+  if (offsetDay != null && offsetDay <= today) workouts.add(offsetDay);
+  final sorted = workouts.toList()..sort();
+  final marks = <int, StreakDayMark>{for (final d in sorted) d: StreakDayMark.workout};
+  const maxRest = DayStreakCalculator.maxRestDays;
+  for (var i = 0; i < sorted.length; i++) {
+    final d = sorted[i];
+    final next = i + 1 < sorted.length ? sorted[i + 1] : null;
+    final rest = next == null ? maxRest : math.min(maxRest, next - d - 1);
+    // A gap longer than the allowance broke the streak at its 3rd day: only the first two days of it kept it alive.
+    for (var k = 1; k <= rest; k++) {
+      final day = d + k;
+      if (day < today) marks[day] = StreakDayMark.rest;
+    }
+  }
+  return {for (final e in marks.entries) _fromIndex(e.key): e.value};
+}
+
 /// Start times of finished sessions that count for the streak (at least one completed working set).
 List<DateTime> streakWorkoutStarts(TrainingHistory history) => [
       for (final s in history.sessions)

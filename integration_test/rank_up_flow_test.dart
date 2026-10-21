@@ -56,7 +56,10 @@ void main() {
     final after = tester.widget<Text>(label).data!;
     debugPrint('STEP strip after the set: $after');
     expect((await setRow(h, chest[0].id)).completed, isTrue);
-    expect(tester.widget<Text>(gap).data, isNot(gapBefore), reason: 'the set raised the lift\'s rank, live: the kg gap to the next division moved');
+    // The strip shows a real set that reaches the next division ("6 × 72.5 kg → Gold 2"), not an e1RM gap.
+    final target = RegExp(r'^\d+ × (BW|−?[\d.]+ kg)( \(max\))? → \w+ \d$');
+    expect(gapBefore, matches(target), reason: 'a concrete set before the first set');
+    expect(tester.widget<Text>(gap).data, matches(target), reason: 'still a concrete set after the set raised the lift\'s rank live');
     await h.shot('rank-strip-after-set');
 
     debugPrint('STEP Finish: Congratulations, then the Rank screen plays (lifts first), a tap skips it');

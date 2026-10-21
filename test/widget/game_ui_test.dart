@@ -34,8 +34,8 @@ void main() {
       home: Scaffold(
         body: DayDots(states: [
           DayDotState.trained,
+          DayDotState.rest,
           DayDotState.trained,
-          DayDotState.empty,
           DayDotState.today,
           DayDotState.future,
           DayDotState.future,
@@ -43,7 +43,8 @@ void main() {
         ]),
       ),
     ));
-    expect(find.byIcon(Icons.check_rounded), findsNWidgets(2));
+    expect(find.byIcon(workoutDayIcon), findsNWidgets(2), reason: 'workout days show a dumbbell');
+    expect(find.byIcon(restDayIcon), findsOneWidget, reason: 'a rest day that kept the streak shows a moon');
     expect(find.text('M'), findsOneWidget);
   });
 }

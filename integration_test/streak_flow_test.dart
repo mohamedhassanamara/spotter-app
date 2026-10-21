@@ -71,6 +71,14 @@ void main() {
       expect(want.days, daysAgo == 0 ? 1 : daysAgo, reason: 'today counts only once earned; rest days count at midnight');
       await h.waitFor(find.text('${want.days}-day streak'), reason: 'days on Home', scroll: false);
       expect(find.descendant(of: find.byKey(const ValueKey('streak-safety')), matching: find.text(text), matchRoot: true), findsOneWidget);
+      final card = find.byKey(const ValueKey('streak-card'));
+      if (daysAgo == 0) {
+        expect(find.descendant(of: card, matching: find.byIcon(Icons.fitness_center_rounded)), findsWidgets, reason: 'today\'s dot is a dumbbell');
+      }
+      if (daysAgo == 2 && DateTime.now().weekday >= DateTime.wednesday) {
+        expect(find.descendant(of: card, matching: find.byIcon(Icons.bedtime_rounded)), findsOneWidget, reason: 'yesterday was a rest day that kept the streak: a moon');
+        expect(find.descendant(of: card, matching: find.byIcon(Icons.fitness_center_rounded)), findsOneWidget, reason: 'the workout two days ago keeps its dumbbell');
+      }
       await h.shot(shot);
     }
 

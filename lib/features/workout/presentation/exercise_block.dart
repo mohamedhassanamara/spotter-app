@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart' show HapticFeedback;
+import 'package:go_router/go_router.dart';
 
 import '../../../app_providers.dart';
 import '../../../core/db/database.dart';
@@ -8,10 +9,12 @@ import '../../../core/domain/equipment.dart';
 import '../../../core/domain/training.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/common.dart';
+import '../../../router.dart';
 import '../../coach/domain/suggestion_engine.dart';
 import '../../library/domain/exercise_info.dart';
 import '../../library/domain/load_kinds.dart';
 import '../../program/data/program_repository.dart';
+import '../../ranks/domain/rank_target.dart';
 import '../../ranks/domain/ranks.dart';
 import '../../ranks/presentation/rank_badge.dart';
 import '../../library/presentation/exercise_thumb.dart';
@@ -162,7 +165,12 @@ class _ExerciseBlockState extends ConsumerState<ExerciseBlock> {
         _header(name),
         if (!_collapsed) ...[
           _restRow(),
-          _RankStrip(exerciseId: ex.row.exerciseId, sets: ex.sets),
+          _RankStrip(
+            exerciseId: ex.row.exerciseId,
+            sets: ex.sets,
+            repMin: ex.sets.where((s) => s.isWorkingSet).map((s) => s.targetRepMin).whereType<int>().firstOrNull ?? ex.row.repMin,
+            rir: ex.sets.where((s) => s.isWorkingSet).map((s) => s.targetRir).whereType<int>().firstOrNull ?? ex.row.targetRir,
+          ),
           _prescription(),
           if (ex.suggestion?.maxReached == true)
             Padding(
@@ -277,7 +285,15 @@ class _ExerciseBlockState extends ConsumerState<ExerciseBlock> {
 
   Widget _header(String name) {
     return Row(children: [
-      if (widget.info != null) ExerciseThumb(exercise: widget.info!, size: 40, radius: 10) else const SizedBox(width: 40, height: 40),
+      if (widget.info != null)
+        GestureDetector(
+          key: ValueKey('exercise-thumb-${ex.row.id}'),
+          behavior: HitTestBehavior.opaque,
+          onTap: _openExercise,
+          child: ExerciseThumb(exercise: widget.info!, size: 40, radius: 10),
+        )
+      else
+        const SizedBox(width: 40, height: 40),
       const SizedBox(width: 10),
       if (ctx.supersetLabel != null)
         Container(
@@ -287,7 +303,11 @@ class _ExerciseBlockState extends ConsumerState<ExerciseBlock> {
           child: Text(ctx.supersetLabel!, key: ValueKey('superset-label-${ex.row.id}'), style: AppType.label.copyWith(color: ctx.supersetColor, letterSpacing: 0.5)),
         ),
       Expanded(
-        child: Text(name, key: ValueKey('exercise-name-${ex.row.id}'), maxLines: 2, overflow: TextOverflow.ellipsis, style: AppType.title.copyWith(fontSize: 17)),
+        child: InkWell(
+          key: ValueKey('exercise-name-tap-${ex.row.id}'),
+          onTap: _openExercise,
+          child: Text(name, key: ValueKey('exercise-name-${ex.row.id}'), maxLines: 2, overflow: TextOverflow.ellipsis, style: AppType.title.copyWith(fontSize: 17)),
+        ),
       ),
       IconButton(
         tooltip: _collapsed ? 'Expand' : 'Collapse',
@@ -320,6 +340,12 @@ class _ExerciseBlockState extends ConsumerState<ExerciseBlock> {
         ],
       ),
     ]);
+  }
+
+  /// The exercise's details page on top of the running workout: back returns right here.
+  Future<void> _openExercise() async {
+    await ctx.onCommit(); // a typed value is written before the screen is covered
+    if (mounted) context.push(Routes.exercise(ex.row.exerciseId));
   }
 
   Widget _restRow() {
@@ -661,13 +687,17 @@ class _MutedLine extends StatelessWidget {
       );
 }
 
-/// Badge, division, RR to the next division and the real kg gap. Never "???".
+/// Badge, division, RR to the next division and the set that gets there ("6 × 72.5 kg → Gold 2"). Never "???".
 /// Live: a completed set of this workout counts at once (the finished sessions are the baseline), and when it
 /// raises the rank the RR bar fills, the badge pops in on a new division or tier, with a haptic.
 class _RankStrip extends ConsumerStatefulWidget {
-  const _RankStrip({required this.exerciseId, required this.sets});
+  const _RankStrip({required this.exerciseId, required this.sets, required this.repMin, required this.rir});
   final String exerciseId;
   final List<WorkoutSet> sets;
+
+  /// The prescription the rank target is quoted at: bottom of the rep range, prescribed reps in reserve.
+  final int repMin;
+  final int rir;
 
   @override
   ConsumerState<_RankStrip> createState() => _RankStripState();
@@ -776,14 +806,25 @@ class _RankStripState extends ConsumerState<_RankStrip> with SingleTickerProvide
         final pop = _labelChanged && _c.isAnimating && t > 0.6
             ? 1 + 0.45 * Curves.elasticOut.transform(((t - 0.6) / 0.4).clamp(0.0, 1.0)).clamp(0.0, 1.0) * (1 - (t - 0.6) / 0.4)
             : 1.0;
-        // The kg gap is to the division above the *target* rank (the one reached), at the baseline's bodyweight.
+        // The target set reaches the division above the *target* rank (the one reached), at the baseline's bodyweight.
         final target = _to ?? live;
         final fromHistory = baseline != null && (target.value - baseline.score.value).abs() < 1e-9;
         final next = fromHistory ? baseline.nextThresholdKg : standard?.nextThresholdKg(target, bodyweight > 0 ? bodyweight : (baseline?.bodyweight ?? 0));
-        final bestE1rm = fromHistory
-            ? baseline.bestE1rm
-            : (standard == null || bodyweight <= 0 ? 0.0 : standard.normalizer(bodyweight) * standard.ratioForPoints(target.value));
-        final gap = next == null ? null : next - bestE1rm;
+        final std = standard ?? baseline?.standard;
+        final grid = ref.watch(exerciseGridProvider(id));
+        final targetLine = next == null || std == null || grid == null
+            ? null
+            : rankTargetLine(
+                rankTargetSet(
+                  standard: std,
+                  bodyweight: bodyweight > 0 ? bodyweight : (baseline?.bodyweight ?? 0),
+                  targetE1rm: next,
+                  repMin: widget.repMin,
+                  rir: widget.rir,
+                  grid: grid,
+                ),
+                s.nextLabel,
+              );
         return line(Row(children: [
           Transform.scale(scale: pop, child: RankBadge(key: ValueKey('rank-strip-badge-$id'), score: s, size: BadgeSize.small, width: 22, animate: false)),
           const SizedBox(width: 8),
@@ -794,9 +835,10 @@ class _RankStripState extends ConsumerState<_RankStrip> with SingleTickerProvide
           Flexible(
             flex: 5,
             child: Text(
-              gap == null ? 'top of the ladder' : '+${formatKg((gap.clamp(0, double.infinity) * 2).ceilToDouble() / 2)} kg e1RM to ${s.nextLabel}',
+              s.isApex ? 'top of the ladder' : (targetLine ?? ''),
               key: ValueKey('rank-gap-$id'),
-              maxLines: 1,
+              textAlign: TextAlign.end,
+              maxLines: 2,
               overflow: TextOverflow.ellipsis,
               style: muted,
             ),
@@ -941,20 +983,6 @@ class _SetRow extends ConsumerWidget {
                   color: grey ? AppColors.textTertiary : AppColors.textPrimary,
                 ),
               ),
-              if (f == KeypadField.kg && s.adjustReason != null)
-                Positioned(
-                  left: 0,
-                  top: 0,
-                  child: GestureDetector(
-                    key: ValueKey('adjusted-${s.id}'),
-                    behavior: HitTestBehavior.opaque,
-                    onTap: () => _explainAdjustment(context, s),
-                    child: const Padding(
-                      padding: EdgeInsets.all(5),
-                      child: SizedBox(width: 8, height: 8, child: DecoratedBox(decoration: BoxDecoration(color: AppColors.accent, shape: BoxShape.circle))),
-                    ),
-                  ),
-                ),
               if (good && f == KeypadField.kg)
                 Positioned(
                   right: -4,
@@ -987,7 +1015,8 @@ class _SetRow extends ConsumerWidget {
       id: s.id,
       onDelete: () => deleteSetWithUndo(context, ref, ctx, s),
       onSwipeRight: s.completed ? null : () => ctx.onComplete(s),
-      child: Opacity(
+      child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      Opacity(
       opacity: s.isWarmup && !s.completed ? 0.6 : 1,
       child: Container(
         margin: const EdgeInsets.symmetric(vertical: 2),
@@ -999,6 +1028,7 @@ class _SetRow extends ConsumerWidget {
           border: follow ? Border(left: BorderSide(color: kindColor(kind), width: 3)) : null,
         ),
         child: Row(children: [
+          Stack(clipBehavior: Clip.none, children: [
           InkWell(
             key: ValueKey('set-label-${s.id}'),
             onTap: s.completed ? null : onSetMenu,
@@ -1019,6 +1049,23 @@ class _SetRow extends ConsumerWidget {
               ]),
             ),
           ),
+          // The target changed: a dot on the set number (never on the KG / REPS cells, which stay fully tappable).
+          if (s.adjustReason != null)
+            Positioned(
+              right: 0,
+              top: 0,
+              child: GestureDetector(
+                key: ValueKey('adjusted-${s.id}'),
+                behavior: HitTestBehavior.opaque,
+                onTap: () => _explainAdjustment(context, s),
+                child: const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: Center(child: SizedBox(width: 8, height: 8, child: DecoratedBox(decoration: BoxDecoration(color: AppColors.accent, shape: BoxShape.circle)))),
+                ),
+              ),
+            ),
+          ]),
           Expanded(
             flex: 4,
             child: InkWell(
@@ -1086,6 +1133,17 @@ class _SetRow extends ConsumerWidget {
         ]),
       ),
     ),
+      if (s.adjustReason != null)
+        GestureDetector(
+          key: ValueKey('adjusted-caption-${s.id}'),
+          behavior: HitTestBehavior.opaque,
+          onTap: () => _explainAdjustment(context, s),
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(follow ? 10 : 2, 0, 0, 3),
+            child: Text('Target updated · why?', style: AppType.bodyS.copyWith(fontSize: 11, color: AppColors.accent)),
+          ),
+        ),
+      ]),
     );
   }
 

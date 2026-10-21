@@ -354,6 +354,18 @@ final dayStreakProvider = Provider<DayStreak?>((ref) {
   );
 });
 
+/// Calendar marks: workout days (dumbbell) and the rest days that kept the streak alive (moon).
+final streakMarksProvider = Provider<Map<DateTime, StreakDayMark>>((ref) {
+  ref.watch(dayTickProvider);
+  final history = ref.watch(historyProvider).value;
+  if (history == null) return const {};
+  return streakDayMarks(
+    workoutStarts: streakWorkoutStarts(history),
+    now: ref.watch(clockProvider)(),
+    offset: ref.watch(streakOffsetProvider).value,
+  );
+});
+
 /// When to remind about the streak (18:00 on the last-chance day), or null.
 final streakReminderProvider = Provider<({DateTime at, String body})?>((ref) {
   final s = ref.watch(dayStreakProvider);

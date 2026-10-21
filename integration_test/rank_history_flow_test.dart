@@ -59,7 +59,29 @@ void _flow() {
     expect(find.byKey(const ValueKey('chart-overall')), findsOneWidget);
     await h.shot('rank-evolution-overall');
 
-    debugPrint('STEP a region and a muscle show their own line');
+    debugPrint('STEP the range switch: Week · Month · 3 Months · Year · All, the axis adapts, the line stays');
+    for (final (key, label) in [
+      ('week', 'Week'),
+      ('month', 'Month'),
+      ('threeMonths', '3 Months'),
+      ('year', 'Year'),
+      ('all', 'All'),
+    ]) {
+      final chip = find.byKey(ValueKey('evolution-range-$key'));
+      expect(chip, findsOneWidget, reason: label);
+      expect(find.descendant(of: chip, matching: find.text(label)), findsOneWidget);
+    }
+    for (final key in ['week', 'month', 'threeMonths', 'year']) {
+      await h.tap(find.byKey(ValueKey('evolution-range-$key')));
+      await h.settle(6);
+      expect(find.byKey(const ValueKey('chart-overall')), findsOneWidget, reason: 'the overall line draws in the $key range');
+      expect(find.byKey(const ValueKey('evolution-empty')), findsNothing);
+      await h.shot('rank-evolution-range-$key');
+    }
+    await h.tap(find.byKey(const ValueKey('evolution-range-week')));
+    await h.settle(6);
+
+    debugPrint('STEP a region and a muscle show their own line (the range stays)');
     final chips = find.descendant(of: find.byKey(const ValueKey('rank-evolution')), matching: find.byType(Scrollable)).last;
     Future<void> pick(String key) async {
       await tester.ensureVisible(find.byKey(const ValueKey('rank-evolution')));
@@ -76,6 +98,9 @@ void _flow() {
     await h.waitFor(find.byKey(const ValueKey('chart-muscle-quadriceps')), scroll: false);
     expect(tester.widget<Text>(find.byKey(const ValueKey('evolution-series'))).data, 'Quadriceps');
     await h.shot('rank-evolution-muscle');
+    await h.tap(find.byKey(const ValueKey('evolution-range-all')));
+    await h.settle(6);
+    expect(find.byKey(const ValueKey('chart-muscle-quadriceps')), findsOneWidget);
 
     debugPrint('STEP the ladder: every tier, every division, where I sit, each muscle');
     await h.tap(find.byKey(const ValueKey('open-ladder')));

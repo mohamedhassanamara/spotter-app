@@ -27,11 +27,17 @@ List<RankPoint> rankEvolution({
   required DateTime now,
   Map<String, String> displayNames = const {},
   int stepDays = 7,
+  int dailyDays = 31,
 }) {
   if (history.sessions.isEmpty || bodyweights.isEmpty) return const [];
   final first = history.sessions.map((s) => s.startedAt).reduce((a, b) => a.isBefore(b) ? a : b);
   final days = <DateTime>[];
-  for (var d = dateOnly(first); d.isBefore(dateOnly(now)); d = addDays(d, stepDays)) {
+  // One point per [stepDays] over the whole history, one per day over the last [dailyDays] so the Week and Month ranges have a line.
+  final dailyFrom = addDays(dateOnly(now), -dailyDays);
+  for (var d = dateOnly(first); d.isBefore(dailyFrom); d = addDays(d, stepDays)) {
+    days.add(d.add(const Duration(hours: 23, minutes: 59)));
+  }
+  for (var d = dateOnly(first).isAfter(dailyFrom) ? dateOnly(first) : dailyFrom; d.isBefore(dateOnly(now)); d = addDays(d, 1)) {
     days.add(d.add(const Duration(hours: 23, minutes: 59)));
   }
   days.add(now);
@@ -55,4 +61,40 @@ List<RankPoint> rankEvolution({
     ));
   }
   return out;
+}
+
+/// The time range the rank chart shows.
+enum EvolutionRange {
+  week('Week', 7),
+  month('Month', 30),
+  threeMonths('3 Months', 90),
+  year('Year', 365),
+  all('All', null);
+
+  const EvolutionRange(this.label, this.days);
+  final String label;
+
+  /// Length in days; null for everything.
+  final int? days;
+}
+
+/// A value on the chart's time axis.
+typedef EvolutionSample = ({DateTime date, double value});
+
+/// The samples that fall in [range] ending at [now]. A range that starts between two samples gets a start point interpolated on the
+/// line at its first day, so the line always spans the whole range; "All" starts at the first sample. Returns the range's start too.
+({DateTime start, List<EvolutionSample> samples}) windowSamples(List<EvolutionSample> all, EvolutionRange range, DateTime now) {
+  if (all.isEmpty) return (start: now, samples: const []);
+  final days = range.days;
+  if (days == null) return (start: all.first.date, samples: all);
+  final start = now.subtract(Duration(days: days));
+  final inside = [for (final p in all) if (!p.date.isBefore(start)) p];
+  final before = all.where((p) => p.date.isBefore(start)).lastOrNull;
+  if (before != null && inside.isNotEmpty && inside.first.date.isAfter(start)) {
+    final next = inside.first;
+    final span = next.date.difference(before.date).inSeconds;
+    final f = span <= 0 ? 1.0 : start.difference(before.date).inSeconds / span;
+    inside.insert(0, (date: start, value: before.value + (next.value - before.value) * f));
+  }
+  return (start: start, samples: inside);
 }

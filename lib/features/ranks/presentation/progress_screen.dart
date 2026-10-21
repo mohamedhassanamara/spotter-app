@@ -10,6 +10,7 @@ import '../../../core/domain/dates.dart';
 import '../../../core/domain/history.dart';
 import '../../../core/domain/muscles.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../gamification/domain/streaks.dart' show StreakDayMark;
 import '../../../core/widgets/common.dart';
 import '../../../router.dart';
 import '../../readiness/domain/readiness.dart';
@@ -755,6 +756,7 @@ class _HistoryTabState extends ConsumerState<_HistoryTab> {
   @override
   Widget build(BuildContext context) {
     final today = dateOnly(ref.watch(clockProvider)());
+    final marks = ref.watch(streakMarksProvider);
     return AsyncBody(
       value: ref.watch(historyProvider),
       builder: (history) {
@@ -825,6 +827,7 @@ class _HistoryTabState extends ConsumerState<_HistoryTab> {
                               isToday: addDays(w, i) == today,
                               isSelected: addDays(w, i) == selected,
                               sessions: byDay[addDays(w, i)] ?? const [],
+                              mark: marks[addDays(w, i)],
                               onTap: () => setState(() => _selected = addDays(w, i) == selected ? null : addDays(w, i)),
                             ),
                           ),
@@ -840,6 +843,8 @@ class _HistoryTabState extends ConsumerState<_HistoryTab> {
                         ),
                       ],
                     ),
+                  const SizedBox(height: 8),
+                  const StreakLegend(),
                 ],
               ),
             ),
@@ -874,6 +879,7 @@ class _DayCell extends StatelessWidget {
     required this.isToday,
     required this.isSelected,
     required this.sessions,
+    required this.mark,
     required this.onTap,
   });
 
@@ -882,6 +888,9 @@ class _DayCell extends StatelessWidget {
   final bool isToday;
   final bool isSelected;
   final List<HistSession> sessions;
+
+  /// Workout day (dumbbell) or a rest day that kept the streak alive (moon); null: plain.
+  final StreakDayMark? mark;
   final VoidCallback onTap;
 
   @override
@@ -909,19 +918,15 @@ class _DayCell extends StatelessWidget {
             ),
             const SizedBox(height: 4),
             SizedBox(
-              height: 8,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  for (final s in sessions.take(3))
-                    Container(
-                      width: 8,
-                      height: 8,
-                      margin: const EdgeInsets.symmetric(horizontal: 1),
-                      decoration: BoxDecoration(color: _sessionColor(s), shape: BoxShape.circle),
-                    ),
-                ],
-              ),
+              height: 14,
+              child: sessions.isNotEmpty || mark == StreakDayMark.workout
+                  ? Icon(workoutDayIcon,
+                      key: ValueKey('cal-workout-${dayKey(day)}'),
+                      size: 14,
+                      color: sessions.isEmpty ? AppColors.primary : _sessionColor(sessions.first))
+                  : mark == StreakDayMark.rest
+                      ? Icon(restDayIcon, key: ValueKey('cal-rest-${dayKey(day)}'), size: 13, color: restDayColor.withValues(alpha: inMonth ? 1 : 0.4))
+                      : null,
             ),
           ],
         ),

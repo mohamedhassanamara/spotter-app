@@ -245,4 +245,51 @@ void main() {
       expect(streakReminderPlan(DayStreak.empty, at(10, 4), enabled: true), isNull);
     });
   });
+
+  group('calendar marks', () {
+    DateTime day(int d) => DateTime(2026, 10, d);
+    Map<DateTime, StreakDayMark> marks(List<DateTime> w, DateTime now, {StreakOffset? offset}) =>
+        streakDayMarks(workoutStarts: w, now: now, offset: offset);
+
+    test('workout days get the dumbbell, the rest days between them keep the streak alive (moon)', () {
+      final m = marks([at(10, 1), at(10, 2), at(10, 5)], at(10, 6, 9));
+      expect(m[day(1)], StreakDayMark.workout);
+      expect(m[day(2)], StreakDayMark.workout);
+      expect(m[day(3)], StreakDayMark.rest);
+      expect(m[day(4)], StreakDayMark.rest);
+      expect(m[day(5)], StreakDayMark.workout);
+      expect(m[day(6)], isNull, reason: 'today is not earned yet');
+    });
+
+    test('a gap that broke the streak stays plain after its two allowed rest days; days before the first workout are plain', () {
+      final m = marks([at(10, 1), at(10, 6)], at(10, 7));
+      expect(m[day(1)], StreakDayMark.workout);
+      expect(m[day(2)], StreakDayMark.rest);
+      expect(m[day(3)], StreakDayMark.rest);
+      expect(m[day(4)], isNull, reason: 'the 3rd day without a workout ended the streak');
+      expect(m[day(5)], isNull);
+      expect(m[day(6)], StreakDayMark.workout);
+      expect(m[DateTime(2026, 9, 30)], isNull, reason: 'before the streak started');
+    });
+
+    test('after the last workout only the rest days that already ended count; today is plain', () {
+      final m = marks([at(10, 10)], at(10, 12, 8));
+      expect(m[day(11)], StreakDayMark.rest);
+      expect(m[day(12)], isNull);
+      expect(marks([at(10, 10)], at(10, 13, 8))[day(12)], StreakDayMark.rest);
+    });
+
+    test('a workout today shows as a workout day', () {
+      expect(marks([at(10, 12, 9)], at(10, 12, 20))[day(12)], StreakDayMark.workout);
+    });
+
+    test('the marks agree with the streak: a rest mark never sits on a day the streak counts as broken', () {
+      final w = [at(10, 1), at(10, 4)];
+      final m = marks(w, at(10, 5));
+      expect(calc.compute(workoutStarts: w, now: at(10, 5)).days, 4);
+      for (final d in [2, 3]) {
+        expect(m[day(d)], StreakDayMark.rest);
+      }
+    });
+  });
 }

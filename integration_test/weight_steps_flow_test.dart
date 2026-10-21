@@ -69,6 +69,44 @@ void main() {
     await h.scrollToTop();
     await h.waitFor(find.byKey(ValueKey('adjusted-${now[1].id}')), reason: 'the "target changed" marker on the changed set');
     await h.shot('weight-steps-marker');
+
+    debugPrint('STEP the marker sits on the set number, never on KG / REPS: both cells stay tappable on every row, at the smallest iPhone width');
+    final dpr = tester.view.devicePixelRatio;
+    tester.view.physicalSize = Size(375 * dpr, 667 * dpr); // iPhone SE
+    addTearDown(tester.view.resetPhysicalSize);
+    await h.settle(8);
+    await h.scrollToTop();
+    for (final s in now.skip(1)) {
+      final dot = find.byKey(ValueKey('adjusted-${s.id}'));
+      final caption = find.byKey(ValueKey('adjusted-caption-${s.id}'));
+      await h.waitFor(dot, reason: 'marker on set ${s.id}');
+      expect(caption, findsOneWidget, reason: 'one-line caption under the row');
+      expect(find.descendant(of: caption, matching: find.text('Target updated · why?')), findsOneWidget);
+      for (final f in ['kg', 'reps']) {
+        final cell = find.byKey(ValueKey('cell-$f-${s.id}'));
+        expect(tester.getRect(dot).overlaps(tester.getRect(cell)), isFalse, reason: 'the dot is off the $f cell');
+        expect(tester.getRect(caption).overlaps(tester.getRect(cell)), isFalse, reason: 'the caption is under the row, off the $f cell');
+        expect(tester.getSize(cell).height, greaterThanOrEqualTo(34));
+        expect(tester.getSize(cell).width, greaterThanOrEqualTo(44), reason: '$f cell wide enough to hit at 375 pt');
+        await openCell(h, s, f);
+        await h.tap(find.byKey(const ValueKey('key-hide')));
+      }
+    }
+    for (final s in (await rows()).where((x) => x.isWarmup || x.adjustReason == null).take(3)) {
+      for (final f in ['kg', 'reps']) {
+        final cell = find.byKey(ValueKey('cell-$f-${s.id}'));
+        if (cell.evaluate().isEmpty || s.completed) continue;
+        await openCell(h, s, f);
+        await h.tap(find.byKey(const ValueKey('key-hide')));
+      }
+    }
+    await h.shot('weight-steps-marker-small');
+    // Tapping the caption opens the same explanation as the dot.
+    await h.tap(find.byKey(ValueKey('adjusted-caption-${now[1].id}')));
+    await h.waitFor(find.byKey(ValueKey('adjusted-dialog-${now[1].id}')), scroll: false);
+    await h.tap(find.text('OK'));
+    tester.view.resetPhysicalSize();
+    await h.settle(8);
     await h.tap(find.byKey(ValueKey('adjusted-${now[1].id}')));
     await h.waitFor(find.byKey(ValueKey('adjusted-dialog-${now[1].id}')), scroll: false);
     expect(find.textContaining('Weight steps updated'), findsWidgets);

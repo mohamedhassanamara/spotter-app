@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -9,10 +10,16 @@ import '../../../core/theme/app_theme.dart';
 /// The streak at the end of a workout: a large flame drawn in code (no asset, no licence to carry) that flares up while the
 /// number ticks from [from] to [to], with rising sparks and a haptic when the number changes. [onDone] fires when the show is over.
 class FireStreak extends StatefulWidget {
-  const FireStreak({super.key, required this.from, required this.to, this.onDone});
+  const FireStreak({super.key, required this.from, required this.to, this.onDone, this.startDelay = Duration.zero, this.height = 320});
   final int from;
   final int to;
   final VoidCallback? onDone;
+
+  /// Waits this long before the flame ignites (the calendar stamp goes first).
+  final Duration startDelay;
+
+  /// Height of the flame area.
+  final double height;
 
   static const duration = Duration(milliseconds: 2800);
 
@@ -24,6 +31,7 @@ class _FireStreakState extends State<FireStreak> with TickerProviderStateMixin {
   late final AnimationController _show = AnimationController(vsync: this, duration: FireStreak.duration);
   late final AnimationController _loop = AnimationController(vsync: this, duration: const Duration(seconds: 1))..repeat();
   bool _ticked = false;
+  Timer? _delay;
 
   @override
   void initState() {
@@ -34,11 +42,18 @@ class _FireStreakState extends State<FireStreak> with TickerProviderStateMixin {
         HapticFeedback.heavyImpact();
       }
     });
-    _show.forward().whenComplete(() => widget.onDone?.call());
+    if (widget.startDelay == Duration.zero) {
+      _show.forward().whenComplete(() => widget.onDone?.call());
+    } else {
+      _delay = Timer(widget.startDelay, () {
+        if (mounted) _show.forward().whenComplete(() => widget.onDone?.call());
+      });
+    }
   }
 
   @override
   void dispose() {
+    _delay?.cancel();
     _show.dispose();
     _loop.dispose();
     super.dispose();
@@ -59,7 +74,7 @@ class _FireStreakState extends State<FireStreak> with TickerProviderStateMixin {
         return Column(mainAxisSize: MainAxisSize.min, children: [
           SizedBox(
             key: const ValueKey('streak-celebration'),
-            height: 320,
+            height: widget.height,
             width: double.infinity,
             child: CustomPaint(painter: _FirePainter(time: still ? 0.3 : _loop.value + _show.value * 3, flare: flare)),
           ),

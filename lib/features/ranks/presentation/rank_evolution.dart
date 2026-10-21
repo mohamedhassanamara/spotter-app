@@ -69,6 +69,7 @@ class RankEvolutionCard extends ConsumerStatefulWidget {
 
 class _RankEvolutionCardState extends ConsumerState<RankEvolutionCard> {
   EvolutionSeries _series = const OverallSeries();
+  EvolutionRange _range = EvolutionRange.all;
 
   @override
   Widget build(BuildContext context) {
@@ -80,21 +81,33 @@ class _RankEvolutionCardState extends ConsumerState<RankEvolutionCard> {
         loading: () => const SizedBox(height: 220, child: Center(child: CircularProgressIndicator())),
         error: (e, _) => Text('Could not build the rank history: $e'),
         data: (points) {
-          final line = [for (final p in points) if (_series.at(p) != null) (p, _series.at(p)!)];
+          final full = [for (final p in points) if (_series.at(p) != null) (p, _series.at(p)!)];
+          final now = ref.watch(clockProvider)();
+          final window = windowSamples([for (final (p, s) in full) (date: p.date, value: s.value)], _range, now);
+          final line = window.samples;
           return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Row(children: [
               Expanded(child: Text('RANK EVOLUTION', style: AppType.label.copyWith(color: AppColors.textSecondary))),
-              if (line.isNotEmpty)
-                Text(line.last.$2.label, key: const ValueKey('evolution-now'), style: AppType.bodyS.copyWith(color: tierColor(line.last.$2.tier), fontWeight: FontWeight.w800)),
+              if (full.isNotEmpty)
+                Text(full.last.$2.label, key: const ValueKey('evolution-now'), style: AppType.bodyS.copyWith(color: tierColor(full.last.$2.tier), fontWeight: FontWeight.w800)),
             ]),
             const SizedBox(height: 2),
             Text(_series.label, key: const ValueKey('evolution-series'), style: AppType.title),
             const SizedBox(height: 10),
+            _rangePicker(),
+            const SizedBox(height: 8),
             SizedBox(
               height: 230,
               child: line.length < 2
-                  ? Center(child: Text('Log a few weeks of ranked lifts to draw this.', style: AppType.bodyS.copyWith(color: AppColors.textSecondary)))
-                  : _Chart(key: ValueKey('chart-${_series.id}'), line: line),
+                  ? Center(
+                      child: Text(
+                        _range == EvolutionRange.all ? 'Log a few weeks of ranked lifts to draw this.' : 'Not enough ranked lifts in this range yet.',
+                        key: const ValueKey('evolution-empty'),
+                        textAlign: TextAlign.center,
+                        style: AppType.bodyS.copyWith(color: AppColors.textSecondary),
+                      ),
+                    )
+                  : _Chart(key: ValueKey('chart-${_series.id}'), line: line, range: _range, start: window.start, end: now),
             ),
             const SizedBox(height: 10),
             _picker(),
@@ -102,6 +115,37 @@ class _RankEvolutionCardState extends ConsumerState<RankEvolutionCard> {
         },
       ),
     );
+  }
+
+  Widget _rangePicker() {
+    return Row(children: [
+      for (final r in EvolutionRange.values)
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 2),
+            child: InkWell(
+              key: ValueKey('evolution-range-${r.name}'),
+              borderRadius: BorderRadius.circular(8),
+              onTap: () => setState(() => _range = r),
+              child: Container(
+                height: 30,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: _range == r ? AppColors.surfaceTop : null,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: _range == r ? AppColors.accent : AppColors.outline),
+                ),
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(r.label,
+                      maxLines: 1,
+                      style: AppType.bodyS.copyWith(fontSize: 12, fontWeight: FontWeight.w700, color: _range == r ? AppColors.textPrimary : AppColors.textSecondary)),
+                ),
+              ),
+            ),
+          ),
+        ),
+    ]);
   }
 
   Widget _picker() {
@@ -129,21 +173,34 @@ class _RankEvolutionCardState extends ConsumerState<RankEvolutionCard> {
   }
 }
 
+/// Bottom-axis label format and tick spacing (days) for each range.
+(DateFormat, double) _axisFor(EvolutionRange r, double spanDays) => switch (r) {
+      EvolutionRange.week => (DateFormat('EEE'), 1),
+      EvolutionRange.month => (DateFormat('d MMM'), 7),
+      EvolutionRange.threeMonths => (DateFormat('d MMM'), 30),
+      EvolutionRange.year => (DateFormat('MMM'), 91),
+      EvolutionRange.all => (spanDays > 400 ? DateFormat('MMM yy') : DateFormat('d MMM'), math.max(1.0, spanDays / 3)),
+    };
+
 class _Chart extends StatelessWidget {
-  const _Chart({super.key, required this.line});
-  final List<(RankPoint, RankScore)> line;
+  const _Chart({super.key, required this.line, required this.range, required this.start, required this.end});
+  final List<EvolutionSample> line;
+  final EvolutionRange range;
+  final DateTime start;
+  final DateTime end;
 
   @override
   Widget build(BuildContext context) {
-    final origin = line.first.$1.date;
+    final origin = start;
     double x(DateTime d) => d.difference(origin).inHours / 24;
-    final values = [for (final (_, s) in line) s.value];
+    final values = [for (final s in line) s.value];
     final lo = values.reduce(math.min), hi = values.reduce(math.max);
     // Whole tiers around the line, at least two, so the bands read as a ladder.
     final minY = (lo / 3).floorToDouble() * 3;
     var maxY = ((hi + 0.01) / 3).ceilToDouble() * 3;
     if (maxY - minY < 6) maxY = minY + 6;
-    final maxX = math.max(1.0, x(line.last.$1.date));
+    final maxX = math.max(1.0, range == EvolutionRange.all ? x(line.last.date) : x(end));
+    final (axisFormat, axisInterval) = _axisFor(range, maxX);
     final fmt = DateFormat('d MMM yy');
     final bands = <HorizontalRangeAnnotation>[
       for (final t in Tier.values)
@@ -154,7 +211,7 @@ class _Chart extends StatelessWidget {
             color: tierColor(t).withValues(alpha: 0.16),
           ),
     ];
-    final spots = [for (final (p, s) in line) FlSpot(x(p.date), s.value)];
+    final spots = [for (final p in line) FlSpot(x(p.date), p.value)];
     return LineChart(
       LineChartData(
         minX: 0,
@@ -184,10 +241,10 @@ class _Chart extends StatelessWidget {
             sideTitles: SideTitles(
               showTitles: true,
               reservedSize: 26,
-              interval: math.max(1.0, maxX / 3),
+              interval: axisInterval,
               getTitlesWidget: (v, meta) => Padding(
                 padding: const EdgeInsets.only(top: 6),
-                child: Text(DateFormat('MMM yy').format(origin.add(Duration(hours: (v * 24).round()))),
+                child: Text(axisFormat.format(origin.add(Duration(hours: (v * 24).round()))),
                     style: const TextStyle(color: AppColors.textSecondary, fontSize: 11)),
               ),
             ),

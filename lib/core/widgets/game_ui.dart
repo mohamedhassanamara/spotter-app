@@ -186,7 +186,12 @@ class _RingPainter extends CustomPainter {
   bool shouldRepaint(covariant _RingPainter old) => old.value != value || old.color != color;
 }
 
-enum DayDotState { empty, trained, today, future }
+enum DayDotState { empty, trained, rest, today, future }
+
+/// The calendar icons: a dumbbell on workout days, a moon on the rest days that kept the streak alive.
+const IconData workoutDayIcon = Icons.fitness_center_rounded;
+const IconData restDayIcon = Icons.bedtime_rounded;
+const Color restDayColor = Color(0xFF8FA3FF);
 
 /// Monday → Sunday dots: the days you trained this week.
 class DayDots extends StatelessWidget {
@@ -222,7 +227,14 @@ class DayDots extends StatelessWidget {
             shape: BoxShape.circle,
             boxShadow: [BoxShadow(color: AppColors.primary.withValues(alpha: 0.45), blurRadius: 8)],
           ),
-          child: const Icon(Icons.check_rounded, size: 16, color: Color(0xFF06210F)),
+          child: const Icon(workoutDayIcon, size: 15, color: Color(0xFF06210F)),
+        );
+      case DayDotState.rest:
+        return Container(
+          width: size,
+          height: size,
+          decoration: BoxDecoration(color: AppColors.surfaceTop, shape: BoxShape.circle, border: Border.all(color: restDayColor.withValues(alpha: 0.5))),
+          child: const Icon(restDayIcon, size: 14, color: restDayColor),
         );
       case DayDotState.today:
         return Container(
@@ -239,6 +251,31 @@ class DayDots extends StatelessWidget {
       case DayDotState.empty:
         return Container(width: size, height: size, decoration: const BoxDecoration(color: AppColors.surfaceTop, shape: BoxShape.circle));
     }
+  }
+}
+
+/// Under a calendar: what the dumbbell and the moon mean.
+class StreakLegend extends StatelessWidget {
+  const StreakLegend({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final style = AppType.bodyS.copyWith(fontSize: 12, color: AppColors.textSecondary);
+    Widget item(IconData icon, Color color, String text) => Row(mainAxisSize: MainAxisSize.min, children: [
+          Icon(icon, size: 14, color: color),
+          const SizedBox(width: 5),
+          Text(text, style: style),
+        ]);
+    return Wrap(
+      key: const ValueKey('streak-legend'),
+      alignment: WrapAlignment.center,
+      spacing: 16,
+      runSpacing: 4,
+      children: [
+        item(workoutDayIcon, AppColors.primary, 'Workout'),
+        item(restDayIcon, restDayColor, 'Rest day, streak kept'),
+      ],
+    );
   }
 }
 

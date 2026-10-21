@@ -331,9 +331,11 @@ class _StreakState extends ConsumerState<_Streak> {
     }
     final monday = weekStart(now);
     final trained = {for (final s in history.inWeek(now)) dateOnly(s.startedAt)};
+    final marks = ref.watch(streakMarksProvider);
     final today = dateOnly(now);
     DayDotState stateFor(DateTime d) {
-      if (trained.contains(d)) return DayDotState.trained;
+      if (trained.contains(d) || marks[d] == StreakDayMark.workout) return DayDotState.trained;
+      if (marks[d] == StreakDayMark.rest) return DayDotState.rest;
       if (d.isAfter(today)) return DayDotState.future;
       if (d == today) return DayDotState.today;
       return DayDotState.empty;

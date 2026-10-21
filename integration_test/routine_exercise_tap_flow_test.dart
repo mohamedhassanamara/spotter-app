@@ -9,7 +9,7 @@ import 'harness.dart';
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
-  testWidgets('Tapping an exercise in the routine preview or the routine editor opens its page; link, targets, remove and drag keep working', (tester) async {
+  testWidgets('In Train cards the names are plain text (the card opens the routine); in the routine editor and in an active workout a name opens its page; link, targets, remove and drag keep working', (tester) async {
     final h = AppHarness(tester);
     await h.launchFresh();
     await h.onboard();
@@ -55,18 +55,33 @@ void main() {
     expect(find.byIcon(Icons.drag_handle_rounded), findsWidgets, reason: 'drag handles stay');
     expect(find.byTooltip('Remove'), findsWidgets);
 
-    debugPrint('STEP active workout: the exercise name is not tappable');
+    debugPrint('STEP active workout: tapping a name (or the thumbnail) opens the exercise page; back is the same workout');
     await tester.pageBack();
     await h.settle(8);
     await h.scrollToTop();
     final card = find.ancestor(of: find.byKey(ValueKey('preview-${push.id}-${first.exerciseId}')), matching: find.byType(AppCard)).first;
     await h.tap(find.descendant(of: card, matching: find.text('Start')));
-    final workoutName = find.byWidgetPredicate((w) => w.key is ValueKey<String> && (w.key! as ValueKey<String>).value.startsWith('exercise-name-')).first;
+    final workoutName = find.byWidgetPredicate((w) => w.key is ValueKey<String> && (w.key! as ValueKey<String>).value.startsWith('exercise-name-') && !(w.key! as ValueKey<String>).value.contains('-tap-')).first;
     await h.waitFor(workoutName, scroll: false, reason: 'the workout is open');
+    final sessionBefore = (await tester.runAsync(() => h.db!.select(h.db!.sessions).get()))!.where((x) => x.status == 'active').toList();
+    final setsBefore = (await tester.runAsync(() => h.db!.select(h.db!.workoutSets).get()))!.length;
+    final nameText = tester.widget<Text>(workoutName).data!;
     await h.tap(workoutName);
+    await h.waitFor(find.byKey(const ValueKey('exercise-hero')), scroll: false, reason: 'the exercise page opens on top of the workout');
+    await h.shot('workout-name-opens-exercise');
+    await tester.pageBack();
     await h.settle(8);
-    expect(find.byKey(const ValueKey('exercise-hero')), findsNothing, reason: 'tapping the name does not open the exercise page');
-    await h.shot('workout-name-not-tappable');
+    await h.waitFor(find.text(nameText), scroll: false, reason: 'back in the same workout');
+    expect(find.byKey(const ValueKey('exercise-hero')), findsNothing);
+    final sessionAfter = (await tester.runAsync(() => h.db!.select(h.db!.sessions).get()))!.where((x) => x.status == 'active').toList();
+    expect([for (final x in sessionAfter) x.id], [for (final x in sessionBefore) x.id], reason: 'the workout was neither ended nor replaced');
+    expect((await tester.runAsync(() => h.db!.select(h.db!.workoutSets).get()))!.length, setsBefore, reason: 'nothing was lost or added');
+    final thumb = find.byWidgetPredicate((w) => w.key is ValueKey<String> && (w.key! as ValueKey<String>).value.startsWith('exercise-thumb-')).first;
+    await h.tap(thumb);
+    await h.waitFor(find.byKey(const ValueKey('exercise-hero')), scroll: false, reason: 'the thumbnail opens it too');
+    await tester.pageBack();
+    await h.settle(8);
+    await h.waitFor(find.text(nameText), scroll: false, reason: 'back in the workout again');
 
     await h.expectNoLoggedErrors();
     await h.dispose();

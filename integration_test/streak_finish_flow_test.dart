@@ -63,8 +63,21 @@ void main() {
     await h.tap(find.byKey(const ValueKey('after-continue')));
     await h.passRankScreens();
     await h.waitFor(find.byKey(const ValueKey('streak-celebration')), scroll: false, reason: 'the Streak screen');
-    await h.settle(10);
-    expect(find.text('2-day streak'), findsOneWidget);
+    debugPrint('STEP the calendar comes first: the week, the legend, yesterday\'s dumbbell; the old count and no Continue yet');
+    await h.waitFor(find.byKey(const ValueKey('streak-week')), scroll: false, reason: 'the week calendar');
+    expect(find.byKey(const ValueKey('streak-legend')), findsOneWidget, reason: 'legend under the calendar');
+    expect(find.byKey(const ValueKey('streak-stamp')), findsOneWidget, reason: 'today is the stamp');
+    final now = DateTime.now();
+    final yesterday = DateTime(now.year, now.month, now.day - 1);
+    String two(int v) => v.toString().padLeft(2, '0');
+    if (yesterday.weekday != DateTime.sunday) {
+      expect(find.byKey(ValueKey('streak-week-workout-${yesterday.year}-${two(yesterday.month)}-${two(yesterday.day)}')), findsOneWidget, reason: 'yesterday keeps its dumbbell');
+    }
+    expect(find.text('1-day streak'), findsOneWidget, reason: 'the number has not ticked yet: the stamp lands first');
+    expect(find.byKey(const ValueKey('after-continue')), findsNothing, reason: 'Continue only when the show is over');
+    await h.shot('streak-calendar-stamp');
+    debugPrint('STEP then the flame flares and the number ticks up');
+    await h.waitFor(find.text('2-day streak'), scroll: false, reason: 'the number ticked up');
     await h.shot('streak-celebration');
 
     debugPrint('STEP back on Home: 2-day streak, trained today');

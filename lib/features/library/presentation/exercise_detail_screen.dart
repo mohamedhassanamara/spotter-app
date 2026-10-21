@@ -17,6 +17,7 @@ import '../../ranks/domain/ranks.dart';
 import '../../ranks/presentation/anatomy_graph.dart';
 import '../../ranks/presentation/muscle_sheet.dart';
 import '../../ranks/presentation/rank_badge.dart';
+import '../../ranks/presentation/rank_target_line.dart';
 import '../../tutorials/presentation/exercise_demo.dart';
 import '../domain/exercise_info.dart';
 import '../domain/load_kinds.dart';
@@ -464,12 +465,12 @@ class _RankTab extends ConsumerWidget {
   }
 }
 
-class _RankCard extends StatelessWidget {
+class _RankCard extends ConsumerWidget {
   const _RankCard({required this.rank});
   final ExerciseRank rank;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final color = tierColor(rank.score.tier);
     final nextLabel = rank.score.nextLabel;
     final next = rank.nextThresholdKg;
@@ -487,7 +488,11 @@ class _RankCard extends StatelessWidget {
             Text('Best e1RM ${rank.bestE1rm.toStringAsFixed(1)} kg · ${formatKg(rank.weight)} kg × ${rank.reps}',
                 style: AppType.bodyS.copyWith(color: AppColors.textSecondary, fontFeatures: AppType.tabular)),
             if (next != null && nextLabel != null)
-              Text('${next.toStringAsFixed(1)} kg e1RM for $nextLabel', style: AppType.bodyS.copyWith(fontSize: 13, color: AppColors.textTertiary, fontFeatures: AppType.tabular)),
+              Text(
+                rankTargetLineFor(ref, exerciseId: rank.exerciseId, standard: rank.standard, bodyweight: rank.bodyweight, targetE1rm: next, nextLabel: nextLabel) ?? '',
+                key: const ValueKey('rank-card-target'),
+                style: AppType.bodyS.copyWith(fontSize: 13, color: AppColors.textTertiary, fontFeatures: AppType.tabular),
+              ),
           ]),
         ),
       ]),
