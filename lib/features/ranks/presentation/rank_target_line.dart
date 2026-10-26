@@ -1,6 +1,8 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app_providers.dart';
+import '../../../core/theme/app_theme.dart';
 import '../domain/rank_target.dart';
 import '../domain/ranks.dart';
 
@@ -41,4 +43,56 @@ String? rankTargetLineFor(
     grid: grid,
   );
   return rankTargetLine(set, nextLabel);
+}
+
+/// "Lift ⇄ Bodyweight" on a rank-up target. One setting for every target (strip, exercise page, muscle sheet).
+class RankTargetModeToggle extends ConsumerWidget {
+  const RankTargetModeToggle({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final mode = ref.watch(rankTargetModeProvider);
+    Widget seg(RankTargetMode m, String label) {
+      final on = mode == m;
+      return InkWell(
+        key: ValueKey('rank-target-mode-${m.name}'),
+        borderRadius: BorderRadius.circular(8),
+        onTap: () => ref.read(rankTargetModeProvider.notifier).set(m),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+          decoration: BoxDecoration(
+            color: on ? AppColors.primary.withValues(alpha: 0.18) : Colors.transparent,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Text(label, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: on ? AppColors.primary : AppColors.textTertiary)),
+        ),
+      );
+    }
+
+    return Row(mainAxisSize: MainAxisSize.min, children: [seg(RankTargetMode.lift, 'Lift'), seg(RankTargetMode.bodyweight, 'Bodyweight')]);
+  }
+}
+
+/// A bodyweight projection line: "What if · your 6 × 70 kg at **101 kg** bodyweight → Gold 2". The tag marks it as a
+/// projection; the bodyweight is bold.
+Widget whatIfText(String line, {TextStyle? style, int? maxLines, TextAlign? textAlign, Key? key}) {
+  final m = RegExp(r'(\d+(?:\.\d+)? kg) (bodyweight)').firstMatch(line);
+  final base = style ?? const TextStyle();
+  return Text.rich(
+    TextSpan(children: [
+      TextSpan(text: 'What if · ', style: const TextStyle(fontStyle: FontStyle.italic)),
+      if (m == null)
+        TextSpan(text: line)
+      else ...[
+        TextSpan(text: line.substring(0, m.start)),
+        TextSpan(text: m.group(1), style: const TextStyle(fontWeight: FontWeight.w800)),
+        TextSpan(text: line.substring(m.start + m.group(1)!.length)),
+      ],
+    ]),
+    key: key,
+    style: base,
+    maxLines: maxLines,
+    overflow: maxLines == null ? null : TextOverflow.ellipsis,
+    textAlign: textAlign,
+  );
 }

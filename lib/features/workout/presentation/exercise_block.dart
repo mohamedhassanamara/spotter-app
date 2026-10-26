@@ -14,7 +14,9 @@ import '../../coach/domain/suggestion_engine.dart';
 import '../../library/domain/exercise_info.dart';
 import '../../library/domain/load_kinds.dart';
 import '../../program/data/program_repository.dart';
+import '../../ranks/domain/bodyweight_what_if.dart';
 import '../../ranks/domain/rank_target.dart';
+import '../../ranks/presentation/rank_target_line.dart';
 import '../../ranks/domain/ranks.dart';
 import '../../ranks/presentation/rank_badge.dart';
 import '../../library/presentation/exercise_thumb.dart';
@@ -812,19 +814,22 @@ class _RankStripState extends ConsumerState<_RankStrip> with SingleTickerProvide
         final next = fromHistory ? baseline.nextThresholdKg : standard?.nextThresholdKg(target, bodyweight > 0 ? bodyweight : (baseline?.bodyweight ?? 0));
         final std = standard ?? baseline?.standard;
         final grid = ref.watch(exerciseGridProvider(id));
-        final targetLine = next == null || std == null || grid == null
-            ? null
-            : rankTargetLine(
-                rankTargetSet(
-                  standard: std,
-                  bodyweight: bodyweight > 0 ? bodyweight : (baseline?.bodyweight ?? 0),
-                  targetE1rm: next,
-                  repMin: widget.repMin,
-                  rir: widget.rir,
-                  grid: grid,
-                ),
-                s.nextLabel,
-              );
+        final whatIf = ref.watch(rankTargetModeProvider) == RankTargetMode.bodyweight;
+        final targetLine = whatIf
+            ? (baseline == null ? null : bodyweightTargetLine(baseline, bodyweightTargetFor(baseline, ref.watch(currentBodyweightProvider)), baseline.score.nextLabel))
+            : next == null || std == null || grid == null
+                ? null
+                : rankTargetLine(
+                    rankTargetSet(
+                      standard: std,
+                      bodyweight: bodyweight > 0 ? bodyweight : (baseline?.bodyweight ?? 0),
+                      targetE1rm: next,
+                      repMin: widget.repMin,
+                      rir: widget.rir,
+                      grid: grid,
+                    ),
+                    s.nextLabel,
+                  );
         return line(Row(children: [
           Transform.scale(scale: pop, child: RankBadge(key: ValueKey('rank-strip-badge-$id'), score: s, size: BadgeSize.small, width: 22, animate: false)),
           const SizedBox(width: 8),
@@ -834,15 +839,18 @@ class _RankStripState extends ConsumerState<_RankStrip> with SingleTickerProvide
           const SizedBox(width: 8),
           Flexible(
             flex: 5,
-            child: Text(
-              s.isApex ? 'top of the ladder' : (targetLine ?? ''),
-              key: ValueKey('rank-gap-$id'),
-              textAlign: TextAlign.end,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: muted,
-            ),
+            child: s.isApex || !whatIf
+                ? Text(
+                    s.isApex ? 'top of the ladder' : (targetLine ?? ''),
+                    key: ValueKey('rank-gap-$id'),
+                    textAlign: TextAlign.end,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: muted,
+                  )
+                : whatIfText(targetLine ?? '', key: ValueKey('rank-gap-$id'), textAlign: TextAlign.end, maxLines: 3, style: muted),
           ),
+          if (!s.isApex) ...[const SizedBox(width: 6), const RankTargetModeToggle()],
         ]));
       },
     );

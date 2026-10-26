@@ -16,6 +16,8 @@ import '../../../router.dart';
 import '../../readiness/domain/readiness.dart';
 import '../domain/ranks.dart';
 import '../domain/body_regions.dart';
+import '../domain/bodyweight_what_if.dart';
+import '../../coach/domain/suggestion_engine.dart' show formatKg;
 import 'anatomy_graph.dart';
 import '../../recovery/domain/recovery.dart';
 import 'muscle_sheet.dart';
@@ -120,6 +122,9 @@ class _BodyTabState extends ConsumerState<_BodyTab> {
   bool _selectedBack = false;
   bool _openedDeepLink = false;
 
+  /// The "What if" bodyweight (kg) while the projection is on; null = real ranks. Never stored.
+  double? _whatIf;
+
   /// How long the callout shows before the sheet opens.
   static const calloutDelay = Duration(milliseconds: 650);
 
@@ -149,9 +154,12 @@ class _BodyTabState extends ConsumerState<_BodyTab> {
     final bw = ref.watch(latestBodyWeightProvider);
     final volume = ref.watch(groupVolumeProvider);
     final recovery = ref.watch(recoveryProvider);
+    final currentBw = ref.watch(currentBodyweightProvider);
     return AsyncBody(
       value: ranks,
-      builder: (summary) {
+      builder: (real) {
+        final whatIf = _mode == BodyGraphMode.ranks ? _whatIf : null;
+        final summary = whatIf == null ? real : real.atBodyweight(whatIf);
         final scores = {for (final g in Muscle.values) g: summary.muscles[g]?.score};
         final deepLink = widget.openGroup;
         if (deepLink != null && !_openedDeepLink) {
@@ -190,6 +198,14 @@ class _BodyTabState extends ConsumerState<_BodyTab> {
                 _selected = null;
               }),
             ),
+            if (_mode == BodyGraphMode.ranks && currentBw > 0 && real.exercises.isNotEmpty) ...[
+              const SizedBox(height: 10),
+              _WhatIfPanel(
+                current: currentBw,
+                value: whatIf,
+                onChanged: (kg) => setState(() => _whatIf = kg),
+              ),
+            ],
             const SizedBox(height: 14),
             AnatomyGraph(
               mode: _mode,
@@ -234,6 +250,61 @@ class _BodyTabState extends ConsumerState<_BodyTab> {
           ],
         );
       },
+    );
+  }
+}
+
+/// The Body map's "What if" mode: a bodyweight slider (current ±10%, 0.5 kg steps) that re-scores the current best lifts.
+class _WhatIfPanel extends StatelessWidget {
+  const _WhatIfPanel({required this.current, required this.value, required this.onChanged});
+  final double current;
+  final double? value;
+  final ValueChanged<double?> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final v = value;
+    if (v == null) {
+      return Center(
+        child: OutlinedButton.icon(
+          key: const ValueKey('what-if-button'),
+          icon: const Icon(Icons.tune_rounded, size: 18),
+          label: const Text('What if'),
+          onPressed: () {
+            final r = whatIfSliderRange(current);
+            onChanged(((current * 2).round() / 2).clamp(r.min, r.max));
+          },
+        ),
+      );
+    }
+    final r = whatIfSliderRange(current);
+    return AppCard(
+      key: const ValueKey('what-if-panel'),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          Expanded(
+            child: Text(
+              'Projection at ${formatKg(v)} kg',
+              key: const ValueKey('what-if-banner'),
+              style: AppType.title.copyWith(fontSize: 15, color: AppColors.primary),
+            ),
+          ),
+          TextButton(key: const ValueKey('what-if-reset'), onPressed: () => onChanged(null), child: const Text('Reset')),
+        ]),
+        Slider(
+          key: const ValueKey('what-if-slider'),
+          min: r.min,
+          max: r.max,
+          divisions: ((r.max - r.min) * 2).round(),
+          value: v.clamp(r.min, r.max),
+          label: '${formatKg(v)} kg',
+          onChanged: (x) => onChanged((x * 2).round() / 2),
+        ),
+        Text(
+          'What if you weighed this much with your current best lifts. A projection only: nothing is saved and your real ranks don\'t change.',
+          style: AppType.bodyS.copyWith(fontSize: 12, color: AppColors.textTertiary),
+        ),
+      ]),
     );
   }
 }

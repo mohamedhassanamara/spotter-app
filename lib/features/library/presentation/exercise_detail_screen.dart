@@ -13,6 +13,7 @@ import '../../history/presentation/exercise_history_screen.dart';
 import '../../program/domain/program_videos.dart';
 import '../../program/presentation/program_video.dart';
 import '../../ranks/data/rank_exclusions.dart';
+import '../../ranks/domain/bodyweight_what_if.dart';
 import '../../ranks/domain/ranks.dart';
 import '../../ranks/presentation/anatomy_graph.dart';
 import '../../ranks/presentation/muscle_sheet.dart';
@@ -487,12 +488,22 @@ class _RankCard extends ConsumerWidget {
             const SizedBox(height: 8),
             Text('Best e1RM ${rank.bestE1rm.toStringAsFixed(1)} kg · ${formatKg(rank.weight)} kg × ${rank.reps}',
                 style: AppType.bodyS.copyWith(color: AppColors.textSecondary, fontFeatures: AppType.tabular)),
-            if (next != null && nextLabel != null)
-              Text(
-                rankTargetLineFor(ref, exerciseId: rank.exerciseId, standard: rank.standard, bodyweight: rank.bodyweight, targetE1rm: next, nextLabel: nextLabel) ?? '',
-                key: const ValueKey('rank-card-target'),
-                style: AppType.bodyS.copyWith(fontSize: 13, color: AppColors.textTertiary, fontFeatures: AppType.tabular),
-              ),
+            if (next != null && nextLabel != null) ...[
+              if (ref.watch(rankTargetModeProvider) == RankTargetMode.bodyweight)
+                whatIfText(
+                  bodyweightTargetLine(rank, bodyweightTargetFor(rank, ref.watch(currentBodyweightProvider)), nextLabel) ?? '',
+                  key: const ValueKey('rank-card-target'),
+                  style: AppType.bodyS.copyWith(fontSize: 13, color: AppColors.textTertiary, fontFeatures: AppType.tabular),
+                )
+              else
+                Text(
+                  rankTargetLineFor(ref, exerciseId: rank.exerciseId, standard: rank.standard, bodyweight: rank.bodyweight, targetE1rm: next, nextLabel: nextLabel) ?? '',
+                  key: const ValueKey('rank-card-target'),
+                  style: AppType.bodyS.copyWith(fontSize: 13, color: AppColors.textTertiary, fontFeatures: AppType.tabular),
+                ),
+              const SizedBox(height: 4),
+              const RankTargetModeToggle(),
+            ],
           ]),
         ),
       ]),

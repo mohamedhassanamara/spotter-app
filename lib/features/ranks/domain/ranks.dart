@@ -254,6 +254,13 @@ class BodyweightTimeline {
 
   double get latest => _s.isEmpty ? 0 : _s.last.$2;
 
+  /// Mean of the weigh-ins in the [days] up to [now]; the latest weigh-in when there is none in that span.
+  double recentAverage(DateTime now, {int days = 7}) {
+    final from = now.subtract(Duration(days: days));
+    final recent = [for (final (t, w) in _s) if (!t.isBefore(from) && !t.isAfter(now)) w];
+    return recent.isEmpty ? latest : recent.fold<double>(0, (a, w) => a + w) / recent.length;
+  }
+
   double at(DateTime t) {
     if (_s.isEmpty) return 0;
     if (!t.isAfter(_s.first.$1)) return _s.first.$2;
@@ -284,6 +291,7 @@ class ExerciseRank {
     required this.date,
     required this.targets,
     required this.nextThresholdKg,
+    this.rpe,
   });
 
   final String exerciseId;
@@ -298,6 +306,9 @@ class ExerciseRank {
   final double bodyweight;
   final double weight;
   final int reps;
+
+  /// Logged effort of the best set (null = the scorer's default).
+  final double? rpe;
   final DateTime date;
   final MuscleTargets targets;
 
@@ -309,6 +320,27 @@ class ExerciseRank {
   /// The ratio the standard scores (allometric for loaded lifts).
   double get scaledRatio => standard.ratioFor(bestE1rm, bodyweight);
   int get strength => score.strength;
+
+  /// This same best set scored as if the lifter weighed [bw] kg: bodyweight lifts add it to the load and every
+  /// standard normalises by it. Nothing about the set itself changes.
+  ExerciseRank atBodyweight(double bw) {
+    final e = scoringE1rm(load: weight + (standard.bodyweightLoaded ? bw : 0), reps: reps, rpe: rpe);
+    final projected = e <= 0 || bw <= 0 ? RankScore(0) : standard.scoreForRatio(standard.ratioFor(e, bw));
+    return ExerciseRank(
+      exerciseId: exerciseId,
+      name: name,
+      standard: standard,
+      score: projected,
+      bestE1rm: e,
+      bodyweight: bw,
+      weight: weight,
+      reps: reps,
+      rpe: rpe,
+      date: date,
+      targets: targets,
+      nextThresholdKg: standard.nextThresholdKg(projected, bw),
+    );
+  }
 }
 
 class MuscleContribution {
@@ -397,6 +429,49 @@ class RankSummary {
   static const empty = RankSummary(exercises: [], muscles: {}, regions: {}, overall: null, unrankedHints: {});
 
   int get rankedRegions => regions.values.where((r) => r.score != null).length;
+
+  /// Every counted best set re-scored at [bw] kg, with the muscle, region and overall ranks rebuilt from them.
+  /// A projection: the lifts and the hints stay as they are, nothing is stored.
+  RankSummary atBodyweight(double bw) {
+    final projected = [for (final r in exercises) r.atBodyweight(bw)];
+    final agg = aggregateRanks(projected);
+    return RankSummary(
+      exercises: projected,
+      muscles: agg.muscles,
+      regions: agg.regions,
+      overall: agg.overall,
+      unrankedHints: unrankedHints,
+      hidden: [for (final r in hidden) r.atBodyweight(bw)],
+    );
+  }
+}
+
+/// Muscle rank: weighted average (by contribution) of the best scores of the exercises training it.
+/// Region rank: mean of its ranked muscles. Overall: mean of the ranked regions.
+({Map<Muscle, MuscleRank> muscles, Map<BodyRegion, RegionRank> regions, RankScore? overall}) aggregateRanks(List<ExerciseRank> ranks) {
+  final muscles = <Muscle, MuscleRank>{};
+  for (final m in Muscle.values) {
+    final contributions = [
+      for (final r in ranks)
+        if (r.targets.weightFor(m) > 0) MuscleContribution(r, r.targets.weightFor(m)),
+    ]..sort((a, b) => b.weight.compareTo(a.weight));
+    if (contributions.isEmpty) continue;
+    final totalW = contributions.fold<double>(0, (a, c) => a + c.weight);
+    final value = contributions.fold<double>(0, (a, c) => a + c.rank.score.value * c.weight) / totalW;
+    muscles[m] = MuscleRank(muscle: m, score: RankScore(value), contributions: contributions);
+  }
+  final regions = <BodyRegion, RegionRank>{};
+  for (final r in BodyRegion.values) {
+    final ranked = [for (final m in r.muscles) ?muscles[m]?.score];
+    regions[r] = RegionRank(
+      region: r,
+      score: ranked.isEmpty ? null : averageScore(ranked),
+      ranked: ranked.length,
+      total: r.muscles.length,
+    );
+  }
+  final rankedRegions = [for (final r in regions.values) ?r.score];
+  return (muscles: muscles, regions: regions, overall: rankedRegions.isEmpty ? null : averageScore(rankedRegions));
 }
 
 /// Mean of rank scores on the same continuous scale. Identical scores average back to the same rank.
@@ -450,6 +525,7 @@ class RankCalculator {
         bodyweight: x.bodyweight,
         weight: x.weight,
         reps: x.reps,
+        rpe: x.rpe,
         date: x.date,
         targets: targets[x.exerciseId] ?? MuscleTargets.empty,
         nextThresholdKg: s.nextThresholdKg(score, currentBodyweight > 0 ? currentBodyweight : x.bodyweight),
@@ -458,42 +534,21 @@ class RankCalculator {
     final ranks = [for (final r in best.values) if (!excluded.contains(r.exerciseId)) r];
     final hidden = [for (final r in best.values) if (excluded.contains(r.exerciseId)) r];
 
-    final muscles = <Muscle, MuscleRank>{};
-    final hints = <Muscle, List<RankHint>>{};
-    for (final m in Muscle.values) {
-      final contributions = [
-        for (final r in ranks)
-          if (r.targets.weightFor(m) > 0) MuscleContribution(r, r.targets.weightFor(m)),
-      ]..sort((a, b) => b.weight.compareTo(a.weight));
-      if (contributions.isEmpty) {
-        hints[m] = [
-          for (final e in hintNames.entries)
-            if (!excluded.contains(e.key) && (targets[e.key]?.weightFor(m) ?? 0) >= MuscleTargets.primaryThreshold && _byExercise.containsKey(e.key))
-              RankHint(exerciseId: e.key, name: e.value, mine: true),
-        ];
-        continue;
-      }
-      final totalW = contributions.fold<double>(0, (a, c) => a + c.weight);
-      final value = contributions.fold<double>(0, (a, c) => a + c.rank.score.value * c.weight) / totalW;
-      muscles[m] = MuscleRank(muscle: m, score: RankScore(value), contributions: contributions);
-    }
-
-    final regions = <BodyRegion, RegionRank>{};
-    for (final r in BodyRegion.values) {
-      final ranked = [for (final m in r.muscles) ?muscles[m]?.score];
-      regions[r] = RegionRank(
-        region: r,
-        score: ranked.isEmpty ? null : averageScore(ranked),
-        ranked: ranked.length,
-        total: r.muscles.length,
-      );
-    }
-    final rankedRegions = [for (final r in regions.values) ?r.score];
+    final agg = aggregateRanks(ranks);
+    final hints = <Muscle, List<RankHint>>{
+      for (final m in Muscle.values)
+        if (!agg.muscles.containsKey(m))
+          m: [
+            for (final e in hintNames.entries)
+              if (!excluded.contains(e.key) && (targets[e.key]?.weightFor(m) ?? 0) >= MuscleTargets.primaryThreshold && _byExercise.containsKey(e.key))
+                RankHint(exerciseId: e.key, name: e.value, mine: true),
+          ],
+    };
     return RankSummary(
       exercises: ranks,
-      muscles: muscles,
-      regions: regions,
-      overall: rankedRegions.isEmpty ? null : averageScore(rankedRegions),
+      muscles: agg.muscles,
+      regions: agg.regions,
+      overall: agg.overall,
       unrankedHints: hints,
       hidden: hidden,
     );

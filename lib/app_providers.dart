@@ -283,6 +283,24 @@ final ranksProvider = FutureProvider<RankSummary>((ref) async {
   );
 });
 
+/// Today's bodyweight for projections: the mean of the last 7 days of weigh-ins (the latest one when there are none), 0 when unknown.
+final currentBodyweightProvider = Provider<double>((ref) {
+  final timeline = ref.watch(bodyweightTimelineProvider).value;
+  return timeline == null ? 0 : timeline.recentAverage(ref.watch(clockProvider)());
+});
+
+/// What the rank-up target shows: the lift that reaches the next rank, or the bodyweight at which the current best set would.
+enum RankTargetMode { lift, bodyweight }
+
+class RankTargetModeNotifier extends Notifier<RankTargetMode> {
+  @override
+  RankTargetMode build() => RankTargetMode.lift;
+
+  void set(RankTargetMode mode) => state = mode;
+}
+
+final rankTargetModeProvider = NotifierProvider<RankTargetModeNotifier, RankTargetMode>(RankTargetModeNotifier.new);
+
 /// Overall, region and muscle rank over time (weekly), rebuilt from the whole history, Liftoff import included.
 final rankEvolutionProvider = FutureProvider<List<RankPoint>>((ref) async {
   final history = await ref.watch(historyProvider.future);

@@ -11,6 +11,7 @@ import '../../../core/widgets/common.dart';
 import '../../../router.dart';
 import '../../coach/domain/suggestion_engine.dart';
 import '../domain/body_regions.dart';
+import '../domain/bodyweight_what_if.dart';
 import '../domain/rank_target.dart';
 import '../domain/ranks.dart';
 import 'rank_target_line.dart';
@@ -152,16 +153,29 @@ List<Widget> _rankContent(BuildContext context, Muscle muscle, RankSummary summa
                 final r = step.rank;
                 final grid = ref.watch(exerciseGridProvider(r.exerciseId));
                 final rx = ref.watch(rankPrescriptionProvider(r.exerciseId));
+                const style = TextStyle(fontWeight: FontWeight.w700);
+                if (ref.watch(rankTargetModeProvider) == RankTargetMode.bodyweight) {
+                  final t = bodyweightTargetForMuscle(g, ref.watch(currentBodyweightProvider));
+                  return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    whatIfText(muscleBodyweightTargetLine(t, g.score.nextLabel, muscle.label) ?? '', key: ValueKey('muscle-next-step-${muscle.name}'), style: style),
+                    const SizedBox(height: 6),
+                    const RankTargetModeToggle(),
+                  ]);
+                }
                 final set = grid == null
                     ? null
                     : rankTargetSet(standard: r.standard, bodyweight: r.bodyweight, targetE1rm: step.targetE1rm, repMin: rx.repMin, rir: rx.rir, grid: grid);
-                return Text(
-                  set == null
-                      ? '${r.name}: $rankTargetUnreachable'
-                      : 'Next step: ${set.text} on ${r.name} moves ${muscle.label} to ${step.nextLabel}.',
-                  key: ValueKey('muscle-next-step-${muscle.name}'),
-                  style: const TextStyle(fontWeight: FontWeight.w700),
-                );
+                return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text(
+                    set == null
+                        ? '${r.name}: $rankTargetUnreachable'
+                        : 'Next step: ${set.text} on ${r.name} moves ${muscle.label} to ${step.nextLabel}.',
+                    key: ValueKey('muscle-next-step-${muscle.name}'),
+                    style: style,
+                  ),
+                  const SizedBox(height: 6),
+                  const RankTargetModeToggle(),
+                ]);
               },
             ),
           ),
