@@ -11,6 +11,7 @@ class SettingsModel {
     this.streakReminder = true,
     this.increments = Increments.defaults,
     this.exerciseSteps = const {},
+    this.exercisePatterns = const {},
     this.compoundRange = RepRange.compound,
     this.isolationRange = RepRange.isolation,
     this.defaultRir = 2,
@@ -29,6 +30,9 @@ class SettingsModel {
 
   /// Per-exercise − / + keypad step in kg (long-press on the keypad's − / +). Absent = the equipment default.
   final Map<String, double> exerciseSteps;
+
+  /// Movement pattern (MovementPattern.name) chosen for an exercise, e.g. when a custom exercise is created: decides its estimated rank standard.
+  final Map<String, String> exercisePatterns;
   final RepRange compoundRange;
   final RepRange isolationRange;
   final int defaultRir;
@@ -47,6 +51,7 @@ class SettingsModel {
   static const kStreakReminder = 'streak_reminder';
   static const kIncrements = 'increments';
   static const kExerciseSteps = 'exercise_steps';
+  static const kExercisePatterns = 'exercise_patterns';
   static const kCompoundRange = 'compound_range';
   static const kIsolationRange = 'isolation_range';
   static const kDefaultRir = 'default_rir';
@@ -84,6 +89,7 @@ class SettingsModel {
       streakReminder: m[kStreakReminder] != 'false',
       increments: increments,
       exerciseSteps: decodeExerciseSteps(m[kExerciseSteps]),
+      exercisePatterns: decodePatterns(m[kExercisePatterns]),
       compoundRange: parseRange(m[kCompoundRange], RepRange.compound),
       isolationRange: parseRange(m[kIsolationRange], RepRange.isolation),
       defaultRir: int.tryParse(m[kDefaultRir] ?? '') ?? 2,
@@ -94,6 +100,15 @@ class SettingsModel {
       restEndsAt: restEnds == null ? null : DateTime.tryParse(restEnds),
       restTotalSeconds: int.tryParse(m[kRestTotal] ?? ''),
     );
+  }
+
+  static Map<String, String> decodePatterns(String? raw) {
+    if (raw == null || raw.isEmpty) return const {};
+    try {
+      return {for (final e in (jsonDecode(raw) as Map<String, dynamic>).entries) e.key: e.value as String};
+    } catch (_) {
+      return const {};
+    }
   }
 
   static String encodeIncrements(Increments inc) =>

@@ -2140,3 +2140,29 @@ details (editor) rows open the exercise page.
 Label and move both use it (`stepLabel`, `stepWeight`: rounded to 0.001, never below 0 except assisted lifts, capped at the max load). The keypad no longer walks the grid; the grid still drives *suggestions*.
 Long-press on − / + opens a picker (0.5, 1, 1.25, 2, 2.5, 5, 10, custom, reset to default). The coach's per-category `Increments` (suggestion engine) is untouched.
 **kg/lb:** the app stores kg and has no pounds setting; `weightUnitProvider` (kg) is the one place it would plug in and `stepLabel`/the picker already convert (tested), so a lb setting needs no keypad change.
+
+## Rank-fix round, item 2: rank row (two lines, bodyweight mode)
+
+`RankRow` (`ranks/presentation/rank_row.dart`) replaces the old strip. **Line 1** (fixed 26 pt): badge, rank name, flexible progress bar, `[Lift | BW]` (fixed 88 pt, right-aligned, same width in every state).
+**Line 2**: one line over the full width (`OneLineFit`: shrinks to 80 %, then ellipsis, height = one line of the unshrunk style) and an ⓘ; tapping line 2 / ⓘ opens the detail sheet (full text, estimate flag, the bodyweight sentence).
+The row clamps text scale to 1.3× so the card height never changes (tested at widths 320/375/430 and text ×1/×1.5/×2.5, Lift/BW, ranked/unranked/no-bodyweight: identical heights, no overflow).
+**Lift** text unchanged ("6 × 72.5 kg → Gold 2"). **BW** text: "{e1RM ÷ bodyweight}x BW → {next}: {reps} × {load ÷ bodyweight}x BW (about {kg} kg at {bw} kg)". Current ratio = the rank engine's best-set e1RM (bodyweight included for bodyweight lifts) ÷ latest bodyweight;
+the target uses the same set as Lift mode (same grid, same reps/RIR), so both modes always agree; for bodyweight lifts the load/kg is the total incl. bodyweight. No bodyweight → "Set your bodyweight" (tap opens the input). The old "What if" line is gone from the row; its idea is one sentence in the sheet.
+**Standards:** the engine's own thresholds are already multiples of bodyweight, so no second table was needed; the target ratio is derived from them. The toggle stays visible for every exercise because every exercise now has a standard (item 3). Mode memory is unchanged (one global setting).
+**Theme:** the app is dark-only (`ThemeMode.dark`), so there is no light variant to check.
+
+## Rank-fix round, item 3: ranks follow added and swapped exercises
+
+**Root causes (found, in this order of impact):**
+1. **The "counts toward rank" rule.** An exercise counted only if it was in a routine, or after a completed working set had auto-enabled it. A just-added or swapped-in exercise (not in the routine) was "Hidden from ranks" until its first ✓, and swapped exercises are not in the routine template: this is the "I have to add it myself" symptom.
+2. **Standards covered only 103 exercises** (hand-made, by exact id). Any other exercise showed "Not ranked (no strength standard)", so it never produced a rank record, and Finish used the same short list.
+3. **Per-widget derivation.** The strip took its sets from its own block and its standard from a list lookup, so nothing was keyed by exercise id as a single selector.
+Not causes: no per-workout cache, no id-change-without-invalidation (a swap makes a new session-exercise row, and PREV/steps already read by exercise id).
+**Fixes.** (a) `RankPolicy` gains the source *workout*: exercises of the running (active) session count at once; manual-off still wins, auto stays for after the workout. (b) `fallback_standards.dart`: every library exercise gets an estimated standard
+(movement pattern from the primary muscle or the custom exercise's own choice × equipment multiplier × the base lifts' anchors; bodyweight lifts use unweighted-lift anchors; factors calibrated against the hand-made standards; one editable table). `StrengthStandard.estimated` is shown in the detail sheet.
+`standardsProvider` and Finish both use `RanksRepository.standardsFor(catalog)`. Custom exercises have a "Movement pattern (for rank)" dropdown (stored in settings `exercise_patterns`). (c) One selector, `exerciseRankStateProvider(exerciseId)`: finished history + the running workout's completed sets for that id (supersets, duplicates included) + standard + bodyweight + switch.
+Valid sets: completed, working (no warm-up/drop/myo/hold), reps > 0, not an ego set; bodyweight lifts add bodyweight (assisted = negative load). Unranked → target Bronze 1.
+(d) **Swap** (`replaceExercise`): without logged sets the row is replaced as before. With logged sets the app asks "Move logged sets to the new exercise?" (default: no): No → the original keeps its completed sets (unfinished ones removed, left out of the superset), the new exercise is planned below it;
+Yes → completed sets move to the new row (they lead its sets). Rank row, PREV, warm-ups, weight step and rank follow the new id; the rest timer follows the new exercise's default when compound/isolation differs, else the prescription is inherited as before. The routine-template rule is untouched.
+Tests: `rank_follows_exercise_test` (in-memory DB: standards for the whole library, add → unranked/Bronze 1, first set creates the rank, uncheck, warm-up excluded, Finish persists + muscle ranking, swap both answers, manual off), `rank_row_text_test`, `rank_row_layout_test`, integration `rank_follows_flow_test` (simulator).
+Existing tests changed: `rank_policy_test`/`rank_policy_flow_test` (a running workout now counts at once), `active_workout_test` and `max_load_test` (the keypad steps by its label, not by the grid).

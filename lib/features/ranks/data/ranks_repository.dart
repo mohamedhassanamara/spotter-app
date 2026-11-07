@@ -9,6 +9,7 @@ import '../../../core/domain/history.dart';
 import '../../../core/domain/muscles.dart';
 import '../../library/domain/exercise_info.dart';
 import '../../library/domain/load_kinds.dart';
+import '../domain/fallback_standards.dart';
 import '../domain/ranks.dart';
 
 /// Loads the editable strength standards and computes ranks from history.
@@ -28,6 +29,34 @@ class RanksRepository {
     return (raw['standards'] as List<dynamic>)
         .map((e) => StrengthStandard.fromJson(e as Map<String, dynamic>, machineStrictness: strict, scaling: scaling))
         .toList();
+  }
+
+  static Map<String, List<double>>? _basesCache;
+
+  /// `bases` of strength_standards.json: the five anchors of each base lift (the fallback standards scale these).
+  static Future<Map<String, List<double>>> loadBases() async {
+    if (_basesCache != null) return _basesCache!;
+    final raw = jsonDecode(await rootBundle.loadString('assets/strength_standards.json')) as Map<String, dynamic>;
+    return _basesCache = {
+      for (final e in (raw['bases'] as Map<String, dynamic>).entries)
+        e.key: [for (final k in const ['beginner', 'novice', 'intermediate', 'advanced', 'elite']) ((e.value as Map<String, dynamic>)[k] as num).toDouble()],
+    };
+  }
+
+  /// Every exercise of [catalog] has a standard: the hand-made ones, else an estimated one from its movement pattern
+  /// ([chosen] = custom exercises' own pick). THE list ranks, targets, the logger and Finish all use.
+  static Future<List<StrengthStandard>> standardsFor(Map<String, ExerciseInfo> catalog, {Map<String, MovementPattern> chosen = const {}}) async {
+    final explicit = await loadStandards();
+    final raw = jsonDecode(await rootBundle.loadString('assets/strength_standards.json')) as Map<String, dynamic>;
+    final sc = raw['scaling'] as Map<String, dynamic>?;
+    return withFallbacks(
+      explicit,
+      catalog.values,
+      bases: await loadBases(),
+      chosen: chosen,
+      machineStrictness: (raw['machine_strictness'] as num? ?? 1).toDouble(),
+      scaling: sc == null ? BodyweightScaling.linear : BodyweightScaling(referenceBodyweight: (sc['reference_bodyweight'] as num).toDouble(), exponent: (sc['exponent'] as num).toDouble()),
+    );
   }
 
   static Future<List<StrengthStandard>> loadStandards() async =>

@@ -39,6 +39,8 @@ import 'features/ranks/data/rank_exclusions.dart';
 import 'features/ranks/data/ranks_repository.dart';
 import 'features/ranks/domain/body_regions.dart';
 import 'features/ranks/domain/rank_history.dart';
+import 'features/ranks/domain/exercise_rank_state.dart';
+import 'features/ranks/domain/fallback_standards.dart';
 import 'features/ranks/domain/ranks.dart';
 import 'features/readiness/data/readiness_repository.dart';
 import 'features/readiness/domain/readiness.dart';
@@ -263,7 +265,15 @@ final workoutCoachProvider = Provider<Future<CoachContext> Function(int sessionI
 // Ranks
 // ---------------------------------------------------------------------------
 
-final standardsProvider = FutureProvider<List<StrengthStandard>>((ref) => RanksRepository.loadStandards());
+/// Every library exercise has a standard: the hand-made ones, else an estimated one (movement pattern + equipment).
+/// Rebuilds when the library changes (a custom exercise is created) or a pattern is chosen.
+final standardsProvider = FutureProvider<List<StrengthStandard>>((ref) async {
+  final catalog = await ref.watch(catalogProvider.future);
+  final patterns = ref.watch(currentSettingsProvider.select((s) => s.exercisePatterns));
+  return RanksRepository.standardsFor(catalog, chosen: {
+    for (final e in patterns.entries) if (MovementPattern.fromName(e.value) != null) e.key: MovementPattern.fromName(e.value)!,
+  });
+});
 
 final bodyweightLoadedIdsProvider = FutureProvider<Set<String>>((ref) async {
   final standards = await ref.watch(standardsProvider.future);
@@ -293,6 +303,28 @@ final ranksProvider = FutureProvider<RankSummary>((ref) async {
     excluded: await ref.watch(rankExclusionsProvider.future),
     myExerciseIds: {for (final r in routines) for (final e in r.exercises) e.exerciseId},
     displayNames: RanksRepository.displayNamesFor(catalog, [for (final r in routines) for (final e in r.exercises) (exerciseId: e.exerciseId, displayName: e.displayName)]),
+  );
+});
+
+/// THE rank of one exercise, derived from the database by exercise id: finished history + the running workout's completed
+/// sets + the standard + bodyweight + the on/off switch. Recomputes when a set is checked, unchecked, edited or deleted,
+/// an exercise is added, swapped or removed, the bodyweight changes. No per-workout cache, no manual "add to ranking".
+final exerciseRankStateProvider = Provider.family<ExerciseRankState, String>((ref, exerciseId) {
+  final hidden = (ref.watch(rankExclusionsProvider).value ?? const <String>{}).contains(exerciseId);
+  final standard = (ref.watch(standardsProvider).value ?? const <StrengthStandard>[]).where((s) => s.exerciseIds.contains(exerciseId)).firstOrNull;
+  final baseline = ref.watch(ranksProvider).value?.exercises.where((r) => r.exerciseId == exerciseId).firstOrNull;
+  final bodyweight = ref.watch(latestBodyWeightProvider).value?.kg ?? 0;
+  final sets = [
+    for (final e in ref.watch(activeSessionProvider).value?.exercises ?? const <ActiveExercise>[])
+      if (e.row.exerciseId == exerciseId) ...e.sets,
+  ];
+  return ExerciseRankState(
+    exerciseId: exerciseId,
+    hidden: hidden,
+    standard: standard,
+    baseline: baseline,
+    score: liveScore(baseline: baseline?.score, standard: standard, bodyweight: bodyweight, sets: sets),
+    bodyweight: bodyweight,
   );
 });
 

@@ -463,25 +463,45 @@ class SessionRepository {
   }
 
   /// Swaps a session exercise for [info] in the same position, keeping its program slots, set count
-  /// and rest (the replacement inherits the prescription). Its sets are rebuilt with a fresh
-  /// suggestion; any sets already logged on the old exercise are discarded.
+  /// and (unless [restSeconds] says otherwise) rest: the replacement inherits the prescription; its sets, warm-ups and suggestion are
+  /// planned fresh for [info]. Everything else (rank row, PREV, weight step, rest timer) follows the new exercise id.
+  ///
+  /// Sets already completed on the old exercise are history of the *old* exercise: they stay with it (the old row keeps its
+  /// completed sets only and sits above the new one) unless [moveLoggedSets] moves them to the new exercise
+  /// ("Move logged sets to the new exercise?"). Without completed sets the old row is simply replaced.
+  /// Returns the new session-exercise id.
   Future<int> replaceExercise({
     required ActiveExercise old,
     required ExerciseInfo info,
     required CoachContext coach,
     Program? program,
+    bool moveLoggedSets = false,
+    int? restSeconds,
   }) {
     return _db.transaction(() async {
       final row = old.row;
-      await (_db.delete(_db.workoutSets)..where((t) => t.sessionExerciseId.equals(row.id))).go();
-      await (_db.delete(_db.sessionExercises)..where((t) => t.id.equals(row.id))).go();
-      return _insertExercise(
+      final logged = [for (final s in old.sets) if (s.completed) s];
+      final keepOld = logged.isNotEmpty && info.id != row.exerciseId && !moveLoggedSets;
+      if (keepOld) {
+        // The original keeps what was logged; the new exercise goes right below it.
+        await (_db.delete(_db.workoutSets)..where((t) => t.sessionExerciseId.equals(row.id) & t.completed.equals(false))).go();
+        final working = logged.where((s) => s.isWorkingSet).length;
+        await (_db.update(_db.sessionExercises)..where((t) => t.id.equals(row.id))).write(SessionExercisesCompanion(
+          targetSets: Value(working == 0 ? 1 : working),
+          supersetGroup: const Value(null),
+        ));
+        await _db.customStatement('UPDATE session_exercises SET position = position + 1 WHERE session_id = ? AND position > ?', [row.sessionId, row.position]);
+      } else if (!moveLoggedSets || logged.isEmpty) {
+        await (_db.delete(_db.workoutSets)..where((t) => t.sessionExerciseId.equals(row.id))).go();
+        await (_db.delete(_db.sessionExercises)..where((t) => t.id.equals(row.id))).go();
+      }
+      final newId = await _insertExercise(
         sessionId: row.sessionId,
         info: info,
-        position: row.position,
+        position: keepOld ? row.position + 1 : row.position,
         range: RepRange(row.repMin, row.repMax),
         targetSets: row.targetSets,
-        restSeconds: row.restSeconds,
+        restSeconds: restSeconds ?? row.restSeconds,
         targetRir: row.targetRir,
         coach: coach,
         program: program,
@@ -491,6 +511,36 @@ class SessionRepository {
         overrideRange: row.targetsEdited ? RepRange(row.repMin, row.repMax) : null,
         supersetGroup: row.supersetGroup,
       );
+      if (moveLoggedSets && logged.isNotEmpty) {
+        // The logged sets lead the new exercise; the planned working sets they replace are dropped.
+        final planned = await (_db.select(_db.workoutSets)
+              ..where((t) => t.sessionExerciseId.equals(newId))
+              ..orderBy([(t) => OrderingTerm.asc(t.position)]))
+            .get();
+        final movedWorking = logged.where((s) => s.isWorkingSet).length;
+        var toDrop = movedWorking;
+        for (final p in planned.reversed) {
+          if (toDrop == 0) break;
+          if (p.isWorkingSet && !p.isWarmup) {
+            await (_db.delete(_db.workoutSets)..where((t) => t.id.equals(p.id))).go();
+            toDrop--;
+          }
+        }
+        final rest = [...(await (_db.select(_db.workoutSets)..where((t) => t.sessionExerciseId.equals(newId))..orderBy([(t) => OrderingTerm.asc(t.position)])).get())];
+        var pos = 0;
+        for (final s in rest.where((w) => w.isWarmup)) {
+          await (_db.update(_db.workoutSets)..where((t) => t.id.equals(s.id))).write(WorkoutSetsCompanion(position: Value(pos++)));
+        }
+        for (final s in logged) {
+          await (_db.update(_db.workoutSets)..where((t) => t.id.equals(s.id))).write(WorkoutSetsCompanion(sessionExerciseId: Value(newId), position: Value(pos++)));
+        }
+        for (final s in rest.where((w) => !w.isWarmup)) {
+          await (_db.update(_db.workoutSets)..where((t) => t.id.equals(s.id))).write(WorkoutSetsCompanion(position: Value(pos++)));
+        }
+        await (_db.delete(_db.workoutSets)..where((t) => t.sessionExerciseId.equals(row.id))).go();
+        await (_db.delete(_db.sessionExercises)..where((t) => t.id.equals(row.id))).go();
+      }
+      return newId;
     });
   }
 

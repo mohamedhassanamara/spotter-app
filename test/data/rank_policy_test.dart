@@ -32,6 +32,8 @@ void main() {
         sessionExerciseId: ex, position: 0, weight: const Value(40), reps: Value(reps), isWarmup: Value(warmup), setType: Value(type)));
     final set = await (db.select(db.workoutSets)..where((t) => t.id.equals(id))).getSingle();
     await SessionRepository(db).completeSet(set, weight: 40, reps: reps, rpe: 9, isWarmup: warmup, now: DateTime(2026, 10, 13, 9, 5));
+    // The workout is over: only the automatic rule is left (a running workout counts by itself, see the test below).
+    await (db.update(db.sessions)..where((t) => t.id.equals(sid))).write(const SessionsCompanion(status: Value('finished')));
   }
 
   test('default: only exercises in a current routine count; every other exercise is off', () async {
@@ -47,6 +49,21 @@ void main() {
     await complete(outside);
     expect(await counts(outside), isTrue);
     expect((await RankExclusions(db).policy()).sourceOf(outside), RankSource.auto);
+  });
+
+  test('an exercise in the running workout counts at once, before any set (added or swapped in: no manual step)', () async {
+    expect(await counts(outside), isFalse);
+    final sid = await db.into(db.sessions).insert(SessionsCompanion.insert(name: 'T', startedAt: DateTime(2026, 10, 13, 9)));
+    await db.into(db.sessionExercises).insert(SessionExercisesCompanion.insert(
+        sessionId: sid, exerciseId: outside, position: 0, repMin: 6, repMax: 8, targetSets: 2, restSeconds: 90));
+    expect(await counts(outside), isTrue);
+    expect((await RankExclusions(db).policy()).sourceOf(outside), RankSource.workout);
+    // Switched off by hand still wins; and a discarded/finished workout stops counting (without sets).
+    await RankExclusions(db).set(outside, excluded: true);
+    expect(await counts(outside), isFalse);
+    await RankExclusions(db).set(outside, excluded: false);
+    await (db.update(db.sessions)..where((t) => t.id.equals(sid))).write(const SessionsCompanion(status: Value('finished')));
+    expect((await RankExclusions(db).policy()).sourceOf(outside), RankSource.manualOn);
   });
 
   test('no auto-enable from a warm-up, a drop set or an empty set', () async {

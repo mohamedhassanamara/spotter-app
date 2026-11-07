@@ -21,7 +21,7 @@ void main() {
     final sets = await activeSets(h);
     final fly = sets['High-to-Low Cable Fly']!;
 
-    debugPrint('STEP add Hammer Curls (in no routine): off until a working set is done');
+    debugPrint('STEP add Hammer Curls (in no routine): counts at once as part of the running workout');
     await h.tap(find.text('Add exercise'));
     await h.waitFor(find.byType(TextField), scroll: false);
     await tester.enterText(find.byType(TextField).first, 'hammer');
@@ -30,7 +30,8 @@ void main() {
     await h.tap(find.text('Hammer Curls').first);
     await h.waitFor(find.text('Hammer Curls'), reason: 'added mid-workout');
     final hammer = (await tester.runAsync(() => (db.select(db.sessionExercises)..orderBy([(t) => OrderingTerm.desc(t.id)])).get()))!.first;
-    expect((await policy()).sourceOf(hammer.exerciseId), RankSource.off);
+    expect((await policy()).sourceOf(hammer.exerciseId), RankSource.workout, reason: 'no manual step');
+    expect((await policy()).auto.contains(hammer.exerciseId), isFalse);
     final hammerSets = (await tester.runAsync(() => (db.select(db.workoutSets)..where((t) => t.sessionExerciseId.equals(hammer.id))).get()))!
         .where((s) => !s.isWarmup)
         .toList();
@@ -42,7 +43,7 @@ void main() {
     await checkSet(h, hammerSets[0]);
     if (find.text('Skip').evaluate().isNotEmpty) await h.tap(find.text('Skip'));
     expect((await setRow(h, hammerSets[0].id)).reps, 0);
-    expect((await policy()).isOn(hammer.exerciseId), isFalse, reason: 'an empty set never switches anything on');
+    expect((await policy()).auto.contains(hammer.exerciseId), isFalse, reason: 'an empty set never switches the automatic rule on');
     // Un-tick it so the next ✓ is a real one.
     await h.waitFor(find.byKey(ValueKey('set-${hammerSets[0].id}')));
     await h.tap(find.descendant(of: find.byKey(ValueKey('set-${hammerSets[0].id}')), matching: find.byTooltip('Mark not done')));
@@ -54,7 +55,7 @@ void main() {
     await checkSet(h, hammerSets[0]);
     if (find.text('Skip').evaluate().isNotEmpty) await h.tap(find.text('Skip'));
     expect((await setRow(h, hammerSets[0].id)).completed, isTrue);
-    expect((await policy()).sourceOf(hammer.exerciseId), RankSource.auto);
+    expect((await policy()).auto.contains(hammer.exerciseId), isTrue, reason: 'the automatic rule keeps it on after the workout');
 
     debugPrint('STEP a routine exercise switched off by hand stays off after its sets are done');
     final flyExId = (await tester.runAsync(() => (db.select(db.sessionExercises)..where((t) => t.id.equals(fly.first.sessionExerciseId))).getSingle()))!.exerciseId;

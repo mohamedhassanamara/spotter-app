@@ -2,6 +2,7 @@ import 'package:drift/drift.dart';
 import 'package:flutter/foundation.dart';
 
 import '../../../core/db/database.dart';
+import '../../ranks/domain/fallback_standards.dart';
 import '../../../core/domain/dates.dart';
 import '../../../core/domain/history.dart';
 import '../../../core/health/health_data_source.dart';
@@ -180,7 +181,7 @@ class FinishService {
     required Map<String, ExerciseInfo> catalog,
     required SettingsModel settings,
   }) async {
-    final standards = await RanksRepository.loadStandards();
+    final standards = await RanksRepository.standardsFor(catalog, chosen: _patterns(settings));
     final defs = await GamificationRepository.loadAchievementDefs();
     final bwLoaded = RanksRepository.bodyweightLoadedIds(standards, catalog);
     final bodyweight = (await _bodyweights.latest())?.kg ?? 0;
@@ -199,6 +200,10 @@ class FinishService {
     return unlocked;
   }
 
+  static Map<String, MovementPattern> _patterns(SettingsModel settings) => {
+        for (final e in settings.exercisePatterns.entries) if (MovementPattern.fromName(e.value) != null) e.key: MovementPattern.fromName(e.value)!,
+      };
+
   Future<SessionSummary> finish({
     required int sessionId,
     required DateTime now,
@@ -206,7 +211,7 @@ class FinishService {
     required SettingsModel settings,
     HealthDataSource? health,
   }) async {
-    final standards = await RanksRepository.loadStandards();
+    final standards = await RanksRepository.standardsFor(catalog, chosen: _patterns(settings));
     final defs = await GamificationRepository.loadAchievementDefs();
     final bwLoaded = RanksRepository.bodyweightLoadedIds(standards, catalog);
     final bodyweight = (await _bodyweights.latest())?.kg ?? 0;

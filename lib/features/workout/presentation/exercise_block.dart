@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter/services.dart' show HapticFeedback;
 import 'package:go_router/go_router.dart';
 
 import '../../../app_providers.dart';
@@ -14,11 +13,7 @@ import '../../coach/domain/suggestion_engine.dart';
 import '../../library/domain/exercise_info.dart';
 import '../../library/domain/load_kinds.dart';
 import '../../program/data/program_repository.dart';
-import '../../ranks/domain/bodyweight_what_if.dart';
-import '../../ranks/domain/rank_target.dart';
-import '../../ranks/presentation/rank_target_line.dart';
-import '../../ranks/domain/ranks.dart';
-import '../../ranks/presentation/rank_badge.dart';
+import '../../ranks/presentation/rank_row.dart';
 import '../../library/presentation/exercise_thumb.dart';
 import '../data/history_repository.dart' show loggedSetFromRow;
 import '../data/session_repository.dart';
@@ -167,9 +162,9 @@ class _ExerciseBlockState extends ConsumerState<ExerciseBlock> {
         _header(name),
         if (!_collapsed) ...[
           _restRow(),
-          _RankStrip(
+          RankRow(
+            key: ValueKey('rank-row-${ex.row.id}'),
             exerciseId: ex.row.exerciseId,
-            sets: ex.sets,
             repMin: ex.sets.where((s) => s.isWorkingSet).map((s) => s.targetRepMin).whereType<int>().firstOrNull ?? ex.row.repMin,
             rir: ex.sets.where((s) => s.isWorkingSet).map((s) => s.targetRir).whereType<int>().firstOrNull ?? ex.row.targetRir,
           ),
@@ -691,174 +686,6 @@ class _MutedLine extends StatelessWidget {
           child: Text(text, style: AppType.bodyS.copyWith(fontSize: 12, color: AppColors.textTertiary)),
         ),
       );
-}
-
-/// Badge, division, RR to the next division and the set that gets there ("6 × 72.5 kg → Gold 2"). Never "???".
-/// Live: a completed set of this workout counts at once (the finished sessions are the baseline), and when it
-/// raises the rank the RR bar fills, the badge pops in on a new division or tier, with a haptic.
-class _RankStrip extends ConsumerStatefulWidget {
-  const _RankStrip({required this.exerciseId, required this.sets, required this.repMin, required this.rir});
-  final String exerciseId;
-  final List<WorkoutSet> sets;
-
-  /// The prescription the rank target is quoted at: bottom of the rep range, prescribed reps in reserve.
-  final int repMin;
-  final int rir;
-
-  @override
-  ConsumerState<_RankStrip> createState() => _RankStripState();
-}
-
-class _RankStripState extends ConsumerState<_RankStrip> with SingleTickerProviderStateMixin {
-  late final AnimationController _c;
-  RankScore? _from, _to;
-  bool _labelChanged = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _c = AnimationController(vsync: this, duration: const Duration(milliseconds: 1100));
-  }
-
-  @override
-  void dispose() {
-    _c.dispose();
-    super.dispose();
-  }
-
-  /// The best of the finished history and this workout's completed working sets.
-  RankScore? _live(ExerciseRank? baseline, StrengthStandard? standard, double bodyweight) {
-    var best = baseline?.score;
-    if (standard == null || bodyweight <= 0) return best;
-    for (final set in widget.sets) {
-      // Only an ego set (heavier than suggested AND below the range) doesn't count; a good override does.
-      if (!set.completed || !set.isWorkingSet || set.reps <= 0 || (set.isOverride && set.reps < (set.targetRepMin ?? 0))) continue;
-      final load = set.weight + (standard.bodyweightLoaded ? bodyweight : 0);
-      final e = scoringE1rm(load: load, reps: set.reps, rpe: set.rpe);
-      if (e <= 0) continue;
-      final score = standard.scoreForRatio(standard.ratioFor(e, bodyweight));
-      if (best == null || score.value > best.value) best = score;
-    }
-    return best;
-  }
-
-  void _follow(RankScore? live) {
-    if (live == null) return;
-    final to = _to;
-    if (to == null || (live.value - to.value).abs() < 0.0005) {
-      _to ??= live;
-      return;
-    }
-    final shown = _shownScore(live);
-    if (live.value > to.value) {
-      _from = shown;
-      _to = live;
-      _labelChanged = shown.label != live.label;
-      _c.forward(from: 0);
-      if (_labelChanged) {
-        HapticFeedback.heavyImpact();
-      } else {
-        HapticFeedback.selectionClick();
-      }
-    } else {
-      // A set was un-ticked: back down without ceremony.
-      _from = null;
-      _to = live;
-      _labelChanged = false;
-      _c.value = 1;
-    }
-  }
-
-  RankScore _shownScore(RankScore fallback) {
-    final to = _to, from = _from;
-    if (to == null) return fallback;
-    if (from == null || !_c.isAnimating) return to;
-    return RankScore(from.value + (to.value - from.value) * Curves.easeOutCubic.transform(_c.value));
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final id = widget.exerciseId;
-    final ranks = ref.watch(ranksProvider).value;
-    final hidden = (ref.watch(rankExclusionsProvider).value ?? const <String>{}).contains(id);
-    final standards = ref.watch(standardsProvider).value ?? const [];
-    final bodyweight = ref.watch(latestBodyWeightProvider).value?.kg ?? 0;
-    final baseline = ranks?.exercises.where((r) => r.exerciseId == id).firstOrNull;
-    final standard = standards.where((s) => s.exerciseIds.contains(id)).firstOrNull;
-    final hasStandard = standard != null;
-    final muted = AppType.bodyS.copyWith(fontSize: 12, color: AppColors.textTertiary);
-    Widget line(Widget child) => Padding(padding: const EdgeInsets.symmetric(vertical: 4), child: child);
-    if (hidden) return line(Text('Hidden from ranks', style: muted));
-    final live = _live(baseline, standard, bodyweight);
-    if (live == null) {
-      return line(Row(children: [
-        const RankBadge(score: null, size: BadgeSize.small, width: 22, animate: false),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Text(hasStandard ? 'Unranked · complete a set to place it' : 'Not ranked (no strength standard)',
-              maxLines: 1, overflow: TextOverflow.ellipsis, style: muted),
-        ),
-      ]));
-    }
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) _follow(live);
-    });
-    return AnimatedBuilder(
-      animation: _c,
-      builder: (context, _) {
-        final s = _to == null ? live : _shownScore(live);
-        final color = tierColor(s.tier);
-        final t = _c.isAnimating ? _c.value : 1.0;
-        final pop = _labelChanged && _c.isAnimating && t > 0.6
-            ? 1 + 0.45 * Curves.elasticOut.transform(((t - 0.6) / 0.4).clamp(0.0, 1.0)).clamp(0.0, 1.0) * (1 - (t - 0.6) / 0.4)
-            : 1.0;
-        // The target set reaches the division above the *target* rank (the one reached), at the baseline's bodyweight.
-        final target = _to ?? live;
-        final fromHistory = baseline != null && (target.value - baseline.score.value).abs() < 1e-9;
-        final next = fromHistory ? baseline.nextThresholdKg : standard?.nextThresholdKg(target, bodyweight > 0 ? bodyweight : (baseline?.bodyweight ?? 0));
-        final std = standard ?? baseline?.standard;
-        final grid = ref.watch(exerciseGridProvider(id));
-        final whatIf = ref.watch(rankTargetModeProvider) == RankTargetMode.bodyweight;
-        final targetLine = whatIf
-            ? (baseline == null ? null : bodyweightTargetLine(baseline, bodyweightTargetFor(baseline, ref.watch(currentBodyweightProvider)), baseline.score.nextLabel))
-            : next == null || std == null || grid == null
-                ? null
-                : rankTargetLine(
-                    rankTargetSet(
-                      standard: std,
-                      bodyweight: bodyweight > 0 ? bodyweight : (baseline?.bodyweight ?? 0),
-                      targetE1rm: next,
-                      repMin: widget.repMin,
-                      rir: widget.rir,
-                      grid: grid,
-                    ),
-                    s.nextLabel,
-                  );
-        return line(Row(children: [
-          Transform.scale(scale: pop, child: RankBadge(key: ValueKey('rank-strip-badge-$id'), score: s, size: BadgeSize.small, width: 22, animate: false)),
-          const SizedBox(width: 8),
-          Text(s.label, key: ValueKey('rank-strip-label-$id'), style: AppType.bodyS.copyWith(fontSize: 12, fontWeight: FontWeight.w800, color: color)),
-          const SizedBox(width: 8),
-          Expanded(flex: 2, child: RrBar(key: ValueKey('rank-strip-lp-$id'), progress: s.divisionProgress, color: color, tier: s.tier, height: 5)),
-          const SizedBox(width: 8),
-          Flexible(
-            flex: 5,
-            child: s.isApex || !whatIf
-                ? Text(
-                    s.isApex ? 'top of the ladder' : (targetLine ?? ''),
-                    key: ValueKey('rank-gap-$id'),
-                    textAlign: TextAlign.end,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: muted,
-                  )
-                : whatIfText(targetLine ?? '', key: ValueKey('rank-gap-$id'), textAlign: TextAlign.end, maxLines: 3, style: muted),
-          ),
-          if (!s.isApex) ...[const SizedBox(width: 6), const RankTargetModeToggle()],
-        ]));
-      },
-    );
-  }
 }
 
 /// Between two sets: the rest actually taken before the second one, e.g. "⏱ 2:14".

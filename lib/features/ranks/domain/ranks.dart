@@ -142,6 +142,7 @@ class StrengthStandard {
     this.perHand = false,
     double strictness = 1,
     this.scaling = BodyweightScaling.linear,
+    this.estimated = false,
   }) : thresholds = thresholdsFromAnchors([for (final a in anchors) a * strictness]);
 
   /// Allometric scaling for loaded lifts. Bodyweight lifts always use the plain ratio: their load is
@@ -161,6 +162,9 @@ class StrengthStandard {
   /// beginner, novice, intermediate, advanced, elite (before machine strictness).
   final List<double> anchors;
   final bool perHand;
+
+  /// Derived from the exercise's movement pattern and equipment, not a hand-made standard (docs: fallback_standards.dart).
+  final bool estimated;
 
   /// 9 ascending values: the bodyweight multiple at which each tier (Iron..Immortal) starts.
   final List<double> thresholds;

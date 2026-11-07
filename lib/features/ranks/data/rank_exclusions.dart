@@ -4,15 +4,16 @@ import 'dart:convert';
 import '../../../core/db/database.dart';
 
 /// Where an exercise's "Counts toward rank" switch comes from.
-enum RankSource { manualOn, manualOff, routine, auto, off }
+enum RankSource { manualOn, manualOff, routine, workout, auto, off }
 
 /// Which exercises feed ranks. An exercise counts when:
 /// 1. you switched it on or off by hand (manual always wins), else
 /// 2. it is in one of your current routines, else
-/// 3. you completed a working set of it in an in-app workout (automatic), else it is off.
+/// 3. it is in the workout you are running right now (added, swapped in or from a routine: no manual step), else
+/// 4. you completed a working set of it in an in-app workout (automatic), else it is off.
 /// Imported (Liftoff) history never switches anything on. Their sets stay in history and PRs either way.
 class RankPolicy {
-  const RankPolicy({this.manual = const {}, this.auto = const {}, this.routineIds = const {}});
+  const RankPolicy({this.manual = const {}, this.auto = const {}, this.routineIds = const {}, this.workoutIds = const {}});
 
   /// Exercise id → true (switched on by hand) / false (switched off by hand).
   final Map<String, bool> manual;
@@ -21,16 +22,20 @@ class RankPolicy {
   final Set<String> auto;
   final Set<String> routineIds;
 
+  /// Exercises of the running (unfinished) workout.
+  final Set<String> workoutIds;
+
   RankSource sourceOf(String id) {
     final m = manual[id];
     if (m != null) return m ? RankSource.manualOn : RankSource.manualOff;
     if (routineIds.contains(id)) return RankSource.routine;
+    if (workoutIds.contains(id)) return RankSource.workout;
     if (auto.contains(id)) return RankSource.auto;
     return RankSource.off;
   }
 
   bool isOn(String id) => switch (sourceOf(id)) {
-        RankSource.manualOn || RankSource.routine || RankSource.auto => true,
+        RankSource.manualOn || RankSource.routine || RankSource.workout || RankSource.auto => true,
         RankSource.manualOff || RankSource.off => false,
       };
 }
@@ -53,10 +58,18 @@ class RankExclusions {
   Future<Set<String>> _routineIds() async =>
       {for (final r in await _db.select(_db.routineExercises).get()) r.exerciseId};
 
+  Future<Set<String>> _workoutIds() async => {
+        for (final r in await _db.customSelect(
+          "SELECT DISTINCT se.exercise_id AS id FROM session_exercises se JOIN sessions s ON s.id = se.session_id WHERE s.status = 'active'",
+        ).get())
+          r.read<String>('id'),
+      };
+
   Future<RankPolicy> policy() async => RankPolicy(
         manual: _decodeManual(await _db.getSetting(manualKey)),
         auto: _decodeSet(await _db.getSetting(autoKey)),
         routineIds: await _routineIds(),
+        workoutIds: await _workoutIds(),
       );
 
   /// Every exercise that does NOT count toward ranks (the whole library minus [RankPolicy.isOn]).
@@ -68,7 +81,7 @@ class RankExclusions {
 
   /// Re-emits when settings or the routines change.
   Stream<Set<String>> watch() => _db
-      .customSelect('SELECT 1', readsFrom: {_db.appSettings, _db.routineExercises, _db.exercises})
+      .customSelect('SELECT 1', readsFrom: {_db.appSettings, _db.routineExercises, _db.exercises, _db.sessionExercises, _db.sessions})
       .watch()
       .asyncMap((_) => load());
 

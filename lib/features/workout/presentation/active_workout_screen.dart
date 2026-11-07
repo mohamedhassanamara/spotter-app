@@ -868,10 +868,6 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> with 
     final slots = decodeSlots(ex.row.programSlots);
     final slot = slots.isEmpty ? null : program.slot(slots.first);
     final resolved = programOptions(slot, catalog.values);
-    if (ex.sets.any((s) => s.completed)) {
-      final ok = await confirm(context, title: 'Replace exercise?', message: 'Sets already logged on this exercise will be removed.', action: 'Replace', destructive: true);
-      if (!ok || !mounted) return;
-    }
     final id = await pickReplacement(
       context,
       name: ex.row.displayName ?? catalog[ex.row.exerciseId]?.name ?? '',
@@ -882,11 +878,37 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> with 
     if (!mounted) return;
     final info = id == null ? null : catalog[id];
     if (info == null || !mounted) return;
+    // Sets already logged belong to the exercise they were logged on, unless you say otherwise (default: they stay).
+    var move = false;
+    if (ex.sets.any((s) => s.completed)) {
+      final oldName = ex.row.displayName ?? catalog[ex.row.exerciseId]?.name ?? 'the original';
+      final answer = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          key: const ValueKey('move-logged-dialog'),
+          title: const Text('Move logged sets to the new exercise?'),
+          content: Text('Sets you already logged stay with $oldName unless you move them to ${info.name}.'),
+          actions: [
+            TextButton(key: const ValueKey('move-logged-no'), onPressed: () => Navigator.of(ctx).pop(false), child: Text('No, keep with $oldName')),
+            TextButton(key: const ValueKey('move-logged-yes'), onPressed: () => Navigator.of(ctx).pop(true), child: const Text('Move them')),
+          ],
+        ),
+      );
+      if (answer == null || !mounted) return;
+      move = answer;
+    }
+    final settings = ref.read(currentSettingsProvider);
+    final oldInfo = catalog[ex.row.exerciseId];
     await ref.read(sessionRepositoryProvider).replaceExercise(
           old: ex,
           info: info,
           coach: await ref.read(workoutCoachProvider)(ex.row.sessionId),
           program: program,
+          moveLoggedSets: move,
+          // A different kind of lift rests differently: the rest timer follows the new exercise.
+          restSeconds: oldInfo != null && oldInfo.isCompound != info.isCompound
+              ? (info.isCompound ? settings.defaultRestCompound : settings.defaultRestIsolation)
+              : null,
         );
   }
 

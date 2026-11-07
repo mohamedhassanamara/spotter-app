@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'db/database.dart';
@@ -41,6 +43,17 @@ class SettingsController {
       m[exerciseId] = stepKg;
     }
     await _db.putSetting(SettingsModel.kExerciseSteps, encodeExerciseSteps(m));
+  }
+
+  /// The movement pattern chosen for [exerciseId] (null = automatic, from its primary muscle).
+  Future<void> setExercisePattern(String exerciseId, String? pattern) async {
+    final m = {...SettingsModel.decodePatterns(await _db.getSetting(SettingsModel.kExercisePatterns))};
+    if (pattern == null) {
+      m.remove(exerciseId);
+    } else {
+      m[exerciseId] = pattern;
+    }
+    await _db.putSetting(SettingsModel.kExercisePatterns, jsonEncode(m));
   }
 
   Future<void> setCompoundRange(RepRange r) => _db.putSetting(SettingsModel.kCompoundRange, SettingsModel.encodeRange(r));

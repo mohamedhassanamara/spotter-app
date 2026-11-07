@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../app_providers.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/common.dart';
+import '../../ranks/domain/fallback_standards.dart';
 import '../domain/muscle_mapping.dart';
 
 /// Equipment choices for custom exercises (dataset values; null = none).
@@ -38,6 +39,7 @@ class _CustomExerciseScreenState extends ConsumerState<CustomExerciseScreen> {
   final _secondary = <String>{};
   String? _equipment = 'barbell';
   bool _compound = true;
+  MovementPattern? _pattern; // null = automatic, from the primary muscle
   bool _loaded = false;
   bool _saving = false;
 
@@ -62,6 +64,7 @@ class _CustomExerciseScreenState extends ConsumerState<CustomExerciseScreen> {
         _secondary.addAll(info.secondaryMuscles);
         _equipment = info.equipment;
         _compound = info.isCompound;
+        _pattern = MovementPattern.fromName(ref.read(currentSettingsProvider).exercisePatterns[widget.editId]);
       }
       _loaded = true;
     });
@@ -82,7 +85,7 @@ class _CustomExerciseScreenState extends ConsumerState<CustomExerciseScreen> {
     final repo = ref.read(exerciseRepositoryProvider);
     final secondary = _secondary.difference(_primary).toList();
     if (widget.editId == null) {
-      await repo.createCustom(
+      final id = await repo.createCustom(
         name: _name.text,
         primaryMuscles: _primary.toList(),
         secondaryMuscles: secondary,
@@ -90,6 +93,7 @@ class _CustomExerciseScreenState extends ConsumerState<CustomExerciseScreen> {
         compound: _compound,
         notes: _notes.text,
       );
+      await ref.read(settingsControllerProvider).setExercisePattern(id, _pattern?.name);
     } else {
       await repo.updateCustom(
         widget.editId!,
@@ -100,6 +104,7 @@ class _CustomExerciseScreenState extends ConsumerState<CustomExerciseScreen> {
         compound: _compound,
         notes: _notes.text,
       );
+      await ref.read(settingsControllerProvider).setExercisePattern(widget.editId!, _pattern?.name);
     }
     if (mounted) context.pop();
   }
@@ -168,6 +173,21 @@ class _CustomExerciseScreenState extends ConsumerState<CustomExerciseScreen> {
                     'Compounds default to 6–10 reps, isolations to 10–15.',
                     style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
                   ),
+                ),
+                const SectionHeader('Movement pattern (for rank)'),
+                DropdownButtonFormField<MovementPattern?>(
+                  key: const ValueKey('custom-pattern'),
+                  initialValue: _pattern,
+                  isExpanded: true,
+                  items: [
+                    const DropdownMenuItem(value: null, child: Text('Automatic (from the primary muscle)')),
+                    for (final p in MovementPattern.values) DropdownMenuItem(value: p, child: Text(p.label)),
+                  ],
+                  onChanged: (v) => setState(() => _pattern = v),
+                ),
+                const Padding(
+                  padding: EdgeInsets.only(top: 8),
+                  child: Text('Decides the estimated strength standard that ranks this exercise.', style: TextStyle(color: AppColors.textSecondary, fontSize: 13)),
                 ),
                 const SectionHeader('Notes (optional)'),
                 TextField(

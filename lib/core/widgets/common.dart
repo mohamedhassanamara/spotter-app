@@ -401,3 +401,43 @@ class SheetBody extends StatelessWidget {
         ),
       );
 }
+
+/// One line of text that shrinks (down to [minScale] of [style]'s size, in 0.25 pt steps) before it is cut with an ellipsis.
+/// Its height is always one line of the *unshrunk* style, so swapping the text never changes the layout around it.
+class OneLineFit extends StatelessWidget {
+  const OneLineFit(this.text, {super.key, required this.style, this.minScale = 0.8, this.textAlign = TextAlign.start});
+  final String text;
+  final TextStyle style;
+  final double minScale;
+  final TextAlign textAlign;
+
+  @override
+  Widget build(BuildContext context) {
+    final scaler = MediaQuery.textScalerOf(context);
+    final base = style.fontSize ?? 14;
+    final lineHeight = scaler.scale(base) * (style.height ?? 1.25);
+    return LayoutBuilder(builder: (context, c) {
+      var size = base;
+      final min = base * minScale;
+      if (c.hasBoundedWidth && text.isNotEmpty) {
+        while (size > min) {
+          final p = TextPainter(
+            text: TextSpan(text: text, style: style.copyWith(fontSize: size)),
+            textDirection: Directionality.of(context),
+            textScaler: scaler,
+            maxLines: 1,
+          )..layout();
+          if (p.width <= c.maxWidth) break;
+          size -= 0.25;
+        }
+      }
+      return SizedBox(
+        height: lineHeight,
+        child: Align(
+          alignment: textAlign == TextAlign.end ? Alignment.centerRight : Alignment.centerLeft,
+          child: Text(text, maxLines: 1, softWrap: false, overflow: TextOverflow.ellipsis, textAlign: textAlign, style: style.copyWith(fontSize: size)),
+        ),
+      );
+    });
+  }
+}
