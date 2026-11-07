@@ -44,7 +44,7 @@ class RanksRepository {
 
   static BodyweightTimeline timeline(Iterable<BodyWeight> rows) => BodyweightTimeline([for (final r in rows) (r.measuredAt, r.kg)]);
 
-  /// Ranks from valid working sets of the last 90 days, each scored at the bodyweight of its day.
+  /// Ranks from valid working sets of the last 90 days, each scored at your latest bodyweight, so a new weigh-in moves the rank at once.
   /// [myExerciseIds] (routines and history) are offered as hints for unranked muscles.
   static RankSummary compute({
     required TrainingHistory history,
@@ -71,7 +71,7 @@ class RanksRepository {
                   reps: set.reps,
                   rpe: set.rpe,
                   date: s.startedAt,
-                  bodyweight: bodyweights.at(s.startedAt),
+                  bodyweight: bodyweights.latest,
                 ),
     ];
     // Ranks show the name the logger shows: your routine's name for it, else the library's.

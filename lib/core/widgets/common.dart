@@ -372,3 +372,32 @@ String formatClock(Duration d) {
   return '${neg ? '-' : ''}${h > 0 ? '$h:${m.toString().padLeft(2, '0')}' : '$m'}:$ss';
 }
 
+
+/// The body of a bottom sheet: clear of the home indicator, never taller than [maxHeightFactor] of the screen, and
+/// scrollable so the last row can always be scrolled fully above the home indicator. Use with `isScrollControlled: true, useSafeArea: true`.
+class SheetBody extends StatelessWidget {
+  const SheetBody({super.key, required this.children, this.padding = EdgeInsets.zero, this.maxHeightFactor = 0.85, this.header});
+  final List<Widget> children;
+  final EdgeInsets padding;
+  final double maxHeightFactor;
+
+  /// Stays fixed above the scrolling list.
+  final Widget? header;
+
+  @override
+  Widget build(BuildContext context) => SafeArea(
+        top: false,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(context).height * maxHeightFactor),
+          child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+            ?header,
+            Flexible(
+              child: SingleChildScrollView(
+                padding: padding.copyWith(bottom: padding.bottom + 16),
+                child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: children),
+              ),
+            ),
+          ]),
+        ),
+      );
+}

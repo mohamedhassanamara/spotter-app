@@ -383,10 +383,12 @@ class _ExerciseBlockState extends ConsumerState<ExerciseBlock> {
     const options = [30, 60, 90, 120, 150, 180, 240, 300];
     final picked = await showModalBottomSheet<int>(
       context: context,
-      builder: (ctx) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-          child: Wrap(spacing: 8, runSpacing: 8, children: [
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (ctx) => SheetBody(
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+        children: [
+          Wrap(spacing: 8, runSpacing: 8, children: [
             for (final o in options)
               ChoiceChip(
                 label: Text(formatClock(Duration(seconds: o))),
@@ -394,7 +396,7 @@ class _ExerciseBlockState extends ConsumerState<ExerciseBlock> {
                 onSelected: (_) => Navigator.of(ctx).pop(o),
               ),
           ]),
-        ),
+        ],
       ),
     );
     if (picked != null) await ref.read(sessionRepositoryProvider).setRest(ex.row.id, seconds: picked);
@@ -512,8 +514,10 @@ class _ExerciseBlockState extends ConsumerState<ExerciseBlock> {
     final picked = await showModalBottomSheet<String>(
       context: context,
       isScrollControlled: true,
+      useSafeArea: true,
       builder: (ctx) => SafeArea(
-        child: ListView(shrinkWrap: true, children: [
+        top: false,
+        child: ListView(shrinkWrap: true, padding: const EdgeInsets.only(bottom: 16), children: [
           const ListTile(dense: true, title: Text('SET TYPE', style: TextStyle(fontSize: 12, color: AppColors.textTertiary))),
           ListTile(key: const ValueKey('kind-working'), title: const Text('Working set'), onTap: () => Navigator.of(ctx).pop('working')),
           ListTile(key: const ValueKey('kind-warmup'), leading: const _KindLetter(SetKind.warmup), title: const Text('Warm-up'), onTap: () => Navigator.of(ctx).pop('warmup')),

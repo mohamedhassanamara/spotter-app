@@ -106,6 +106,35 @@ class RoutineRepository {
     ));
   }
 
+  /// Swaps the exercise of a routine row for [info], keeping its slot: position, sets, reps, rest, RIR, superset and program slots.
+  /// A program row whose slot lists [info] (or names it) is a "substitution" (or the program's own); anything else is the owner's "swap".
+  /// Past sessions are untouched; the next workout started from the routine uses the new exercise.
+  Future<void> replaceExercise(RoutineExercise row, ExerciseInfo info, {Program? program}) {
+    final slots = decodeSlots(row.programSlots);
+    var relation = row.programRelation;
+    var base = RepRange(row.repMin, row.repMax);
+    if (slots.isNotEmpty && program != null) {
+      final slot = program.slot(slots.first);
+      final name = info.name.toLowerCase();
+      if (slot != null) {
+        relation = slot.exercise.toLowerCase() == name
+            ? 'program'
+            : slot.substitutions.any((x) => x.toLowerCase() == name)
+                ? 'substitution'
+                : 'swap';
+        base = slot.repRange; // the program's prescription for the slot
+      }
+    }
+    final hasOverride = row.overrideRepMin != null && row.overrideRepMax != null;
+    return (_db.update(_db.routineExercises)..where((t) => t.id.equals(row.id))).write(RoutineExercisesCompanion(
+      exerciseId: Value(info.id),
+      displayName: Value(info.name),
+      programRelation: Value(relation),
+      repMin: hasOverride || slots.isEmpty ? const Value.absent() : Value(base.min),
+      repMax: hasOverride || slots.isEmpty ? const Value.absent() : Value(base.max),
+    ));
+  }
+
   /// Routine editor link button: [next] joins [row]'s superset (a new one when [row] has none), or
   /// leaves it when they're already together. A group left with one exercise dissolves.
   Future<void> toggleSupersetWithNext(RoutineExercise row, RoutineExercise next, List<RoutineExercise> all) => _db.transaction(() async {

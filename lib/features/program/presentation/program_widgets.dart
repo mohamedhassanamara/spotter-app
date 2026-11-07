@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app_providers.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/common.dart';
 
 /// Prescribed last-set intensity technique; tap for the program's explanation.
 class TechniqueChip extends ConsumerWidget {
@@ -38,10 +39,12 @@ class TechniqueChip extends ConsumerWidget {
 Future<void> showTechniqueSheet(BuildContext context, String name, String when, String description) {
   return showModalBottomSheet<void>(
     context: context,
-    builder: (ctx) => SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
-        child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+    isScrollControlled: true,
+    useSafeArea: true,
+    builder: (ctx) => SheetBody(
+      padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+      children: [
+        Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
           Row(children: [
             const Icon(Icons.bolt_rounded, color: AppColors.xp),
             const SizedBox(width: 8),
@@ -54,7 +57,7 @@ Future<void> showTechniqueSheet(BuildContext context, String name, String when, 
           const SizedBox(height: 12),
           Text('From the Min-Max Phase 2 program.', style: AppType.bodyS.copyWith(color: AppColors.textTertiary)),
         ]),
-      ),
+      ],
     ),
   );
 }

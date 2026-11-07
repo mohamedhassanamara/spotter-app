@@ -8,10 +8,12 @@ import '../../../core/domain/training.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/common.dart';
 import '../../../router.dart';
+import '../../library/domain/exercise_info.dart';
 import '../../library/presentation/exercise_thumb.dart';
 import '../../program/data/program_repository.dart';
 import '../../program/domain/program.dart';
 import '../data/routine_repository.dart';
+import 'replace_sheet.dart';
 import 'superset_style.dart';
 
 final _routineProvider = StreamProvider.family<RoutineWithExercises?, int>(
@@ -131,6 +133,7 @@ class RoutineEditorScreen extends ConsumerWidget {
                                 IconButton(
                                   key: ValueKey('link-${e.id}'),
                                   tooltip: 'Superset with next',
+                                  visualDensity: VisualDensity.compact,
                                   icon: Icon(
                                     Icons.link_rounded,
                                     color: e.supersetGroup != null && e.supersetGroup == r.exercises[i + 1].supersetGroup
@@ -140,13 +143,22 @@ class RoutineEditorScreen extends ConsumerWidget {
                                   onPressed: () => repo.toggleSupersetWithNext(e, r.exercises[i + 1], r.exercises),
                                 ),
                               IconButton(
+                                key: ValueKey('replace-${e.id}'),
+                                tooltip: 'Replace exercise',
+                                visualDensity: VisualDensity.compact,
+                                icon: const Icon(Icons.swap_horiz_rounded),
+                                onPressed: () => _replace(context, ref, e, catalog),
+                              ),
+                              IconButton(
                                 key: ValueKey('edit-${e.id}'),
                                 tooltip: 'Sets, reps and rest',
+                                visualDensity: VisualDensity.compact,
                                 icon: const Icon(Icons.tune_rounded),
                                 onPressed: () => _editTargets(context, ref, e),
                               ),
                               IconButton(
                                 tooltip: 'Remove',
+                                visualDensity: VisualDensity.compact,
                                 icon: const Icon(Icons.close_rounded),
                                 onPressed: () => repo.removeExercise(e.id),
                               ),
@@ -160,6 +172,25 @@ class RoutineEditorScreen extends ConsumerWidget {
         );
       },
     );
+  }
+
+  /// Program substitutions first, then the library; the replacement takes the row's place and prescription. History is untouched.
+  Future<void> _replace(BuildContext context, WidgetRef ref, RoutineExercise e, Map<String, ExerciseInfo> catalog) async {
+    final all = catalog.isEmpty ? await ref.read(catalogProvider.future) : catalog;
+    final program = await ref.read(programProvider.future);
+    if (!context.mounted) return;
+    final slots = decodeSlots(e.programSlots);
+    final slot = slots.isEmpty ? null : program.slot(slots.first);
+    final id = await pickReplacement(
+      context,
+      name: e.displayName ?? all[e.exerciseId]?.name ?? e.exerciseId,
+      currentExerciseId: e.exerciseId,
+      slot: slot,
+      options: programOptions(slot, all.values),
+    );
+    final info = id == null ? null : all[id];
+    if (info == null || info.id == e.exerciseId) return;
+    await ref.read(routineRepositoryProvider).replaceExercise(e, info, program: program);
   }
 
   Future<void> _editTargets(BuildContext context, WidgetRef ref, RoutineExercise e) async {

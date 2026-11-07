@@ -18,7 +18,6 @@ import '../../coach/domain/guardrail.dart';
 import '../../coach/domain/suggestion_engine.dart';
 import '../../library/domain/exercise_info.dart';
 import '../../library/domain/load_kinds.dart';
-import '../../library/domain/name_resolver.dart';
 import '../../program/data/program_repository.dart';
 import '../../settings/presentation/gym_equipment_card.dart' show editLoad;
 import '../../tutorials/presentation/form_check_sheet.dart';
@@ -37,6 +36,7 @@ import '../data/history_repository.dart' show loggedSetFromRow;
 import '../domain/rest_preview.dart';
 import '../domain/rest_rules.dart';
 import 'rest_timer.dart';
+import 'replace_sheet.dart';
 import 'superset_style.dart';
 
 /// The active workout, Liftoff-style: compact set rows, a custom keypad for KG/REPS, rest shown in the
@@ -589,22 +589,22 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> with 
 
   Future<OverrideReason?> _askReason(WorkoutSet s) => showModalBottomSheet<OverrideReason>(
         context: context,
-        builder: (ctx) => SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
-            child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text('Heavier than suggested and short of the range', style: AppType.title),
-              const SizedBox(height: 6),
-              Text(
-                '${formatKg(s.weight)} kg vs ${formatKg(s.suggestedWeight ?? 0)} kg suggested, ${s.reps} reps. '
-                'This set won\'t count for ranks or PRs. Why the extra weight?',
-                style: AppType.bodyS.copyWith(color: AppColors.textSecondary),
-              ),
-              const SizedBox(height: 10),
-              for (final r in OverrideReason.values)
-                ListTile(contentPadding: EdgeInsets.zero, title: Text(r.label), onTap: () => Navigator.of(ctx).pop(r)),
-            ]),
-          ),
+        isScrollControlled: true,
+        useSafeArea: true,
+        builder: (ctx) => SheetBody(
+          padding: const EdgeInsets.fromLTRB(20, 0, 20, 0),
+          children: [
+            Text('Heavier than suggested and short of the range', style: AppType.title),
+            const SizedBox(height: 6),
+            Text(
+              '${formatKg(s.weight)} kg vs ${formatKg(s.suggestedWeight ?? 0)} kg suggested, ${s.reps} reps. '
+              'This set won\'t count for ranks or PRs. Why the extra weight?',
+              style: AppType.bodyS.copyWith(color: AppColors.textSecondary),
+            ),
+            const SizedBox(height: 10),
+            for (final r in OverrideReason.values)
+              ListTile(contentPadding: EdgeInsets.zero, title: Text(r.label), onTap: () => Navigator.of(ctx).pop(r)),
+          ],
         ),
       );
 
@@ -629,15 +629,18 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> with 
         final others = session.exercises.where((e) => e.row.id != ex.row.id).toList();
         final picked = await showModalBottomSheet<ActiveExercise>(
           context: context,
-          builder: (ctx) => SafeArea(
-            child: Column(mainAxisSize: MainAxisSize.min, children: [
-              const ListTile(title: Text('Superset with…')),
+          isScrollControlled: true,
+          useSafeArea: true,
+          builder: (ctx) => SheetBody(
+            header: const ListTile(title: Text('Superset with…')),
+            children: [
               for (final o in others)
                 ListTile(
+                  key: ValueKey('superset-with-${o.row.id}'),
                   title: Text(o.row.displayName ?? catalog[o.row.exerciseId]?.name ?? o.row.exerciseId),
                   onTap: () => Navigator.of(ctx).pop(o),
                 ),
-            ]),
+            ],
           ),
         );
         if (picked != null) await repo.superset(ex, picked);
@@ -844,47 +847,19 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> with 
     if (!mounted) return;
     final slots = decodeSlots(ex.row.programSlots);
     final slot = slots.isEmpty ? null : program.slot(slots.first);
-    final options = <String>[if (slot != null) slot.exercise, ...?slot?.substitutions];
-    final resolver = ExerciseNameResolver(catalog.values);
-    final resolved = <(String, ExerciseInfo?)>[for (final o in options) (o, resolver.resolve(o)?.exercise)];
+    final resolved = programOptions(slot, catalog.values);
     if (ex.sets.any((s) => s.completed)) {
       final ok = await confirm(context, title: 'Replace exercise?', message: 'Sets already logged on this exercise will be removed.', action: 'Replace', destructive: true);
       if (!ok || !mounted) return;
     }
-    final picked = await showModalBottomSheet<String>(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      builder: (ctx) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-          child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-            Text('Replace ${ex.row.displayName ?? catalog[ex.row.exerciseId]?.name ?? ''}', style: AppType.title),
-            if (resolved.isNotEmpty) ...[
-              const SectionLabel('From the program'),
-              for (final (label, info) in resolved)
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  enabled: info != null && info.id != ex.row.exerciseId,
-                  leading: Icon(label == slot?.exercise ? Icons.star_rounded : Icons.swap_horiz_rounded,
-                      color: info == null ? AppColors.textTertiary : AppColors.primary),
-                  title: Text(label),
-                  subtitle: Text(info == null ? 'Not in the library — use search' : (info.id == ex.row.exerciseId ? 'Current exercise' : info.name)),
-                  onTap: info == null ? null : () => Navigator.of(ctx).pop(info.id),
-                ),
-            ],
-            const SizedBox(height: 8),
-            OutlinedButton.icon(
-              onPressed: () => Navigator.of(ctx).pop('__search__'),
-              icon: const Icon(Icons.search_rounded),
-              label: const Text('Search the library'),
-            ),
-          ]),
-        ),
-      ),
+    final id = await pickReplacement(
+      context,
+      name: ex.row.displayName ?? catalog[ex.row.exerciseId]?.name ?? '',
+      currentExerciseId: ex.row.exerciseId,
+      slot: slot,
+      options: resolved,
     );
-    if (picked == null || !mounted) return;
-    final id = picked == '__search__' ? await context.push<String>(Routes.pickExercise) : picked;
+    if (!mounted) return;
     final info = id == null ? null : catalog[id];
     if (info == null || !mounted) return;
     await ref.read(sessionRepositoryProvider).replaceExercise(

@@ -407,11 +407,11 @@ region. Media matching keeps its own private coarse grouping, so 3D demo matches
   more.
 
 **Strength score.**
-- Each valid working set gets a score from 0 to 1000: its e1RM ÷ the bodyweight **on the day of the
-  set**, placed against that exercise's standard. The score is 25 per division point, so Iron IV = 0,
+- Each valid working set gets a score from 0 to 1000: its e1RM ÷ your **latest bodyweight**, placed against that exercise's standard. The score is 25 per division point, so Iron IV = 0,
   Master = 700, Grandmaster = 800, Challenger = 900, and 1000 is the cap.
-- Bodyweight between weigh-ins is interpolated linearly. Apple Health sync now stores a year of
-  weigh-ins, so a set from April counts at April's 108 kg, not today's 106 kg (as in Liftoff).
+- Current ranks use the latest weigh-in (manual or Apple Health) for every set, so a bodyweight
+  change moves the rank immediately. (Earlier versions scored each set at its own day's weight, which
+  made the rank barely react; rank-history charts still interpolate per day.)
 - For scoring, reps + reps in reserve count at most 20. Epley inflates very long sets: 30
   bodyweight back extensions would otherwise read as a 2.0× bodyweight "1RM".
 
