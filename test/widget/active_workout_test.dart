@@ -125,12 +125,12 @@ void main() {
     });
     await settle(tester);
 
-    // KG cell → keypad → + (the next barbell load that exists: 2.5 kg plates, so 5 kg steps) → hide:
-    // 25 kg, 25 % over 20.
+    // KG cell → keypad → + twice (the barbell's step is 2.5, as the label says) → hide: 25 kg, 25 % over 20.
     await tester.tap(find.byKey(ValueKey('cell-kg-${sets.first.id}')));
     await settle(tester);
     expect(find.byKey(const ValueKey('workout-keypad')), findsOneWidget);
     expect(find.text('+2.5'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('key-plus-inc')));
     await tester.tap(find.byKey(const ValueKey('key-plus-inc')));
     await tester.tap(find.byKey(const ValueKey('key-hide')));
     await settle(tester);

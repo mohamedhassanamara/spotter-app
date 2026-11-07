@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'db/database.dart';
 import 'domain/equipment.dart';
+import 'domain/weight_step.dart';
 import 'domain/training.dart';
 import 'settings/app_settings.dart';
 
@@ -31,6 +32,17 @@ class SettingsController {
   Future<void> setStreakReminder(bool v) => _db.putSetting(SettingsModel.kStreakReminder, '$v');
   Future<void> setIncrement(Increments current, EquipmentKind kind, double v) =>
       _db.putSetting(SettingsModel.kIncrements, SettingsModel.encodeIncrements(current.copyWith(kind, v)));
+  /// Stores [stepKg] as [exerciseId]'s keypad step; null clears it (back to the equipment default).
+  Future<void> setExerciseStep(String exerciseId, double? stepKg) async {
+    final m = {...decodeExerciseSteps(await _db.getSetting(SettingsModel.kExerciseSteps))};
+    if (stepKg == null || stepKg <= 0) {
+      m.remove(exerciseId);
+    } else {
+      m[exerciseId] = stepKg;
+    }
+    await _db.putSetting(SettingsModel.kExerciseSteps, encodeExerciseSteps(m));
+  }
+
   Future<void> setCompoundRange(RepRange r) => _db.putSetting(SettingsModel.kCompoundRange, SettingsModel.encodeRange(r));
   Future<void> setIsolationRange(RepRange r) => _db.putSetting(SettingsModel.kIsolationRange, SettingsModel.encodeRange(r));
   Future<void> setDefaultRir(int v) => _db.putSetting(SettingsModel.kDefaultRir, '${v.clamp(0, 5)}');

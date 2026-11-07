@@ -31,6 +31,8 @@ import '../data/finish_service.dart';
 import 'calculating_results.dart';
 import 'exercise_block.dart';
 import 'keypad.dart';
+import 'step_picker.dart';
+import '../../../core/domain/weight_step.dart';
 import '../../coach/domain/praise.dart';
 import '../data/history_repository.dart' show loggedSetFromRow;
 import '../domain/rest_preview.dart';
@@ -220,15 +222,18 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> with 
         if (target != null && targetEx != null && _buffer != null)
           WorkoutKeypad(
             field: target.field,
-            increment: _increment(catalog[targetEx.row.exerciseId]),
+            increment: ref.watch(exerciseStepProvider(targetEx.row.exerciseId)),
+            unit: ref.watch(weightUnitProvider),
+            onStepLongPress: () => _pickStep(targetEx!),
             signToggle: isAssisted(targetEx.row.exerciseId),
             onDigit: (d) => setState(() => _buffer!.digit(d)),
             onDot: () => setState(_buffer!.dot),
             onBackspace: () => setState(_buffer!.backspace),
             onStep: (dir) => setState(() => _buffer!.step(dir,
-                increment: _increment(catalog[targetEx!.row.exerciseId]),
+                increment: ref.read(exerciseStepProvider(targetEx!.row.exerciseId)),
                 fallback: _cellValue(session, target),
-                grid: ref.read(exerciseGridProvider(targetEx.row.exerciseId)))),
+                maxLoad: ref.read(exerciseGridProvider(targetEx.row.exerciseId))?.maxLoad,
+                allowNegative: isAssisted(targetEx.row.exerciseId))),
             onCopy: () => _copy(session, targetEx!),
             onSign: () => setState(_buffer!.toggleSign),
             onNext: () => _next(session),
@@ -282,6 +287,21 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> with 
   // ---------------------------------------------------------------------------
   // Keypad
   // ---------------------------------------------------------------------------
+
+  /// Long-press on − / +: the exercise's step. Saved in settings; the keypad labels follow at once.
+  Future<void> _pickStep(ActiveExercise ex) async {
+    final id = ex.row.exerciseId;
+    final info = ref.read(catalogProvider).value?[id];
+    final picked = await showStepPicker(
+      context,
+      exerciseName: info?.name ?? 'this exercise',
+      currentKg: ref.read(exerciseStepProvider(id)),
+      defaultKg: info == null ? fallbackStep : defaultStepFor(equipment: info.equipment, name: info.name, isCustom: info.isCustom),
+      unit: ref.read(weightUnitProvider),
+    );
+    if (picked == null) return;
+    await ref.read(settingsControllerProvider).setExerciseStep(id, picked.reset ? null : picked.stepKg);
+  }
 
   WorkoutSet? _setById(ActiveSession session, int id) =>
       session.exercises.expand((e) => e.sets).where((s) => s.id == id).firstOrNull;

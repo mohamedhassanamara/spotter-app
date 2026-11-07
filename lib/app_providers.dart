@@ -17,6 +17,7 @@ import 'core/live_activity/live_activity_service.dart';
 import 'core/notifications/notification_service.dart';
 import 'core/providers.dart';
 import 'core/domain/gym.dart';
+import 'core/domain/weight_step.dart';
 import 'features/coach/data/gym_repository.dart';
 import 'features/coach/domain/energy.dart';
 import 'features/coach/domain/suggestion_engine.dart' show FormReset;
@@ -156,6 +157,18 @@ final exerciseGridProvider = Provider.family<WeightGrid?, String>((ref, exercise
   final info = ref.watch(catalogProvider).value?[exerciseId];
   if (info == null) return null;
   return gridForExercise(ref.watch(gymEquipmentProvider).value ?? GymEquipment.defaults, ref.watch(historyProvider).value ?? TrainingHistory.empty, info);
+});
+
+/// The unit weights are shown in. The app stores kg; this is the one place a pounds setting would plug in.
+final weightUnitProvider = Provider<WeightUnit>((ref) => WeightUnit.kg);
+
+/// THE keypad step of one exercise (kg): its own override from settings, else the equipment default
+/// (`defaultStepFor`, one table in core/domain/weight_step.dart). Labels and increments both read this.
+final exerciseStepProvider = Provider.family<double, String>((ref, exerciseId) {
+  final override = ref.watch(currentSettingsProvider.select((s) => s.exerciseSteps[exerciseId]));
+  final info = ref.watch(catalogProvider).value?[exerciseId];
+  final fallback = info == null ? fallbackStep : defaultStepFor(equipment: info.equipment, name: info.name, isCustom: info.isCustom);
+  return resolveStep(override, fallback);
 });
 
 final formResetsProvider = StreamProvider<Map<String, FormReset>>((ref) => ref.watch(gymRepositoryProvider).watchResets());

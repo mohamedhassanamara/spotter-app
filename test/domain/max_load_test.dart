@@ -72,14 +72,14 @@ void main() {
 
   test('keypad + never goes above the max load; − still works', () {
     final b = KeypadBuffer(field: KeypadField.kg)..set(47.5);
-    b.step(1, increment: 5, fallback: 0, grid: grid());
+    b.step(1, increment: 2.5, fallback: 0, maxLoad: grid().maxLoad);
     expect(b.value, 50);
-    b.step(1, increment: 5, fallback: 0, grid: grid());
+    b.step(1, increment: 2.5, fallback: 0, maxLoad: grid().maxLoad);
     expect(b.value, 50, reason: 'already at the max');
     b.set(60);
-    b.step(1, increment: 5, fallback: 0, grid: grid());
+    b.step(1, increment: 2.5, fallback: 0, maxLoad: grid().maxLoad);
     expect(b.value, 50);
-    b.step(-1, increment: 5, fallback: 0, grid: grid());
+    b.step(-1, increment: 2.5, fallback: 0, maxLoad: grid().maxLoad);
     expect(b.value, 47.5);
   });
 }

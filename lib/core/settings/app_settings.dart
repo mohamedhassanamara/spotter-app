@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import '../domain/equipment.dart';
 import '../domain/training.dart';
+import '../domain/weight_step.dart';
 
 /// Typed view over the `app_settings` key/value table.
 class SettingsModel {
@@ -9,6 +10,7 @@ class SettingsModel {
     this.onboarded = false,
     this.streakReminder = true,
     this.increments = Increments.defaults,
+    this.exerciseSteps = const {},
     this.compoundRange = RepRange.compound,
     this.isolationRange = RepRange.isolation,
     this.defaultRir = 2,
@@ -24,6 +26,9 @@ class SettingsModel {
   /// 18:00 reminder on the streak's last-chance day (Settings → Streak).
   final bool streakReminder;
   final Increments increments;
+
+  /// Per-exercise − / + keypad step in kg (long-press on the keypad's − / +). Absent = the equipment default.
+  final Map<String, double> exerciseSteps;
   final RepRange compoundRange;
   final RepRange isolationRange;
   final int defaultRir;
@@ -41,6 +46,7 @@ class SettingsModel {
   static const kOnboarded = 'onboarded';
   static const kStreakReminder = 'streak_reminder';
   static const kIncrements = 'increments';
+  static const kExerciseSteps = 'exercise_steps';
   static const kCompoundRange = 'compound_range';
   static const kIsolationRange = 'isolation_range';
   static const kDefaultRir = 'default_rir';
@@ -77,6 +83,7 @@ class SettingsModel {
       onboarded: m[kOnboarded] == 'true',
       streakReminder: m[kStreakReminder] != 'false',
       increments: increments,
+      exerciseSteps: decodeExerciseSteps(m[kExerciseSteps]),
       compoundRange: parseRange(m[kCompoundRange], RepRange.compound),
       isolationRange: parseRange(m[kIsolationRange], RepRange.isolation),
       defaultRir: int.tryParse(m[kDefaultRir] ?? '') ?? 2,

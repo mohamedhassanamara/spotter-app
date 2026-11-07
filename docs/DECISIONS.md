@@ -2129,3 +2129,14 @@ highlighted; under the table each lift shows "You: 78 kg" (my best e1RM).
 
 **Exercise names.** Plain text on the Train tab (the routine card preview opens the routine) and in the active workout. Only the routine
 details (editor) rows open the exercise page.
+
+## Rank-fix round, item 1: keypad step
+
+**Root cause.** The − / + labels printed `Increments.of(equipmentKind)` (one global number per equipment *category*, "Machine / cable" = 2.5), but the key itself jumped to the next weight on the exercise's *grid*
+(gym equipment: barbell = a pair of plates = 5, stack = its step…). Two sources of truth, so the label was often not what the key did, and changing a step never changed the label.
+
+**Now.** One source: `exerciseStepProvider(exerciseId)` = the exercise's own step (setting `exercise_steps`, JSON id → kg) else `defaultStepFor(equipment, name, isCustom)`
+(`lib/core/domain/weight_step.dart`, the single editable table: barbell 2.5, EZ bar 2.5, dumbbell 2, machine 5, plate-loaded machine 5, cable 2.5, Smith 2.5, kettlebell 4, bodyweight 2.5, custom 2.5).
+Label and move both use it (`stepLabel`, `stepWeight`: rounded to 0.001, never below 0 except assisted lifts, capped at the max load). The keypad no longer walks the grid; the grid still drives *suggestions*.
+Long-press on − / + opens a picker (0.5, 1, 1.25, 2, 2.5, 5, 10, custom, reset to default). The coach's per-category `Increments` (suggestion engine) is untouched.
+**kg/lb:** the app stores kg and has no pounds setting; `weightUnitProvider` (kg) is the one place it would plug in and `stepLabel`/the picker already convert (tested), so a lb setting needs no keypad change.

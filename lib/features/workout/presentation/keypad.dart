@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import '../../../core/domain/gym.dart';
 import '../../../core/theme/app_theme.dart';
-import '../../coach/domain/suggestion_engine.dart';
+import '../../../core/domain/weight_step.dart';
 
 enum KeypadField { kg, reps }
 
@@ -52,21 +51,17 @@ class KeypadBuffer {
     if (text.isNotEmpty) text = text.substring(0, text.length - 1);
   }
 
-  /// ± one increment (kg) or one rep, starting from what's typed or [fallback] (the cell's value).
-  /// ± on the keypad: reps by one; kg to the next / previous weight that exists ([grid]), else by
-  /// [increment].
-  void step(int direction, {required double increment, required double fallback, WeightGrid? grid}) {
+  /// ± on the keypad: reps by one; kg by [increment] (the exercise's step, the same number the button label shows),
+  /// from what's typed or [fallback] (the cell's value). Float noise is cleaned (never 0.30000000000000004); never above
+  /// the machine's [maxLoad], never below 0 unless [allowNegative] (assisted lifts).
+  void step(int direction, {required double increment, required double fallback, double? maxLoad, bool allowNegative = false}) {
     final base = value ?? fallback;
     if (field != KeypadField.kg) return set((base + direction).clamp(0, 999).toDouble());
-    final g = grid == null ? null : (direction > 0 ? grid.next(base) : grid.previous(base));
-    var v = g ?? base + direction * increment;
-    final cap = grid?.maxLoad;
-    if (direction > 0 && cap != null && v > cap) v = cap; // never above the machine's max load
-    set(v);
+    set(stepWeight(base, direction, increment, cap: maxLoad, allowNegative: allowNegative || base < 0));
   }
 
   void set(double v) {
-    text = field == KeypadField.kg ? formatPlain(v) : '${v.round()}';
+    text = field == KeypadField.kg ? formatPlain(cleanWeight(v)) : '${v.round()}';
   }
 
   void toggleSign() {
@@ -88,6 +83,8 @@ class WorkoutKeypad extends StatelessWidget {
     super.key,
     required this.field,
     required this.increment,
+    this.unit = WeightUnit.kg,
+    this.onStepLongPress,
     required this.signToggle,
     required this.onDigit,
     required this.onDot,
@@ -101,6 +98,10 @@ class WorkoutKeypad extends StatelessWidget {
 
   final KeypadField field;
   final double increment;
+  final WeightUnit unit;
+
+  /// Long-press on − / +: opens the step picker.
+  final VoidCallback? onStepLongPress;
   final bool signToggle;
   final ValueChanged<String> onDigit;
   final VoidCallback onDot;
@@ -113,8 +114,7 @@ class WorkoutKeypad extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final inc = field == KeypadField.kg ? formatKg(increment) : '1';
-    Widget key(String label, VoidCallback? onTap, {Key? k, bool accent = false, IconData? icon, bool dim = false}) => Expanded(
+    Widget key(String label, VoidCallback? onTap, {Key? k, bool accent = false, IconData? icon, bool dim = false, VoidCallback? onLong}) => Expanded(
           child: Padding(
             padding: const EdgeInsets.all(3),
             child: Material(
@@ -123,6 +123,7 @@ class WorkoutKeypad extends StatelessWidget {
               child: InkWell(
                 key: k,
                 borderRadius: BorderRadius.circular(10),
+                onLongPress: onLong,
                 onTap: onTap == null
                     ? null
                     : () {
@@ -179,8 +180,10 @@ class WorkoutKeypad extends StatelessWidget {
               flex: 2,
               child: Column(children: [
                 Row(children: [
-                  key('−$inc', () => onStep(-1), k: const ValueKey('key-minus-inc'), dim: true),
-                  key('+$inc', () => onStep(1), k: const ValueKey('key-plus-inc'), dim: true),
+                  key(field == KeypadField.kg ? stepLabel(increment, -1, unit: unit) : '−1', () => onStep(-1),
+                      k: const ValueKey('key-minus-inc'), dim: true, onLong: field == KeypadField.kg ? onStepLongPress : null),
+                  key(field == KeypadField.kg ? stepLabel(increment, 1, unit: unit) : '+1', () => onStep(1),
+                      k: const ValueKey('key-plus-inc'), dim: true, onLong: field == KeypadField.kg ? onStepLongPress : null),
                 ]),
                 Row(children: [
                   key('Copy', onCopy, k: const ValueKey('key-copy'), dim: true),
